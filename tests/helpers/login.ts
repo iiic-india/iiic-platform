@@ -3,9 +3,19 @@ import { expect } from '@playwright/test'
 
 import { totpCode } from './seedUser'
 
-/** Types a code into payload-totp's code boxes, as a person would. */
+/**
+ * Enters a code as a person would: in IIIC's verify page (one field), or in payload-totp's
+ * set-up page (one box per digit).
+ */
 export async function enterCode(page: Page, code: string): Promise<void> {
-  await page.locator('form input[maxlength="1"]').first().click()
+  const field = page.locator('#two-factor-code, form input[maxlength="1"]').first()
+  await field.waitFor()
+  if ((await field.getAttribute('id')) === 'two-factor-code') {
+    await field.fill(code)
+    await field.press('Enter')
+    return
+  }
+  await field.click()
   await page.keyboard.type(code)
 }
 

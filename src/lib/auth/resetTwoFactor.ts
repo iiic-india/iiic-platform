@@ -1,4 +1,4 @@
-import type { PayloadHandler } from 'payload'
+import { commitTransaction, initTransaction, killTransaction, type PayloadHandler } from 'payload'
 
 import { hasRole } from '@/access/roles'
 
@@ -7,9 +7,8 @@ const json = (body: Record<string, unknown>, status = 200) =>
 
 /**
  * POST /api/users/:id/reset-two-factor. An owner who has entered their own code clears another
- * staff member's authenticator and signs them out everywhere; at their next sign-in they set
- * up a new one (docs/05: owners manage staff). Recovery codes, in the next slice, let people
- * recover on their own.
+ * staff member's authenticator, cancels their recovery codes and signs them out everywhere; at
+ * their next sign-in they set up a new authenticator (docs/05: owners manage staff).
  */
 export const resetTwoFactor: PayloadHandler = async (req) => {
   const actor = req.user
@@ -28,6 +27,7 @@ export const resetTwoFactor: PayloadHandler = async (req) => {
   if (String(id) === String(actor.id)) {
     return json({ message: 'Ask another owner to reset your two-factor.' }, 400)
   }
+  const owned = await initTransaction(req)
   try {
     await req.payload.update({
       collection: 'users',
@@ -36,7 +36,15 @@ export const resetTwoFactor: PayloadHandler = async (req) => {
       overrideAccess: true,
       req,
     })
+    await req.payload.delete({
+      collection: 'staff-recovery-codes',
+      where: { user: { equals: id } },
+      overrideAccess: true,
+      req,
+    })
+    if (owned) await commitTransaction(req)
   } catch {
+    if (owned) await killTransaction(req)
     return json({ message: 'That staff account was not found.' }, 404)
   }
   return json({ ok: true })

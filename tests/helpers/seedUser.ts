@@ -5,14 +5,16 @@ import config from '../../src/payload.config'
 
 type Role = 'owner' | 'operator' | 'practitioner' | 'editor' | 'finance'
 
+// The RFC 6238 example secret: obviously not a real one.
+const EXAMPLE_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP'
+
 /** Clearly fake staff accounts for end-to-end tests (CLAUDE.md: seed data is obviously fake). */
 export const testUser = {
   name: 'Test Owner (fake)',
   email: 'owner.test@example.invalid',
   password: 'test-only-password-1',
   roles: ['owner'] as Role[],
-  // The RFC 6238 example secret: obviously not a real one.
-  totpSecret: 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP',
+  totpSecret: EXAMPLE_SECRET,
 }
 
 /** Someone who has not set up an authenticator yet. */
@@ -21,6 +23,15 @@ export const newcomer = {
   email: 'newcomer.test@example.invalid',
   password: 'test-only-password-2',
   roles: ['editor'] as Role[],
+}
+
+/** Someone with an authenticator who will lose it and use a recovery code. */
+export const recoverer = {
+  name: 'Test Recoverer (fake)',
+  email: 'recoverer.test@example.invalid',
+  password: 'test-only-password-3',
+  roles: ['editor'] as Role[],
+  totpSecret: EXAMPLE_SECRET,
 }
 
 /** The code an authenticator app would show now for this secret (src/lib/auth/totp.ts). */
@@ -33,9 +44,9 @@ export function totpCode(secret: string): string {
   }).generate()
 }
 
-const EMAILS = [testUser.email, newcomer.email]
+const EMAILS = [testUser.email, newcomer.email, recoverer.email]
 
-/** Creates both accounts afresh and returns their IDs. */
+/** Creates the accounts afresh and returns their IDs. */
 export async function seedTestUsers(): Promise<{
   ownerId: number | string
   newcomerId: number | string
@@ -44,6 +55,7 @@ export async function seedTestUsers(): Promise<{
   await payload.delete({ collection: 'users', where: { email: { in: EMAILS } } })
   const owner = await payload.create({ collection: 'users', data: testUser })
   const next = await payload.create({ collection: 'users', data: newcomer })
+  await payload.create({ collection: 'users', data: recoverer })
   return { ownerId: owner.id, newcomerId: next.id }
 }
 

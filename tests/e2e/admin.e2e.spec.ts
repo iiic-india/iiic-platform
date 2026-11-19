@@ -1,7 +1,14 @@
 import { expect, test } from '@playwright/test'
 
 import { enterCode, login, signIn } from '../helpers/login'
-import { cleanupTestUsers, newcomer, seedTestUsers, testUser, totpCode } from '../helpers/seedUser'
+import {
+  cleanupTestUsers,
+  newcomer,
+  recoverer,
+  seedTestUsers,
+  testUser,
+  totpCode,
+} from '../helpers/seedUser'
 
 let ids: { ownerId: number | string; newcomerId: number | string }
 
@@ -63,6 +70,39 @@ test.describe('Admin', () => {
     const theirPage = await context.newPage()
     await signIn(theirPage, newcomer)
     await theirPage.waitForURL(/\/admin\/setup-totp/)
+    await context.close()
+  })
+
+  test('someone who lost their authenticator signs in with a recovery code and sets up a new one', async ({
+    page,
+    browser,
+  }) => {
+    await login(page, recoverer)
+    await page.getByRole('button', { name: 'Create recovery codes' }).click()
+    const codes = await page.locator('ol li code').allInnerTexts()
+    expect(codes).toHaveLength(10)
+
+    const context = await browser.newContext()
+    const theirPage = await context.newPage()
+    await signIn(theirPage, { email: recoverer.email, password: recoverer.password })
+    await theirPage.waitForURL(/\/admin\/verify-totp/)
+    await theirPage.getByText('Lost your authenticator?').click()
+    await theirPage.getByLabel('Recovery code').fill('AAAA-AAAA-AAAA')
+    await theirPage.getByRole('button', { name: 'Use recovery code' }).click()
+    await expect(
+      theirPage.getByText('That code is not one of your unused recovery codes.'),
+    ).toBeVisible()
+
+    await theirPage.getByLabel('Recovery code').fill(codes[0] ?? '')
+    await theirPage.getByRole('button', { name: 'Use recovery code' }).click()
+    await theirPage.waitForURL(/\/admin\/setup-totp/)
+    await theirPage.getByRole('button', { name: 'Enter a setup key instead' }).click()
+    const secret = (await theirPage.locator('code').first().innerText()).replace(/\s/g, '')
+    await enterCode(theirPage, totpCode(secret))
+    await theirPage.waitForURL(/\/admin$/)
+    await expect(
+      theirPage.getByText('You have nine unused recovery codes.', { exact: false }),
+    ).toBeVisible()
     await context.close()
   })
 

@@ -7,19 +7,32 @@ import { resetTwoFactor } from '@/lib/auth/resetTwoFactor'
 const owner = { id: 1, collection: 'users', roles: ['owner'], active: true }
 
 function call(user: Record<string, unknown> | null, id: unknown = 2, update = vi.fn()) {
-  const req = { user, routeParams: { id }, payload: { update } } as unknown as PayloadRequest
-  return { response: resetTwoFactor(req), update }
+  const remove = vi.fn(async () => ({}))
+  // No transactions in this stub database: the handler then runs each write on its own.
+  const req = {
+    user,
+    routeParams: { id },
+    payload: { update, delete: remove, db: {} },
+  } as unknown as PayloadRequest
+  return { response: resetTwoFactor(req), update, remove }
 }
 
 describe('resetTwoFactor', () => {
-  it('lets an owner who entered their code reset someone else, ending their sessions', async () => {
-    const { response, update } = call({ ...owner, _strategy: 'totp' })
+  it('lets an owner who entered their code reset someone else, ending their sessions and codes', async () => {
+    const { response, update, remove } = call({ ...owner, _strategy: 'totp' })
     expect((await response).status).toBe(200)
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'users',
         id: 2,
         data: { totpSecret: null, sessions: [] },
+        overrideAccess: true,
+      }),
+    )
+    expect(remove).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'staff-recovery-codes',
+        where: { user: { equals: 2 } },
         overrideAccess: true,
       }),
     )

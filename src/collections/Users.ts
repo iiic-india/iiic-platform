@@ -2,12 +2,14 @@ import {
   APIError,
   type CollectionAfterChangeHook,
   type CollectionBeforeChangeHook,
+  type CollectionBeforeDeleteHook,
   type CollectionBeforeLoginHook,
   type CollectionConfig,
 } from 'payload'
 
 import { allow, POLICY } from '@/access/policy'
 import { hasRole, isOwnerField, ROLE_LABELS, ROLES } from '@/access/roles'
+import { createRecoveryCodes, recoverTwoFactor } from '@/lib/auth/recoveryEndpoints'
 import { resetTwoFactor } from '@/lib/auth/resetTwoFactor'
 import { env } from '@/lib/env'
 import { mayCreateFirstOwner } from '@/lib/ownerSetup'
@@ -102,6 +104,19 @@ export const endSessionsOnDeactivation: CollectionAfterChangeHook = async ({
 }
 
 /**
+ * An account's recovery codes go with it. Staff are never deleted through the admin (docs/04),
+ * but tests and data erasure can delete one, and the codes' link to it cannot be left empty.
+ */
+export const deleteRecoveryCodes: CollectionBeforeDeleteHook = async ({ id, req }) => {
+  await req.payload.delete({
+    collection: 'staff-recovery-codes',
+    where: { user: { equals: id } },
+    overrideAccess: true,
+    req,
+  })
+}
+
+/**
  * Staff accounts for /admin: identity, roles, deactivation and safe sessions. Access comes
  * from src/access/policy.ts (docs/05); TOTP two-factor from payload-totp (src/lib/auth/totp.ts),
  * which adds its fields, views and endpoints to this collection.
@@ -139,8 +154,13 @@ export const Users: CollectionConfig = {
     beforeLogin: [refuseDeactivated],
     beforeChange: [firstAccountIsOwner, keepAnActiveOwner],
     afterChange: [endSessionsOnDeactivation],
+    beforeDelete: [deleteRecoveryCodes],
   },
-  endpoints: [{ path: '/:id/reset-two-factor', method: 'post', handler: resetTwoFactor }],
+  endpoints: [
+    { path: '/recovery-codes', method: 'post', handler: createRecoveryCodes },
+    { path: '/recover-two-factor', method: 'post', handler: recoverTwoFactor },
+    { path: '/:id/reset-two-factor', method: 'post', handler: resetTwoFactor },
+  ],
   fields: [
     { name: 'name', type: 'text', required: true },
     {

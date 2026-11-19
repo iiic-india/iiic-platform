@@ -1,0 +1,17 @@
+/* The recovery-codes panel on the admin dashboard; colours and type come from the admin's own
+   styles. */
+.panel {
+  margin-bottom: 32px;
+}
+
+.heading {
+  margin: 0 0 8px;
+}
+
+.codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 8px 24px;
+  margin: 16px 0;
+  padding-left: 1.5rem;
+}

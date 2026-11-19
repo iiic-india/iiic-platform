@@ -8,6 +8,7 @@ import { payloadTotp } from 'payload-totp'
 import sharp from 'sharp'
 
 import { Media } from './collections/Media'
+import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Users } from './collections/Users'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
@@ -51,8 +52,29 @@ export default buildConfig({
     // Payload's default avatar is Gravatar, which would send a hash of each staff email to a
     // third party and break the CSP (img-src 'self').
     avatar: 'default',
+    components: {
+      // Recovery codes for staff two-factor (src/lib/auth/recoveryEndpoints.ts).
+      beforeDashboard: ['/components/admin/RecoveryCodes#RecoveryCodes'],
+      views: {
+        // Replaces payload-totp's verify view (same keys and path), adding recovery codes.
+        VerifyTOTP: {
+          Component: '/components/admin/VerifyTwoFactor#VerifyTwoFactor',
+          path: '/verify-totp',
+          exact: true,
+          strict: true,
+          sensitive: false,
+        },
+        VerifyTOTPBackslash: {
+          Component: '/components/admin/VerifyTwoFactor#VerifyTwoFactor',
+          path: '/verify-totp',
+          exact: true,
+          strict: true,
+          sensitive: false,
+        },
+      },
+    },
   },
-  collections: [Users, Media],
+  collections: [Users, Media, StaffRecoveryCodes],
   editor: lexicalEditor(),
   email: emailNotConfigured,
   db: postgresAdapter({

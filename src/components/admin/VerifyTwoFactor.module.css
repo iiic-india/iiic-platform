@@ -1,0 +1,14 @@
+/* Spacing for the two-factor forms inside Payload's minimal template; colours and type come
+   from the admin's own styles. */
+.forms {
+  display: grid;
+  gap: 24px;
+}
+
+.recovery summary {
+  cursor: pointer;
+}
+
+.recovery p {
+  margin: 12px 0;
+}
