@@ -15,7 +15,7 @@ import styles from './SiteFooter.module.css'
  * brochures, and info@iiicedu.com until the platform domain's addresses exist (I-02).
  * The affiliation statement waits on the lawyer (D-20).
  */
-export const FOOTER_COLUMNS = [
+const COLUMNS = [
   {
     heading: 'Learn',
     links: [
@@ -70,7 +70,7 @@ export function SiteFooter() {
             <a href="mailto:info@iiicedu.com">info@iiicedu.com</a>
           </address>
         </div>
-        {FOOTER_COLUMNS.map((column) => (
+        {COLUMNS.map((column) => (
           <div key={column.heading}>
             <h2 className={styles.title}>{column.heading}</h2>
             {column.links.map((link) => (

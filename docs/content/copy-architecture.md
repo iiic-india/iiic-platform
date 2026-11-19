@@ -71,6 +71,8 @@ The 19 November philosophy document replaces the 4 November description's outcom
 
 Voices (`11` §3.8; §6): one short review under the hero's actions; one beside each of sections 3, 4 and 5, chosen because its words speak to that section's claim; beside the founder's note (section 7), a review about Gaurang Mistry himself.
 
+Meta description `[IIIC]`: the philosophy document's first sentence without "(IIIC)", so that it stays within 155 characters (`12` §3): "The Indian Institute of Image Catalysts operates across three distinct service verticals: Education, Counselling, and Business & Management Consultancy." It holds until the page's SEO fields carry a description IIIC writes (M2).
+
 ### 4.2 Framework `/framework` · default register · primary action: **Find your path**
 
 | # | Section | Answers | Copy |
