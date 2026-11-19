@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   headerRules,
   PRIVATE_ROUTES,
+  ROUTE_EXCEPTIONS,
   SECURITY_HEADERS,
   withoutColorSchemeHints,
 } from '@/lib/security/headers'
@@ -26,12 +27,24 @@ describe('headerRules', () => {
   })
 
   it('lets production be indexed, except its private routes', () => {
-    const [everyRoute, ...privateRoutes] = headerRules('production')
+    const [everyRoute, ...rest] = headerRules('production')
+    const privateRoutes = rest.slice(0, PRIVATE_ROUTES.length)
     expect(keys(everyRoute?.headers ?? [])).not.toContain('X-Robots-Tag')
     expect(privateRoutes.map((rule) => rule.source)).toEqual([...PRIVATE_ROUTES])
     for (const rule of privateRoutes) {
       expect(rule.headers).toEqual([{ key: 'X-Robots-Tag', value: 'noindex' }])
     }
+  })
+
+  it('puts the stricter single-route rules last, so they replace the general ones', () => {
+    for (const vercelEnv of ['production', 'preview', undefined]) {
+      const rules = headerRules(vercelEnv)
+      expect(rules.slice(-ROUTE_EXCEPTIONS.length)).toEqual(ROUTE_EXCEPTIONS)
+    }
+    expect(ROUTE_EXCEPTIONS).toContainEqual({
+      source: '/api/owner-setup',
+      headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }],
+    })
   })
 })
 

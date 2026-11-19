@@ -27,6 +27,8 @@ test('the owner setup link sets only its own ten-minute cookie, for one request 
 
   const right = await request.get(`/api/owner-setup?token=${token}`, { maxRedirects: 0 })
   expect(right.status()).toBe(303)
+  // The token is in the link's query: no referrer leaves this response.
+  expect(right.headers()['referrer-policy']).toBe('no-referrer')
   const cookies = right.headersArray().filter(({ name }) => name.toLowerCase() === 'set-cookie')
   expect(cookies).toHaveLength(1)
   const cookie = cookies[0]?.value ?? ''
