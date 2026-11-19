@@ -25,6 +25,17 @@ describe('parseEnv', () => {
     expect(env.allowedOrigins).toEqual(['https://iiic.example', 'https://x.vercel.app'])
   })
 
+  it('uses the production alias, not the deployment URL, in production', () => {
+    const env = parseEnv({
+      ...valid,
+      VERCEL_ENV: 'production',
+      VERCEL_URL: 'iiic-platform-abc123.vercel.app',
+      VERCEL_PROJECT_PRODUCTION_URL: 'iiic-platform.vercel.app',
+    })
+    expect(env.siteUrl).toBe('https://iiic-platform.vercel.app')
+    expect(env.allowedOrigins).toContain('https://iiic-platform-abc123.vercel.app')
+  })
+
   it('falls back to the preview deployment URL and allows its branch alias', () => {
     const env = parseEnv({
       ...valid,

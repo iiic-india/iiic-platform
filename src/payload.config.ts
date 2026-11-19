@@ -22,7 +22,9 @@ const connectionString =
     : config.DATABASE_URL
 
 export default buildConfig({
-  serverURL: config.siteUrl,
+  // Only an explicit origin (production with its domain, or local) becomes the server URL;
+  // otherwise the admin uses relative URLs, so previews and the vercel.app alias both work.
+  ...(config.NEXT_PUBLIC_SITE_URL ? { serverURL: config.NEXT_PUBLIC_SITE_URL } : {}),
   secret: config.PAYLOAD_SECRET,
   admin: {
     user: Users.slug,

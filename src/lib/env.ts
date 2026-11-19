@@ -51,7 +51,11 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
   ]
     .filter((host): host is string => Boolean(host))
     .map((host) => `https://${host}`)
-  const siteUrl = data.NEXT_PUBLIC_SITE_URL ?? vercelOrigins[0] ?? LOCAL
+  const productionOrigin =
+    data.VERCEL_ENV === 'production' && data.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${data.VERCEL_PROJECT_PRODUCTION_URL}`
+      : undefined
+  const siteUrl = data.NEXT_PUBLIC_SITE_URL ?? productionOrigin ?? vercelOrigins[0] ?? LOCAL
   const allowedOrigins = [...new Set([siteUrl, ...vercelOrigins])]
   return { ...data, siteUrl, allowedOrigins }
 }
