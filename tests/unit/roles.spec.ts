@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { hasRole, ROLES } from '@/access/roles'
+import { hasRole, isActive, ROLES } from '@/access/roles'
 
 describe('roles', () => {
   it('lists the five staff roles from docs/05', () => {
@@ -17,5 +17,13 @@ describe('roles', () => {
     expect(hasRole(undefined, 'owner')).toBe(false)
     expect(hasRole({ roles: [] }, 'owner')).toBe(false)
     expect(hasRole({ roles: null }, 'owner')).toBe(false)
+  })
+
+  it('gives a deactivated account no role at all', () => {
+    expect(hasRole({ roles: ['owner'], active: false }, 'owner')).toBe(false)
+    expect(isActive({ roles: ['owner'], active: false })).toBe(false)
+    // Accounts created before the active flag existed count as active.
+    expect(hasRole({ roles: ['owner'], active: null }, 'owner')).toBe(true)
+    expect(isActive(null)).toBe(false)
   })
 })

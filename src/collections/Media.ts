@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { hasRole } from '@/access/roles'
+import { allow, POLICY } from '@/access/policy'
 
 /**
  * Images for public pages. Alt text is required (docs/12 §9). Files are re-encoded by
@@ -10,11 +10,13 @@ import { hasRole } from '@/access/roles'
 export const Media: CollectionConfig = {
   slug: 'media',
   admin: { group: 'Content' },
+  // src/access/policy.ts (docs/05): anyone reads published media; owners, operators and
+  // editors add and edit it; owners and editors delete it.
   access: {
-    read: () => true,
-    create: ({ req: { user } }) => hasRole(user, 'owner', 'editor', 'operator'),
-    update: ({ req: { user } }) => hasRole(user, 'owner', 'editor', 'operator'),
-    delete: ({ req: { user } }) => hasRole(user, 'owner', 'editor'),
+    read: allow(POLICY.media.read),
+    create: allow(POLICY.media.create),
+    update: allow(POLICY.media.update),
+    delete: allow(POLICY.media.delete),
   },
   upload: {
     mimeTypes: ['image/avif', 'image/webp', 'image/jpeg', 'image/png'],
