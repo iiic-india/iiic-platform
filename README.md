@@ -15,7 +15,12 @@ pnpm migrate                      # apply the migrations in src/migrations
 pnpm dev                          # http://localhost:3000 and http://localhost:3000/admin
 ```
 
-The first account created at `/admin` becomes the owner. On production that screen works only after the owner setup link (D-41): add `OWNER_SETUP_TOKEN` (32+ random characters) to Vercel for Production, redeploy, open `/api/owner-setup?token=<value>`, create the account, then delete the variable.
+The first account created at `/admin` becomes the owner. Under `pnpm dev` and on previews that screen is open. On any production server it works only after the owner setup link (D-41):
+
+1. Make a token that is safe in a link (letters, digits, `-` and `_` only): `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
+2. On Vercel, add it as `OWNER_SETUP_TOKEN` for Production and redeploy. For a local production build (`pnpm build && pnpm start`), put it in `.env` instead.
+3. Open `/api/owner-setup?token=<value>` on that server and create the account within ten minutes.
+4. Delete the variable.
 
 ## Commands
 

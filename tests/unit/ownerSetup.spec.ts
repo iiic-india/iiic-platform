@@ -34,7 +34,6 @@ describe('readCookie', () => {
 
 describe('mayCreateFirstOwner', () => {
   const production = {
-    api: 'REST',
     vercelEnv: 'production',
     nodeEnv: 'production',
     expectedToken: TOKEN,
@@ -46,25 +45,20 @@ describe('mayCreateFirstOwner', () => {
     expect(mayCreateFirstOwner({ ...production, cookieHeader: null })).toBe(false)
   })
 
-  it('needs it on production even for a request marked as server code', () => {
-    expect(mayCreateFirstOwner({ ...production, api: 'local', cookieHeader: null })).toBe(false)
-  })
-
   it('stays closed on production when no token is configured', () => {
     expect(
       mayCreateFirstOwner({ ...production, expectedToken: undefined, cookieHeader: cookie(TOKEN) }),
     ).toBe(false)
   })
 
-  it('stays closed on a production server outside Vercel, except for its own code', () => {
-    const elsewhere = { ...production, vercelEnv: undefined, cookieHeader: null }
-    expect(mayCreateFirstOwner(elsewhere)).toBe(false)
+  it('needs it on a production server outside Vercel too (pnpm build && pnpm start)', () => {
+    const elsewhere = { ...production, vercelEnv: undefined }
+    expect(mayCreateFirstOwner({ ...elsewhere, cookieHeader: null })).toBe(false)
     expect(mayCreateFirstOwner({ ...elsewhere, cookieHeader: cookie(TOKEN) })).toBe(true)
-    expect(mayCreateFirstOwner({ ...elsewhere, api: 'local' })).toBe(true)
   })
 
   it('leaves previews and local development as they are', () => {
-    const open = { api: 'REST', expectedToken: undefined, cookieHeader: null }
+    const open = { expectedToken: undefined, cookieHeader: null }
     expect(mayCreateFirstOwner({ ...open, vercelEnv: 'preview', nodeEnv: 'production' })).toBe(true)
     expect(mayCreateFirstOwner({ ...open, vercelEnv: undefined, nodeEnv: 'development' })).toBe(
       true,

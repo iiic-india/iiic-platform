@@ -65,6 +65,17 @@ describe('parseEnv', () => {
     expect(() => parseEnv({ ...valid, OWNER_SETUP_TOKEN: 'short' })).toThrow(/OWNER_SETUP_TOKEN/)
   })
 
+  it('accepts only an owner setup token that survives a link (base64url)', () => {
+    const urlSafe = 'Ab-_0'.repeat(8)
+    expect(parseEnv({ ...valid, OWNER_SETUP_TOKEN: urlSafe }).OWNER_SETUP_TOKEN).toBe(urlSafe)
+    // "+" arrives as a space, "/", "=", "&", "#" and "%" break or change the link.
+    for (const character of ['+', '/', '=', '&', '#', '%']) {
+      expect(() =>
+        parseEnv({ ...valid, OWNER_SETUP_TOKEN: `${'a'.repeat(32)}${character}` }),
+      ).toThrow(/OWNER_SETUP_TOKEN/)
+    }
+  })
+
   it('rejects a site URL that is not a URL', () => {
     expect(() => parseEnv({ ...valid, NEXT_PUBLIC_SITE_URL: 'iiic' })).toThrow(
       /NEXT_PUBLIC_SITE_URL/,

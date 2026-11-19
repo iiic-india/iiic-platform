@@ -9,6 +9,7 @@ import {
 } from '@/lib/ownerSetup'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 export const maxDuration = 10
 
 const PRIVATE_HEADERS = {

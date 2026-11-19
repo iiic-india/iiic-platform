@@ -18,7 +18,6 @@ export const firstAccountIsOwner: CollectionBeforeChangeHook = async ({ req, ope
   if (totalDocs > 0) return data
   const config = env()
   const allowed = mayCreateFirstOwner({
-    api: req.payloadAPI,
     vercelEnv: config.VERCEL_ENV,
     nodeEnv: config.NODE_ENV,
     expectedToken: config.OWNER_SETUP_TOKEN,

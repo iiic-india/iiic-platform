@@ -17,11 +17,19 @@ const schema = z.object({
     .string()
     .startsWith('postgres', 'DATABASE_URL must be a Postgres connection string'),
   DATABASE_URL_DIRECT: z.string().optional(),
-  // Production only, while the first owner is created (D-41); deleted afterwards. The
-  // empty line copied from .env.example counts as unset.
+  // Production servers only, while the first owner is created (D-41); deleted afterwards.
+  // It travels in a link, so only URL-safe characters (base64url): a "+" would arrive as a
+  // space. The empty line copied from .env.example counts as unset.
   OWNER_SETUP_TOKEN: z.preprocess(
     (value) => (value === '' ? undefined : value),
-    z.string().min(32, 'OWNER_SETUP_TOKEN must be at least 32 characters').optional(),
+    z
+      .string()
+      .min(32, 'OWNER_SETUP_TOKEN must be at least 32 characters')
+      .regex(
+        /^[A-Za-z0-9_-]+$/,
+        'OWNER_SETUP_TOKEN may use only letters, digits, - and _ (base64url), because it travels in a link',
+      )
+      .optional(),
   ),
   PLATFORM_HOSTS: z.string().default('localhost:3000'),
   INSTITUTE_HOSTS: z.string().default(''),

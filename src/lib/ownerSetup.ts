@@ -1,12 +1,13 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 
 /**
- * The first account on a database becomes the owner (src/collections/Users.ts). On
- * production that account can only be created after opening the owner setup link,
+ * The first account on a database becomes the owner (src/collections/Users.ts). On any
+ * production server (Vercel's production, or `next start` anywhere else) that account can
+ * only be created after opening the owner setup link,
  * /api/owner-setup?token=<OWNER_SETUP_TOKEN> (D-41), so whoever reaches an empty
  * production /admin first cannot claim the platform. Previews sit behind Vercel
- * Authentication and hold test data only; local development is the developer's own
- * machine. Neither needs the link.
+ * Authentication and hold test data only; `pnpm dev` and the tests run on the
+ * developer's machine or in CI. None of those needs the link.
  */
 export const OWNER_SETUP_COOKIE = 'iiic-owner-setup'
 /** The only request that reads the cookie: Payload's first-user registration. */
@@ -37,8 +38,6 @@ export function readCookie(header: string | null | undefined, name: string): str
 }
 
 export type FirstOwnerRequest = {
-  /** Payload's `req.payloadAPI`: 'local' for server code, 'REST' for HTTP requests. */
-  api: string | undefined
   vercelEnv: string | undefined
   nodeEnv: string | undefined
   expectedToken: string | undefined
@@ -47,15 +46,13 @@ export type FirstOwnerRequest = {
 
 /**
  * Whether this request may create the first account, which becomes the owner. Fails
- * closed: production always needs the setup cookie, whatever the request's origin, and
- * so does a production server outside Vercel unless the call is the server's own code.
+ * closed: a production server always needs the setup cookie. Nothing the request says
+ * about itself stands in for it; Payload marks its admin's server functions as Local API
+ * calls too, so `req.payloadAPI` cannot tell server code from a browser.
  */
 export function mayCreateFirstOwner(request: FirstOwnerRequest): boolean {
-  const hasSetupCookie = () =>
-    tokenMatches(request.expectedToken, readCookie(request.cookieHeader, OWNER_SETUP_COOKIE))
-  if (request.vercelEnv === 'production') return hasSetupCookie()
   if (request.vercelEnv === 'preview' || request.vercelEnv === 'development') return true
-  // Not on Vercel: local development, CI, and scripts using the Local API.
-  if (request.api === 'local' || request.nodeEnv !== 'production') return true
-  return hasSetupCookie()
+  const production = request.vercelEnv === 'production' || request.nodeEnv === 'production'
+  if (!production) return true
+  return tokenMatches(request.expectedToken, readCookie(request.cookieHeader, OWNER_SETUP_COOKIE))
 }
