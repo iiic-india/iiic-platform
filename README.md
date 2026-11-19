@@ -4,11 +4,12 @@ The website and back office for the Indian Institute of Image Catalysts: Next.js
 
 ## Run it locally
 
-Needs Node 24 (`.nvmrc`), pnpm 10 and Docker.
+Needs Node 24 (`.nvmrc`), pnpm 10 and Docker. The same commands work in PowerShell on Windows, with Docker Desktop running.
 
 ```sh
 docker compose up -d              # Postgres 17 on localhost:5432 (database "iiic")
-cp .env.example .env              # then set PAYLOAD_SECRET: openssl rand -base64 48
+cp .env.example .env              # then set PAYLOAD_SECRET in .env to the output of the next line
+node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
 pnpm install
 pnpm migrate                      # apply the migrations in src/migrations
 pnpm dev                          # http://localhost:3000 and http://localhost:3000/admin
@@ -29,7 +30,7 @@ The first account created at `/admin` becomes the owner.
 | Payload types and admin import map             | `pnpm generate:types` · `pnpm generate:importmap`                                           |
 | Migrations                                     | `pnpm migrate:create <name>` after a schema change · `pnpm migrate` · `pnpm migrate:status` |
 
-Schema changes always go through a migration (`push` is off everywhere). Migrations run over `DATABASE_URL_DIRECT` when it is set (Supabase's direct connection) and over `DATABASE_URL` otherwise.
+Schema changes always go through a migration (`push` is off everywhere). Migrations run over `DATABASE_URL_DIRECT` when it is set and over `DATABASE_URL` otherwise. On Supabase, `DATABASE_URL_DIRECT` is the session pooler (port 5432) and `DATABASE_URL` the transaction pooler (port 6543); the direct connection (`db.<ref>.supabase.co`) is IPv6-only and does not work from Vercel.
 
 ## Deploy
 

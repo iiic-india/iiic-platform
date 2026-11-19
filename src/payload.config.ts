@@ -15,7 +15,8 @@ const dirname = path.dirname(filename)
 
 const config = env()
 
-// Migrations run over Supabase's direct connection; the app uses the pooled one (docs/07).
+// Migrations run over Supabase's session pooler (port 5432); the app uses the transaction pooler (port 6543).
+// The direct connection is IPv6-only and unreachable from Vercel, so it is never used (.env.example).
 const connectionString =
   process.env.PAYLOAD_MIGRATING === 'true'
     ? config.DATABASE_URL_DIRECT || config.DATABASE_URL
