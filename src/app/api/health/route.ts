@@ -8,8 +8,9 @@ export const runtime = 'nodejs'
 export const maxDuration = 10
 
 /**
- * Liveness and database reachability for UptimeRobot (docs/12 §7). Says nothing about
- * data; never cached.
+ * Liveness and database reachability for UptimeRobot (docs/12 §7). Public by design
+ * (docs/12 §6): the monitor cannot sign in, so it checks no user, and it answers only the
+ * status, whether the database responds and the commit. Never cached.
  */
 export async function GET() {
   const headers = { 'Cache-Control': 'no-store' }

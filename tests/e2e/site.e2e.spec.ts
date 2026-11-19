@@ -5,6 +5,8 @@ test.describe('Public shell', () => {
   test('home renders the shell with placeholders, not invented copy', async ({ page }) => {
     await page.goto('/')
     await expect(page).toHaveTitle('Indian Institute of Image Catalysts · Subjective Self')
+    // docs/12 §3: descriptions are at most 155 characters.
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /^.{1,155}$/)
     await expect(page.locator('html')).toHaveAttribute('lang', 'en-IN')
     await expect(page.getByRole('link', { name: /IIIC/ }).first()).toBeVisible()
     await expect(page.locator('h1 .iiic-todo')).toHaveText(/^\[\[TODO: .+, I-41\]\]$/)
@@ -71,10 +73,15 @@ test.describe('Public shell', () => {
     ).toBeVisible()
   })
 
-  test('health reports the database', async ({ request }) => {
+  test('health is public and reports only the status, the database and the commit', async ({
+    request,
+  }) => {
+    // Public by design (docs/12 §6): no sign-in, no cookies, nothing about data.
     const response = await request.get('/api/health')
     expect(response.status()).toBe(200)
     expect(response.headers()['cache-control']).toContain('no-store')
-    expect(await response.json()).toMatchObject({ status: 'ok', database: 'ok' })
+    const body = await response.json()
+    expect(body).toMatchObject({ status: 'ok', database: 'ok' })
+    expect(Object.keys(body).sort()).toEqual(['commit', 'database', 'status'])
   })
 })

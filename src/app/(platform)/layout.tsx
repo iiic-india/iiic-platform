@@ -15,9 +15,10 @@ export const metadata: Metadata = {
     default: 'Indian Institute of Image Catalysts · Subjective Self',
     template: '%s · IIIC',
   },
-  // IIIC's own words (content/sources/iiic-philosophy-2026-11-19.md).
+  // IIIC's own words (content/sources/iiic-philosophy-2026-11-19.md), without "(IIIC)" so
+  // the description stays within 155 characters (docs/12 §3).
   description:
-    'The Indian Institute of Image Catalysts (IIIC) operates across three distinct service verticals: Education, Counselling, and Business & Management Consultancy.',
+    'The Indian Institute of Image Catalysts operates across three distinct service verticals: Education, Counselling, and Business & Management Consultancy.',
   applicationName: 'IIIC',
 }
 

@@ -4,12 +4,18 @@ import Link from 'next/link'
 import logo from '@/brand/logo/iiic-logo.svg'
 import { Todo } from '@/components/Todo'
 
+import styles from './SiteFooter.module.css'
+
 /**
- * Contact details follow D-31: the phone from both 2026 brochures, info@iiicedu.com
- * until the platform domain's addresses exist (I-02), and the address without a PIN
- * until I-33 is answered. The affiliation statement waits on the lawyer (D-20).
+ * The kit's footer (src/brand/templates/web/page-shell.html) inside one <footer>
+ * landmark, so the legal row belongs to it too; the kit styles both parts by class.
+ * It carries the eight main links (docs/12 §3, listed in docs/11 §5.1): the logo links
+ * home, and Contact opens the contact section of /about. Contact details follow D-31:
+ * the brochure address without a PIN until I-33 is answered, the phone from both 2026
+ * brochures, and info@iiicedu.com until the platform domain's addresses exist (I-02).
+ * The affiliation statement waits on the lawyer (D-20).
  */
-const COLUMNS = [
+export const FOOTER_COLUMNS = [
   {
     heading: 'Learn',
     links: [
@@ -23,6 +29,7 @@ const COLUMNS = [
     links: [
       { href: '/organisations', label: 'For organisations' },
       { href: '/counselling', label: 'Counselling' },
+      { href: '/proof', label: 'Proof' },
       { href: '/map', label: 'Find your path' },
     ],
   },
@@ -32,6 +39,7 @@ const COLUMNS = [
       { href: '/institute', label: 'Research' },
       { href: '/institute/verify', label: 'Verify a certificate' },
       { href: '/about', label: 'About' },
+      { href: '/about#contact', label: 'Contact' },
     ],
   },
 ] as const
@@ -47,18 +55,24 @@ const LEGAL = [
 export function SiteFooter() {
   const year = new Date().getFullYear()
   return (
-    <>
-      <footer className="iiic-footer-grid">
+    <footer className={styles.footer}>
+      <div className="iiic-footer-grid">
         <div className="iiic-footer-brand">
-          <Image src={logo} alt="Indian Institute of Image Catalysts" height={56} unoptimized />
-          <p>408, The Claywalls, Hebatpur Road, Thaltej, Ahmedabad, Gujarat</p>
+          <Link className={styles.home} href="/">
+            <Image src={logo} alt="Indian Institute of Image Catalysts" height={56} unoptimized />
+          </Link>
           {/* The kit sets footer links to display: block, so each sits on its own line. */}
-          <a href="tel:+919624046464">+91 96240 46464</a>
-          <a href="mailto:info@iiicedu.com">info@iiicedu.com</a>
+          <address className={styles.contact}>
+            <p>
+              408, The Claywalls, above Bonanza Salon, Zydus Hospital Lane, Hebatpur Road, Ahmedabad
+            </p>
+            <a href="tel:+919624046464">+91 96240 46464</a>
+            <a href="mailto:info@iiicedu.com">info@iiicedu.com</a>
+          </address>
         </div>
-        {COLUMNS.map((column) => (
+        {FOOTER_COLUMNS.map((column) => (
           <div key={column.heading}>
-            <h4>{column.heading}</h4>
+            <h2 className={styles.title}>{column.heading}</h2>
             {column.links.map((link) => (
               <Link key={link.href} href={link.href}>
                 {link.label}
@@ -66,7 +80,7 @@ export function SiteFooter() {
             ))}
           </div>
         ))}
-      </footer>
+      </div>
       <div className="iiic-footer-legal">
         <span>
           © {year} Indian Institute of Image Catalysts ·{' '}
@@ -86,6 +100,6 @@ export function SiteFooter() {
           ))}
         </span>
       </div>
-    </>
+    </footer>
   )
 }
