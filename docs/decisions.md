@@ -12,7 +12,7 @@ The decision log. Claude Code reads this before building and records any new dec
 | D-03 | Session format: set per service (online, at the office, or both). | Decided (Yash/Aum, 30 Oct 2026) | M3 |
 | D-04 | Hosting: managed cloud in IIIC's own accounts (Vercel Pro in Mumbai, Supabase Mumbai), not the office geofencing server. Free hosting was weighed and ruled out on 19 November 2026 (`07`, Hosting). | Decided (Yash/Aum, 19 Nov 2026) | M1 |
 | D-05 | Platform domain: `iiic.works` (the plan's recommendation; `iiic.consulting` if counselling ever moves to the institute). | Open (Yash/Aum to register it) | M0 |
-| D-06 | Stack: Next.js + Payload 3.92.x + Supabase Postgres + R2 + Resend + a WhatsApp provider (AiSensy Basic) + Razorpay, as in `07-stack-and-integrations.md`. | Recommended | M1 |
+| D-06 | Stack: Next.js 16 + Payload 3.94.x (pinned at the start of M1, 19 Nov 2026) + Supabase Postgres + R2 + Resend + a WhatsApp provider (AiSensy Basic) + Razorpay, as in `07-stack-and-integrations.md`. | Recommended | M1 |
 | D-07 | Course delivery: live cohorts, recorded lessons, or both. | Open (Team) | R2 |
 | D-08 | Login codes for accounts: emailed 6-digit codes first; WhatsApp authentication template for phone verification; SMS only if needed, after TRAI DLT registration (about ₹5,900, two to three weeks). | Recommended | R2 |
 | D-09 | PDFs: render the brand's HTML print templates with serverless Chromium; fall back to `@react-pdf/renderer` only if that proves unreliable. | Recommended | M3 |
