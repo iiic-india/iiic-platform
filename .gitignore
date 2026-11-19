@@ -22,3 +22,6 @@ blob-report/
 .claude/settings.local.json
 .DS_Store
 *.log
+
+# local uploads (production files live in R2)
+/media/
