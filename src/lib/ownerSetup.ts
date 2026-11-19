@@ -40,14 +40,22 @@ export type FirstOwnerRequest = {
   /** Payload's `req.payloadAPI`: 'local' for server code, 'REST' for HTTP requests. */
   api: string | undefined
   vercelEnv: string | undefined
+  nodeEnv: string | undefined
   expectedToken: string | undefined
   cookieHeader: string | null | undefined
 }
 
-/** Whether this request may create the first account, which becomes the owner. */
+/**
+ * Whether this request may create the first account, which becomes the owner. Fails
+ * closed: production always needs the setup cookie, whatever the request's origin, and
+ * so does a production server outside Vercel unless the call is the server's own code.
+ */
 export function mayCreateFirstOwner(request: FirstOwnerRequest): boolean {
-  // Server code (migrations, scripts, tests) uses the Local API and is trusted.
-  if (request.api === 'local') return true
-  if (request.vercelEnv !== 'production') return true
-  return tokenMatches(request.expectedToken, readCookie(request.cookieHeader, OWNER_SETUP_COOKIE))
+  const hasSetupCookie = () =>
+    tokenMatches(request.expectedToken, readCookie(request.cookieHeader, OWNER_SETUP_COOKIE))
+  if (request.vercelEnv === 'production') return hasSetupCookie()
+  if (request.vercelEnv === 'preview' || request.vercelEnv === 'development') return true
+  // Not on Vercel: local development, CI, and scripts using the Local API.
+  if (request.api === 'local' || request.nodeEnv !== 'production') return true
+  return hasSetupCookie()
 }

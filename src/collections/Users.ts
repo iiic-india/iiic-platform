@@ -1,8 +1,34 @@
-import { APIError, type CollectionConfig } from 'payload'
+import { APIError, type CollectionBeforeChangeHook, type CollectionConfig } from 'payload'
 
 import { isOwner, isOwnerField, isOwnerOrSelf, isStaff, ROLE_LABELS, ROLES } from '@/access/roles'
 import { env } from '@/lib/env'
 import { mayCreateFirstOwner } from '@/lib/ownerSetup'
+
+/**
+ * The first account ever created is the owner who sets everyone else up. On
+ * production it needs the owner setup link (src/lib/ownerSetup.ts, D-41).
+ */
+export const firstAccountIsOwner: CollectionBeforeChangeHook = async ({ req, operation, data }) => {
+  if (operation !== 'create') return data
+  const { totalDocs } = await req.payload.count({
+    collection: 'users',
+    req,
+    overrideAccess: true,
+  })
+  if (totalDocs > 0) return data
+  const config = env()
+  const allowed = mayCreateFirstOwner({
+    api: req.payloadAPI,
+    vercelEnv: config.VERCEL_ENV,
+    nodeEnv: config.NODE_ENV,
+    expectedToken: config.OWNER_SETUP_TOKEN,
+    cookieHeader: req.headers.get('cookie'),
+  })
+  if (!allowed) {
+    throw new APIError('Open the owner setup link to create the first account.', 403)
+  }
+  return { ...data, roles: ['owner'] }
+}
 
 /**
  * Staff accounts for /admin. Milestone 1 slice 1: identity, roles and safe session
@@ -37,30 +63,7 @@ export const Users: CollectionConfig = {
     unlock: isOwner,
   },
   hooks: {
-    beforeChange: [
-      async ({ req, operation, data }) => {
-        if (operation !== 'create') return data
-        const { totalDocs } = await req.payload.count({
-          collection: 'users',
-          req,
-          overrideAccess: true,
-        })
-        if (totalDocs > 0) return data
-        // The first account ever created is the owner who sets everyone else up. On
-        // production it needs the owner setup link (src/lib/ownerSetup.ts, D-41).
-        const config = env()
-        const allowed = mayCreateFirstOwner({
-          api: req.payloadAPI,
-          vercelEnv: config.VERCEL_ENV,
-          expectedToken: config.OWNER_SETUP_TOKEN,
-          cookieHeader: req.headers.get('cookie'),
-        })
-        if (!allowed) {
-          throw new APIError('Open the owner setup link to create the first account.', 403)
-        }
-        return { ...data, roles: ['owner'] }
-      },
-    ],
+    beforeChange: [firstAccountIsOwner],
   },
   fields: [
     { name: 'name', type: 'text', required: true },

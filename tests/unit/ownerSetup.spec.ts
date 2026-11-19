@@ -33,12 +33,21 @@ describe('readCookie', () => {
 })
 
 describe('mayCreateFirstOwner', () => {
-  const production = { api: 'REST', vercelEnv: 'production', expectedToken: TOKEN }
+  const production = {
+    api: 'REST',
+    vercelEnv: 'production',
+    nodeEnv: 'production',
+    expectedToken: TOKEN,
+  }
 
   it('needs the setup cookie on production', () => {
     expect(mayCreateFirstOwner({ ...production, cookieHeader: cookie(TOKEN) })).toBe(true)
     expect(mayCreateFirstOwner({ ...production, cookieHeader: cookie('guess') })).toBe(false)
     expect(mayCreateFirstOwner({ ...production, cookieHeader: null })).toBe(false)
+  })
+
+  it('needs it on production even for a request marked as server code', () => {
+    expect(mayCreateFirstOwner({ ...production, api: 'local', cookieHeader: null })).toBe(false)
   })
 
   it('stays closed on production when no token is configured', () => {
@@ -47,10 +56,18 @@ describe('mayCreateFirstOwner', () => {
     ).toBe(false)
   })
 
-  it('leaves previews, local development and server code as they are', () => {
-    const open = { expectedToken: undefined, cookieHeader: null }
-    expect(mayCreateFirstOwner({ ...open, api: 'REST', vercelEnv: 'preview' })).toBe(true)
-    expect(mayCreateFirstOwner({ ...open, api: 'REST', vercelEnv: undefined })).toBe(true)
-    expect(mayCreateFirstOwner({ ...open, api: 'local', vercelEnv: 'production' })).toBe(true)
+  it('stays closed on a production server outside Vercel, except for its own code', () => {
+    const elsewhere = { ...production, vercelEnv: undefined, cookieHeader: null }
+    expect(mayCreateFirstOwner(elsewhere)).toBe(false)
+    expect(mayCreateFirstOwner({ ...elsewhere, cookieHeader: cookie(TOKEN) })).toBe(true)
+    expect(mayCreateFirstOwner({ ...elsewhere, api: 'local' })).toBe(true)
+  })
+
+  it('leaves previews and local development as they are', () => {
+    const open = { api: 'REST', expectedToken: undefined, cookieHeader: null }
+    expect(mayCreateFirstOwner({ ...open, vercelEnv: 'preview', nodeEnv: 'production' })).toBe(true)
+    expect(mayCreateFirstOwner({ ...open, vercelEnv: undefined, nodeEnv: 'development' })).toBe(
+      true,
+    )
   })
 })

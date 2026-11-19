@@ -60,6 +60,11 @@ describe('parseEnv', () => {
     )
   })
 
+  it('treats the empty owner setup token from .env.example as unset', () => {
+    expect(parseEnv({ ...valid, OWNER_SETUP_TOKEN: '' }).OWNER_SETUP_TOKEN).toBeUndefined()
+    expect(() => parseEnv({ ...valid, OWNER_SETUP_TOKEN: 'short' })).toThrow(/OWNER_SETUP_TOKEN/)
+  })
+
   it('rejects a site URL that is not a URL', () => {
     expect(() => parseEnv({ ...valid, NEXT_PUBLIC_SITE_URL: 'iiic' })).toThrow(
       /NEXT_PUBLIC_SITE_URL/,

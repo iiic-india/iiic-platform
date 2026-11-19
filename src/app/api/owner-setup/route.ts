@@ -20,7 +20,8 @@ const PRIVATE_HEADERS = {
 /**
  * The owner setup link (D-41). A token that matches OWNER_SETUP_TOKEN sets a
  * ten-minute cookie that only Payload's first-user registration receives, then opens
- * /admin/create-first-user. Anything else gets a plain 404 that reveals nothing.
+ * /admin/create-first-user. Anything else gets the same plain 404, whether the token is
+ * unset or wrong.
  */
 export function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token')
