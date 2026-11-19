@@ -15,7 +15,7 @@ export const TOTP_COPY = {
     button: 'Set up',
     description:
       'You need an authenticator app on your phone, such as Google Authenticator or Microsoft Authenticator. Scan this QR code with it.',
-    enterCode: 'Enter the {digits}-digit code your app shows.',
+    enterCode: 'Enter the code your authenticator app shows.',
     incorrectCode: 'That code did not match. Enter the newest code from your authenticator app.',
     title: 'Set up two-factor sign-in',
   },
