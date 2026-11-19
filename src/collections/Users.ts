@@ -1,6 +1,8 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionConfig } from 'payload'
 
 import { isOwner, isOwnerField, isOwnerOrSelf, isStaff, ROLE_LABELS, ROLES } from '@/access/roles'
+import { env } from '@/lib/env'
+import { mayCreateFirstOwner } from '@/lib/ownerSetup'
 
 /**
  * Staff accounts for /admin. Milestone 1 slice 1: identity, roles and safe session
@@ -17,7 +19,8 @@ export const Users: CollectionConfig = {
   },
   auth: {
     useSessions: true,
-    tokenExpiration: 60 * 60 * 8,
+    // 12-hour sessions (docs/08 §9).
+    tokenExpiration: 60 * 60 * 12,
     maxLoginAttempts: 5,
     lockTime: 15 * 60 * 1000,
     cookies: {
@@ -30,20 +33,32 @@ export const Users: CollectionConfig = {
     create: isOwner,
     update: isOwnerOrSelf,
     delete: isOwner,
+    // Only an owner unlocks a locked account (Payload's default lets any staff user).
+    unlock: isOwner,
   },
   hooks: {
     beforeChange: [
       async ({ req, operation, data }) => {
-        // The first account ever created is the owner who sets everyone else up.
-        if (operation === 'create') {
-          const { totalDocs } = await req.payload.count({
-            collection: 'users',
-            req,
-            overrideAccess: true,
-          })
-          if (totalDocs === 0) return { ...data, roles: ['owner'] }
+        if (operation !== 'create') return data
+        const { totalDocs } = await req.payload.count({
+          collection: 'users',
+          req,
+          overrideAccess: true,
+        })
+        if (totalDocs > 0) return data
+        // The first account ever created is the owner who sets everyone else up. On
+        // production it needs the owner setup link (src/lib/ownerSetup.ts, D-41).
+        const config = env()
+        const allowed = mayCreateFirstOwner({
+          api: req.payloadAPI,
+          vercelEnv: config.VERCEL_ENV,
+          expectedToken: config.OWNER_SETUP_TOKEN,
+          cookieHeader: req.headers.get('cookie'),
+        })
+        if (!allowed) {
+          throw new APIError('Open the owner setup link to create the first account.', 403)
         }
-        return data
+        return { ...data, roles: ['owner'] }
       },
     ],
   },
@@ -57,7 +72,7 @@ export const Users: CollectionConfig = {
       saveToJWT: true,
       options: ROLES.map((value) => ({ value, label: ROLE_LABELS[value] })),
       access: { update: isOwnerField },
-      admin: { description: 'What this person can see and do (docs/05-admin-panel.md).' },
+      admin: { description: 'What this person can see and do.' },
     },
   ],
 }

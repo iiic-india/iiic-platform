@@ -17,6 +17,11 @@ const schema = z.object({
     .string()
     .startsWith('postgres', 'DATABASE_URL must be a Postgres connection string'),
   DATABASE_URL_DIRECT: z.string().optional(),
+  // Production only, while the first owner is created (D-41); deleted afterwards.
+  OWNER_SETUP_TOKEN: z
+    .string()
+    .min(32, 'OWNER_SETUP_TOKEN must be at least 32 characters')
+    .optional(),
   PLATFORM_HOSTS: z.string().default('localhost:3000'),
   INSTITUTE_HOSTS: z.string().default(''),
   // Set by Vercel on every deployment (hostnames, without the scheme).

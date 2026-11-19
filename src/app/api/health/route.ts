@@ -4,6 +4,8 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+export const maxDuration = 10
 
 /**
  * Liveness and database reachability for UptimeRobot (docs/12 §7). Says nothing about

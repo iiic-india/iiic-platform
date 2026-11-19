@@ -72,7 +72,7 @@ export function SiteFooter() {
           © {year} Indian Institute of Image Catalysts ·{' '}
           <Todo
             what="statement that IIIC is privately owned and not affiliated with any Government body"
-            id="D-20"
+            id="I-30"
           />
         </span>
         <span>

@@ -125,7 +125,7 @@ export interface User {
   id: number;
   name: string;
   /**
-   * What this person can see and do (docs/05-admin-panel.md).
+   * What this person can see and do.
    */
   roles: ('owner' | 'operator' | 'practitioner' | 'editor' | 'finance')[];
   updatedAt: string;

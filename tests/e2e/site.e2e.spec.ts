@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test'
 test.describe('Public shell', () => {
   test('home renders the shell with placeholders, not invented copy', async ({ page }) => {
     await page.goto('/')
-    await expect(page).toHaveTitle('Indian Institute of Image Catalysts')
+    await expect(page).toHaveTitle('Indian Institute of Image Catalysts · Subjective Self')
     await expect(page.locator('html')).toHaveAttribute('lang', 'en-IN')
     await expect(page.getByRole('link', { name: /IIIC/ }).first()).toBeVisible()
     await expect(page.locator('h1 .iiic-todo')).toHaveText(/^\[\[TODO: .+, I-41\]\]$/)
@@ -29,12 +29,34 @@ test.describe('Public shell', () => {
     expect(blocking, JSON.stringify(blocking.map((v) => v.id))).toEqual([])
   })
 
-  test('no horizontal scroll at the page width', async ({ page }) => {
+  test('no horizontal scroll from 320 to 1600 px', async ({ page }) => {
+    for (const width of [320, 768, 1600]) {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto('/')
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      )
+      expect(overflow, `${width} px`).toBeLessThanOrEqual(0)
+    }
+  })
+
+  test('an unknown address gets the site’s own 404 inside the shell', async ({ page }) => {
+    const response = await page.goto('/no-such-page')
+    expect(response?.status()).toBe(404)
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en-IN')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
+    await expect(page.locator('footer')).toContainText('+91 96240 46464')
+  })
+
+  test('Escape closes the menu and returns focus to the button', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'The menu button only shows on narrow screens')
     await page.goto('/')
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - window.innerWidth,
-    )
-    expect(overflow).toBeLessThanOrEqual(0)
+    const toggle = page.getByRole('button', { name: 'Menu' })
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await page.keyboard.press('Escape')
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    await expect(toggle).toBeFocused()
   })
 
   test('the menu button opens the navigation on a phone', async ({ page, isMobile }) => {

@@ -15,7 +15,7 @@ pnpm migrate                      # apply the migrations in src/migrations
 pnpm dev                          # http://localhost:3000 and http://localhost:3000/admin
 ```
 
-The first account created at `/admin` becomes the owner.
+The first account created at `/admin` becomes the owner. On production that screen works only after the owner setup link (D-41): add `OWNER_SETUP_TOKEN` (32+ random characters) to Vercel for Production, redeploy, open `/api/owner-setup?token=<value>`, create the account, then delete the variable.
 
 ## Commands
 

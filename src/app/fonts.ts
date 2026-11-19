@@ -21,4 +21,8 @@ export const fraunces = localFont({
   variable: '--font-fraunces',
   display: 'swap',
   adjustFontFallback: 'Times New Roman',
+  // Preloading both Fraunces files (150 KB) would break the first-view font budget
+  // (docs/12 §2), and the italic cannot be left out alone without faked italics; the
+  // size-adjusted fallback keeps the swap from shifting the layout.
+  preload: false,
 })

@@ -3,17 +3,16 @@ import '@/brand/dist/iiic.min.css'
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
 
+import { env } from '@/lib/env'
+
 import { fraunces, manrope } from '../fonts'
 
-// The configured origin, else this deployment's own URL (previews), else local.
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  // The configured origin, else production's alias, else this deployment's URL.
+  metadataBase: new URL(env().siteUrl),
   title: {
-    default: 'Indian Institute of Image Catalysts',
+    // docs/12 §3.
+    default: 'Indian Institute of Image Catalysts · Subjective Self',
     template: '%s · IIIC',
   },
   // IIIC's own words (content/sources/iiic-philosophy-2026-11-19.md).
