@@ -1,0 +1,62 @@
+'use client'
+
+import {
+  Button,
+  ConfirmationModal,
+  toast,
+  useAuth,
+  useConfig,
+  useDocumentInfo,
+  useModal,
+} from '@payloadcms/ui'
+
+const MODAL = 'reset-two-factor'
+
+/**
+ * On a staff record, for owners viewing someone else: reset that person's two-factor
+ * (src/lib/auth/resetTwoFactor.ts). Built from Payload's own admin components.
+ */
+export function ResetTwoFactor() {
+  const { id } = useDocumentInfo()
+  const { user } = useAuth<{ id: number | string; roles?: string[] }>()
+  const {
+    config: {
+      routes: { api },
+      serverURL,
+    },
+  } = useConfig()
+  const { openModal } = useModal()
+
+  if (id === undefined || !user?.roles?.includes('owner') || String(user.id) === String(id)) {
+    return null
+  }
+
+  async function reset() {
+    const response = await fetch(`${serverURL}${api}/users/${id}/reset-two-factor`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+    const body: { message?: string } = await response.json().catch(() => ({}))
+    if (response.ok) {
+      toast.success('Two-factor reset. They set up a new authenticator when they next sign in.')
+    } else {
+      toast.error(body.message ?? 'Two-factor was not reset. Try again.')
+    }
+  }
+
+  return (
+    <div className="field-type">
+      <Button buttonStyle="secondary" onClick={() => openModal(MODAL)} size="medium">
+        Reset two-factor
+      </Button>
+      <ConfirmationModal
+        modalSlug={MODAL}
+        heading="Reset two-factor?"
+        body="Their open sessions end, and they set up a new authenticator when they next sign in."
+        confirmLabel="Reset two-factor"
+        cancelLabel="Cancel"
+        onConfirm={reset}
+      />
+    </div>
+  )
+}

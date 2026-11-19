@@ -10,6 +10,8 @@ let payload: Payload
 const email = (label: string) => `int.access.${label}@example.invalid`
 const PASSWORD = 'test-only-password-access'
 const staff = {} as Record<Role, User>
+/** A staff user as Payload sees them after they entered their two-factor code. */
+const verified = (user: User) => ({ ...user, _strategy: 'totp' }) as User
 
 async function removeTestAccounts() {
   await payload.delete({ collection: 'users', where: { email: { like: 'int.access.' } } })
@@ -37,14 +39,14 @@ describe('staff access by role', () => {
     const all = await payload.find({
       collection: 'users',
       where: { email: { like: 'int.access.' } },
-      user: staff.owner,
+      user: verified(staff.owner),
       overrideAccess: false,
     })
     expect(all.totalDocs).toBe(ROLES.length)
     for (const role of ROLES.filter((role) => role !== 'owner')) {
       const visible = await payload.find({
         collection: 'users',
-        user: staff[role],
+        user: verified(staff[role]),
         overrideAccess: false,
       })
       expect(
@@ -59,7 +61,7 @@ describe('staff access by role', () => {
       payload.delete({
         collection: 'users',
         id: staff.finance.id,
-        user: staff.owner,
+        user: verified(staff.owner),
         overrideAccess: false,
       }),
     ).rejects.toThrow()
@@ -71,7 +73,7 @@ describe('staff access by role', () => {
         collection: 'media',
         data: { alt: `int.access.${role}` },
         filePath: 'src/brand/logo/png/favicon-32.png',
-        user: staff[role],
+        user: verified(staff[role]),
         overrideAccess: false,
       })
       if (['owner', 'operator', 'editor'].includes(role))
@@ -94,7 +96,7 @@ describe('deactivation', () => {
       collection: 'users',
       id: staff.practitioner.id,
       data: { active: false },
-      user: staff.owner,
+      user: verified(staff.owner),
       overrideAccess: false,
     })
 
@@ -113,7 +115,7 @@ describe('deactivation', () => {
         collection: 'users',
         id: staff.finance.id,
         data: { active: false },
-        user: staff.editor,
+        user: verified(staff.editor),
         overrideAccess: false,
       })
       .catch(() => undefined)
@@ -135,7 +137,7 @@ describe('deactivation', () => {
           collection: 'users',
           id: staff.owner.id,
           data: { active: false },
-          user: staff.owner,
+          user: verified(staff.owner),
           overrideAccess: false,
         }),
       ).rejects.toMatchObject({ status: 400 })
@@ -146,14 +148,14 @@ describe('deactivation', () => {
       collection: 'users',
       id: staff.operator.id,
       data: { roles: ['owner'] },
-      user: staff.owner,
+      user: verified(staff.owner),
       overrideAccess: false,
     })
     const steppedDown = await payload.update({
       collection: 'users',
       id: staff.owner.id,
       data: { roles: ['editor'] },
-      user: staff.owner,
+      user: verified(staff.owner),
       overrideAccess: false,
     })
     expect(steppedDown.roles).toEqual(['editor'])

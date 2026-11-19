@@ -8,7 +8,7 @@ Sensitivity: **S3** = most sensitive (counselling notes, Map answers), **S2** = 
 
 | Entity | Key fields | Sensitivity · access | Retention |
 | --- | --- | --- | --- |
-| `staff` | name, email, role (owner · operator · practitioner · editor · finance), 2FA secret, active | S2 · owners manage | While employed, then deactivated (never deleted, for the audit trail) |
+| `staff` | name, email, role (owner · operator · practitioner · editor · finance), 2FA secret (encrypted at rest), active | S2 · owners manage | While employed, then deactivated (never deleted, for the audit trail) |
 | `people` | full name, mobile (E.164, unique when verified), email (unique when verified), preferred channel, language, age band, city, source and UTM, tags, `organisation_id?` | S2 · operator, owner; practitioners see their own clients | Until erasure request, or 3 years after last activity (setting; to confirm with a lawyer) |
 | `accounts` (R2) | `person_id`, verified identifiers, last sign-in, trusted devices | S2 · the person; owners | With the person |
 | `organisations` | name, website, sector, team-size band, city, GSTIN (for invoices), billing address | S1 · operator, owner, finance | 7 years after last invoice |

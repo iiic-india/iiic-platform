@@ -1,0 +1,43 @@
+import type { PayloadHandler } from 'payload'
+
+import { hasRole } from '@/access/roles'
+
+const json = (body: Record<string, unknown>, status = 200) =>
+  Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
+
+/**
+ * POST /api/users/:id/reset-two-factor. An owner who has entered their own code clears another
+ * staff member's authenticator and signs them out everywhere; at their next sign-in they set
+ * up a new one (docs/05: owners manage staff). Recovery codes, in the next slice, let people
+ * recover on their own.
+ */
+export const resetTwoFactor: PayloadHandler = async (req) => {
+  const actor = req.user
+  // Payload marks the strategy that authenticated the request; 'totp' means a code was entered.
+  const strategy = (actor as { _strategy?: string } | null)?._strategy
+  if (!actor || actor.collection !== 'users' || strategy !== 'totp') {
+    return json({ message: 'Sign in with your code to do this.' }, 401)
+  }
+  if (!hasRole(actor, 'owner')) {
+    return json({ message: 'Only an owner can reset two-factor.' }, 403)
+  }
+  const id = req.routeParams?.id
+  if (typeof id !== 'string' && typeof id !== 'number') {
+    return json({ message: 'That staff account was not found.' }, 404)
+  }
+  if (String(id) === String(actor.id)) {
+    return json({ message: 'Ask another owner to reset your two-factor.' }, 400)
+  }
+  try {
+    await req.payload.update({
+      collection: 'users',
+      id,
+      data: { totpSecret: null, sessions: [] },
+      overrideAccess: true,
+      req,
+    })
+  } catch {
+    return json({ message: 'That staff account was not found.' }, 404)
+  }
+  return json({ ok: true })
+}

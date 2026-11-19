@@ -6,6 +6,8 @@ import config from '@/payload.config'
 let payload: Payload
 
 const fake = (n: number) => `int.test.${n}@example.invalid`
+/** A staff user as Payload sees them after they entered their two-factor code. */
+const verified = <T extends object>(user: T) => ({ ...user, _strategy: 'totp' })
 
 describe('users', () => {
   beforeAll(async () => {
@@ -45,7 +47,7 @@ describe('users', () => {
       collection: 'users',
       id: editor.id,
       data: { roles: ['owner'] },
-      user: editor,
+      user: verified(editor),
       overrideAccess: false,
     })
     expect(updated.roles).toEqual(['editor'])
@@ -65,7 +67,7 @@ describe('users', () => {
           password: 'test-only-password-3',
           roles: ['owner'],
         },
-        user: editor.docs[0],
+        user: editor.docs[0] && verified(editor.docs[0]),
         overrideAccess: false,
       }),
     ).rejects.toThrow()

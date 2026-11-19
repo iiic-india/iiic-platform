@@ -4,11 +4,15 @@ import { fileURLToPath } from 'url'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig, type EmailAdapter } from 'payload'
+import { payloadTotp } from 'payload-totp'
 import sharp from 'sharp'
 
 import { Media } from './collections/Media'
 import { Users } from './collections/Users'
+import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
+import { totpCopy } from './plugins/totpCopy'
+import { totpSecretAtRest } from './plugins/totpSecretAtRest'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -66,6 +70,14 @@ export default buildConfig({
   // The admin uses REST and server functions; GraphQL stays off to keep the surface small.
   graphQL: { disable: true },
   telemetry: false,
+  plugins: [
+    // Staff two-factor (docs/08 §9). It wraps the access of every collection before it, so it
+    // stays the last plugin that adds collections; the two transforms after it only add hooks
+    // and replace its English strings.
+    payloadTotp(TOTP_OPTIONS),
+    totpSecretAtRest({ collection: 'users' }),
+    totpCopy(),
+  ],
   sharp,
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
 })

@@ -18,6 +18,9 @@ export const Media: CollectionConfig = {
     update: allow(POLICY.media.update),
     delete: allow(POLICY.media.delete),
   },
+  // Visitors read published media without signing in, so the staff two-factor wrapper
+  // (payload-totp) stays off this one operation; every write still needs a verified code.
+  custom: { totp: { disableAccessWrapper: { read: true } } },
   upload: {
     mimeTypes: ['image/avif', 'image/webp', 'image/jpeg', 'image/png'],
     formatOptions: { format: 'webp', options: { quality: 82 } },
