@@ -49,8 +49,17 @@ export function headerRules(vercelEnv: string | undefined): HeaderRule[] {
     vercelEnv === 'production'
       ? PRIVATE_ROUTES.map((source) => ({ source, headers: [NOINDEX] }))
       : []
-  return [everyRoute, ...privateRoutes]
+  return [everyRoute, ...privateRoutes, ...ROUTE_EXCEPTIONS]
 }
+
+/**
+ * Stricter headers for single routes. They come last, because a later rule replaces an earlier
+ * one's header of the same name, and a route handler cannot replace a header these rules set.
+ */
+export const ROUTE_EXCEPTIONS: HeaderRule[] = [
+  // The owner setup link carries the token in its query (D-41): send no referrer at all.
+  { source: '/api/owner-setup', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] },
+]
 
 /**
  * Payload adds Accept-CH, Vary and Critical-CH for Sec-CH-Prefers-Color-Scheme to every route

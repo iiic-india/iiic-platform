@@ -63,4 +63,27 @@ describe('proxy', () => {
     const response = proxy(new NextRequest('https://iiic.example/verify'))
     expect(response.headers.get('x-middleware-rewrite')).toBeNull()
   })
+
+  it("serves the site's 404 instead of Next.js's prerendered error pages", () => {
+    for (const path of ['/_not-found', '/_global-error']) {
+      const response = proxy(new NextRequest(`https://iiic.example${path}`))
+      expect(response.headers.get('x-middleware-rewrite')).toBe(
+        'https://iiic.example/page-not-found',
+      )
+    }
+  })
+})
+
+describe('proxy matcher', () => {
+  it('covers every path but the API and Next.js build assets, whatever the headers', async () => {
+    const { config } = await import('@/proxy')
+    expect(config.matcher).toEqual(['/((?!api/|_next/static/|_next/image).*)'])
+    const pattern = new RegExp(`^${config.matcher[0]}$`)
+    for (const path of ['/', '/favicon.ico', '/robots.txt', '/x.png', '/admin', '/admin/x.svg']) {
+      expect(pattern.test(path), path).toBe(true)
+    }
+    for (const path of ['/api/health', '/_next/static/chunks/a.js', '/_next/image']) {
+      expect(pattern.test(path), path).toBe(false)
+    }
+  })
 })
