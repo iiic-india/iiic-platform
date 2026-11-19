@@ -20,7 +20,7 @@ Every route the codebase serves, on both domains, with its register, purpose, da
 | `/proof/[slug]` | R1 | consultancy | A case study with client-approved numbers | Book a proposal call | case studies |
 | `/journal` · `/journal/[slug]` · `/journal/topic/[topic]` | R1 | education | Articles applying the framework to work, family and self | Subscribe | posts |
 | `/about` | R1 | default | IIIC, founder, team, partnerships, contact | Contact | pages, practitioners |
-| `/institute` (+ `/research`, `/programmes`, `/partnerships`, `/verify`) | R1 (verify R2) | education | Academic pages until `iiic.edu.in` is live | Partnership enquiry; verify a certificate | pages, certificates |
+| `/institute` (+ `/research`, `/programmes`, `/partnerships`, `/verify`, `/verify/[token]`) | R1 (verify included, D-39) | education | Academic pages until `iiic.edu.in` is live; `/verify` takes a typed certificate ID, `/verify/[token]` is what the QR code opens (`01` §4) | Partnership enquiry; verify a certificate | pages, certificates |
 | `/book/[type]` | R1 | from type | The booking flow (`03` F3; the payment step appears only once prices are published, D-24); `type` = `session` · `call` · `info` · (R2) `seat` | Confirm (and pay, once prices are published) | services, availability, bookings, payments |
 | `/book/confirmed/[ref]` | R1 | from type | Confirmation, add to calendar, (R2) one opt-in bridge | Add to calendar | bookings |
 | `/b/[token]` | R1 | from type | Manage a booking by secure link: details, reschedule, cancel within policy | Reschedule | bookings |

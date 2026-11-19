@@ -62,7 +62,7 @@ Sensitivity: **S3** = most sensitive (counselling notes, Map answers), **S2** = 
 | `enrolments` | `cohort_id`, `person_id`, status (pending payment · active · completed · withdrawn), `payment_id` |
 | `lessons` | `course_id`, module, order, title, body, video reference, resources |
 | `progress` | `enrolment_id`, `lesson_id` or `event_id`, completed_at, attendance |
-| `certificates` | `enrolment_id`, certificate number, issued_at, PDF, verify token, status (valid · revoked), revoke reason |
+| `certificates` | `person_id`; the programme (an enrolment from R2, or the programme's name and dates for anything else, D-39); certificate ID (`IIIC-C-<year>-<sequence>` with a check character, unique); verify token (128 random bits, unique, never shown in the admin list); name as printed; completion date; issued_at, issued_by; PDF (private bucket); status (valid · revoked); revoked_at; revoke reason (staff only); replaces (for a reissue) |
 
 ## Proof and content
 

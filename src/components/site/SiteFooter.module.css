@@ -1,0 +1,26 @@
+/* Column titles are h2, so headings never skip a level after a page's h1. They look like
+   the kit's footer h4 (src/brand/css/04-patterns.css): the same rule, with the h2 base
+   styles set back to what an h4 inherits. */
+.title {
+  margin: 0 0 12px;
+  font-family: inherit;
+  font-size: var(--iiic-text-xs);
+  font-weight: var(--iiic-weight-black);
+  font-variation-settings: normal;
+  letter-spacing: var(--iiic-tracking-wide);
+  line-height: inherit;
+  text-transform: uppercase;
+  color: var(--iiic-text-muted);
+}
+
+/* <address> is italic by default; the contact lines stay upright as in the kit. */
+.contact {
+  font-style: normal;
+}
+
+/* The logo links home. The kit gives footer links block display and 5px of padding;
+   the logo keeps the box the kit draws for it and is only as wide as itself. */
+.footer a.home {
+  padding: 0;
+  width: fit-content;
+}

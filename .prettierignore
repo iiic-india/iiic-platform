@@ -1,0 +1,13 @@
+# Hand-written documents and the read-only brand kit keep their own formatting.
+docs/
+src/brand/
+CLAUDE.md
+.claude/
+# Generated
+src/payload-types.ts
+src/migrations/
+src/app/(payload)/
+pnpm-lock.yaml
+.next/
+playwright-report/
+test-results/

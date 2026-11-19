@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["before 9am on monday"],
+  "timezone": "Asia/Kolkata",
+  "rangeStrategy": "pin",
+  "packageRules": [
+    {
+      "description": "Payload and Next.js are upgraded together, by hand, on a branch with the full test suite (docs/07).",
+      "matchPackageNames": [
+        "payload",
+        "@payloadcms/**",
+        "next",
+        "eslint-config-next",
+        "react",
+        "react-dom"
+      ],
+      "groupName": "Payload and Next.js",
+      "automerge": false,
+      "dependencyDashboardApproval": true
+    }
+  ]
+}

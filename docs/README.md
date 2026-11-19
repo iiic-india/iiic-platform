@@ -22,7 +22,7 @@ Everything needed to build the IIIC platform with Claude Code: what the product 
 | 03 | `03-user-flows.md` | Flows F1–F12 step by step, with edge cases | M2–M5 |
 | 04 | `04-data-model.md` | Entities, fields, sensitivity classes S0–S3, retention | M1, M3 |
 | 05 | `05-admin-panel.md` | Roles, navigation, every admin screen, key workflows, the quality bar | M1, M5 |
-| 06 | `06-automations.md` | Engine rules and the automation catalogue (B, P, N, O; R2: MA, T, C, S, X, A) | M6 |
+| 06 | `06-automations.md` | Engine rules and the automation catalogue (R1: B, P, N, O, V and C5; R2: MA, T, C, S, X, A) | M6 |
 | 07 | `07-stack-and-integrations.md` | The stack with alternatives and reasons, known gaps, integrations, environments, running cost | M0, M1 |
 | 08 | `08-security-privacy-compliance.md` | The legal frame and its dates, privacy, consumer protection, dark patterns, counselling and certificate wording, processors, security, lawyer and CA review lists | M1, M3, M7 |
 | 09 | `09-content-and-inputs.md` | Known facts with sources, the inputs checklist (I-01 to I-42), page content inventory | M2 |
@@ -32,7 +32,7 @@ Everything needed to build the IIIC platform with Claude Code: what the product 
 | 13 | `13-email-and-messaging.md` | Domains and DNS, addresses and owners, what is automated and what is human, templates, deliverability, WhatsApp, internal alerts, offboarding | M0, M6, M7 |
 | 14 | `14-technical-direction.md` | The CTO's brief: direction, registers, what to monitor, what to grow, the next 90 days, risks | The CTO, monthly |
 | — | `content/` | `copy-architecture.md` (every page, section by section) and `sources/` (IIIC's texts, brochures, feedback, the copy system, the old site, verbatim) | M2 |
-| — | `decisions.md` | D-A to D-C and D-01 to D-38 with status | Every milestone |
+| — | `decisions.md` | D-A to D-C and D-01 to D-40 with status | Every milestone |
 | — | `research/` | The four research reports behind `07` and `08` (messaging, architecture, compliance, payments), verbatim, with sources, October 2026 | When a choice is questioned |
 | — | `prototype-prompt.md` | Optional: a clickable HTML prototype to test the flows with real people before M3 | Before M1 (optional) |
 
@@ -55,6 +55,6 @@ Everything needed to build the IIIC platform with Claude Code: what the product 
 
 - **Ready:** the brand kit (1.0.3), the product plan, the specification (`01`–`06`), the stack and its costs (`07`), the compliance frame (`08`), the build plan (`10`), the experience concept (`11`), the engineering and messaging standards (`12`, `13`), the CTO's brief (`14`), the copy architecture with every source IIIC has supplied (`content/`).
 - **Decided on 30 October 2026:** D-02 (free times from each counsellor's calendar, or a request), D-03 (format set per service), D-21 (no prices shown until IIIC publishes them; IIIC is GST-registered). **Decided on 4 November 2026:** D-26 (Ankvishwa named in the founder's biography only), D-29 (the 404: concept A), D-32 (the writing standard), D-33 (Instagram, LinkedIn, Facebook). **Decided on 5 November 2026:** D-36 (the signature line is आत्मानं विद्धि); **13 November 2026:** D-37 (reviews of Gaurang Mistry's programmes shown through the scroll, with name, designation and place, under consent); owners: Yash and Aum decide; the team owns everything that comes from the founder, the lawyer or the CA.
-- **Open decisions:** D-05 (register the domain), D-07 (course delivery, R2), D-11 (counselling notes, lawyer), D-15 (who holds each admin role), D-16 (refund and reschedule rules), D-19 (counselling direction line). **Recommended and waiting for the founder:** D-25, D-27, D-28, D-30, D-31, D-34, D-35, D-38.
+- **Open decisions:** D-05 (register the domain), D-07 (course delivery, R2), D-11 (counselling notes, lawyer), D-15 (who holds each admin role), D-16 (refund and reschedule rules), D-19 (counselling direction line). **Recommended and waiting for the founder:** D-25, D-27, D-28, D-30, D-31, D-34, D-35, D-38, D-39.
 - **Inputs:** `09-content-and-inputs.md` lists who supplies what and what the product shows until then. Any placeholder left on a public page blocks a release (`10`, release checks); the inputs nothing can stand in for are I-01 (domain), I-04 (gateway account), I-07 (refund rules), I-21 (grievance officer), I-22 (lawyer review), I-26 (legal name) and I-27 (CERT-In contact). New since 4 November: I-32 to I-41 (the years, the PIN, socials, the Founder Consultation, consents for existing feedback, the organisations list, illustration rights, the existing systems, copy approvals); I-35 (the Sanskrit spelling) is settled, D-36. New on 13 November: I-42 (the reviews, with their consents).
 - **Reviews that gate launch:** the lawyer and CA lists in `08` §10. Start them in M0.

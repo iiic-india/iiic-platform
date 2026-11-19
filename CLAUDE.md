@@ -12,7 +12,7 @@ Read `docs/README.md` for the reading order. The product source of truth is `doc
 4. **Consent before storage.** Record consent (purpose, notice version, time, evidence) before storing Map answers, profile answers or marketing preferences. Promotional messages need the matching consent and stop when it is withdrawn.
 5. **Payments are confirmed only by verified gateway webhooks** (or server-side verification), processed idempotently by event id. Money is integer paise. Tax and totals are computed on the server.
 6. **Every custom admin view and API route checks the user and role first.** Payload custom views are public by default. Staff accounts require TOTP two-factor. Writes to personal data and reads of S3 data go to the append-only audit log.
-7. **Pinned versions.** `payload` and every `@payloadcms/*` package on 3.92.x (never the v4 beta). Upgrade Next.js and Payload together on a branch with the full test suite.
+7. **Pinned versions.** `payload` and every `@payloadcms/*` package on 3.94.x, pinned exactly (set at the start of M1, 19 November 2026; never the v4 beta). Next.js 16.4.x, React 19.2.x, Node 24. Upgrade Next.js and Payload together on a branch with the full test suite.
 8. **Times:** store UTC, display Asia/Kolkata. **Phones:** E.164 (`+91…`).
 9. **No dark patterns, no clinical claims.** No pre-ticked or bundled consent, no false urgency, totals shown before payment, decline buttons read "No, thanks" at equal weight. Never describe counselling with "therapy", "therapist", "psychologist", "clinical", "diagnosis" or "treatment"; counselling surfaces carry the scope statement and crisis numbers. Never call the certificate a degree or diploma or imply recognition. Rules: `docs/08-security-privacy-compliance.md`.
 10. **The standards are part of done.** The budgets, headers, cookie inventory, search system and accessibility rules in `docs/12-engineering-standards.md`, the experience devices in `docs/11-experience-concept.md` (and their absence on counselling pages), and the messaging rules in `docs/13-email-and-messaging.md` apply to every pull request.
@@ -20,19 +20,22 @@ Read `docs/README.md` for the reading order. The product source of truth is `doc
 
 ## Stack
 
-Next.js (App Router, TypeScript strict) · Payload CMS 3.92.x inside the app (admin, collections, access control, hooks, jobs) · Postgres on Supabase (Mumbai) via `@payloadcms/db-postgres`, migrations only in production · Cloudflare R2 via `@payloadcms/storage-s3` (public media bucket, private documents bucket) · Vercel Pro with functions in `bom1` · Razorpay · Zoho Books (invoices, India data centre) · Resend (React Email) · WhatsApp through the provider's API · Google Workspace and the Google Calendar API for two-way calendar sync and Meet links, `.ics` invites for clients (D-22, D-23) · Better Auth for customer one-time codes (Release 2) · serverless Chromium for PDFs from `src/brand/templates/print/` · Cloudflare Turnstile, Web Analytics · Sentry · Vitest and Playwright. Details and reasons: `docs/07-stack-and-integrations.md`.
+Next.js (App Router, TypeScript strict) · Payload CMS 3.94.x inside the app (admin, collections, access control, hooks, jobs) · Postgres on Supabase (Mumbai) via `@payloadcms/db-postgres`, migrations in every environment (schema push is off) · Cloudflare R2 via `@payloadcms/storage-s3` (public media bucket, private documents bucket) · Vercel Pro with functions in `bom1` · Razorpay · Zoho Books (invoices, India data centre) · Resend (React Email) · WhatsApp through the provider's API · Google Workspace and the Google Calendar API for two-way calendar sync and Meet links, `.ics` invites for clients (D-22, D-23) · Better Auth for customer one-time codes (Release 2) · serverless Chromium for PDFs from `src/brand/templates/print/` · Cloudflare Turnstile, Web Analytics · Sentry · Vitest and Playwright. Details and reasons: `docs/07-stack-and-integrations.md`.
 
 ## Repository layout (created in M1)
 
 ```
 src/
-  app/(platform)/…          public routes for the platform domain
+  app/(platform)/…          public routes for the platform domain (route groups per register)
   app/(institute)/…         institute routes (Release 3; host-based)
   app/(payload)/admin/…     Payload admin
-  app/api/…                 webhooks, cron runner, internal endpoints
+  app/api/…                 webhooks, cron runner, health, internal endpoints
+  access/                   role helpers shared by collections and views
   brand/                    brand kit 1.0.3 — read-only
   collections/              Payload collections (one file each, with access rules)
-  components/               React components built on the kit's classes
+  migrations/               Payload migrations (generated, committed, never edited by hand)
+  components/               React components built on the kit's classes (site/ holds the page shell)
+  lib/env.ts                server environment, validated with Zod
   lib/booking/              slot engine, holds, policies (pure, unit-tested)
   lib/payments/             Razorpay client, webhook handlers
   lib/messaging/            email and WhatsApp senders, templates
@@ -52,7 +55,14 @@ tests/                      unit, integration, e2e
 
 ## Commands
 
-Fill these in during M1 and keep them current: install, dev, build, typecheck, lint, unit tests, e2e tests, generate Payload types, create and run migrations, seed, run jobs locally.
+Node 24 (`.nvmrc`), pnpm 10. Local Postgres: `docker compose up -d`, then `cp .env.example .env` and set `PAYLOAD_SECRET`.
+
+- Install: `pnpm install` · develop: `pnpm dev` · build: `pnpm build` (Vercel runs `pnpm vercel-build`: migrate, then build)
+- Checks: `pnpm typecheck` · `pnpm lint` · `pnpm format:check` (`pnpm format` fixes)
+- Tests: `pnpm test:unit` · `pnpm test:int` (needs Postgres) · `pnpm test:e2e` (desktop and phone, with axe)
+- Payload: `pnpm generate:types` and `pnpm generate:importmap` after config changes
+- Migrations: `pnpm migrate:create <name>` after every schema change, `pnpm migrate`, `pnpm migrate:status`; never `push`
+- Seed and the local job runner: added later in M1 and M6
 
 ## Conventions
 
