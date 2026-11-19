@@ -31,7 +31,7 @@ Calendar          (schedule · availability)
 Bookings
 People            (clients · organisations)
 Pipeline          (consultancy leads · partnerships · proposals)
-Learning   R2     (courses · cohorts · enrolments · certificates)
+Learning   R2     (courses · cohorts · enrolments; certificates from R1, D-39)
 Map        R2     (definitions · results summary)
 Proof             (feedback · testimonials · case studies · counters)
 Content           (pages · journal · FAQs · media · practitioners · placeholders · broken links · search)
@@ -81,7 +81,7 @@ A board for consultancy leads (New → Contacted → Team Map scheduled → Team
 
 ### Learning (R2)
 
-Courses (structure, lessons, completion rule), cohorts (dates, capacity, price, sessions), enrolments (status, payment, progress, attendance). Certificates: issue singly or in bulk to everyone who met the completion rule, preview before issuing, revoke with a reason, reissue; the verify page reflects the change at once.
+Courses (structure, lessons, completion rule), cohorts (dates, capacity, price, sessions), enrolments (status, payment, progress, attendance). Certificates (from R1, D-39): issue singly or in bulk for a programme (from R2, to everyone who met the course's completion rule), preview before issuing, revoke with a reason, reissue; the verify page reflects the change at once.
 
 ### Map (R2)
 
@@ -126,7 +126,7 @@ Legal information (proprietor's legal name, trade name, address, GSTIN or regist
 | Send a proposal | Lead → Create proposal → phases and fees → preview PDF → send | Version saved, follow-up task in three working days |
 | Approve a story | Proof → story → check booking and consent → approve (owner) | Published with "Verified client", the programme and month; client told; withdrawal link active |
 | Publish an earlier review | Proof → reviews → import or add → screen → send consent request → on the person's yes, approve (owner) → pin to slots | Consent request and one reminder (V1); the reply stored as evidence; the pages that show it revalidated; withdrawal unpublishes at once (V2) |
-| Issue certificates (R2) | Cohort → completion check → preview → issue | PDFs generated, verify pages live, learners emailed |
+| Issue certificates (R1, D-39) | Programme or cohort → recipients (R2: the completion check) → preview → issue | PDFs with QR codes generated, verify pages live, recipients emailed (C5) |
 | Data request | Privacy → request → verify → prepare → owner confirms | Deadline reminders; the person notified; audit entries |
 
 ## Quality bar

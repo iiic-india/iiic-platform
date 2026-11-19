@@ -45,11 +45,13 @@ The decision log. Claude Code reads this before building and records any new dec
 | D-36 | The signature line is spelled आत्मानं विद्धि (ātmānaṃ viddhi), the grammatically correct form; the brochures' आत्मनं is a typo and is not reproduced. I-35 is closed. | Decided (Yash/Aum, 5 Nov 2026) | M2 |
 | D-37 | Reviews of Gaurang Mistry's programmes, earlier and new, are part of IIIC's proof (the programmes are the same, now under IIIC). They appear on the home page as the visitor scrolls (one beside each section that makes a claim, and six together), on the founders' page and the door pages, and all together on Proof. Each shows the name in the form the person chose, their designation and place, the programme and the year; it is published only with that person's consent for this use and only as written (an excerpt only if they approve it). Counselling reviews show initials and place unless the person chooses otherwise. What the reviews show about outcomes informs the outcome language and the choice of voices, not IIIC's definition, applications or terms. (`11` §3.8; `content/copy-architecture.md` §6) | Decided (Yash/Aum, 13 Nov 2026) | M2 |
 | D-38 | IIIC's philosophy document of 19 November 2026 is the newest statement of what IIIC is: where it differs from the 4 November description (the outcome bands, each vertical's descriptor), the copy follows it; lines it does not cover stay in use. (`content/sources/iiic-philosophy-2026-11-19.md`; `content/copy-architecture.md` §3) | Recommended | M2 |
+| D-39 | Certificates and their QR verification ship in Release 1: the admin issues certificates (singly or in bulk) for any programme IIIC runs, each with a printed ID and a QR code that opens its verification page; revocation and reissue are audited; in Release 2 the course issues them on completion. Reason: certificates IIIC hands out from launch carry QR codes that must resolve. (`01` §4, "Certificates and QR verification") | Recommended | M5 |
+| D-40 | The best possible system design for every feature: designed before it is built, to the criteria in `01` §3 and the standards in `12`; a design that cannot meet them is recorded here before it is built. | Decided (Yash/Aum, 19 Nov 2026) | M1 |
 
 ## How to record a decision
 
 ```
-| D-39 | <the decision, in one sentence> | Decided (Yash/Aum, <date>) | <milestone> |
+| D-41 | <the decision, in one sentence> | Decided (Yash/Aum, <date>) | <milestone> |
 ```
 
 If a decision changes a document, update that document in the same commit and note the decision ID in the commit message.

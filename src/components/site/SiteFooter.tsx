@@ -30,7 +30,7 @@ const COLUMNS = [
     heading: 'Institute',
     links: [
       { href: '/institute', label: 'Research' },
-      { href: '/institute#verify', label: 'Verify a certificate' },
+      { href: '/institute/verify', label: 'Verify a certificate' },
       { href: '/about', label: 'About' },
     ],
   },

@@ -81,6 +81,12 @@ Channels: E = email · W = WhatsApp · A = admin (Today, digest) · C = calendar
 | V1 | An operator sends a consent request for a review (imported or added by hand) | At once; one reminder after 5 days if there is no reply; nothing after that | Show the person the exact text (or the excerpt and any translation proposed) and how it will appear (name in the form they choose, designation, place, programme, year), with three answers: publish as shown · publish with initials · do not publish; ask them to confirm they still stand by it; record the reply as a consent with its evidence; move the review to approved or declined | E; W only inside a 24-hour window the person opened |
 | V2 | Consent to publish a review or story withdrawn (a reply, the withdraw link, or recorded by the operator) | At once | Unpublish, revalidate every page that showed it, confirm to the person, record the withdrawal; covers every review and story (Release 2's stories use it too) | E, A |
 
+### Certificates (R1, D-39)
+
+| ID | Trigger | Timing | Action | Channels |
+| --- | --- | --- | --- | --- |
+| C5 | Certificate issued (from the admin; from R2 also on course completion) | At once | Email with the signed PDF link, the verification link and LinkedIn's add-to-profile link | E, D |
+
 ### Engine (R2)
 
 | ID | Trigger | Timing | Action | Channels |
@@ -93,7 +99,6 @@ Channels: E = email · W = WhatsApp · A = admin (Today, digest) · C = calendar
 | C2 | Cohort session | 24 h and 1 h before | Reminder with link or place | W, E |
 | C3 | Learner inactive 14 days (opted in) | Weekly check | One nudge back to the next lesson | E |
 | C4 | Completion rule met | At once | Task to issue the certificate (or auto-issue if enabled) | A |
-| C5 | Certificate issued | At once | Email with PDF, verify link and LinkedIn add-to-profile link | E, D |
 | C6 | Learner completes the "framework at work" module | At once | Bridge: "Bring it to your team: a free Team Map" (opt-in rules) | My IIIC |
 | S1 | Feedback rating 4–5 | On submit | Offer the story option on the same page | — |
 | S2 | Story approved | At once | Publish; tell the client with the withdrawal link (a withdrawal runs V2) | E |

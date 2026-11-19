@@ -47,13 +47,13 @@ Done when: a Team Map request creates a lead with an operator task; a proposal c
 
 ### M5 · The admin experience
 
-Custom views: Today, Calendar (week and day, drag to reschedule), Reports; global search; People record with the unified timeline; Proof moderation (feedback, case studies with evidence and client approval); Privacy (requests with deadlines, consent log, breach register); Settings screens; session notes (author-only, encrypted, read-audited, D-11).
+Custom views: Today, Calendar (week and day, drag to reschedule), Reports; global search; People record with the unified timeline; Proof moderation (feedback, case studies with evidence and client approval); Privacy (requests with deadlines, consent log, breach register); Settings screens; session notes (author-only, encrypted, read-audited, D-11); certificates (D-39): issue singly or in bulk with a preview, the PDF from the print template with a server-generated QR code, `/institute/verify` and `/institute/verify/[token]`, revocation and reissue, all audited.
 
-Done when: the operator can run a full day from Today on a laptop and on a phone, a practitioner cannot see another practitioner's notes, and every view rejects anonymous and unauthorised requests in tests.
+Done when: the operator can run a full day from Today on a laptop and on a phone, a practitioner cannot see another practitioner's notes, every view rejects anonymous and unauthorised requests in tests, and a test decodes the QR code in an issued certificate's PDF, opens its verification page, sees it valid, revokes it and sees it revoked.
 
 ### M6 · Automations and messaging
 
-Payload jobs and the cron runner; every R1 automation in `06-automations.md` (including O9, O10, V1 and V2); email templates in React Email from the brand templates, tested on the matrix in `13` §5; the sending subdomains, reply-to routing and bounce handling in `13`; WhatsApp templates submitted and wired (email fallback); quiet hours; retries and failure alerts; the daily digest and weekly report; newsletter double opt-in, welcome and broadcasts (D-10).
+Payload jobs and the cron runner; every R1 automation in `06-automations.md` (including O9, O10, V1, V2 and C5); email templates in React Email from the brand templates, tested on the matrix in `13` §5; the sending subdomains, reply-to routing and bounce handling in `13`; WhatsApp templates submitted and wired (email fallback); quiet hours; retries and failure alerts; the daily digest and weekly report; newsletter double opt-in, welcome and broadcasts (D-10).
 
 Done when: each automation has a test that proves it fires once, at the right time, to the right channel, and respects consent and quiet hours; rescheduling re-plans reminders.
 
@@ -68,7 +68,7 @@ Done when: every release check below passes.
 1. Map definitions editor and the full Map with consent and results (needs I-15).
 2. Accounts (Better Auth, email and WhatsApp codes), My IIIC, attaching earlier bookings.
 3. Course: cohorts, enrolment and payment, lessons or live sessions (D-07), progress, attendance.
-4. Certificates with QR verification and revocation.
+4. Certificates issued automatically on course completion (issuing, QR verification and revocation exist from Release 1, D-39).
 5. Verified stories, publication consent and withdrawal.
 6. Cross-path bridges with the "No, thanks" memory (D-18); live counters that show their working; counsellor access to shared Maps.
 7. Team Map: invitations, anonymous responses, aggregate view with the minimum-responses threshold.

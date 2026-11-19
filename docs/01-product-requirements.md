@@ -31,6 +31,7 @@ Known proof: "Subjective Self", a two-day workshop on self-knowledge at Pandit D
 - **Consent first.** Consent is recorded before any Map result, profile answer or marketing preference is stored.
 - **Lawful by design.** Built to the DPDP standard from launch (duties apply from 13 May 2027) while meeting the SPDI Rules, CERT-In Directions, the E-Commerce Rules and the CCPA guidelines that apply today (`08-security-privacy-compliance.md`).
 - **The brand kit is the design system.** `src/brand/` (kit 1.0.3) is used as-is: yellow lives on paper, never on dark.
+- **The best possible system design, for every feature (D-40).** Nothing on the website or in the admin is built ad hoc. Each feature is designed before it is built, and the design meets all of these: one source of truth for every piece of data (the platform's database); typed, validated contracts at every boundary; correctness first for anything that moves money, time or trust (transactions, database constraints, idempotent handling, exactly-once effects from at-least-once events); failure designed in (timeouts, retries with backoff, graceful degradation, nothing lost while a provider is down); security and privacy by default (deny by default, least privilege, secrets on the server, an audit trail); performance by design (static where possible, cached and revalidated by tag, measured against the budgets); observable (logs, errors, metrics and alerts for every job and integration); tested at the level where it can break; and as simple as the requirement allows, using proven, documented patterns rather than novel ones. The measurable standards are in `12-engineering-standards.md`; a design that cannot meet one of them is written down as a decision before it is built.
 
 ## 4. Scope by release
 
@@ -49,15 +50,27 @@ Phasing follows the plan's roadmap, adjusted so launch needs no phone-OTP regist
 | Admin | Today, calendar and availability, bookings, clients, leads, content, proof moderation, messages and automations, payments and invoices, privacy requests, settings, users and roles, audit log (see `05-admin-panel.md`) |
 | Automations | Booking, reminder, follow-up, lead, newsletter and housekeeping automations marked R1 in `06-automations.md` |
 | Compliance | Privacy notice and per-flow notices, consent ledger with written (email) consent receipts for sensitive data, grievance officer with 48-hour acknowledgement and one-month resolution, data-request handling, legal information page, refund, cancellation and payment information, counselling scope statement and crisis signposting, dark-pattern guardrails (`08-security-privacy-compliance.md`) |
+| Certificates | Issued from the admin, singly or in bulk, for any programme IIIC runs; each carries its ID and a QR code that anyone can scan to check it; revocation (D-39; "Certificates and QR verification" below) |
 | Measurement | Privacy-friendly analytics with the plan's funnel events; error and uptime monitoring |
 
 ### Release 2 · Turn on the engine
 
-The full Subjective Self Map and Team Map (aggregate team picture), My IIIC accounts (phone OTP or email code), course sales and delivery (cohorts, enrolments, lessons or sessions, progress), certificates with QR verification, the verified-testimonial flow, cross-path bridges with the "No, thanks" memory (D-18), live counters that show their working, counsellor access to consented Map results before a first session.
+The full Subjective Self Map and Team Map (aggregate team picture), My IIIC accounts (phone OTP or email code), course sales and delivery (cohorts, enrolments, lessons or sessions, progress), certificates issued automatically when a learner meets the course's completion rule (issuing and QR verification exist from Release 1, D-39), the verified-testimonial flow, cross-path bridges with the "No, thanks" memory (D-18), live counters that show their working, counsellor access to consented Map results before a first session.
 
 ### Release 3 · Open the institute
 
-`iiic.edu.in` served from the same codebase once ERNET approves: home, framework and research, programmes and certification standards, certificate verification, partnerships (starting with PDEU, April 2023), faculty, publications, contact. Academic pages move from `/institute` with 301 redirects.
+`iiic.edu.in` served from the same codebase once ERNET approves: home, framework and research, programmes and certification standards, certificate verification, partnerships (starting with PDEU, April 2023), faculty, publications, contact. Academic pages move from `/institute` with 301 redirects, and every verification URL already printed on a certificate redirects permanently to the institute domain.
+
+### Certificates and QR verification (from Release 1, D-39)
+
+The brand kit's certificate (`src/brand/templates/print/certificate.html`) carries a verification URL, the certificate ID and a QR code. The platform makes all three real:
+
+- **Two identifiers.** A printed certificate ID people can type (`IIIC-C-<year>-<sequence>` with a check character, so a typing mistake is caught rather than matching another certificate) and a secret verification token (128 random bits, URL-safe). The QR code encodes `https://<platform domain>/institute/verify/<token>`; typing the ID at `/institute/verify` finds the same record.
+- **The QR code is generated on the server** as SVG, with no third-party service, at error-correction level Q with a full quiet zone, and placed in the template's `{{verify_qr_svg}}` beside `{{verify_url}}` and `{{certificate_id}}`. A test decodes the QR code from the generated PDF and checks it opens that certificate's page.
+- **The verification page shows exactly what the certificate shows:** the holder's name as printed, the programme, the completion date, the issuer, the fixed certificate statement (`08` §7), and the status: valid, or revoked with its date. Nothing else about the person; the page is `noindex`, rate-limited, and cannot be used to list certificates (tokens are unguessable; a typed ID must match exactly, check character included).
+- **Issuing.** From the admin, singly or in bulk, with a preview before issuing; each PDF is generated once from the print template and kept in the private bucket; the holder gets it by email with a signed download link, the verification link and LinkedIn's add-to-profile link (C5). From Release 2 the course issues them when the completion rule is met.
+- **Revocation and reissue** from the admin, with a reason kept for staff only; every issue, revocation and reissue is in the audit log; the verification page changes at once.
+- **Links never break.** A verification URL printed on a certificate is never retired; when `iiic.edu.in` opens (Release 3) it redirects permanently.
 
 ### Later (not designed yet)
 
@@ -86,12 +99,13 @@ Cohort outcome data, Gujarati and Hindi pages (start with counselling), alumni c
 ### Learners
 
 - I can read the course structure (placeholders until supplied), register for a free info session, and get reminders and the join details.
-- (R2) I can enrol and pay for a seat, follow lessons and sessions in My IIIC, see my progress, and receive a certificate with a public verification page.
+- I receive my certificate as a PDF whose QR code and ID anyone can check, and I can add it to my LinkedIn profile (D-39).
+- (R2) I can enrol and pay for a seat, follow lessons and sessions in My IIIC, see my progress, and receive my certificate automatically when I complete the course.
 
 ### Universities and partners
 
 - I can see IIIC's institutional work exactly as it happened, and send a partnership enquiry.
-- (R2/R3) I can verify a certificate by ID or QR code.
+- I can verify a certificate by scanning its QR code or entering its ID, and see whether it is valid or revoked (from R1, D-39; on `iiic.edu.in` from R3).
 
 ### Clients with an account (R2)
 
@@ -103,6 +117,7 @@ Cohort outcome data, Gujarati and Hindi pages (start with counselling), alumni c
 - As the operator, I open one screen each morning that shows today's sessions and calls, new leads, held payments, testimonials to review and anything that failed.
 - As a counsellor, I see my own schedule and the context a client has consented to share, and write private notes no one else can read.
 - As the owner, I set prices and when they are published, working hours, policies and who can do what, and I can see every change in the audit log.
+- As the owner or operator, I issue certificates for a programme, singly or in bulk, preview them first, and revoke or reissue one with a reason (D-39).
 
 ## 6. Non-functional requirements
 
