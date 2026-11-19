@@ -11,7 +11,7 @@ import { z } from 'zod'
  */
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  NEXT_PUBLIC_SITE_URL: z.url().default('http://localhost:3000'),
+  NEXT_PUBLIC_SITE_URL: z.url().optional(),
   PAYLOAD_SECRET: z.string().min(32, 'PAYLOAD_SECRET must be at least 32 characters'),
   DATABASE_URL: z
     .string()
@@ -19,9 +19,21 @@ const schema = z.object({
   DATABASE_URL_DIRECT: z.string().optional(),
   PLATFORM_HOSTS: z.string().default('localhost:3000'),
   INSTITUTE_HOSTS: z.string().default(''),
+  // Set by Vercel on every deployment (hostnames, without the scheme).
+  VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
+  VERCEL_URL: z.string().optional(),
+  VERCEL_BRANCH_URL: z.string().optional(),
+  VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
 })
 
-export type ServerEnv = z.infer<typeof schema>
+export type ServerEnv = z.infer<typeof schema> & {
+  /** The origin this deployment answers on: the configured site URL, else Vercel's. */
+  siteUrl: string
+  /** Every origin allowed to call the API with a session cookie (Payload's CSRF list). */
+  allowedOrigins: string[]
+}
+
+const LOCAL = 'http://localhost:3000'
 
 export function parseEnv(source: Record<string, string | undefined>): ServerEnv {
   const result = schema.safeParse(source)
@@ -29,7 +41,19 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
     const problems = result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
     throw new Error(`Invalid environment:\n- ${problems.join('\n- ')}`)
   }
-  return result.data
+  const data = result.data
+  // Previews have a new URL per deployment and per branch, so they fall back to the
+  // hostnames Vercel provides instead of a fixed NEXT_PUBLIC_SITE_URL.
+  const vercelOrigins = [
+    data.VERCEL_URL,
+    data.VERCEL_BRANCH_URL,
+    data.VERCEL_PROJECT_PRODUCTION_URL,
+  ]
+    .filter((host): host is string => Boolean(host))
+    .map((host) => `https://${host}`)
+  const siteUrl = data.NEXT_PUBLIC_SITE_URL ?? vercelOrigins[0] ?? LOCAL
+  const allowedOrigins = [...new Set([siteUrl, ...vercelOrigins])]
+  return { ...data, siteUrl, allowedOrigins }
 }
 
 let cached: ServerEnv | undefined

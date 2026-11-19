@@ -22,7 +22,7 @@ const connectionString =
     : config.DATABASE_URL
 
 export default buildConfig({
-  serverURL: config.NEXT_PUBLIC_SITE_URL,
+  serverURL: config.siteUrl,
   secret: config.PAYLOAD_SECRET,
   admin: {
     user: Users.slug,
@@ -38,7 +38,7 @@ export default buildConfig({
     push: false,
   }),
   // Only the platform's own origin may call the API with a session cookie.
-  csrf: [config.NEXT_PUBLIC_SITE_URL],
+  csrf: config.allowedOrigins,
   cors: [],
   // The admin uses REST and server functions; GraphQL stays off to keep the surface small.
   graphQL: { disable: true },
