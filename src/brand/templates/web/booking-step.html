@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Booking step template · IIIC</title>
+  <meta name="color-scheme" content="only light">
+  <meta name="theme-color" content="#FFDD00">
+  <link rel="icon" href="../../logo/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../css/iiic.css">
+</head>
+<!-- book.html inherits the register of its type: session → counselling, call → consultancy, info/seat → education -->
+<body data-register="counselling">
+  <a class="iiic-skip-link" href="#main">Skip to content</a>
+  <header class="iiic-header">
+    <a class="iiic-brand" href="/"><img src="../../logo/iiic-mark.svg" alt="IIIC" width="23" height="40"><span><strong>IIIC</strong><small>Book a session</small></span></a>
+    <div class="iiic-top-actions"><a class="iiic-link" href="#">Cancel</a></div>
+  </header>
+
+  <main class="iiic-page-narrow" id="main" style="padding-top:40px;padding-bottom:80px">
+    <!-- Four steps while prices are unpublished. Once they are published, a "Payment" step returns between "Your details" and "Confirmed" (five steps). -->
+    <ol class="iiic-stepper" aria-label="Booking progress">
+      <li data-state="done"><span>Choose</span></li>
+      <li data-state="current" aria-current="step"><span>Date and time</span></li>
+      <li><span>Your details</span></li>
+      <li><span>Confirmed</span></li>
+    </ol>
+
+    <div class="iiic-panel" style="margin-top:28px">
+      <div class="iiic-kicker">Step 2 of 4</div>
+      <h1 style="margin:12px 0 6px;font-size:var(--iiic-text-h2)">Pick a date and time</h1>
+      <!-- No price while IIIC's prices are unpublished; once published, the all-in price shows here and never grows. -->
+      <p class="iiic-sub">30-minute 1:1 session</p>
+
+      <!-- Sample days. The real strip comes from the availability rules; unavailable days stay visible and disabled. -->
+      <fieldset class="iiic-fieldset">
+        <legend>Date</legend>
+        <div class="iiic-dates">
+          <label class="iiic-date"><input type="radio" name="date" value="2026-11-03" checked><span><small>Tue</small><strong>3</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="date" value="2026-11-04"><span><small>Wed</small><strong>4</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="date" value="2026-11-05" disabled><span><small>Thu</small><strong>5</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="date" value="2026-11-06"><span><small>Fri</small><strong>6</strong><small>Nov</small></span></label>
+        </div>
+      </fieldset>
+
+      <!-- Sample times. Real ones are the counsellor's free start times: working hours minus calendar busy times and existing bookings. -->
+      <fieldset class="iiic-fieldset" style="margin-top:24px">
+        <legend>Time</legend>
+        <div class="iiic-slots">
+          <label class="iiic-slot"><input type="radio" name="slot" value="10:00" checked><span>10:00 AM</span></label>
+          <label class="iiic-slot"><input type="radio" name="slot" value="10:30"><span>10:30 AM</span></label>
+          <label class="iiic-slot"><input type="radio" name="slot" value="11:15"><span>11:15 AM</span></label>
+          <label class="iiic-slot"><input type="radio" name="slot" value="15:00" disabled><span>3:00 PM</span></label>
+        </div>
+      </fieldset>
+      <p class="iiic-help" style="margin-top:12px">None of these work? <a class="iiic-link" href="#">Request another time</a> and IIIC will reply with one.</p>
+
+      <div class="iiic-row" style="justify-content:space-between;margin-top:32px">
+        <a class="iiic-btn iiic-btn-ghost" href="#">Back</a>
+        <button class="iiic-btn iiic-btn-primary" type="button">Continue</button>
+      </div>
+    </div>
+
+    <!-- No bridge anywhere in a booking flow. A counselling booking never shows one: bridges out of counselling
+         wait for the client's opt-in and the follow-up after the third session (platform plan, X2).
+         For a proposal call or an info session, one opt-in bridge may appear on the confirmation step (gallery: .iiic-bridge). -->
+  </main>
+</body>
+</html>

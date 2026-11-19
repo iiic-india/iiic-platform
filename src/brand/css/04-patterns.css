@@ -1,0 +1,246 @@
+/* ============================================================
+   IIIC brand kit · 04 · Patterns · 1.0.3
+   Composed from 03-components. Page-level pieces every site page
+   needs: header with mobile menu, footer, bands, cards, section
+   layouts, stepper, slot picker, accordion, modal, toast, bridge.
+   Markup for each is in gallery.html and templates/web/.
+   No pattern paints a dark surface.
+   ============================================================ */
+
+/* Header · sticky; brand left, nav centre, actions right.
+   <header class="iiic-header"> <a class="iiic-brand">…</a>
+     <button class="iiic-nav-toggle" aria-expanded="false" aria-controls="nav">Menu</button>
+     <nav class="iiic-nav" id="nav"> <a>…</a> … <a class="iiic-btn iiic-btn-primary">Take the Map</a> </nav>
+   </header>  — toggle sets aria-expanded; CSS reads it. */
+.iiic-header {
+  position: sticky; top: 0; z-index: var(--iiic-z-header);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px var(--iiic-gutter);
+  background: var(--iiic-surface); border-bottom: 1px solid var(--iiic-rule);
+}
+.iiic-nav { display: flex; align-items: center; gap: 2px; }
+.iiic-nav a:not(.iiic-btn) { padding: 8px 14px; border-radius: var(--iiic-radius-pill); color: var(--iiic-text); text-decoration: none; font-size: var(--iiic-text-md); font-weight: var(--iiic-weight-semibold); transition: background var(--iiic-motion-fast); }
+.iiic-nav a:not(.iiic-btn):hover { background: var(--iiic-surface-wash); }
+.iiic-nav a[aria-current="page"] { background: var(--iiic-yellow-100); color: var(--iiic-ink); }
+.iiic-nav .iiic-btn { margin-left: 10px; }
+.iiic-nav a { white-space: nowrap; }
+.iiic-nav-toggle { display: none; }
+
+/* Footer · four columns that stack, on the wash with the logo's bar as a top rule.
+   <footer class="iiic-footer-grid"> <div class="iiic-footer-brand">…</div> <div>…</div> ×3 </footer> */
+.iiic-footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 32px; padding: 56px var(--iiic-gutter) 32px; margin-top: 80px; background: var(--iiic-surface-wash); border-top: 6px solid var(--iiic-yellow); font-size: var(--iiic-text-md); }
+.iiic-footer-grid h4 { margin: 0 0 12px; font-size: var(--iiic-text-xs); letter-spacing: var(--iiic-tracking-wide); text-transform: uppercase; color: var(--iiic-text-muted); font-weight: var(--iiic-weight-black); }
+.iiic-footer-grid a { display: block; color: var(--iiic-text); text-decoration: none; padding: 5px 0; }
+.iiic-footer-grid a:hover { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: .22em; }
+.iiic-footer-brand img { height: 56px; width: auto; margin-bottom: 14px; }
+.iiic-footer-brand p { margin: 0; color: var(--iiic-text-muted); max-width: 34ch; }
+.iiic-footer-legal { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 18px var(--iiic-gutter) 36px; background: var(--iiic-surface-wash); color: var(--iiic-text-muted); font-size: var(--iiic-text-sm); }
+
+/* Section layouts */
+.iiic-page { max-width: var(--iiic-container); margin: auto; padding: 0 var(--iiic-gutter); }
+.iiic-page-narrow { max-width: var(--iiic-container-narrow); margin: auto; padding: 0 var(--iiic-gutter); }
+.iiic-split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.iiic-doors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.iiic-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; padding: 24px 0; border-top: 1px solid var(--iiic-rule); border-bottom: 1px solid var(--iiic-rule); }
+.iiic-image-frame { aspect-ratio: 4 / 3; border-radius: var(--iiic-radius); background: var(--iiic-surface-wash); border: 1.5px dashed var(--iiic-rule-strong); display: grid; place-items: center; color: var(--iiic-text-muted); font-size: var(--iiic-text-sm); }
+
+/* Bands · full-width fields. The yellow band is the loudest thing on any page; one per page.
+   <section class="iiic-band iiic-band-yellow"><div class="iiic-page">…</div></section> */
+.iiic-band { padding: 72px 0; }
+.iiic-band-wash { background: var(--iiic-surface-wash); }
+.iiic-band-yellow { background: var(--iiic-yellow); color: var(--iiic-ink); }
+/* On yellow the primary action is white with ink type (the accent role is white there, see 02);
+   it gains an ink edge on hover. The secondary is an ink outline that fills white on hover. */
+.iiic-band-yellow .iiic-btn-primary:hover, .iiic-panel-yellow .iiic-btn-primary:hover, .iiic-hero-field .iiic-btn-primary:hover { border-color: var(--iiic-ink); }
+.iiic-band-yellow .iiic-btn-secondary:hover, .iiic-panel-yellow .iiic-btn-secondary:hover, .iiic-hero-field .iiic-btn-secondary:hover { background: var(--iiic-white); }
+.iiic-cta { display: grid; grid-template-columns: 1.2fr auto; gap: 32px; align-items: center; }
+.iiic-cta h2 { font-size: var(--iiic-text-h1); max-width: 16ch; }
+.iiic-cta p { max-width: 44ch; margin: 10px 0 0; font-size: var(--iiic-text-lg); }
+
+/* Cards · a door to one application, a verified testimonial, a case study */
+.iiic-card { display: flex; flex-direction: column; gap: 12px; background: var(--iiic-surface-alt); color: var(--iiic-text); border: 1px solid var(--iiic-rule); border-radius: var(--iiic-radius); padding: 28px; box-shadow: var(--iiic-shadow-sm); min-width: 0; transition: transform var(--iiic-motion) var(--iiic-ease), box-shadow var(--iiic-motion) var(--iiic-ease), border-color var(--iiic-motion); }
+.iiic-card h3 { margin: 0; }
+.iiic-card p { margin: 0; color: var(--iiic-text-muted); font-size: var(--iiic-text-body); }
+.iiic-card .iiic-btn { align-self: flex-start; margin-top: auto; }
+a.iiic-card { text-decoration: none; }
+a.iiic-card:hover { transform: translateY(-3px); box-shadow: var(--iiic-shadow-md); border-color: var(--iiic-rule-strong); }
+a.iiic-card:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--iiic-focus), var(--iiic-shadow-md); }
+.iiic-card-door { min-height: 260px; gap: 14px; }
+.iiic-card-door h3 { font-family: var(--iiic-font-display); font-weight: var(--iiic-weight-medium); font-size: 28px; letter-spacing: var(--iiic-tracking-tight); line-height: 1.1; font-variation-settings: "opsz" 144; }
+.iiic-card-door .iiic-kicker { margin-bottom: 2px; }
+.iiic-door-glyph { width: 48px; height: 48px; border-radius: 14px; background: var(--iiic-accent); color: var(--iiic-accent-ink); display: grid; place-items: center; font-family: var(--iiic-font-display); font-size: 26px; font-weight: var(--iiic-weight-semibold); line-height: 1; }
+.iiic-card-proof { gap: 16px; }
+.iiic-card-proof blockquote { margin: 0; font-family: var(--iiic-font-display); font-size: 21px; line-height: 1.4; color: var(--iiic-text); font-variation-settings: "opsz" 24; }
+.iiic-card-proof blockquote::before { content: "\201C"; display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 14px; padding-top: 14px; box-sizing: border-box; border-radius: 12px; background: var(--iiic-accent); color: var(--iiic-accent-ink); font-family: var(--iiic-font-display); font-size: 44px; line-height: 1; }   /* the quote mark in ink on a yellow tile: yellow is never text */
+.iiic-card-proof footer { display: flex; align-items: center; gap: 10px; font-size: var(--iiic-text-sm); color: var(--iiic-text-muted); }
+.iiic-card-case { gap: 16px; }
+.iiic-card-case .iiic-case-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.iiic-card-case .iiic-case-metrics div { padding: 14px; border-radius: var(--iiic-radius-sm); background: var(--iiic-surface-wash); }
+.iiic-card-case .iiic-case-metrics strong { display: block; font-family: var(--iiic-font-display); font-size: 26px; letter-spacing: -.02em; font-weight: var(--iiic-weight-medium); line-height: 1.1; }
+.iiic-card-case .iiic-case-metrics span { font-size: var(--iiic-text-sm); color: var(--iiic-text-muted); }
+
+/* Stepper · the five booking steps. The number comes from the CSS counter; put only the label in a <span>
+   (on phones the label becomes screen-reader-only, so every step keeps its name).
+   <ol class="iiic-stepper" aria-label="Booking progress"><li data-state="done"><span>Choose</span></li><li data-state="current" aria-current="step"><span>Date</span></li><li><span>Details</span></li></ol> */
+.iiic-stepper { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.iiic-stepper li { counter-increment: step; display: flex; align-items: center; gap: 10px; font-size: var(--iiic-text-sm); color: var(--iiic-text-muted); padding-bottom: 12px; border-bottom: 3px solid var(--iiic-rule); }
+.iiic-stepper li::before { content: counter(step); flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: var(--iiic-text-xs); font-weight: var(--iiic-weight-black); background: var(--iiic-surface-wash); color: var(--iiic-text-muted); }
+.iiic-stepper li[data-state="current"] { color: var(--iiic-heading); border-bottom-color: var(--iiic-heading); font-weight: var(--iiic-weight-bold); }
+.iiic-stepper li[data-state="current"]::before { background: var(--iiic-accent); color: var(--iiic-accent-ink); }
+.iiic-stepper li[data-state="done"] { color: var(--iiic-heading); border-bottom-color: var(--iiic-heading); }
+.iiic-stepper li[data-state="done"]::before { content: "✓"; background: var(--iiic-yellow-100); color: var(--iiic-ink); }
+
+/* Slot picker · radio inputs as chips, inside a fieldset with a legend.
+   <fieldset class="iiic-fieldset"><legend>Time</legend><div class="iiic-slots"><label class="iiic-slot"><input type="radio" name="slot"><span>10 AM – 12 PM</span></label> …</div> */
+.iiic-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.iiic-slot { position: relative; display: block; }
+.iiic-slot input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.iiic-slot span { display: block; text-align: center; padding: 13px 10px; border: 1.5px solid var(--iiic-rule-strong); border-radius: var(--iiic-radius-control); background: var(--iiic-surface-alt); color: var(--iiic-text); font-size: var(--iiic-text-md); font-weight: var(--iiic-weight-semibold); transition: border-color var(--iiic-motion-fast), background var(--iiic-motion-fast); }
+.iiic-slot:hover span { border-color: var(--iiic-ink); }
+.iiic-slot input:checked + span { background: var(--iiic-accent); border-color: var(--iiic-accent-ink); color: var(--iiic-accent-ink); }
+.iiic-slot input:focus-visible + span { box-shadow: var(--iiic-focus); }
+.iiic-slot input:disabled + span { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
+
+/* Accordion · native details/summary.
+   <details class="iiic-accordion"><summary>Question</summary><div>Answer</div></details> */
+.iiic-accordion { border-top: 1px solid var(--iiic-rule); }
+.iiic-accordion:last-of-type { border-bottom: 1px solid var(--iiic-rule); }
+.iiic-accordion summary { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 0; cursor: pointer; list-style: none; font-weight: var(--iiic-weight-bold); font-size: var(--iiic-text-lg); color: var(--iiic-heading); }
+.iiic-accordion summary::-webkit-details-marker { display: none; }
+.iiic-accordion summary:focus-visible { outline: 2px solid transparent; outline-offset: 2px; border-radius: var(--iiic-radius-sm); box-shadow: var(--iiic-focus); }
+.iiic-accordion summary::after { content: "+"; flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--iiic-surface-alt); border: 1.5px solid var(--iiic-rule-strong); color: var(--iiic-text); font-weight: var(--iiic-weight-regular); font-size: 18px; line-height: 1; }
+.iiic-accordion[open] summary::after { content: "–"; background: var(--iiic-accent); border-color: var(--iiic-accent); color: var(--iiic-accent-ink); }
+.iiic-accordion > div { padding: 0 0 20px; color: var(--iiic-text-muted); max-width: var(--iiic-measure); }
+
+/* Modal · native <dialog> named by its heading: <dialog class="iiic-modal" aria-labelledby="m-title"><h2 id="m-title">…</h2>…</dialog>. Open with dialog.showModal(). */
+.iiic-modal { z-index: var(--iiic-z-modal); width: min(92vw, 520px); border: 0; border-radius: var(--iiic-radius); padding: 32px; background: var(--iiic-white); color: var(--iiic-ink); box-shadow: var(--iiic-shadow-md); }
+.iiic-modal::backdrop { background: var(--iiic-scrim); }
+.iiic-modal h2 { margin: 0 0 8px; font-size: 26px; }
+.iiic-modal p { margin: 0 0 22px; color: var(--iiic-text-muted); }
+.iiic-modal .iiic-row { justify-content: flex-end; }
+
+/* Toast · one at a time, bottom centre; white with the bar. <div class="iiic-toast" role="status">. Add [data-tone="success|danger"]. Keep it up at least 5 seconds; pause on hover and focus. */
+.iiic-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: var(--iiic-z-toast); display: flex; align-items: center; gap: 14px; max-width: min(92vw, 480px); padding: 14px 18px; border-radius: var(--iiic-radius-md); border-left: 5px solid var(--iiic-accent); background: var(--iiic-white); color: var(--iiic-ink); font-size: var(--iiic-text-md); font-weight: var(--iiic-weight-semibold); box-shadow: var(--iiic-shadow-md); }
+.iiic-toast[data-tone="success"] { border-left-color: var(--iiic-success); }
+.iiic-toast[data-tone="danger"] { border-left-color: var(--iiic-danger); }
+.iiic-toast .iiic-btn { min-height: 34px; padding: 6px 14px; background: var(--iiic-accent); border-color: var(--iiic-accent); color: var(--iiic-accent-ink); }
+
+/* Bridge · the one opt-in cross-path card. data-to names the application it leads to, and its
+   colour follows that application (the plan: "the colour shows which application each bridge
+   leads to"); the kicker names it too, so colour is never the only cue.
+   <aside class="iiic-bridge" data-to="education"><div><div class="iiic-kicker">Learn</div><p>…</p></div><div class="iiic-row">Yes · No, thanks</div></aside> */
+.iiic-bridge { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; padding: 20px 24px; border-radius: var(--iiic-radius); background: var(--iiic-accent-wash); border: 1px solid var(--iiic-rule); color: var(--iiic-ink); }
+.iiic-bridge p { margin: 0; }
+.iiic-bridge[data-to="consultancy"] { background: var(--iiic-mist-050); border-color: var(--iiic-mist); }
+.iiic-bridge[data-to="education"] { background: var(--iiic-white); border-color: var(--iiic-mist); }
+.iiic-bridge[data-to="counselling"] { background: var(--iiic-yellow-050); border-color: var(--iiic-line-warm); }
+
+/* Date strip · the bookable days as chips (the horizon is a booking setting); pair with .iiic-slots below it.
+   <fieldset class="iiic-fieldset"><legend>Date</legend><div class="iiic-dates"><label class="iiic-date"><input type="radio" name="date"><span><small>Tue</small><strong>3</strong><small>Nov</small></span></label> …</div> */
+.iiic-dates { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.iiic-date { position: relative; flex: none; scroll-snap-align: start; }
+.iiic-date input { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; }
+.iiic-date span { display: grid; justify-items: center; gap: 2px; min-width: 64px; padding: 10px 8px; border: 1.5px solid var(--iiic-rule-strong); border-radius: var(--iiic-radius-md); background: var(--iiic-surface-alt); color: var(--iiic-text); line-height: 1.1; transition: border-color var(--iiic-motion-fast), background var(--iiic-motion-fast); }
+.iiic-date small { font-size: var(--iiic-text-xs); color: var(--iiic-text-muted); text-transform: uppercase; letter-spacing: .06em; font-weight: var(--iiic-weight-bold); }
+.iiic-date strong { font-family: var(--iiic-font-display); font-size: 24px; font-weight: var(--iiic-weight-medium); }
+.iiic-date:hover span { border-color: var(--iiic-ink); }
+.iiic-date input:checked + span { background: var(--iiic-accent); border-color: var(--iiic-accent-ink); color: var(--iiic-accent-ink); }
+.iiic-date input:checked + span small { color: var(--iiic-accent-ink); }
+.iiic-date input:focus-visible + span { box-shadow: var(--iiic-focus); }
+.iiic-date input:disabled + span { opacity: .4; cursor: not-allowed; }
+
+/* Price card · a session type or a course seat, with one action.
+   <article class="iiic-price-card"><div class="iiic-kicker">Individual</div><h3>30 minutes</h3><div class="iiic-price">{{price}}</div><p>…</p><ul>…</ul><a class="iiic-btn iiic-btn-primary">Book</a></article> */
+.iiic-price-card { display: flex; flex-direction: column; gap: 10px; padding: 28px; background: var(--iiic-surface-alt); border: 1px solid var(--iiic-rule); border-radius: var(--iiic-radius); min-width: 0; }
+.iiic-price-card h3 { font-family: var(--iiic-font-display); font-weight: var(--iiic-weight-medium); font-size: 26px; letter-spacing: var(--iiic-tracking-tight); }
+.iiic-price-card .iiic-price { font-family: var(--iiic-font-display); font-size: 40px; font-weight: var(--iiic-weight-medium); letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; margin: 6px 0 4px; }
+.iiic-price-card .iiic-price small { font-family: var(--iiic-font); font-size: var(--iiic-text-sm); color: var(--iiic-text-muted); letter-spacing: 0; margin-left: 6px; }
+.iiic-price-card p { margin: 0; color: var(--iiic-text-muted); }
+.iiic-price-card ul { margin: 4px 0 8px; padding: 0; list-style: none; display: grid; gap: 6px; font-size: var(--iiic-text-md); }
+.iiic-price-card li { padding-left: 22px; position: relative; }
+.iiic-price-card li::before { content: ""; position: absolute; left: 0; top: .5em; width: 12px; height: 4px; border-radius: 2px; background: var(--iiic-mark); }
+.iiic-price-card .iiic-btn { margin-top: auto; align-self: flex-start; }
+.iiic-price-card.is-featured { box-shadow: inset 0 6px 0 var(--iiic-accent), var(--iiic-shadow-sm); }   /* the bar across the top */
+
+/* Steps · a numbered vertical list for "how it works".
+   <ol class="iiic-steps"><li><strong>Book</strong><p>…</p></li> …</ol> */
+.iiic-steps { list-style: none; margin: 0; padding: 0; counter-reset: how; display: grid; gap: 0; }
+.iiic-steps li { counter-increment: how; position: relative; padding: 0 0 28px 56px; }
+.iiic-steps li::before { content: counter(how); position: absolute; left: 0; top: -4px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--iiic-accent); color: var(--iiic-accent-ink); font-weight: var(--iiic-weight-black); font-size: var(--iiic-text-md); }
+.iiic-steps li:not(:last-child)::after { content: ""; position: absolute; left: 17px; top: 36px; bottom: 4px; width: 2px; background: var(--iiic-rule); }
+.iiic-steps strong { display: block; font-size: var(--iiic-text-lg); margin-bottom: 4px; color: var(--iiic-heading); }
+.iiic-steps p { margin: 0; color: var(--iiic-text-muted); max-width: 52ch; }
+
+/* Pagination · journal and lists. */
+.iiic-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; list-style: none; margin: 32px 0 0; padding: 0; }
+.iiic-pagination a, .iiic-pagination span { display: grid; place-items: center; min-width: 40px; height: 40px; padding: 0 12px; border-radius: var(--iiic-radius-control); font-size: var(--iiic-text-md); font-weight: var(--iiic-weight-semibold); color: var(--iiic-text); text-decoration: none; }
+.iiic-pagination a:hover { background: var(--iiic-surface-wash); }
+.iiic-pagination [aria-current="page"] { background: var(--iiic-accent); color: var(--iiic-accent-ink); }
+.iiic-pagination a:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--iiic-focus); }
+
+/* Breadcrumb */
+.iiic-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; list-style: none; margin: 0 0 20px; padding: 0; font-size: var(--iiic-text-sm); color: var(--iiic-text-muted); }
+.iiic-breadcrumb li + li::before { content: "/"; margin-right: 8px; color: var(--iiic-text-muted); }
+.iiic-breadcrumb a { color: var(--iiic-text-muted); text-decoration: none; }
+.iiic-breadcrumb a:hover { color: var(--iiic-text); text-decoration: underline; text-underline-offset: .22em; }
+.iiic-breadcrumb [aria-current="page"] { color: var(--iiic-text); font-weight: var(--iiic-weight-semibold); }
+
+/* Menu · a details-based dropdown for the account avatar. It opens towards the left edge of
+   the summary (right-aligned); add .is-start when the summary sits at the left of its row.
+   Small JS closes it on Escape (returning focus to the summary) and on an outside click.
+   <details class="iiic-menu"><summary><span class="iiic-avatar">A</span></summary><div><a href>My IIIC</a><a href>Log out</a></div></details> */
+.iiic-menu { position: relative; }
+.iiic-menu summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border-radius: var(--iiic-radius-pill); }
+.iiic-menu summary::-webkit-details-marker { display: none; }
+.iiic-menu summary:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--iiic-focus); }
+.iiic-menu > div { position: absolute; right: 0; top: calc(100% + 8px); z-index: var(--iiic-z-dropdown); min-width: min(200px, calc(100vw - 32px)); max-width: calc(100vw - 32px); padding: 8px; background: var(--iiic-white); border: 1px solid var(--iiic-rule); border-radius: var(--iiic-radius-md); box-shadow: var(--iiic-shadow-md); display: grid; }
+.iiic-menu > div a, .iiic-menu > div button { display: block; width: 100%; text-align: left; padding: 10px 12px; border: 0; background: none; border-radius: var(--iiic-radius-sm); color: var(--iiic-ink); font: inherit; font-size: var(--iiic-text-md); font-weight: var(--iiic-weight-semibold); text-decoration: none; cursor: pointer; }
+.iiic-menu.is-start > div { right: auto; left: 0; }
+.iiic-menu > div a:hover, .iiic-menu > div button:hover { background: var(--iiic-surface-wash); }
+.iiic-menu > div a:focus-visible, .iiic-menu > div button:focus-visible { outline: 2px solid transparent; box-shadow: var(--iiic-focus); }
+
+/* Consent bar · only when a non-essential cookie is actually set (analytics with cookies). Not needed with cookieless analytics. */
+.iiic-consent { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: var(--iiic-z-toast); margin: auto; max-width: 720px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 18px 22px; background: var(--iiic-white); border: 1px solid var(--iiic-rule); border-left: 5px solid var(--iiic-accent); border-radius: var(--iiic-radius-md); box-shadow: var(--iiic-shadow-md); font-size: var(--iiic-text-md); color: var(--iiic-ink); }
+.iiic-consent p { margin: 0; flex: 1 1 320px; }
+.iiic-consent .iiic-row { gap: 8px; }
+
+/* Floating chat pill · bottom right; text, not a third-party logo. White, so it reads on every
+   surface it scrolls over, including the yellow band. Hide while a modal or the consent bar is open. */
+.iiic-fab { position: fixed; right: 20px; bottom: 20px; z-index: var(--iiic-z-header); display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 12px 20px; border-radius: var(--iiic-radius-pill); background: var(--iiic-white); color: var(--iiic-ink); border: 1px solid var(--iiic-mist); font-weight: var(--iiic-weight-bold); font-size: var(--iiic-text-md); text-decoration: none; box-shadow: var(--iiic-shadow-md); transition: transform var(--iiic-motion-fast) var(--iiic-ease); }
+.iiic-fab:hover { transform: translateY(-2px); }
+.iiic-fab:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--iiic-focus), var(--iiic-shadow-md); }
+
+/* Responsive */
+@media (min-width: 851px) and (max-width: 1100px) {
+  .iiic-header .iiic-brand small { display: none; }
+  .iiic-nav a:not(.iiic-btn) { padding: 8px 10px; }
+  .iiic-nav .iiic-btn { margin-left: 6px; padding-left: 18px; padding-right: 18px; }
+}
+@media (max-width: 850px) {
+  .iiic-header { padding: 12px var(--iiic-gutter-sm); flex-wrap: wrap; }
+  .iiic-nav-toggle { display: inline-flex; order: 2; }
+  .iiic-nav { display: none; order: 3; width: 100%; flex-direction: column; align-items: stretch; gap: 2px; padding-top: 10px; }
+  .iiic-nav-toggle[aria-expanded="true"] + .iiic-nav { display: flex; }
+  .iiic-nav .iiic-btn { margin: 10px 0 0; }
+  .iiic-split { grid-template-columns: 1fr; gap: 24px; }
+  .iiic-doors, .iiic-strip { grid-template-columns: 1fr; }
+  .iiic-band { padding: 56px 0; }
+  .iiic-cta { grid-template-columns: 1fr; gap: 20px; }
+  .iiic-footer-grid { grid-template-columns: 1fr 1fr; padding: 44px var(--iiic-gutter-sm) 24px; margin-top: 56px; }
+  .iiic-footer-brand { grid-column: 1 / -1; }
+  .iiic-page, .iiic-page-narrow { padding: 0 var(--iiic-gutter-sm); }
+  .iiic-stepper li span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* numbers only on small screens; labels stay for screen readers */
+  .iiic-bridge { grid-template-columns: 1fr; }
+  .iiic-steps li { padding-left: 50px; }
+  .iiic-consent { left: 10px; right: 10px; bottom: 10px; }
+  .iiic-fab { right: 14px; bottom: 14px; }
+}
+@media (max-width: 560px) {
+  .iiic-footer-grid { grid-template-columns: 1fr; }
+  .iiic-footer-legal { padding: 16px var(--iiic-gutter-sm) 32px; }
+  .iiic-card { padding: 22px; }
+  .iiic-card-door { min-height: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iiic-card, a.iiic-card:hover, .iiic-fab, .iiic-fab:hover { transition: none; transform: none; }
+}

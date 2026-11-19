@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="only light">
+  <title>IIIC brand kit · gallery</title>
+  <link rel="icon" href="logo/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/iiic.css">
+  <style>
+    /* Gallery-only styles. Not part of the kit. */
+    .g-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+    .g-swatch { min-width: 0; }
+    .g-swatch-color { height: 72px; border-radius: 14px; margin-bottom: 8px; box-shadow: inset 0 0 0 1px rgba(28, 38, 43, .08); }
+    .g-swatch strong { display: block; font-size: 13px; }
+    .g-swatch code { color: var(--iiic-text-muted); font-size: 12px; font-family: var(--iiic-font-mono); }
+    .g-core { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .g-core > div { border-radius: var(--iiic-radius); padding: 28px; min-height: 220px; display: flex; flex-direction: column; justify-content: flex-end; }
+    .g-core strong { font-family: var(--iiic-font-display); font-size: 32px; font-weight: 500; letter-spacing: -.02em; line-height: 1; }
+    .g-core .g-type { background: var(--iiic-white); border: 1px solid var(--iiic-rule); }
+    .g-core .g-type strong { font-size: 56px; }
+    .g-swatch-type { height: 72px; border-radius: 14px; margin-bottom: 8px; display: grid; place-items: center; background: var(--iiic-white); border: 1px solid var(--iiic-rule); font-family: var(--iiic-font-display); font-size: 34px; font-weight: 500; line-height: 1; }
+    .g-core code { font-family: var(--iiic-font-mono); font-size: 13px; opacity: .8; }
+    .g-rule-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .g-rule-pair figure { margin: 0; min-width: 0; }
+    .g-rule-pair .tile { border-radius: var(--iiic-radius-md); height: 120px; display: grid; place-items: center; padding: 0 12px; text-align: center; font-family: var(--iiic-font-display); font-size: clamp(20px, 2.2vw, 30px); font-weight: 500; letter-spacing: -.02em; overflow-wrap: anywhere; }
+    .g-rule-pair .tile.dont { background: var(--iiic-white); border: 1.5px dashed var(--iiic-rule-strong); color: var(--iiic-text-muted); font-family: var(--iiic-font); font-size: 14px; font-weight: 700; letter-spacing: 0; }
+    .g-rule-pair figcaption { margin-top: 10px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .g-ok { color: var(--iiic-success); font-weight: 800; }
+    .g-no { color: var(--iiic-danger); font-weight: 800; }
+    .g-logo-tile { display: grid; place-items: center; padding: 24px; border-radius: var(--iiic-radius-md); border: 1px solid var(--iiic-rule); background: var(--iiic-white); min-height: 160px; margin: 0; }
+    .g-logo-tile img { max-height: 110px; width: auto; }
+    .g-logo-tile .mark { max-height: 80px; }
+    .g-logo-tile.yellow { background: var(--iiic-yellow); border-color: var(--iiic-yellow); }
+    .g-logo-tile.paper { background: var(--iiic-paper); }
+    .g-logo-tile.dark { background: #3B3F42; border-color: #3B3F42; }   /* stands for a third party's dark ground; never an IIIC surface */
+    .g-logo-tile figcaption { margin-top: 12px; font-size: 12px; color: var(--iiic-text-muted); text-align: center; }
+    .g-logo-tile.dark figcaption { color: #E4E8EA; }
+    .g-logo-tile.yellow figcaption { color: var(--iiic-ink); }
+    .g-clearspace { position: relative; display: inline-block; padding: 36px; outline: 1px dashed var(--iiic-slate-300); margin-bottom: 30px; }
+    .g-clearspace img { height: 90px; display: block; }
+    .g-clearspace::after { content: "clear space = the bar's width, on every side"; position: absolute; left: -40px; right: -40px; bottom: -26px; font-size: 11px; color: var(--iiic-text-muted); text-align: center; white-space: nowrap; }
+    .g-register-bar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 0; background: var(--iiic-surface); border-bottom: 1px solid var(--iiic-rule); }
+    .g-register-bar .iiic-btn[aria-pressed="true"] { background: var(--iiic-yellow); border-color: var(--iiic-yellow); color: var(--iiic-ink); }
+    .g-specimen { display: grid; gap: 18px; }
+    .g-specimen .row { display: grid; grid-template-columns: 120px 1fr; gap: 16px; align-items: baseline; border-top: 1px solid var(--iiic-rule); padding-top: 14px; }
+    .g-specimen .row small { color: var(--iiic-text-muted); font-size: 12px; font-family: var(--iiic-font-mono); }
+    .g-space-list { display: grid; gap: 12px; }
+    .g-space-item { display: grid; grid-template-columns: 64px 1fr 48px; align-items: center; gap: 10px; font-size: 12px; color: var(--iiic-text-muted); }
+    .g-space-bar { height: 10px; background: var(--iiic-yellow); border-radius: 4px; }
+    .g-shape { padding: 18px 22px; background: var(--iiic-surface-alt); border: 1px solid var(--iiic-rule); font-size: 12px; }
+    .g-constellation { width: 100%; max-width: 380px; display: block; margin: auto; }
+    .g-icons { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap; }
+    .g-icons figure { margin: 0; text-align: center; font-size: 11px; color: var(--iiic-text-muted); }
+    .g-icons img { display: block; margin: 0 auto 6px; }
+    .g-tab { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; background: var(--iiic-white); border: 1px solid var(--iiic-rule); border-radius: 8px 8px 0 0; font-size: 12px; }
+    @media (max-width: 850px) { .g-core, .g-rule-pair { grid-template-columns: 1fr; } .g-specimen .row { grid-template-columns: 1fr; gap: 4px; } }
+  </style>
+</head>
+<body>
+<a class="iiic-skip-link" href="#main">Skip to content</a>
+
+<header class="iiic-header">
+  <a class="iiic-brand" href="#">
+    <img src="logo/iiic-mark.svg" alt="IIIC mark" width="23" height="40">
+    <span><strong>IIIC</strong><small>Brand kit 1.0.3 · gallery</small></span>
+  </a>
+  <button class="iiic-btn iiic-btn-outline iiic-nav-toggle" aria-expanded="false" aria-controls="topnav" id="topNavToggle">Menu</button>
+  <nav class="iiic-nav" id="topnav" aria-label="Gallery">
+    <a href="#colour">Colour</a><a href="#logo">Logo</a><a href="#type">Type</a><a href="#components">Components</a><a href="#flow">Flow</a><a href="#patterns">Patterns</a><a href="#templates">Templates</a>
+    <a class="iiic-btn iiic-btn-primary" href="README.md">Read the guide</a>
+  </nav>
+</header>
+
+<main class="iiic-container" id="main">
+
+  <section class="iiic-hero">
+    <div>
+      <div class="iiic-kicker">Indian Institute of Image Catalysts</div>
+      <h1>Yellow on paper. <span class="iiic-hl">Never on dark.</span></h1>
+      <p>Two colours come from the logo. Everything in this kit is built so they look like they belong to one institute: a warm paper base, ink type, and one yellow that always has room to breathe.</p>
+      <div class="iiic-row">
+        <a class="iiic-btn iiic-btn-primary iiic-btn-lg" href="#registers">See the registers</a>
+        <a class="iiic-btn iiic-btn-secondary iiic-btn-lg" href="#components">Components</a>
+      </div>
+    </div>
+    <div class="iiic-hero-field"><img src="logo/iiic-mark.svg" alt="The IIIC mark on the yellow field"></div>
+  </section>
+
+  <div class="g-register-bar iiic-no-print" id="registers">
+    <span class="iiic-kicker">Register</span>
+    <button class="iiic-btn iiic-btn-outline" data-set-register="default" aria-pressed="true">Default</button>
+    <button class="iiic-btn iiic-btn-outline" data-set-register="consultancy" aria-pressed="false">Consultancy</button>
+    <button class="iiic-btn iiic-btn-outline" data-set-register="education" aria-pressed="false">Education</button>
+    <button class="iiic-btn iiic-btn-outline" data-set-register="counselling" aria-pressed="false">Counselling</button>
+    <span class="iiic-type-small">Sets <code>data-register</code> on &lt;body&gt; (any element works, and registers nest). Surfaces, radii and pace re-tune; no register is dark.</span>
+  </div>
+
+  <!-- 01 · Colour -->
+  <section class="iiic-section" id="colour">
+    <div class="iiic-section-head">
+      <div><div class="iiic-kicker">01 / Colour</div><h2 class="iiic-marked">Two core colours, both from the logo</h2></div>
+      <p>Yellow is the surface of the brand. Slate is the ink of the mark. The rest are tints of those two and a warm paper to hold them.</p>
+    </div>
+    <div class="iiic-grid">
+      <div class="iiic-span-7">
+        <div class="g-core">
+          <div style="background:var(--iiic-yellow);color:var(--iiic-ink)"><strong>Yellow</strong><code>#FFDD00 · the field, the bar, the action</code></div>
+          <div class="g-type" style="color:var(--iiic-slate)"><strong>Slate</strong><code>#43525A · the mark, kickers, counselling text. Dark tones are shown as type: they are never surfaces.</code></div>
+        </div>
+        <div class="g-swatches" style="margin-top:16px">
+          <div class="g-swatch"><div class="g-swatch-color" style="background:#E8C800"></div><strong>Yellow deep</strong><code>#E8C800 · hover</code></div>
+          <div class="g-swatch"><div class="g-swatch-color" style="background:#FFE866"></div><strong>Yellow 200</strong><code>#FFE866</code></div>
+          <div class="g-swatch"><div class="g-swatch-color" style="background:#FFF3B0"></div><strong>Yellow 100</strong><code>#FFF3B0</code></div>
+          <div class="g-swatch"><div class="g-swatch-color" style="background:#FFFAE0"></div><strong>Yellow 050</strong><code>#FFFAE0 · counselling</code></div>
+          <div class="g-swatch"><div class="g-swatch-color" style="background:#F8F6F0"></div><strong>Paper</strong><code>#F8F6F0 · base</code></div>
+          <div class="g-swatch"><div class="g-swatch-color" style="background:#EFEBE1"></div><strong>Paper 2</strong><code>#EFEBE1 · wash</code></div>
+          <div class="g-swatch"><div class="g-swatch-type" style="color:#1C262B">Aa</div><strong>Ink</strong><code>#1C262B · text</code></div>
+          <div class="g-swatch"><div class="g-swatch-type" style="color:#5E6C74">Aa</div><strong>Slate 500</strong><code>#5E6C74 · muted text</code></div>
+          <div class="g-swatch"><div class="g-swatch-color" style="background:#fff;box-shadow:inset 0 0 0 2px #7A868C"></div><strong>Slate 400</strong><code>#7A868C · control borders</code></div>
+          <div class="g-swatch"><div class="g-swatch-color" style="background:#A9B4B9"></div><strong>Slate 300</strong><code>#A9B4B9 · disabled</code></div>
+          <div class="g-swatch"><div class="g-swatch-color" style="background:#E4E8EA"></div><strong>Mist</strong><code>#E4E8EA · rules</code></div>
+          <div class="g-swatch"><div class="g-swatch-color" style="background:#EEF2F3"></div><strong>Mist 050</strong><code>#EEF2F3 · consultancy</code></div>
+          <div class="g-swatch"><div class="g-swatch-type" style="color:#5C4E00;background:#FFF3B0;border-color:#FFF3B0">Aa</div><strong>Yellow text</strong><code>#5C4E00 · on tints</code></div>
+        </div>
+      </div>
+      <article class="iiic-panel iiic-span-5">
+        <h3>The rule</h3>
+        <p class="iiic-sub">Yellow and a dark surface together read as a hazard sign. So yellow only ever sits on paper, white, or its own tints; it is a fill or the bar, never text and never a thin line; and dark tones are reserved for type and the illustration.</p>
+        <div class="g-rule-pair">
+          <figure><div class="tile" style="background:var(--iiic-paper);color:var(--iiic-ink);border:1px solid var(--iiic-rule)"><span><span class="iiic-hl">Subjective Self</span></span></div><figcaption><span class="g-ok">✓</span> Yellow on paper, ink type</figcaption></figure>
+          <figure><div class="tile" style="background:var(--iiic-yellow);color:var(--iiic-ink)">Subjective Self</div><figcaption><span class="g-ok">✓</span> Ink type on the yellow field</figcaption></figure>
+          <figure><div class="tile dont">Yellow type or thin yellow lines</div><figcaption><span class="g-no">✗</span> Never: yellow as text or a hairline</figcaption></figure>
+          <figure><div class="tile dont">Yellow on slate, ink or any dark ground</div><figcaption><span class="g-no">✗</span> Never: yellow next to dark</figcaption></figure>
+        </div>
+        <div class="iiic-alert iiic-alert-yellow" style="margin-top:18px"><strong>Status colours are for alerts only.</strong> Green and red never appear in marketing surfaces; caution uses the yellow family.</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 02 · Logo -->
+  <section class="iiic-section" id="logo">
+    <div class="iiic-section-head">
+      <div><div class="iiic-kicker">02 / Logo</div><h2 class="iiic-marked">The lockup is untouched. Here is where it goes.</h2></div>
+      <p>SVG masters in logo/, PNG exports in logo/png. The yellow bar is part of the drawing; the kit borrows it as a device but never redraws the logo.</p>
+    </div>
+    <div class="iiic-grid">
+      <figure class="g-logo-tile yellow iiic-span-4"><img class="mark" src="logo/iiic-mark.svg" alt="Mark on the yellow field"><figcaption>on the yellow field the bar merges; the face stays</figcaption></figure>
+      <figure class="g-logo-tile iiic-span-4"><img src="logo/iiic-logo.svg" alt="Full lockup on white"><figcaption>iiic-logo.svg · on white and paper</figcaption></figure>
+      <figure class="g-logo-tile paper iiic-span-4"><img class="mark" src="logo/iiic-mark.svg" alt="Mark on paper"><figcaption>iiic-mark.svg · headers, small spaces</figcaption></figure>
+      <figure class="g-logo-tile iiic-span-4"><img src="logo/iiic-logo-mono-black.svg" alt="Mono black lockup" style="max-height:80px"><figcaption>iiic-logo-mono-black.svg · one-colour print</figcaption></figure>
+      <article class="iiic-panel iiic-span-4">
+        <h3>Spacing and size</h3>
+        <p class="iiic-sub">Clear space equals the bar's width on every side. Minimum height: lockup 28px on screen, 12mm in print; mark 20px on screen.</p>
+        <div style="text-align:center;padding:8px 0 4px"><span class="g-clearspace"><img src="logo/iiic-logo.svg" alt=""></span></div>
+      </article>
+      <figure class="g-logo-tile dark iiic-span-4"><img src="logo/iiic-logo-mono-white.svg" alt="Mono white lockup" style="max-height:80px"><figcaption>iiic-logo-mono-white.svg · only on a third party's dark ground</figcaption></figure>
+      <article class="iiic-panel iiic-span-12">
+        <h3>The small marks</h3>
+        <p class="iiic-sub">Below 48px the face cannot be read, so the favicon is a geometric lowercase i on the yellow square (SVG, PNG and a multi-size <code>favicon.ico</code>). From 180px up the face returns. The maskable icon keeps the face inside the 80% safe circle.</p>
+        <div class="g-icons">
+          <figure><img src="logo/png/favicon-16.png" width="16" height="16" alt="">16</figure>
+          <figure><img src="logo/png/favicon-32.png" width="32" height="32" alt="">32</figure>
+          <figure><img src="logo/png/favicon-48.png" width="48" height="48" alt="">48</figure>
+          <figure><img src="logo/icon-square.svg" width="96" height="96" alt="" style="border-radius:22px">app icon 180 · 192 · 512</figure>
+          <figure><img src="logo/avatar.svg" width="96" height="96" alt="" style="border-radius:50%">avatar 512</figure>
+          <figure><img src="logo/icon-maskable.svg" width="96" height="96" alt="" style="border-radius:50%">maskable 512 (Android)</figure>
+          <figure><img src="logo/seal.svg" width="96" height="96" alt="">seal · certificates</figure>
+          <figure><img src="logo/og-image.svg" width="229" height="120" alt="" style="border-radius:10px;border:1px solid var(--iiic-rule)">og-image 1200×630</figure>
+          <figure><span class="g-tab"><img src="logo/png/favicon-16.png" width="16" height="16" alt="" style="margin:0">IIIC — Indian Institute of Image Catalysts</span>browser tab</figure>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 03 · Type -->
+  <section class="iiic-section" id="type">
+    <div class="iiic-section-head">
+      <div><div class="iiic-kicker">03 / Type, space, shape</div><h2 class="iiic-marked">Fraunces speaks, Manrope works</h2></div>
+      <p>Both self-hosted in /fonts under the Open Font License. Office and email fall back to Georgia and Arial.</p>
+    </div>
+    <div class="iiic-grid">
+      <article class="iiic-panel iiic-span-8">
+        <div class="g-specimen">
+          <div class="row"><small>display · Fraunces 500</small><div class="iiic-type-display">Understand the self. Then the system.</div></div>
+          <div class="row"><small>h2 · Fraunces 500</small><div class="iiic-type-h2">One theory, three applications</div></div>
+          <div class="row"><small>h3 · Manrope 700</small><h3>Organisation planning, marketing and sales, brand positioning</h3></div>
+          <div class="row"><small>lede · Fraunces 18</small><p class="iiic-lede" style="margin:0">Subjective Self looks at how people in India understand the self: in connection with family values, society, patterns of thought, emotions and environment.</p></div>
+          <div class="row"><small>body · Manrope 16</small><p style="margin:0;max-width:60ch">Body text sits at 16px on a 1.55 line height. Links are ink with an ink underline that thickens on hover: <a class="iiic-link" href="#">the Subjective Self Map</a>. Inline emphasis uses the <span class="iiic-hl">highlighter</span>, never yellow text.</p></div>
+          <div class="row"><small>kicker · Manrope 800</small><div class="iiic-kicker">For organisations</div></div>
+          <div class="row"><small>small · Manrope 13</small><p class="iiic-type-small" style="margin:0">Captions, metadata, table headers and legal lines.</p></div>
+        </div>
+      </article>
+      <div class="iiic-span-4" style="display:grid;gap:20px;align-content:start">
+        <article class="iiic-panel">
+          <h3>Space</h3>
+          <p class="iiic-sub">8px rhythm. Sections breathe at 64px, cards at 28px.</p>
+          <div class="g-space-list">
+            <div class="g-space-item"><span>space-2</span><div class="g-space-bar" style="width:8px"></div><span>8px</span></div>
+            <div class="g-space-item"><span>space-4</span><div class="g-space-bar" style="width:16px"></div><span>16px</span></div>
+            <div class="g-space-item"><span>space-6</span><div class="g-space-bar" style="width:24px"></div><span>24px</span></div>
+            <div class="g-space-item"><span>space-8</span><div class="g-space-bar" style="width:32px"></div><span>32px</span></div>
+            <div class="g-space-item"><span>space-12</span><div class="g-space-bar" style="width:48px"></div><span>48px</span></div>
+            <div class="g-space-item"><span>space-16</span><div class="g-space-bar" style="width:64px"></div><span>64px</span></div>
+          </div>
+        </article>
+        <article class="iiic-panel">
+          <h3>Shape</h3>
+          <p class="iiic-sub">Soft, like the hand-drawn mark. Controls are pills; cards go from 16 to 32px by register.</p>
+          <div class="iiic-row">
+            <div class="g-shape" style="border-radius:10px">sm 10</div>
+            <div class="g-shape" style="border-radius:16px">md 16</div>
+            <div class="g-shape" style="border-radius:24px">lg 24</div>
+            <div class="g-shape" style="border-radius:32px">xl 32</div>
+            <div class="g-shape" style="border-radius:999px">pill</div>
+          </div>
+        </article>
+      </div>
+      <article class="iiic-panel iiic-span-12">
+        <h3>Article</h3>
+        <p class="iiic-sub"><code>.iiic-article</code> styles long-form content from the CMS: Journal articles and the legal pages. Specimen text.</p>
+        <div class="iiic-article">
+          <p>An article opens with a plain paragraph at 18px on a 1.65 line height, held to the register's reading measure. Links are <a href="#">ink and underlined</a>.</p>
+          <h2>A section heading in Fraunces</h2>
+          <p>Paragraphs stay short. Lists keep their markers in the muted colour:</p>
+          <ul><li>one idea per item;</li><li>no more than one level of nesting.</li></ul>
+          <blockquote>A pull quote carries the bar on its left and is set in Fraunces.</blockquote>
+          <hr>
+          <p>A rule separates a closing note from the body.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 04 · Components -->
+  <section class="iiic-section" id="components">
+    <div class="iiic-section-head">
+      <div><div class="iiic-kicker">04 / Components</div><h2 class="iiic-marked">Everything here re-tunes with the register</h2></div>
+      <p>Buttons, fields, badges, alerts, stats, tables and the placeholder chip. Each reads semantic roles, so it re-tunes with the register.</p>
+    </div>
+    <div class="iiic-grid">
+      <article class="iiic-panel iiic-span-6">
+        <h3>Buttons</h3>
+        <p class="iiic-sub">Primary is yellow with ink. Secondary is an ink outline. Danger is a soft red with red type. Nothing is filled dark.</p>
+        <div class="iiic-row">
+          <button class="iiic-btn iiic-btn-primary">Take the Map</button>
+          <button class="iiic-btn iiic-btn-secondary">Book a proposal call</button>
+          <button class="iiic-btn iiic-btn-outline">Read the research</button>
+          <button class="iiic-btn iiic-btn-ghost">Back</button>
+          <button class="iiic-btn iiic-btn-primary" disabled>Disabled</button>
+        </div>
+        <div class="iiic-row" style="margin-top:14px">
+          <button class="iiic-btn iiic-btn-primary iiic-btn-lg">Large primary</button>
+          <button class="iiic-btn iiic-btn-secondary iiic-btn-lg">Large secondary</button>
+          <button class="iiic-btn iiic-btn-danger">Cancel booking</button>
+        </div>
+        <div class="iiic-row" style="margin-top:14px">
+          <button class="iiic-btn iiic-btn-outline iiic-btn-icon" type="button" aria-label="Add to calendar"><svg class="iiic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></button>
+          <a class="iiic-btn iiic-btn-secondary" href="#"><svg class="iiic-icon iiic-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Add to calendar</a>
+          <span class="iiic-type-small">Lucide icons at 20px (16px with <code>.iiic-icon-sm</code>), stroke 1.75, in currentColor; an icon-only button carries <code>aria-label</code>.</span>
+        </div>
+        <h3 style="margin-top:28px">Badges and alerts</h3>
+        <div class="iiic-row" style="margin-bottom:14px">
+          <span class="iiic-badge">Default</span>
+          <span class="iiic-badge iiic-badge-yellow">New cohort</span>
+          <span class="iiic-badge iiic-badge-soft"><i class="iiic-badge-dot"></i>Verified client</span>
+          <span class="iiic-badge iiic-badge-green"><i class="iiic-badge-dot"></i>Confirmed</span>
+          <span class="iiic-badge iiic-badge-red">Cancelled</span>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div class="iiic-alert iiic-alert-yellow"><strong>Slot held.</strong> Complete payment to confirm it.</div>
+          <div class="iiic-alert iiic-alert-green"><strong>Confirmed.</strong> A calendar invite is on its way.</div>
+          <div class="iiic-alert iiic-alert-red"><strong>Payment failed.</strong> Your slot is still held. Try another method.</div>
+        </div>
+      </article>
+      <article class="iiic-panel iiic-span-6">
+        <h3>Form</h3>
+        <p class="iiic-sub">48px fields with a 3:1 border, the ink focus ring, a prefix group for phone numbers, inline errors with <code>aria-invalid</code>, and an error summary after a failed submit.</p>
+        <div class="iiic-error-summary" role="alert" tabindex="-1" style="margin-bottom:18px"><h2>Check 1 answer</h2><ul><li><a href="#g-email">Enter a complete email address</a></li></ul></div>
+        <form class="iiic-form-grid" onsubmit="return false">
+          <div class="iiic-field-wrap"><label class="iiic-label" for="g-name">Full name</label><input class="iiic-field" id="g-name" placeholder="Your name"></div>
+          <div class="iiic-field-wrap"><label class="iiic-label" for="g-phone">Phone</label><div class="iiic-field-group"><span>+91</span><input class="iiic-field" id="g-phone" type="tel" inputmode="numeric" placeholder="10-digit mobile number"></div></div>
+          <div class="iiic-field-wrap full"><label class="iiic-label" for="g-who">Who is this for?</label>
+            <select class="iiic-field" id="g-who"><option>Yourself</option><option>Your family</option><option>Your organisation</option></select>
+            <div class="iiic-help">We route your next step from this answer.</div>
+          </div>
+          <div class="iiic-field-wrap full"><label class="iiic-label" for="g-email">Email</label><input class="iiic-field" id="g-email" type="email" value="priya@" aria-invalid="true" aria-describedby="g-email-err"><div class="iiic-error" id="g-email-err">Enter a complete email address, like name@example.com.</div></div>
+          <div class="iiic-field-wrap full"><label class="iiic-label" for="g-msg">Message</label><textarea class="iiic-field" id="g-msg" rows="3" placeholder="Optional"></textarea></div>
+          <label class="iiic-check full"><input type="checkbox"><span>Suggest related programmes after my session (optional; consent boxes are never pre-ticked)</span></label>
+          <label class="iiic-check full"><input type="radio" name="g-r" checked><span>Individual session</span></label>
+          <div class="full iiic-row"><button class="iiic-btn iiic-btn-primary" type="submit">Continue</button><button class="iiic-btn iiic-btn-primary is-loading" type="button" aria-busy="true" aria-disabled="true">Continue</button><span class="iiic-type-small">Phone and email are required. The second button shows the loading state.</span></div>
+        </form>
+      </article>
+      <article class="iiic-panel iiic-span-4">
+        <div class="iiic-stat"><div><div class="iiic-stat-label">Sessions delivered</div><div class="iiic-stat-value"><span class="iiic-todo">[[0]]</span></div></div><div class="iiic-stat-icon">S</div></div>
+        <div class="iiic-progress" role="progressbar" aria-label="Sample progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="62"><span style="--p:62%"></span></div>
+        <p class="iiic-type-small" style="margin:10px 0 0">Stat with progress. Counters stay placeholders until the team supplies real, verifiable numbers.</p>
+      </article>
+      <article class="iiic-panel iiic-span-4">
+        <div class="iiic-stat"><div><div class="iiic-stat-label">Course progress</div><div class="iiic-stat-value">3<span style="font-size:24px;color:var(--iiic-text-muted)">/<span class="iiic-todo" style="font-size:13px">[[n]]</span></span></div></div><div class="iiic-stat-icon">C</div></div>
+        <div class="iiic-progress" role="progressbar" aria-label="Course progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="38"><span style="--p:37.5%"></span></div>
+        <p class="iiic-type-small" style="margin:10px 0 0">Shown in My IIIC. Values here are illustrative.</p>
+      </article>
+      <article class="iiic-panel iiic-span-4">
+        <h3>Placeholder chip</h3>
+        <p class="iiic-sub">Every unsupplied fact is visibly unfinished.</p>
+        <p style="margin:0">Course fee: <span class="iiic-todo">[[TODO: course fee]]</span><br>Next cohort: <span class="iiic-todo">[[TODO: dates]]</span><br>Lead counsellor: <span class="iiic-todo">[[TODO: name, qualification]]</span></p>
+      </article>
+      <article class="iiic-panel iiic-span-12">
+        <h3>Table</h3>
+        <p class="iiic-sub">Ink header rule, tabular figures, hairline rows. Wrap in <code>.iiic-table-wrap</code> so phones scroll the table, not the page. Durations as on IIIC's registration form (1:1 sessions); prices are not published for now; formats are set per service; the status column shows sample states.</p>
+        <div class="iiic-table-wrap"><table class="iiic-table">
+          <thead><tr><th>Session</th><th>Duration</th><th>Format</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><span class="iiic-avatar">15</span>1:1 session</td><td>15 minutes</td><td><span class="iiic-todo">[[online / office]]</span></td><td><span class="iiic-badge iiic-badge-green"><i class="iiic-badge-dot"></i>Open</span></td></tr>
+            <tr><td><span class="iiic-avatar">30</span>1:1 session</td><td>30 minutes</td><td><span class="iiic-todo">[[online / office]]</span></td><td><span class="iiic-badge iiic-badge-green"><i class="iiic-badge-dot"></i>Open</span></td></tr>
+            <tr><td><span class="iiic-avatar">45</span>1:1 session</td><td>45 minutes</td><td><span class="iiic-todo">[[online / office]]</span></td><td><span class="iiic-badge iiic-badge-soft">Full</span></td></tr>
+          </tbody>
+        </table></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 05 · Flow pieces -->
+  <section class="iiic-section" id="flow">
+    <div class="iiic-section-head">
+      <div><div class="iiic-kicker">05 / Flow pieces</div><h2 class="iiic-marked">What the Map, the booking and the account need</h2></div>
+      <p>Choice cards, the five-point scale, the date strip, the one-time code, tabs, price cards, steps, and the honest states: empty and loading.</p>
+    </div>
+    <div class="iiic-grid">
+      <article class="iiic-panel iiic-span-6">
+        <h3>Choice cards</h3>
+        <p class="iiic-sub">Step 0 of the Map and step 1 of booking. One radio per card inside a fieldset; the right-hand value (a price, "Free") is optional.</p>
+        <fieldset class="iiic-fieldset"><legend>Who is this for?</legend>
+        <div class="iiic-choices">
+          <label class="iiic-choice"><input type="radio" name="g-who2" checked><span class="iiic-choice-body"><strong>Yourself</strong><small>Your map and a recommended next step</small></span></label>
+          <label class="iiic-choice"><input type="radio" name="g-who2"><span class="iiic-choice-body"><strong>Your family</strong><small>A family result and a recommended next step</small></span></label>
+          <label class="iiic-choice"><input type="radio" name="g-who2"><span class="iiic-choice-body"><strong>Your organisation</strong><small>A free Team Map, then a debrief call</small></span><span class="iiic-choice-meta">Free</span></label>
+        </div>
+        </fieldset>
+      </article>
+      <article class="iiic-panel iiic-span-6">
+        <h3>The scale</h3>
+        <p class="iiic-sub">A five-point question as the Map may use it. The founder supplies the questions, their number and the scale labels; this one is a stand-in.</p>
+        <fieldset class="iiic-scale">
+          <legend>When a decision affects my family, I weigh their view before my own.</legend>
+          <div class="iiic-scale-row">
+            <label><input type="radio" name="g-q1" value="1"><span>1<span class="iiic-sr-only">, rarely true</span></span></label>
+            <label><input type="radio" name="g-q1" value="2"><span>2</span></label>
+            <label><input type="radio" name="g-q1" value="3" checked><span>3</span></label>
+            <label><input type="radio" name="g-q1" value="4"><span>4</span></label>
+            <label><input type="radio" name="g-q1" value="5"><span>5<span class="iiic-sr-only">, always true</span></span></label>
+          </div>
+          <div class="iiic-scale-ends" aria-hidden="true"><span>Rarely true</span><span>Always true</span></div>
+        </fieldset>
+        <div class="iiic-progress iiic-progress-flat" role="progressbar" aria-label="Map progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="25"><span style="--p:25%"></span></div>
+        <p class="iiic-type-small" style="margin:8px 0 0">Question 2 of <span class="iiic-todo">[[n]]</span> · <code>.iiic-progress-flat</code>, always with the count in text</p>
+      </article>
+      <article class="iiic-panel iiic-span-8">
+        <h3>Date strip and slots</h3>
+        <p class="iiic-sub">Step 2 of booking: the bookable days, then the counsellor's free times, and a request for anything else. Sample days and times here; the real ones come from the counsellor's working hours and calendar, and taken times stay visible, disabled.</p>
+        <fieldset class="iiic-fieldset"><legend>Date</legend>
+        <div class="iiic-dates">
+          <label class="iiic-date"><input type="radio" name="g-date" checked><span><small>Tue</small><strong>3</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="g-date"><span><small>Wed</small><strong>4</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="g-date" disabled><span><small>Thu</small><strong>5</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="g-date"><span><small>Fri</small><strong>6</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="g-date"><span><small>Sat</small><strong>7</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="g-date"><span><small>Sun</small><strong>8</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="g-date"><span><small>Mon</small><strong>9</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="g-date"><span><small>Tue</small><strong>10</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="g-date"><span><small>Wed</small><strong>11</strong><small>Nov</small></span></label>
+          <label class="iiic-date"><input type="radio" name="g-date"><span><small>Thu</small><strong>12</strong><small>Nov</small></span></label>
+        </div>
+        </fieldset>
+        <fieldset class="iiic-fieldset" style="margin-top:14px"><legend>Time</legend>
+        <div class="iiic-slots"><label class="iiic-slot"><input type="radio" name="g-slot2"><span>10:00 AM</span></label><label class="iiic-slot"><input type="radio" name="g-slot2" checked><span>10:30 AM</span></label><label class="iiic-slot"><input type="radio" name="g-slot2"><span>11:15 AM</span></label><label class="iiic-slot"><input type="radio" name="g-slot2" disabled><span>3:00 PM</span></label></div>
+        </fieldset>
+        <div class="iiic-row" style="margin-top:12px"><button class="iiic-btn iiic-btn-outline" type="button">Request another time</button><span class="iiic-type-small">Preferred days, times and a note; IIIC replies with a time.</span></div>
+      </article>
+      <article class="iiic-panel iiic-span-4">
+        <h3>One-time code</h3>
+        <p class="iiic-sub">Phone or email sign-in. One field, so paste and the phone's code autofill work.</p>
+        <label class="iiic-label" for="g-otp">6-digit code</label>
+        <input class="iiic-field iiic-otp" id="g-otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" value="482" aria-describedby="g-otp-help">
+        <p class="iiic-type-small" id="g-otp-help" style="margin:14px 0 0">Sent to your email · <a class="iiic-link" href="#">Resend in 0:42</a></p>
+        <h3 style="margin-top:28px">Tabs</h3>
+        <div class="iiic-tabs" role="tablist" aria-label="Bookings" data-tabs><button role="tab" id="g-t1" aria-selected="true" aria-controls="g-p1" tabindex="0">Upcoming</button><button role="tab" id="g-t2" aria-selected="false" aria-controls="g-p2" tabindex="-1">Past</button><button role="tab" id="g-t3" aria-selected="false" aria-controls="g-p3" tabindex="-1">Cancelled</button></div>
+        <div role="tabpanel" id="g-p1" aria-labelledby="g-t1" class="iiic-type-small" style="margin-top:10px">Upcoming bookings appear here.</div>
+        <div role="tabpanel" id="g-p2" aria-labelledby="g-t2" class="iiic-type-small" style="margin-top:10px" hidden>Past bookings appear here.</div>
+        <div role="tabpanel" id="g-p3" aria-labelledby="g-t3" class="iiic-type-small" style="margin-top:10px" hidden>Cancelled bookings appear here.</div>
+        <div class="iiic-tabs iiic-tabs-line" role="tablist" aria-label="Account" style="margin-top:14px" data-tabs><button role="tab" id="g-t4" aria-selected="true" aria-controls="g-p4" tabindex="0">Sessions</button><button role="tab" id="g-t5" aria-selected="false" aria-controls="g-p5" tabindex="-1">Course</button><button role="tab" id="g-t6" aria-selected="false" aria-controls="g-p6" tabindex="-1">Documents</button></div>
+        <div role="tabpanel" id="g-p4" aria-labelledby="g-t4" class="iiic-type-small" style="margin-top:10px">Your sessions.</div>
+        <div role="tabpanel" id="g-p5" aria-labelledby="g-t5" class="iiic-type-small" style="margin-top:10px" hidden>Your course.</div>
+        <div role="tabpanel" id="g-p6" aria-labelledby="g-t6" class="iiic-type-small" style="margin-top:10px" hidden>Your documents.</div>
+      </article>
+      <div class="iiic-span-12 iiic-doors">
+        <article class="iiic-price-card"><div class="iiic-kicker">1:1 session</div><h3>15 minutes</h3><div class="iiic-price"><span class="iiic-todo">[[TODO: price, when published]]</span></div><p><span class="iiic-todo">[[TODO: who this length suits]]</span></p><ul><li>Format: <span class="iiic-todo">[[online / in person]]</span></li><li>Times: a free slot, or request another</li></ul><a class="iiic-btn iiic-btn-secondary" href="#">Book 15 minutes</a></article>
+        <article class="iiic-price-card is-featured"><div class="iiic-kicker">1:1 session</div><h3>30 minutes</h3><div class="iiic-price"><span class="iiic-todo">[[TODO: price, when published]]</span></div><p><span class="iiic-todo">[[TODO: who this length suits]]</span></p><ul><li>Format: <span class="iiic-todo">[[online / in person]]</span></li><li>Times: a free slot, or request another</li></ul><a class="iiic-btn iiic-btn-primary" href="#">Book 30 minutes</a></article>
+        <article class="iiic-price-card"><div class="iiic-kicker">1:1 session</div><h3>45 minutes</h3><div class="iiic-price"><span class="iiic-todo">[[TODO: price, when published]]</span></div><p><span class="iiic-todo">[[TODO: who this length suits]]</span></p><ul><li>Format: <span class="iiic-todo">[[online / in person]]</span></li><li>Times: a free slot, or request another</li></ul><a class="iiic-btn iiic-btn-secondary" href="#">Book 45 minutes</a></article>
+      </div>
+      <p class="iiic-type-small iiic-span-12" style="margin:-6px 0 0"><code>.is-featured</code> draws the bar across the top of the option the team chooses to lead with. Never label it "most popular" or "most booked" unless the booking records show it.</p>
+      <article class="iiic-panel iiic-span-5">
+        <h3>Steps</h3>
+        <p class="iiic-sub">"How it works" on the application pages.</p>
+        <ol class="iiic-steps">
+          <li><strong>Take the Map</strong><p>A short reflective self-assessment: one picture of how you hold yourself in your world.</p></li>
+          <li><strong>Book a time</strong><p>Pick a free time, or request another. A confirmation follows, and a reminder before the session.</p></li>
+          <li><strong>Get your recommended path</strong><p>Your map suggests one next step and two related ones. Nothing is booked until you choose.</p></li>
+        </ol>
+      </article>
+      <article class="iiic-panel iiic-span-7">
+        <h3>Empty, loading, navigating</h3>
+        <p class="iiic-sub">An empty slot stays empty until real proof arrives; a skeleton only stands in for data that exists and is loading.</p>
+        <div class="iiic-grid" style="gap:16px">
+          <div class="iiic-empty iiic-span-6"><h3>No verified stories yet</h3><p>Verified client stories will appear here. We only publish proof tied to a real booking.</p><a class="iiic-btn iiic-btn-outline" href="#">How we verify</a></div>
+          <div class="iiic-span-6" aria-busy="true"><span class="iiic-sr-only">Loading</span><span class="iiic-skeleton iiic-skeleton-title"></span><span class="iiic-skeleton iiic-skeleton-text"></span><span class="iiic-skeleton iiic-skeleton-text" style="width:92%"></span><span class="iiic-skeleton iiic-skeleton-text" style="width:70%"></span><span class="iiic-skeleton" style="height:46px;width:160px;border-radius:999px;margin-top:14px"></span></div>
+        </div>
+        <ol class="iiic-breadcrumb" style="margin:20px 0 10px"><li><a href="#">Journal</a></li><li><a href="#">Work</a></li><li aria-current="page">Article title</li></ol>
+        <ul class="iiic-pagination" style="margin-top:6px"><li><a href="#">‹ Newer</a></li><li><span aria-current="page">1</span></li><li><a href="#">2</a></li><li><a href="#">3</a></li><li><a href="#">Older ›</a></li></ul>
+        <div class="iiic-row" style="margin-top:18px;justify-content:space-between">
+          <details class="iiic-menu is-start"><summary><span class="iiic-avatar" style="margin:0" aria-hidden="true">A</span><span>My IIIC</span></summary><div><a href="#">Sessions</a><a href="#">Course progress</a><a href="#">Documents</a><button type="button">Log out</button></div></details>
+          <a class="iiic-fab" href="#" style="position:static">Chat on WhatsApp</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 06 · Booking states -->
+  <section class="iiic-section" id="states">
+    <div class="iiic-section-head">
+      <div><div class="iiic-kicker">06 / Booking states</div><h2 class="iiic-marked">Every outcome of a booking, said plainly</h2></div>
+      <p>Composed from alerts, buttons and slots. The words follow VOICE.md; times and amounts come from the booking.</p>
+    </div>
+    <div class="iiic-grid">
+      <article class="iiic-panel iiic-span-3"><div class="iiic-alert iiic-alert-yellow" role="status"><strong>Waiting for payment.</strong> Your slot is held while you pay.</div><p class="iiic-type-small" style="margin:12px 0 0">The hold is real and ends at the time the booking rules set; no countdown pressure.</p></article>
+      <article class="iiic-panel iiic-span-3"><div class="iiic-alert iiic-alert-red" role="alert"><strong>Payment did not go through.</strong> Nothing was charged. Your slot is still held.</div><div class="iiic-row" style="margin-top:12px"><button class="iiic-btn iiic-btn-primary" type="button">Try again</button></div></article>
+      <article class="iiic-panel iiic-span-3"><div class="iiic-alert iiic-alert-red" role="alert"><strong>That slot was just taken.</strong> Pick another time; nothing was charged.</div><fieldset class="iiic-fieldset" style="margin-top:12px"><legend>Nearest free times</legend><div class="iiic-slots"><label class="iiic-slot"><input type="radio" name="g-near"><span>3:30 PM</span></label></div></fieldset></article>
+      <article class="iiic-panel iiic-span-3"><div class="iiic-alert iiic-alert-green" role="status"><strong>Booked.</strong> A confirmation is on its way by email.</div><div class="iiic-row" style="margin-top:12px"><a class="iiic-btn iiic-btn-outline" href="#">Add to calendar</a></div></article>
+      <article class="iiic-panel iiic-span-6">
+        <h3>Video frame</h3>
+        <p class="iiic-sub"><code>.iiic-video</code> holds a lesson or a recorded talk at 16:9.</p>
+        <div class="iiic-video" style="display:grid;place-items:center"><span class="iiic-todo">[[Lesson video]]</span></div>
+      </article>
+      <article class="iiic-panel iiic-span-6">
+        <h3>Consent bar</h3>
+        <p class="iiic-sub">Only if a non-essential cookie is ever set; cookieless analytics need none. Both choices have the same weight.</p>
+        <div class="iiic-consent" style="position:static;margin:0"><p>We would like to use one analytics cookie to see which pages help. Nothing else is stored.</p><div class="iiic-row"><button class="iiic-btn iiic-btn-primary" type="button">Allow</button><button class="iiic-btn iiic-btn-secondary" type="button">No, thanks</button></div></div>
+      </article>
+      <section class="iiic-span-12 iiic-band iiic-band-wash" style="border-radius:var(--iiic-radius);padding:32px 28px"><div class="iiic-kicker">The wash band</div><p style="margin:10px 0 0;max-width:60ch">Separates a section from its neighbours without colour; as many as a page needs.</p></section>
+    </div>
+  </section>
+
+  <!-- 07 · Signature visual -->
+  <section class="iiic-section" id="signature">
+    <div class="iiic-section-head">
+      <div><div class="iiic-kicker">07 / Signature visual</div><h2 class="iiic-marked">The Map constellation, drawn from real answers</h2></div>
+      <p>Sample treatment only. The four dimensions are stand-ins from the current site; the founder defines the real ones.</p>
+    </div>
+    <div class="iiic-grid">
+      <article class="iiic-panel iiic-span-6">
+        <h3>On paper and white</h3>
+        <p class="iiic-sub">Slate points, slate-500 lines; the strongest dimension in yellow with an ink outline.</p>
+        <svg class="g-constellation" viewBox="0 0 380 260" role="img" aria-label="Sample constellation, paper treatment">
+          <g stroke="#5E6C74" stroke-width="1.2" fill="none"><path d="M190 46 L268 124 L200 206 L120 140 Z"/><path d="M190 46 L200 206"/><path d="M120 140 L268 124"/></g>
+          <circle cx="190" cy="46" r="6" fill="#43525A"/><circle cx="268" cy="124" r="10" fill="#FFDD00" stroke="#1C262B" stroke-width="1.5"/><circle cx="200" cy="206" r="6" fill="#43525A"/><circle cx="120" cy="140" r="6" fill="#43525A"/>
+          <g font-size="12" fill="#5E6C74" font-family="Manrope, Arial, sans-serif" font-weight="600"><text x="190" y="30" text-anchor="middle">Emotional</text><text x="286" y="128">Personal</text><text x="200" y="228" text-anchor="middle">Social</text><text x="106" y="144" text-anchor="end">Professional</text></g>
+        </svg>
+      </article>
+      <article class="iiic-panel iiic-panel-yellow iiic-span-6">
+        <h3>On the yellow field</h3>
+        <p class="iiic-sub">Ink points and lines; the strongest dimension in white with an ink ring.</p>
+        <svg class="g-constellation" viewBox="0 0 380 260" role="img" aria-label="Sample constellation, yellow treatment">
+          <g stroke="#1C262B" stroke-width="1.2" fill="none" opacity=".55"><path d="M176 52 L274 110 L214 204 L124 154 Z"/><path d="M176 52 L214 204"/><path d="M124 154 L274 110"/></g>
+          <circle cx="176" cy="52" r="6" fill="#1C262B"/><circle cx="274" cy="110" r="10" fill="#FFFFFF" stroke="#1C262B" stroke-width="2"/><circle cx="214" cy="204" r="6" fill="#1C262B"/><circle cx="124" cy="154" r="6" fill="#1C262B"/>
+          <g font-size="12" fill="#1C262B" font-family="Manrope, Arial, sans-serif" font-weight="700"><text x="176" y="36" text-anchor="middle">Emotional</text><text x="292" y="114">Personal</text><text x="214" y="226" text-anchor="middle">Social</text><text x="110" y="158" text-anchor="end">Professional</text></g>
+        </svg>
+      </article>
+    </div>
+  </section>
+
+  <!-- 08 · Patterns -->
+  <section class="iiic-section" id="patterns">
+    <div class="iiic-section-head">
+      <div><div class="iiic-kicker">08 / Patterns</div><h2 class="iiic-marked">Page-level pieces, composed from the components</h2></div>
+      <p>Header, doors, proof, stepper, slots, accordion, modal, toast, bridge, the yellow band and the footer. Markup in templates/web/.</p>
+    </div>
+    <div class="iiic-grid">
+      <article class="iiic-panel iiic-span-12" style="padding:0;overflow:hidden">
+        <div class="iiic-header" style="position:static">
+          <a class="iiic-brand" href="#"><img src="logo/iiic-mark.svg" alt="IIIC" width="23" height="40"><span><strong>IIIC</strong><small>Header pattern</small></span></a>
+          <button class="iiic-btn iiic-btn-outline iiic-nav-toggle" aria-expanded="false" aria-controls="gnav" id="gNavToggle">Menu</button>
+          <nav class="iiic-nav" id="gnav" aria-label="Demo"><a href="#" aria-current="page">Framework</a><a href="#">For organisations</a><a href="#">Learn</a><a href="#">Counselling</a><a href="#">Proof</a><a class="iiic-btn iiic-btn-primary" href="#">Take the Map</a></nav>
+        </div>
+      </article>
+      <div class="iiic-span-12 iiic-doors">
+        <a class="iiic-card iiic-card-door" href="#"><div class="iiic-door-glyph">O</div><div class="iiic-kicker">For organisations</div><h3>Consultancy</h3><p>Organisation planning, marketing and sales, brand positioning, built on one theory of how people see themselves.</p><span class="iiic-btn iiic-btn-secondary">Book a proposal call</span></a>
+        <a class="iiic-card iiic-card-door" href="#"><div class="iiic-door-glyph">L</div><div class="iiic-kicker">For learners</div><h3>Education</h3><p>The Subjective Self certification course. Format, length and fee: <span class="iiic-todo">[[TODO]]</span>.</p><span class="iiic-btn iiic-btn-secondary">Join a free info session</span></a>
+        <a class="iiic-card iiic-card-door" href="#"><div class="iiic-door-glyph">C</div><div class="iiic-kicker">For you and your family</div><h3>Counselling</h3><p>1:1 and family sessions, online or at the office. Pick a free time, or ask for another.</p><span class="iiic-btn iiic-btn-secondary">Book a session</span></a>
+      </div>
+      <article class="iiic-card iiic-card-proof iiic-span-6"><blockquote><span class="iiic-todo">[[Verified client story]]</span></blockquote><footer><span class="iiic-badge iiic-badge-soft"><i class="iiic-badge-dot"></i>Verified client</span><span class="iiic-todo">[[programme · month]]</span></footer></article>
+      <article class="iiic-card iiic-card-case iiic-span-6"><div class="iiic-kicker">Case study</div><h3><span class="iiic-todo">[[Client]]</span></h3><p>What changed, in the client's own measure.</p><div class="iiic-case-metrics"><div><strong><span class="iiic-todo">[[0]]</span></strong><span>Before</span></div><div><strong><span class="iiic-todo">[[0]]</span></strong><span>After</span></div></div></article>
+      <article class="iiic-panel iiic-span-6">
+        <h3>Stepper and slot picker</h3>
+        <p class="iiic-sub">Booking flow pieces. On phones the labels become screen-reader-only and the numbers stay.</p>
+        <ol class="iiic-stepper" aria-label="Booking progress"><li data-state="done"><span>Choose</span></li><li data-state="current" aria-current="step"><span>Date</span></li><li><span>Details</span></li><li><span>Pay</span></li><li><span>Done</span></li></ol>
+        <fieldset class="iiic-fieldset" style="margin-top:20px"><legend>Time</legend><div class="iiic-slots"><label class="iiic-slot"><input type="radio" name="gslot" checked><span>10:00 AM</span></label><label class="iiic-slot"><input type="radio" name="gslot"><span>10:30 AM</span></label><label class="iiic-slot"><input type="radio" name="gslot"><span>11:15 AM</span></label><label class="iiic-slot"><input type="radio" name="gslot" disabled><span>3:00 PM</span></label></div></fieldset>
+      </article>
+      <article class="iiic-panel iiic-span-6">
+        <h3>Accordion, modal, toast, bridge</h3>
+        <p class="iiic-sub">Native details and dialog elements, styled.</p>
+        <details class="iiic-accordion"><summary>What is the Subjective Self Map?</summary><div><span class="iiic-todo">[[Answer]]</span></div></details>
+        <details class="iiic-accordion"><summary>Is counselling confidential?</summary><div><span class="iiic-todo">[[Answer]]</span></div></details>
+        <div class="iiic-row" style="margin-top:16px"><button class="iiic-btn iiic-btn-outline" type="button" id="gModalOpen">Open modal</button><button class="iiic-btn iiic-btn-outline" type="button" id="gToast">Show toast</button></div>
+        <aside class="iiic-bridge" data-to="education" style="margin-top:16px"><div><div class="iiic-kicker">Learn</div><p><strong>One opt-in card per touchpoint.</strong> <code>data-to</code> takes the colour of the application it leads to; accept and decline carry equal weight, and "No, thanks" is remembered.</p></div><div class="iiic-row"><button class="iiic-btn iiic-btn-primary" type="button">Yes, tell me</button><button class="iiic-btn iiic-btn-secondary" type="button">No, thanks</button></div></aside>
+      </article>
+      <section class="iiic-span-12 iiic-band iiic-band-yellow" style="border-radius:var(--iiic-radius);padding:56px 40px">
+        <div class="iiic-cta">
+          <div><div class="iiic-kicker">The yellow band · one per page</div><h2>See your own map.</h2><p>A short reflective self-assessment. One picture of how you hold yourself in your world, and one honest next step.</p></div>
+          <div class="iiic-row"><a class="iiic-btn iiic-btn-primary iiic-btn-lg" href="#">Take the Map</a><a class="iiic-btn iiic-btn-secondary iiic-btn-lg" href="#">How it works</a></div>
+        </div>
+      </section>
+    </div>
+    <dialog class="iiic-modal" id="gModal" aria-labelledby="gModalTitle"><h2 id="gModalTitle">Modal pattern</h2><p>Native dialog on white with the kit's radius and shadow. Close with Escape or the button.</p><div class="iiic-row"><button class="iiic-btn iiic-btn-ghost" type="button" id="gModalCancel">Cancel</button><button class="iiic-btn iiic-btn-primary" type="button" id="gModalClose">Done</button></div></dialog>
+    <div class="iiic-toast" id="gToastEl" data-tone="success" role="status" hidden><span>Toast pattern: saved.</span><button class="iiic-btn" type="button" id="gToastClose">Dismiss</button></div>
+  </section>
+
+  <!-- 09 · Templates -->
+  <section class="iiic-section" id="templates">
+    <div class="iiic-section-head">
+      <div><div class="iiic-kicker">09 / Templates and exports</div><h2 class="iiic-marked">Everything else the brand needs, in templates/ and logo/</h2></div>
+      <p>Each links to the file; READMEs sit beside them.</p>
+    </div>
+    <div class="iiic-grid">
+      <article class="iiic-panel iiic-span-4"><h3>Web</h3><p class="iiic-sub">Page shell, landing, booking step.</p><div class="iiic-row"><a class="iiic-link" href="templates/web/page-shell.html">page-shell</a><a class="iiic-link" href="templates/web/landing.html">landing</a><a class="iiic-link" href="templates/web/booking-step.html">booking-step</a></div></article>
+      <article class="iiic-panel iiic-span-4"><h3>Email</h3><p class="iiic-sub">Table-based, 600px, Georgia and Arial, light only.</p><div class="iiic-row"><a class="iiic-link" href="templates/email/booking-confirmation.html">confirmation</a><a class="iiic-link" href="templates/email/newsletter.html">newsletter</a><a class="iiic-link" href="templates/email/signature.html">signature</a></div></article>
+      <article class="iiic-panel iiic-span-4"><h3>Print</h3><p class="iiic-sub">A4 documents that paginate themselves; specimen PDFs in templates/print/pdf.</p><div class="iiic-row"><a class="iiic-link" href="templates/print/letterhead.html">letterhead</a><a class="iiic-link" href="templates/print/invoice.html">invoice</a><a class="iiic-link" href="templates/print/proposal.html">proposal</a><a class="iiic-link" href="templates/print/certificate.html">certificate</a><a class="iiic-link" href="templates/print/business-card.html">business card</a></div></article>
+      <article class="iiic-panel iiic-span-4"><h3>Office</h3><p class="iiic-sub">Word letterhead and document template for people who write letters and proposals by hand.</p><div class="iiic-row"><a class="iiic-link" href="templates/office/IIIC-letterhead.docx">letterhead.docx</a><a class="iiic-link" href="templates/office/IIIC-document.docx">document.docx</a></div></article>
+      <article class="iiic-panel iiic-span-4"><h3>Presentation</h3><p class="iiic-sub">PowerPoint template, five layouts, none dark.</p><a class="iiic-link" href="templates/presentation/iiic-template.pptx">iiic-template.pptx</a></article>
+      <article class="iiic-panel iiic-span-4"><h3>Social</h3><p class="iiic-sub">LinkedIn covers, a quote post and an announcement post, with PNG exports.</p><div class="iiic-row"><a class="iiic-link" href="templates/social/social.html">social.html</a><a class="iiic-link" href="templates/social/png/">png/</a></div></article>
+    </div>
+  </section>
+</main>
+
+<footer class="iiic-footer-grid">
+  <div class="iiic-footer-brand"><img src="logo/iiic-logo.svg" alt="Indian Institute of Image Catalysts"><p>The brand kit for the Indian Institute of Image Catalysts, Ahmedabad.</p></div>
+  <div><h4>Kit</h4><a href="README.md">Guide</a><a href="AUDIT.md">Audit</a><a href="CHANGELOG.md">Changelog</a><a href="tokens.json">tokens.json</a></div>
+  <div><h4>Files</h4><a href="css/iiic.css">css/iiic.css</a><a href="logo/">logo/</a><a href="fonts/">fonts/</a><a href="templates/">templates/</a></div>
+  <div><h4>Rules</h4><a href="#colour">Yellow on paper</a><a href="#logo">Logo untouched</a><a href="#type">Fraunces and Manrope</a></div>
+</footer>
+<div class="iiic-footer-legal"><span>IIIC brand kit 1.0.3 · 5 Nov 2026 · sample content on this page is illustrative</span><span>Fonts under the SIL Open Font License 1.1 · see fonts/</span></div>
+
+<script>
+  // Register switcher. Sets data-register on <body>. The mark never changes: no register is dark.
+  const buttons = document.querySelectorAll('[data-set-register]');
+  function setRegister(name) {
+    if (name === 'default') document.body.removeAttribute('data-register');
+    else document.body.setAttribute('data-register', name);
+    buttons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.setRegister === name)));
+  }
+  buttons.forEach(b => b.addEventListener('click', () => setRegister(b.dataset.setRegister)));
+
+  // Tabs: roving tabindex, arrow keys, Home and End (the behaviour the kit expects from app code)
+  document.querySelectorAll('[data-tabs]').forEach(list => {
+    const tabs = [...list.querySelectorAll('[role="tab"]')];
+    const select = (tab, focus) => {
+      tabs.forEach(t => {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+      });
+      if (focus) tab.focus();
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => select(t, false));
+      t.addEventListener('keydown', e => {
+        const k = e.key; let n = null;
+        if (k === 'ArrowRight') n = tabs[(i + 1) % tabs.length];
+        if (k === 'ArrowLeft') n = tabs[(i - 1 + tabs.length) % tabs.length];
+        if (k === 'Home') n = tabs[0];
+        if (k === 'End') n = tabs[tabs.length - 1];
+        if (n) { e.preventDefault(); select(n, true); }
+      });
+    });
+  });
+  // Menu: Escape closes and returns focus to the summary
+  document.querySelectorAll('.iiic-menu').forEach(m => m.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && m.open) { m.open = false; m.querySelector('summary').focus(); }
+  }));
+
+  // Pattern demos: mobile nav toggles, modal, toast
+  for (const id of ['topNavToggle', 'gNavToggle']) {
+    const t = document.getElementById(id);
+    t.addEventListener('click', () => t.setAttribute('aria-expanded', t.getAttribute('aria-expanded') !== 'true'));
+  }
+  const modal = document.getElementById('gModal');
+  document.getElementById('gModalOpen').addEventListener('click', () => modal.showModal());
+  document.getElementById('gModalClose').addEventListener('click', () => modal.close());
+  document.getElementById('gModalCancel').addEventListener('click', () => modal.close());
+  const toast = document.getElementById('gToastEl');
+  document.getElementById('gToast').addEventListener('click', () => { toast.hidden = false; });
+  document.getElementById('gToastClose').addEventListener('click', () => { toast.hidden = true; });
+</script>
+</body>
+</html>

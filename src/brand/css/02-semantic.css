@@ -1,0 +1,135 @@
+/* ============================================================
+   IIIC brand kit · 02 · Semantic roles and registers · 1.0.3
+   No register uses a dark surface. The three temperatures differ
+   by warmth, sharpness and pace:
+     consultancy  white + cool mist · sharper radii · fast
+     education    paper · editorial measure · unhurried
+     counselling  cream-yellow · roundest · slowest
+   Set data-register on <body> or on any wrapper element: every register
+   sets every role and paints its own surface, so registers nest
+   (a consultancy block inside a counselling page is fully consultancy).
+   No attribute = default (paper).
+   ============================================================ */
+:root,
+[data-register="default"] {
+  --iiic-surface: var(--iiic-paper);
+  --iiic-surface-alt: var(--iiic-white);
+  --iiic-surface-wash: var(--iiic-paper-2);
+  --iiic-text: var(--iiic-ink);
+  --iiic-text-muted: var(--iiic-slate-500);
+  --iiic-heading: var(--iiic-ink);
+  --iiic-kicker: var(--iiic-slate);
+  --iiic-rule: var(--iiic-mist);
+  --iiic-rule-strong: var(--iiic-slate-400);   /* control borders, 3:1 or better */
+  --iiic-accent: var(--iiic-yellow);
+  --iiic-accent-hover: var(--iiic-yellow-deep);
+  --iiic-accent-ink: var(--iiic-ink);
+  --iiic-accent-wash: var(--iiic-yellow-050);
+  --iiic-mark: var(--iiic-yellow);             /* the bar device (4px or wider): kicker tick, marked heading, list dash, blockquote bar */
+  --iiic-radius: var(--iiic-radius-lg);
+  --iiic-radius-control: var(--iiic-radius-pill);
+  --iiic-motion: var(--iiic-motion-base);
+  --iiic-measure: 66ch;
+  --iiic-focus: var(--iiic-focus-ring);
+}
+
+/* Consultancy · founders and HR leads. White, cool panels, sharper
+   corners, tabular figures. Credibility through precision, not darkness. */
+[data-register="consultancy"] {
+  --iiic-surface: var(--iiic-white);
+  --iiic-surface-alt: var(--iiic-mist-050);
+  --iiic-surface-wash: var(--iiic-mist-050);
+  --iiic-text: var(--iiic-ink);
+  --iiic-text-muted: var(--iiic-slate-500);
+  --iiic-heading: var(--iiic-ink);
+  --iiic-kicker: var(--iiic-slate);
+  --iiic-rule: var(--iiic-mist);
+  --iiic-rule-strong: var(--iiic-slate-400);
+  --iiic-accent: var(--iiic-yellow);
+  --iiic-accent-hover: var(--iiic-yellow-deep);
+  --iiic-accent-ink: var(--iiic-ink);
+  --iiic-accent-wash: var(--iiic-yellow-050);
+  --iiic-mark: var(--iiic-yellow);
+  --iiic-radius: var(--iiic-radius-md);
+  --iiic-radius-control: var(--iiic-radius-sm);
+  --iiic-motion: var(--iiic-motion-fast);
+  --iiic-measure: 60ch;
+  --iiic-focus: var(--iiic-focus-ring);
+}
+
+/* Education · learners. Paper, wide measure, serif lead paragraphs. */
+[data-register="education"] {
+  --iiic-surface: var(--iiic-paper);
+  --iiic-surface-alt: var(--iiic-white);
+  --iiic-surface-wash: var(--iiic-paper-2);
+  --iiic-text: var(--iiic-ink);
+  --iiic-text-muted: var(--iiic-slate-500);
+  --iiic-heading: var(--iiic-ink);
+  --iiic-kicker: var(--iiic-slate);
+  --iiic-rule: var(--iiic-mist);
+  --iiic-rule-strong: var(--iiic-slate-400);
+  --iiic-accent: var(--iiic-yellow);
+  --iiic-accent-hover: var(--iiic-yellow-deep);
+  --iiic-accent-ink: var(--iiic-ink);
+  --iiic-accent-wash: var(--iiic-yellow-050);
+  --iiic-mark: var(--iiic-yellow);
+  --iiic-radius: var(--iiic-radius-lg);
+  --iiic-radius-control: var(--iiic-radius-pill);
+  --iiic-motion: var(--iiic-motion-base);
+  --iiic-measure: 68ch;
+  --iiic-focus: var(--iiic-focus-ring);
+}
+
+/* Counselling · individuals and families. Cream-yellow surface, slate
+   text, warm neutral rules, the roundest shapes, the slowest motion. */
+[data-register="counselling"] {
+  --iiic-surface: var(--iiic-yellow-050);
+  --iiic-surface-alt: var(--iiic-white);
+  --iiic-surface-wash: var(--iiic-yellow-100);
+  --iiic-text: var(--iiic-slate);
+  --iiic-text-muted: var(--iiic-slate-500);
+  --iiic-heading: var(--iiic-ink);
+  --iiic-kicker: var(--iiic-slate);
+  --iiic-rule: var(--iiic-line-warm);
+  --iiic-rule-strong: var(--iiic-slate-400);
+  --iiic-accent: var(--iiic-yellow);
+  --iiic-accent-hover: var(--iiic-yellow-deep);
+  --iiic-accent-ink: var(--iiic-ink);
+  --iiic-accent-wash: var(--iiic-white);
+  --iiic-mark: var(--iiic-yellow-deep);        /* plain yellow disappears on the cream surface */
+  --iiic-radius: var(--iiic-radius-xl);
+  --iiic-radius-control: var(--iiic-radius-pill);
+  --iiic-motion: var(--iiic-motion-slow);
+  --iiic-measure: 62ch;
+  --iiic-focus: var(--iiic-focus-ring);
+}
+
+/* An element with a register paints its own surface, so a wrapper works as well as <body>. */
+[data-register] { background-color: var(--iiic-surface); color: var(--iiic-text); }
+
+/* On a yellow surface (the band, a yellow panel, the hero field) the surface is yellow,
+   every text role and the bar device become ink, controls get ink borders, focus rings
+   switch to the on-yellow ring, and the accent turns white, so the primary button,
+   checked controls and badges are white with ink: nothing dark is ever filled next to yellow.
+   Data pieces (progress, stepper, steps, pagination, tables, charts) live on paper or white. */
+.iiic-band-yellow, .iiic-panel-yellow, .iiic-hero-field {
+  --iiic-surface: var(--iiic-yellow);
+  --iiic-surface-alt: var(--iiic-white);
+  --iiic-surface-wash: var(--iiic-yellow-200);
+  --iiic-text: var(--iiic-ink);
+  --iiic-text-muted: var(--iiic-ink);
+  --iiic-heading: var(--iiic-ink);
+  --iiic-kicker: var(--iiic-ink);
+  --iiic-rule: var(--iiic-line-on-yellow);
+  --iiic-rule-strong: var(--iiic-ink);
+  --iiic-accent: var(--iiic-white);
+  --iiic-accent-hover: var(--iiic-paper);
+  --iiic-accent-ink: var(--iiic-ink);
+  --iiic-accent-wash: var(--iiic-white);
+  --iiic-mark: var(--iiic-ink);
+  --iiic-focus: var(--iiic-focus-ring-on-yellow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root, [data-register] { --iiic-motion: 0ms; }
+}

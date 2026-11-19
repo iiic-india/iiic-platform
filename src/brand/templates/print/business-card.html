@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Business card · IIIC</title>
+  <link rel="stylesheet" href="../../css/iiic.css">
+</head>
+<body class="iiic-print-body">
+  <!-- Two pages: front and back. Trim 89 × 51 mm; the PDF page includes 3 mm bleed on every side.
+       Ask the printer for 350 gsm matt, no lamination gloss, and Pantone-matched yellow if offset. -->
+  <article class="iiic-bizcard iiic-bizcard-front">
+    <div class="iiic-bizcard-top">
+      <div>
+        <p class="iiic-bizcard-name">{{name}}</p>
+        <p class="iiic-bizcard-role">{{title}} · Indian Institute of Image Catalysts</p>
+      </div>
+      <img class="iiic-bizcard-mark" src="../../logo/iiic-mark.svg" alt="IIIC">
+    </div>
+    <div class="iiic-bizcard-contact">
+      <strong>{{phone}}</strong>
+      <span>{{email}}</span>
+      <span>{{SITE_DISPLAY}}</span>
+      <small>408, The Claywalls, Hebatpur Road, Thaltej, Ahmedabad, Gujarat 382455</small>
+    </div>
+  </article>
+  <article class="iiic-bizcard iiic-bizcard-back">
+    <img src="../../logo/iiic-mark.svg" alt="IIIC">
+  </article>
+</body>
+</html>

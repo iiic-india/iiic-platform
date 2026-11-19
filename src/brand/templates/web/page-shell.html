@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{page_title}} · IIIC</title>
+  <meta name="description" content="{{page_description}}">
+  <meta name="color-scheme" content="only light">
+  <meta name="theme-color" content="#FFDD00">
+  <meta property="og:title" content="{{page_title}} · IIIC">
+  <meta property="og:image" content="{{SITE_URL}}/brand/logo/png/og-image-1200x630.png">
+  <link rel="icon" href="../../logo/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../../logo/png/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="../../logo/png/apple-touch-icon-180.png">
+  <link rel="manifest" href="../../logo/site.webmanifest">
+  <link rel="stylesheet" href="../../css/iiic.css">
+</head>
+<!-- Set data-register per page: consultancy | education | counselling | (none = default paper).
+     It works on <body> or on a wrapper element (registers paint their own surface and nest);
+     in Next.js App Router put it on the wrapper in each route group's layout. -->
+<body>
+  <a class="iiic-skip-link" href="#main">Skip to content</a>
+
+  <header class="iiic-header">
+    <a class="iiic-brand" href="/">
+      <img src="../../logo/iiic-mark.svg" alt="IIIC: a face in profile carrying the letters iiic" width="23" height="40">
+      <span><strong>IIIC</strong><small>Indian Institute of Image Catalysts</small></span>
+    </a>
+    <button class="iiic-btn iiic-btn-outline iiic-nav-toggle" aria-expanded="false" aria-controls="nav" id="navToggle">Menu</button>
+    <nav class="iiic-nav" id="nav" aria-label="Main">
+      <a href="/framework">Framework</a>
+      <a href="/organisations">For organisations</a>
+      <a href="/learn">Learn</a>
+      <a href="/counselling">Counselling</a>
+      <a href="/proof">Proof</a>
+      <a class="iiic-btn iiic-btn-primary" href="/map">Take the Map</a>
+      <a href="/account">Log in</a>
+    </nav>
+  </header>
+
+  <main id="main" class="iiic-page" style="padding-top:48px;padding-bottom:80px">
+    <div class="iiic-kicker">{{kicker}}</div>
+    <h1 style="margin:14px 0 16px;max-width:18ch">{{heading}}</h1>
+    <p class="iiic-lede iiic-prose" style="color:var(--iiic-text-muted)">{{lead}}</p>
+    <!-- page content -->
+  </main>
+
+  <!-- One yellow band per page, usually the closing call to action -->
+  <section class="iiic-band iiic-band-yellow">
+    <div class="iiic-page iiic-cta">
+      <div><div class="iiic-kicker">{{cta_kicker}}</div><h2>{{cta_heading}}</h2><p>{{cta_lead}}</p></div>
+      <div class="iiic-row"><a class="iiic-btn iiic-btn-primary iiic-btn-lg" href="/map">Take the Map</a><a class="iiic-btn iiic-btn-secondary iiic-btn-lg" href="{{cta_secondary_href}}">{{cta_secondary_label}}</a></div>
+    </div>
+  </section>
+
+  <footer class="iiic-footer-grid" style="margin-top:0">
+    <div class="iiic-footer-brand">
+      <img src="../../logo/iiic-logo.svg" alt="Indian Institute of Image Catalysts">
+      <p>408, The Claywalls, Hebatpur Road, Thaltej, Ahmedabad, Gujarat 382455<br>+91 96240 46464 · {{EMAIL}}</p>
+    </div>
+    <div><h4>Learn</h4><a href="/framework">Subjective Self</a><a href="/learn">Certification</a><a href="/journal">Journal</a></div>
+    <div><h4>Work with us</h4><a href="/organisations">For organisations</a><a href="/counselling">Counselling</a><a href="/map">The Map</a></div>
+    <div><h4>Institute</h4><a href="/institute">Research</a><a href="/institute#verify">Verify a certificate</a><a href="/about">About</a></div>
+  </footer>
+  <div class="iiic-footer-legal">
+    <span>© {{year}} Indian Institute of Image Catalysts · {{affiliation_statement}}</span>
+    <span><a class="iiic-link" href="/legal">Legal</a> · <a class="iiic-link" href="/privacy">Privacy</a> · <a class="iiic-link" href="/terms">Terms</a> · <a class="iiic-link" href="/refunds">Refunds</a> · <a class="iiic-link" href="/grievance">Grievance officer</a></span>
+  </div>
+
+  <script>
+    const t = document.getElementById('navToggle');
+    t.addEventListener('click', () => t.setAttribute('aria-expanded', t.getAttribute('aria-expanded') !== 'true'));
+  </script>
+</body>
+</html>

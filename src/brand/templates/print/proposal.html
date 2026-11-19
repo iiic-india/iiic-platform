@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Proposal · IIIC</title>
+  <link rel="stylesheet" href="../../css/iiic.css">
+</head>
+<body class="iiic-print-body">
+
+  <!-- Cover: a fixed sheet. The yellow field with ink type; the logo sits on the white base -->
+  <article class="iiic-sheet iiic-cover">
+    <div class="iiic-cover-field">
+      <div class="iiic-doc-kicker">Proposal for {{client_name}}</div>
+      <div>
+        <h1>{{proposal_title}}</h1>
+        <p>{{proposal_subtitle}}</p>
+      </div>
+    </div>
+    <div class="iiic-cover-base">
+      <img src="../../logo/iiic-logo.svg" alt="Indian Institute of Image Catalysts">
+      <div class="iiic-cover-meta">
+        <div><span>Date</span><strong>{{date}}</strong></div>
+        <div><span>Prepared by</span><strong>{{author_name}}</strong><br>{{author_title}}</div>
+        <div><span>Reference</span><strong>{{reference}}</strong></div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Body: a flowing document marked confidential; it paginates in print -->
+  <article class="iiic-sheet iiic-sheet-bar iiic-sheet-flow is-confidential">
+    <header class="iiic-sheet-head">
+      <img src="../../logo/iiic-mark.svg" alt="IIIC">
+      <address><strong>{{proposal_title}}</strong>For {{client_name}} · {{date}}</address>
+    </header>
+
+    <div class="iiic-doc-body">
+      <h2>1. What we heard</h2>
+      <p class="iiic-lede">{{situation}}</p>
+      <h2>2. What we propose</h2>
+      <p>{{approach}}</p>
+      <table class="iiic-doc-table">
+        <thead><tr><th>Phase</th><th>What happens</th><th>Duration</th><th>Outcome</th></tr></thead>
+        <tbody>
+          {{phase_rows}}
+        </tbody>
+      </table>
+      <!-- One phase row: <tr><td><strong>{{phase_name}}</strong></td><td>{{phase_what}}</td><td>{{phase_duration}}</td><td>{{phase_outcome}}</td></tr> -->
+      <h2>3. How we measure it</h2>
+      <p>{{measures}}</p>
+      <h2>4. Investment</h2>
+      <table class="iiic-doc-table">
+        <thead><tr><th>Item</th><th class="num">Fee (₹)</th></tr></thead>
+        <tbody>{{fee_rows}}</tbody>
+      </table>
+      <!-- One fee row: <tr><td>{{fee_item}}</td><td class="num">{{fee_amount}}</td></tr> -->
+      <div class="iiic-doc-total"><div><span>Total, excluding GST</span><strong>₹{{fee_total}}</strong></div></div>
+      <h2>5. Next step</h2>
+      <p>{{next_step}}</p>
+      <div class="iiic-doc-sign">
+        <div><strong>{{author_name}}</strong>{{author_title}}, IIIC</div>
+        <div><strong>Accepted for {{client_name}}</strong><small>Name, title, date</small></div>
+      </div>
+    </div>
+
+    <!-- Screen preview only; in print the page footer comes from @page iiic-flow-confidential -->
+    <footer class="iiic-sheet-foot">
+      <span><strong>IIIC</strong> · Indian Institute of Image Catalysts · Ahmedabad</span>
+      <span>Confidential · Page 2</span>
+    </footer>
+  </article>
+</body>
+</html>

@@ -1,0 +1,114 @@
+/* ============================================================
+   IIIC brand kit · 01 · Tokens · 1.0.3
+   The logo has two colours: Yellow #FFDD00 and Slate #43525A.
+   Everything else here serves them. The rule of the system:
+   yellow lives on paper, never on dark. Dark tones are ink for
+   text and the logo illustration, not surfaces.
+   ============================================================ */
+:root {
+  /* The system is light only. "only light" also opts out of forced darkening
+     (Android Chrome auto-dark and similar); pages add <meta name="color-scheme" content="only light">. */
+  color-scheme: only light;
+
+  /* Colour · the two logo colours */
+  --iiic-yellow: #FFDD00;
+  --iiic-slate: #43525A;
+
+  /* Colour · yellow family (the brand surface) */
+  --iiic-yellow-deep: #E8C800;        /* hover and pressed */
+  --iiic-yellow-200: #FFE866;         /* hover wash on yellow surfaces */
+  --iiic-yellow-100: #FFF3B0;         /* soft fills: badges, current nav, secondary hover, caution alerts */
+  --iiic-yellow-050: #FFFAE0;         /* counselling surface, warm washes */
+  --iiic-yellow-text: #5C4E00;        /* small text on yellow tints */
+
+  /* Colour · paper and white (the base) */
+  --iiic-paper: #F8F6F0;
+  --iiic-paper-2: #EFEBE1;            /* deeper wash for alternating sections */
+  --iiic-white: #FFFFFF;
+
+  /* Colour · ink family (text, derived from the logo slate) */
+  --iiic-ink: #1C262B;                /* headings and body */
+  --iiic-slate-500: #5E6C74;          /* secondary text, placeholders */
+  --iiic-slate-400: #7A868C;          /* control borders: 3.1:1 or better on every light surface */
+  --iiic-slate-300: #A9B4B9;          /* disabled, separators, dashed placeholder frames (decorative only) */
+  --iiic-mist: #E4E8EA;               /* rules and borders */
+  --iiic-mist-050: #EEF2F3;           /* cool panels (consultancy data) */
+
+  /* Colour · lines and scrims, ink at low alpha so they warm or cool with the ground */
+  --iiic-line-warm: rgba(28, 38, 43, .12);      /* rules on the counselling surface */
+  --iiic-line-on-yellow: rgba(28, 38, 43, .22); /* rules on yellow surfaces */
+  --iiic-scrim: rgba(28, 38, 43, .45);          /* behind a modal */
+
+  /* Colour · status (alerts only, never marketing). Caution is the yellow family: there is no separate warning colour. */
+  --iiic-success: #1E6F57;  --iiic-success-050: #EAF5EF;
+  --iiic-danger:  #B3261E;  --iiic-danger-050:  #FBEDEB;  --iiic-danger-100: #F7DDD9;
+
+  /* Type · Fraunces for display, Manrope for everything else.
+     Both are self-hosted by 00-fonts.css from /fonts (OFL 1.1), so no
+     Google Fonts request is needed. Office and email fall back to
+     Georgia and Arial.
+     Gujarati and Devanagari glyphs are not in Fraunces or Manrope; the Noto
+     families are listed so those scripts render in a matching face when it
+     is installed, and :lang(gu|hi) rules in 03-components give them room.
+     Framework hook: if the app loads the same files with next/font, it exposes
+     --font-fraunces and --font-manrope on <html>, and these stacks use them;
+     otherwise they fall back to the @font-face families in 00-fonts.css.
+     Nothing in the kit is redefined either way. */
+  --iiic-font-display: var(--font-fraunces, Fraunces), "Noto Serif Gujarati", "Noto Serif Devanagari", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --iiic-font: var(--font-manrope, Manrope), "Noto Sans Gujarati", "Noto Sans Devanagari", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --iiic-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --iiic-text-xs: 12px;
+  --iiic-text-sm: 13px;
+  --iiic-text-md: 14px;
+  --iiic-text-body: 16px;
+  --iiic-text-lg: 18px;
+  --iiic-text-h3: 20px;
+  --iiic-text-h2: clamp(28px, 3.2vw, 38px);
+  --iiic-text-h1: clamp(36px, 5vw, 56px);
+  --iiic-text-display: clamp(44px, 7vw, 84px);
+  --iiic-weight-regular: 400;
+  --iiic-weight-medium: 500;
+  --iiic-weight-semibold: 600;
+  --iiic-weight-bold: 700;
+  --iiic-weight-black: 800;
+  --iiic-leading: 1.55;
+  --iiic-leading-tight: 1.05;
+  --iiic-tracking-tight: -.02em;
+  --iiic-tracking-wide: .14em;
+
+  /* Space · 8px rhythm */
+  --iiic-space-1: 4px;  --iiic-space-2: 8px;   --iiic-space-3: 12px; --iiic-space-4: 16px;
+  --iiic-space-6: 24px; --iiic-space-8: 32px;  --iiic-space-12: 48px; --iiic-space-16: 64px; --iiic-space-24: 96px;
+
+  /* Shape · soft, like the hand-drawn mark */
+  --iiic-radius-sm: 10px;
+  --iiic-radius-md: 16px;
+  --iiic-radius-lg: 24px;
+  --iiic-radius-xl: 32px;
+  --iiic-radius-pill: 999px;
+
+  /* Elevation · warm, low */
+  --iiic-shadow-sm: 0 1px 2px rgba(28, 38, 43, .05), 0 6px 20px rgba(28, 38, 43, .05);
+  --iiic-shadow-md: 0 2px 6px rgba(28, 38, 43, .06), 0 18px 48px rgba(28, 38, 43, .10);
+
+  /* Motion */
+  --iiic-motion-fast: 150ms; --iiic-motion-base: 260ms; --iiic-motion-slow: 420ms;
+  --iiic-ease: cubic-bezier(.2, .7, .2, 1);
+
+  /* Focus · a white gap and an ink ring: 3:1 or better against every surface in the system
+     (a yellow ring on paper is only 1.25:1). On yellow surfaces the gap turns yellow. */
+  --iiic-focus-ring: 0 0 0 2px var(--iiic-white), 0 0 0 4.5px var(--iiic-ink);
+  --iiic-focus-ring-on-yellow: 0 0 0 2px var(--iiic-yellow), 0 0 0 4.5px var(--iiic-ink);
+
+  /* Layout · breakpoints are documented here and written as literals in media queries:
+     420 (brand subtitle hides) · 560 (phones) · 850 (header collapses) · 1100 (header compact from 851) · 1200 (desktop) */
+  --iiic-bp-xs: 420px; --iiic-bp-sm: 560px; --iiic-bp-md: 850px; --iiic-bp-header: 1100px; --iiic-bp-lg: 1200px;
+  --iiic-container: 1240px; --iiic-container-narrow: 760px;
+  --iiic-gutter: 32px; --iiic-gutter-sm: 18px;
+
+  /* Z-index */
+  --iiic-z-header: 100; --iiic-z-dropdown: 200; --iiic-z-modal: 300; --iiic-z-toast: 400;
+
+  /* Print · A4 */
+  --iiic-page-margin: 20mm; --iiic-page-margin-top: 18mm; --iiic-page-margin-bar: 26mm; --iiic-page-bar: 7mm;
+}

@@ -1,0 +1,5 @@
+{{name}}
+{{title}} · Indian Institute of Image Catalysts
+{{phone}} · {{email}}
+{{SITE_DISPLAY}}
+408, The Claywalls, Hebatpur Road, Thaltej, Ahmedabad 382455

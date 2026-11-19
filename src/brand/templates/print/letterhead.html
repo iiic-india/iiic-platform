@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Letter · IIIC</title>
+  <link rel="stylesheet" href="../../css/iiic.css">
+</head>
+<body class="iiic-print-body">
+  <!-- A flowing document: as long as the letter. In print it paginates, and the bar,
+       footer and page numbers repeat on every page. -->
+  <article class="iiic-sheet iiic-sheet-bar iiic-sheet-flow">
+    <header class="iiic-sheet-head">
+      <img src="../../logo/iiic-logo.svg" alt="Indian Institute of Image Catalysts">
+      <address>
+        <strong>Indian Institute of Image Catalysts</strong>
+        408, The Claywalls, Hebatpur Road<br>Thaltej, Ahmedabad, Gujarat 382455<br>
+        +91 96240 46464 · {{EMAIL}}<br>{{SITE_DISPLAY}}<br>
+        {{registration_line}}
+      </address>
+    </header>
+
+    <dl class="iiic-doc-meta">
+      <dt>Ref.</dt><dd>{{reference}}</dd>
+      <dt>Date</dt><dd>{{date}}</dd>
+      <dt>To</dt><dd>{{recipient_name}}<br>{{recipient_title}}<br>{{recipient_organisation}}<br>{{recipient_address}}</dd>
+    </dl>
+
+    <div class="iiic-doc-body">
+      <p><strong>Subject: {{subject}}</strong></p>
+      <p>{{salutation}},</p>
+      {{body_paragraphs}}
+      <p>{{closing}},</p>
+      <div class="iiic-doc-sign">
+        <div><strong>{{signatory_name}}</strong>{{signatory_title}}<br><small>Indian Institute of Image Catalysts</small></div>
+      </div>
+    </div>
+
+    <!-- Screen preview only; in print the page footer comes from @page iiic-flow -->
+    <footer class="iiic-sheet-foot">
+      <span><strong>IIIC</strong> · Indian Institute of Image Catalysts · Ahmedabad</span>
+      <span>Page 1</span>
+    </footer>
+  </article>
+</body>
+</html>

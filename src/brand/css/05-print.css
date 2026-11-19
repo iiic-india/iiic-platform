@@ -1,0 +1,193 @@
+/* ============================================================
+   IIIC brand kit · 05 · Print · 1.0.3
+   A4 documents: letterhead, invoice, proposal, certificate, business card.
+   Two kinds of page:
+   · Fixed sheets (.iiic-sheet) are exactly one page: the proposal cover,
+     the certificate. They preview on screen at true size.
+   · Flowing documents (.iiic-sheet.iiic-sheet-flow) are as long as their
+     content: letters, invoices, proposal bodies. On screen they preview
+     as one long sheet; in print they paginate, and the yellow bar, the
+     footer and "Page n of N" repeat on every page through CSS page
+     margin boxes (Chromium 131+, which is what renders the PDFs).
+   The device: the logo's yellow bar runs down the left edge of every
+   business page. Paper is white; ink is ink. Yellow is the bar, the
+   seal, the total and the cover.
+   Set <body class="iiic-print-body"> on document pages. Every page rule
+   here is named and every print adjustment is scoped to .iiic-print-body,
+   so printing an ordinary web page (a Journal article) keeps the
+   browser's margins and colour settings.
+   ============================================================ */
+@page iiic-sheet { size: A4; margin: 0; }
+@page landscape { size: A4 landscape; margin: 0; }
+
+.iiic-print-body { background: var(--iiic-paper-2); margin: 0; padding: 24px 0; font-family: var(--iiic-font); }
+.iiic-sheet {
+  position: relative; box-sizing: border-box; overflow: hidden;
+  width: 210mm; min-height: 297mm; margin: 0 auto 24px;
+  padding: var(--iiic-page-margin-top) var(--iiic-page-margin) 30mm var(--iiic-page-margin-bar);
+  background: var(--iiic-white); color: var(--iiic-ink);
+  box-shadow: var(--iiic-shadow-md);
+  font-size: 10.5pt; line-height: 1.55;
+  page-break-after: always; break-after: page;
+  page: iiic-sheet;
+}
+.iiic-sheet-landscape { width: 297mm; min-height: 210mm; page: landscape; }
+.iiic-sheet:last-child { page-break-after: auto; break-after: auto; }
+.iiic-sheet-bar::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--iiic-page-bar); background: var(--iiic-yellow); }
+
+/* Running header: logo left, contact block right */
+.iiic-sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16mm; margin-bottom: 11mm; }
+.iiic-sheet-head img { height: 18mm; width: auto; display: block; }
+.iiic-sheet-head address { font-style: normal; text-align: right; font-size: 8.5pt; line-height: 1.5; color: var(--iiic-slate-500); }
+.iiic-sheet-head address strong { display: block; font-size: 9pt; letter-spacing: .14em; text-transform: uppercase; color: var(--iiic-ink); margin-bottom: 1mm; font-weight: var(--iiic-weight-black); }
+
+/* Running footer */
+.iiic-sheet-foot { position: absolute; left: var(--iiic-page-margin-bar); right: var(--iiic-page-margin); bottom: 12mm; display: flex; justify-content: space-between; gap: 12mm; padding-top: 3.5mm; border-top: 1px solid var(--iiic-mist); font-size: 8pt; color: var(--iiic-slate-500); }
+.iiic-sheet-foot strong { color: var(--iiic-ink); font-weight: var(--iiic-weight-bold); }
+
+/* Document type */
+.iiic-doc-kicker { display: inline-block; font-size: 8pt; letter-spacing: .16em; text-transform: uppercase; font-weight: var(--iiic-weight-black); color: var(--iiic-slate); margin-bottom: 3mm; }
+.iiic-doc-title { margin: 0 0 3mm; font-family: var(--iiic-font-display); font-weight: var(--iiic-weight-medium); font-size: 28pt; letter-spacing: -.02em; line-height: 1.05; font-variation-settings: "opsz" 144; }
+.iiic-doc-meta { display: grid; grid-template-columns: auto 1fr; gap: 1.5mm 8mm; margin: 0 0 9mm; font-size: 9.5pt; }
+.iiic-doc-meta dt { color: var(--iiic-slate-500); }
+.iiic-doc-meta dd { margin: 0; font-weight: var(--iiic-weight-semibold); }
+.iiic-doc-meta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; margin: 0 0 8mm; }
+.iiic-doc-meta-row > div { padding: 4mm 5mm; border-radius: 3mm; background: var(--iiic-paper); font-size: 9.5pt; line-height: 1.5; }
+.iiic-doc-meta-row h4 { margin: 0 0 1.5mm; font-size: 7.5pt; letter-spacing: .14em; text-transform: uppercase; color: var(--iiic-slate-500); font-weight: var(--iiic-weight-black); }
+.iiic-doc-body p { margin: 0 0 4mm; max-width: 150mm; }
+.iiic-doc-body h2 { font-family: var(--iiic-font-display); font-weight: var(--iiic-weight-medium); font-size: 16pt; letter-spacing: -.01em; margin: 9mm 0 2.5mm; line-height: 1.15; }
+.iiic-doc-body h3 { font-size: 11pt; margin: 6mm 0 1.5mm; }
+.iiic-doc-body ul { margin: 0 0 4mm; padding-left: 5mm; }
+.iiic-doc-body li { margin-bottom: 1mm; }
+.iiic-doc-body .iiic-lede { font-family: var(--iiic-font-display); font-size: 13pt; line-height: 1.45; max-width: 150mm; font-variation-settings: "opsz" 18; }
+.iiic-doc-sign { margin-top: 10mm; display: grid; grid-template-columns: 1fr 1fr; gap: 16mm; }
+.iiic-doc-sign div { padding-top: 3mm; border-top: 1px solid var(--iiic-ink); font-size: 9.5pt; }
+.iiic-doc-sign strong { display: block; }
+.iiic-doc-sign small { color: var(--iiic-slate-500); }
+
+/* Tables in documents */
+.iiic-doc-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin: 4mm 0 6mm; font-variant-numeric: tabular-nums; }
+.iiic-doc-table th { text-align: left; font-size: 7.5pt; letter-spacing: .14em; text-transform: uppercase; color: var(--iiic-slate-500); padding: 2.5mm 2mm; border-bottom: 1.5px solid var(--iiic-ink); font-weight: var(--iiic-weight-black); }
+.iiic-doc-table td { padding: 3mm 2mm; border-bottom: 1px solid var(--iiic-mist); vertical-align: top; }
+.iiic-doc-table td small { display: block; color: var(--iiic-slate-500); font-size: 8.5pt; }
+.iiic-doc-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.iiic-doc-table tfoot td { border-bottom: 0; padding: 2mm 2mm; color: var(--iiic-slate-500); }
+.iiic-doc-table tfoot td.num { color: var(--iiic-ink); }
+.iiic-doc-total { display: flex; justify-content: flex-end; }
+.iiic-doc-total div { display: grid; grid-template-columns: auto auto; gap: 0 10mm; align-items: baseline; padding: 4mm 6mm; border-radius: 3mm; background: var(--iiic-yellow); color: var(--iiic-ink); }
+.iiic-doc-total span { font-size: 8pt; letter-spacing: .14em; text-transform: uppercase; font-weight: var(--iiic-weight-black); }
+.iiic-doc-total strong { font-family: var(--iiic-font-display); font-size: 20pt; font-weight: var(--iiic-weight-medium); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.iiic-doc-note { margin-top: 6mm; padding: 4mm 5mm; border-radius: 3mm; background: var(--iiic-paper); font-size: 9pt; color: var(--iiic-slate-500); }
+.iiic-doc-note strong { color: var(--iiic-ink); }
+
+/* Compact documents (invoices): a tighter rhythm so an ordinary invoice of a few lines fits one page */
+.iiic-doc-compact .iiic-doc-title { font-size: 22pt; }
+.iiic-doc-compact .iiic-doc-meta-row { margin-bottom: 6mm; }
+.iiic-doc-compact .iiic-doc-meta-row > div { padding: 3.5mm 4.5mm; font-size: 9pt; line-height: 1.4; }
+.iiic-doc-compact .iiic-doc-table { margin: 2mm 0 4mm; }
+.iiic-doc-compact .iiic-doc-table td { padding: 2.4mm 2mm; }
+.iiic-doc-compact .iiic-doc-table tfoot td { padding: 1.4mm 2mm; }
+.iiic-doc-compact .iiic-doc-note { margin-top: 5mm; }
+
+/* Cover page (proposal): a yellow field with ink type, the logo on a white base */
+.iiic-cover { padding: 0; display: grid; grid-template-rows: 1fr auto; }
+.iiic-cover-field { background: var(--iiic-yellow); color: var(--iiic-ink); padding: 22mm 24mm; display: flex; flex-direction: column; justify-content: space-between; }
+.iiic-cover-field .iiic-doc-kicker { color: var(--iiic-ink); }
+.iiic-cover-field h1 { font-family: var(--iiic-font-display); font-weight: var(--iiic-weight-medium); font-size: 42pt; line-height: 1.02; letter-spacing: -.025em; margin: 0 0 6mm; max-width: 150mm; color: var(--iiic-ink); font-variation-settings: "opsz" 144; }
+.iiic-cover-field p { max-width: 120mm; margin: 0; font-size: 12pt; line-height: 1.5; color: var(--iiic-ink); }
+.iiic-cover-base { background: var(--iiic-white); padding: 12mm 24mm 14mm; display: grid; grid-template-columns: auto 1fr; gap: 16mm; align-items: center; }
+.iiic-cover-base img { height: 24mm; width: auto; }
+.iiic-cover-meta { display: grid; grid-template-columns: repeat(3, auto); gap: 10mm; justify-content: end; font-size: 9pt; }
+.iiic-cover-meta span { display: block; font-size: 7.5pt; letter-spacing: .14em; text-transform: uppercase; color: var(--iiic-slate-500); font-weight: var(--iiic-weight-black); margin-bottom: 1mm; }
+.iiic-cover-meta strong { font-weight: var(--iiic-weight-semibold); }
+
+/* Certificate (landscape): thin ink frame, serif name, yellow seal */
+.iiic-cert { padding: 12mm; display: block; }
+.iiic-cert-frame { position: relative; height: 186mm; border: 1pt solid var(--iiic-ink); padding: 12mm 16mm; display: grid; grid-template-rows: auto 1fr auto; }
+.iiic-cert-frame::before { content: ""; position: absolute; inset: 2mm; border: .3pt solid var(--iiic-slate-300); pointer-events: none; }
+.iiic-cert-head { display: flex; justify-content: space-between; align-items: center; }
+.iiic-cert-head img { height: 18mm; width: auto; }
+.iiic-cert-head .iiic-cert-id { text-align: right; font-size: 8pt; color: var(--iiic-slate-500); line-height: 1.5; }
+.iiic-cert-head .iiic-cert-id strong { display: block; color: var(--iiic-ink); font-weight: var(--iiic-weight-bold); letter-spacing: .04em; }
+.iiic-cert-body { text-align: center; align-self: center; padding: 0 10mm; }
+.iiic-cert-body .iiic-doc-kicker { margin-bottom: 4mm; }
+.iiic-cert-name { font-family: var(--iiic-font-display); font-size: 40pt; letter-spacing: -.02em; margin: 3mm 0 3mm; font-weight: var(--iiic-weight-medium); line-height: 1.05; font-variation-settings: "opsz" 144; }
+.iiic-cert-rule { width: 32mm; height: 1.5mm; background: var(--iiic-yellow); margin: 5mm auto 5mm; }
+.iiic-cert-body p { max-width: 170mm; margin: 0 auto; font-size: 11pt; line-height: 1.5; }
+.iiic-cert-programme { font-family: var(--iiic-font-display); font-style: italic; font-size: 16pt; font-weight: var(--iiic-weight-medium); margin: 2mm 0 0; display: block; }
+.iiic-cert-foot { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 14mm; font-size: 8.5pt; }
+.iiic-cert-foot .sign { padding-top: 2mm; border-top: 1px solid var(--iiic-ink); }
+.iiic-cert-foot .sign strong { display: block; font-size: 9.5pt; }
+.iiic-cert-foot .sign.right { text-align: right; }
+.iiic-cert-foot .sign small { color: var(--iiic-slate-500); }
+.iiic-seal { width: 38mm; height: 38mm; display: block; }
+.iiic-cert-verify { display: flex; align-items: flex-end; justify-content: flex-end; gap: 4mm; }
+.iiic-cert-qr { width: 20mm; height: 20mm; flex: none; }
+.iiic-cert-qr svg, .iiic-cert-qr img { width: 100%; height: 100%; display: block; }
+
+/* Flowing documents in print. Margin boxes cannot read CSS variables,
+   so the values are written out: #FFDD00 = --iiic-yellow, #5E6C74 = --iiic-slate-500,
+   7mm = --iiic-page-bar, 26mm = --iiic-page-margin-bar. */
+@page iiic-flow {
+  size: A4;
+  margin: 16mm 20mm 20mm 7mm;
+  @top-left-corner { content: ""; background: #FFDD00; }
+  @left-top { content: ""; background: #FFDD00; }
+  @left-middle { content: ""; background: #FFDD00; }
+  @left-bottom { content: ""; background: #FFDD00; }
+  @bottom-left-corner { content: ""; background: #FFDD00; }
+  @bottom-left { content: "IIIC  ·  Indian Institute of Image Catalysts  ·  Ahmedabad"; font: 600 7.5pt Manrope, Arial, sans-serif; color: #5E6C74; padding-left: 19mm; vertical-align: middle; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 600 7.5pt Manrope, Arial, sans-serif; color: #5E6C74; vertical-align: middle; }
+}
+@page iiic-flow-confidential {
+  size: A4;
+  margin: 16mm 20mm 20mm 7mm;
+  @top-left-corner { content: ""; background: #FFDD00; }
+  @left-top { content: ""; background: #FFDD00; }
+  @left-middle { content: ""; background: #FFDD00; }
+  @left-bottom { content: ""; background: #FFDD00; }
+  @bottom-left-corner { content: ""; background: #FFDD00; }
+  @bottom-left { content: "IIIC  ·  Indian Institute of Image Catalysts  ·  Ahmedabad"; font: 600 7.5pt Manrope, Arial, sans-serif; color: #5E6C74; padding-left: 19mm; vertical-align: middle; }
+  @bottom-right { content: "Confidential  ·  Page " counter(page) " of " counter(pages); font: 600 7.5pt Manrope, Arial, sans-serif; color: #5E6C74; vertical-align: middle; }
+}
+.iiic-sheet-flow { min-height: 297mm; }
+/* Keep things whole across page breaks */
+.iiic-doc-table tr, .iiic-doc-sign, .iiic-doc-total, .iiic-doc-note, .iiic-doc-meta-row, .iiic-sheet-head { break-inside: avoid; }
+.iiic-doc-body h2, .iiic-doc-body h3 { break-after: avoid; }
+.iiic-doc-table thead { display: table-header-group; }
+
+/* Business card · India standard 89 × 51 mm trim, printed with 3 mm bleed (95 × 57 mm page).
+   Front: the bar, name, role and contact on white. Back: the mark on the yellow field.
+   Keep text inside the 4 mm safe zone. The dashed trim line shows on screen only.
+   <article class="iiic-bizcard iiic-bizcard-front">…</article><article class="iiic-bizcard iiic-bizcard-back">…</article> */
+@page card { size: 95mm 57mm; margin: 0; }
+.iiic-bizcard { page: card; position: relative; box-sizing: border-box; width: 95mm; height: 57mm; margin: 0 auto 8mm; overflow: hidden; background: var(--iiic-white); color: var(--iiic-ink); box-shadow: var(--iiic-shadow-md); font-size: 7pt; line-height: 1.45; page-break-after: always; break-after: page; }
+.iiic-bizcard::after { content: ""; position: absolute; inset: 3mm; border: .25mm dashed rgba(28, 38, 43, .35); pointer-events: none; }
+.iiic-bizcard:last-child { page-break-after: auto; break-after: auto; }
+.iiic-bizcard-front { padding: 7mm 7mm 6.5mm 13mm; display: flex; flex-direction: column; justify-content: space-between; }
+.iiic-bizcard-front::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 7mm; background: var(--iiic-yellow); }
+.iiic-bizcard-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 4mm; }
+.iiic-bizcard-mark { height: 13mm; width: auto; flex: none; }
+.iiic-bizcard-name { font-family: var(--iiic-font-display); font-size: 13pt; font-weight: var(--iiic-weight-medium); letter-spacing: -.01em; line-height: 1.1; margin: 0; font-variation-settings: "opsz" 72; }
+.iiic-bizcard-role { color: var(--iiic-slate-500); font-size: 7.5pt; margin: 1mm 0 0; }
+.iiic-bizcard-contact { display: grid; gap: .3mm; color: var(--iiic-ink); }
+.iiic-bizcard-contact strong { font-weight: var(--iiic-weight-semibold); }
+.iiic-bizcard-contact small { color: var(--iiic-slate-500); font-size: 6.2pt; margin-top: 1mm; }
+.iiic-bizcard-back { background: var(--iiic-yellow); display: grid; place-items: center; }
+.iiic-bizcard-back img { height: 30mm; width: auto; }
+
+/* Print */
+@media print {
+  .iiic-print-body { background: none; padding: 0; }
+  .iiic-sheet { margin: 0; box-shadow: none; min-height: auto; height: 297mm; }
+  .iiic-sheet-landscape { height: 210mm; }
+  /* Flowing documents hand margins, the bar and the footer to @page iiic-flow */
+  .iiic-sheet-flow { page: iiic-flow; width: auto; height: auto; min-height: 0; padding: 0 0 0 19mm; overflow: visible; }
+  .iiic-sheet-flow.is-confidential { page: iiic-flow-confidential; }
+  .iiic-sheet-flow::before, .iiic-sheet-flow .iiic-sheet-foot { display: none; }
+  .iiic-bizcard { margin: 0; box-shadow: none; }
+  .iiic-bizcard::after { display: none; }
+  .iiic-no-print { display: none !important; }
+  .iiic-print-body a { color: inherit; text-decoration: none; }
+  .iiic-print-body, .iiic-print-body * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

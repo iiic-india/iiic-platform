@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Landing template · IIIC</title>
+  <meta name="color-scheme" content="only light">
+  <meta name="theme-color" content="#FFDD00">
+  <link rel="icon" href="../../logo/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../css/iiic.css">
+</head>
+<body>
+  <a class="iiic-skip-link" href="#main">Skip to content</a>
+  <header class="iiic-header">
+    <a class="iiic-brand" href="/"><img src="../../logo/iiic-mark.svg" alt="IIIC" width="23" height="40"><span><strong>IIIC</strong><small>Indian Institute of Image Catalysts</small></span></a>
+    <button class="iiic-btn iiic-btn-outline iiic-nav-toggle" aria-expanded="false" aria-controls="nav" id="navToggle">Menu</button>
+    <nav class="iiic-nav" id="nav" aria-label="Main">
+      <a href="#">Framework</a><a href="#">For organisations</a><a href="#">Learn</a><a href="#">Counselling</a><a href="#">Proof</a>
+      <a class="iiic-btn iiic-btn-primary" href="#">Take the Map</a><a href="#">Log in</a>
+    </nav>
+  </header>
+
+  <main id="main" class="iiic-page" style="padding-top:32px">
+    <!-- Hero: thesis + primary action. The yellow field holds the mark until a real photo is supplied (then add .is-photo). -->
+    <section class="iiic-hero">
+      <div>
+        <div class="iiic-kicker">One theory, three applications</div>
+        <h1>{{hero_heading}}</h1>
+        <p>{{hero_lead}}</p>
+        <div class="iiic-row"><a class="iiic-btn iiic-btn-primary iiic-btn-lg" href="#">Take the Map</a><a class="iiic-btn iiic-btn-secondary iiic-btn-lg" href="#">How it works</a></div>
+      </div>
+      <div class="iiic-hero-field"><img src="../../logo/iiic-mark.svg" alt=""></div>
+    </section>
+
+    <!-- Three doors -->
+    <section class="iiic-section">
+      <div class="iiic-section-head"><div><div class="iiic-kicker">Where to start</div><h2 class="iiic-marked">{{doors_heading}}</h2></div></div>
+      <div class="iiic-doors">
+        <a class="iiic-card iiic-card-door" href="#"><div class="iiic-door-glyph">O</div><div class="iiic-kicker">For organisations</div><h3>Consultancy</h3><p>{{door_consultancy}}</p><span class="iiic-btn iiic-btn-secondary">Book a proposal call</span></a>
+        <a class="iiic-card iiic-card-door" href="#"><div class="iiic-door-glyph">L</div><div class="iiic-kicker">For learners</div><h3>Education</h3><p>{{door_education}}</p><span class="iiic-btn iiic-btn-secondary">See the course</span></a>
+        <a class="iiic-card iiic-card-door" href="#"><div class="iiic-door-glyph">C</div><div class="iiic-kicker">For individuals and families</div><h3>Counselling</h3><p>{{door_counselling}}</p><span class="iiic-btn iiic-btn-secondary">Book a session</span></a>
+      </div>
+    </section>
+
+    <!-- Proof strip: counters stay as chips until real -->
+    <section class="iiic-section">
+      <div class="iiic-strip">
+        <div class="iiic-stat"><div><div class="iiic-stat-label">Sessions delivered</div><div class="iiic-stat-value"><span class="iiic-todo">[[TODO]]</span></div></div></div>
+        <div class="iiic-stat"><div><div class="iiic-stat-label">Learners certified</div><div class="iiic-stat-value"><span class="iiic-todo">[[TODO]]</span></div></div></div>
+        <div class="iiic-stat"><div><div class="iiic-stat-label">University workshop</div><div class="iiic-stat-value" style="font-size:30px">PDEU</div><span class="iiic-type-small">Subjective Self: a two-day workshop on self-knowledge, Pandit Deendayal Energy University, 3–4 April 2023</span></div></div>
+      </div>
+    </section>
+
+    <!-- Split: framework + founder -->
+    <section class="iiic-section iiic-split">
+      <div class="iiic-image-frame">[[TODO: founder or session photo]]</div>
+      <div>
+        <div class="iiic-kicker">The framework</div>
+        <h2 class="iiic-marked" style="margin:12px 0 16px">Subjective Self</h2>
+        <!-- IIIC's own statement of the framework. The current site calls it the "first ever" Indian theory of psychology: a "first" claim
+             needs evidence before it is published (VOICE.md, claims). The founder line uses the brochure's wording for the curriculum (VOICE.md, years). -->
+        <p class="iiic-lede iiic-prose">{{framework_statement}}</p>
+        <p class="iiic-type-small">Gaurang Mistry, Founder · Subjective Self: 25 years of research, application, and refinement</p>
+        <a class="iiic-btn iiic-btn-primary" href="#">Read the framework</a>
+      </div>
+    </section>
+
+    <!-- Verified proof: honest empty state until real proof exists -->
+    <section class="iiic-section">
+      <div class="iiic-section-head"><div><div class="iiic-kicker">Proof</div><h2 class="iiic-marked">Verified client stories</h2></div><p>We only publish proof tied to a real booking.</p></div>
+      <!-- Until a verified story exists, the honest empty state. A published story uses .iiic-card-proof with the "Verified client" badge. -->
+      <div class="iiic-empty"><h3>No verified stories yet</h3><p>Verified client stories will appear here. We only publish proof tied to a real booking.</p><a class="iiic-btn iiic-btn-outline" href="#">How we verify</a></div>
+    </section>
+  </main>
+
+  <!-- The one yellow band on the page -->
+  <section class="iiic-band iiic-band-yellow" style="margin-top:80px">
+    <div class="iiic-page iiic-cta">
+      <div><div class="iiic-kicker">Start here</div><h2>{{band_heading}}</h2><p>{{band_lead}}</p></div>
+      <div class="iiic-row"><a class="iiic-btn iiic-btn-primary iiic-btn-lg" href="#">Take the Map</a><a class="iiic-btn iiic-btn-secondary iiic-btn-lg" href="#">How it works</a></div>
+    </div>
+  </section>
+
+  <footer class="iiic-footer-grid" style="margin-top:0">
+    <div class="iiic-footer-brand"><img src="../../logo/iiic-logo.svg" alt="Indian Institute of Image Catalysts"><p>408, The Claywalls, Hebatpur Road, Thaltej, Ahmedabad, Gujarat 382455<br>+91 96240 46464</p></div>
+    <div><h4>Learn</h4><a href="#">Subjective Self</a><a href="#">Certification</a><a href="#">Journal</a></div>
+    <div><h4>Work with us</h4><a href="#">For organisations</a><a href="#">Counselling</a><a href="#">The Map</a></div>
+    <div><h4>Institute</h4><a href="#">Research</a><a href="#">Verify a certificate</a><a href="#">About</a></div>
+  </footer>
+  <div class="iiic-footer-legal">
+    <span>© {{year}} Indian Institute of Image Catalysts · {{affiliation_statement}}</span>
+    <span><a class="iiic-link" href="/legal">Legal</a> · <a class="iiic-link" href="/privacy">Privacy</a> · <a class="iiic-link" href="/terms">Terms</a> · <a class="iiic-link" href="/refunds">Refunds</a> · <a class="iiic-link" href="/grievance">Grievance officer</a></span>
+  </div>
+  <script>const t=document.getElementById('navToggle');t.addEventListener('click',()=>t.setAttribute('aria-expanded',t.getAttribute('aria-expanded')!=='true'));</script>
+</body>
+</html>

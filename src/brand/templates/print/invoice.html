@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Invoice · IIIC</title>
+  <link rel="stylesheet" href="../../css/iiic.css">
+</head>
+<body class="iiic-print-body">
+  <!-- {{document_type}}: while IIIC is not GST-registered, "Invoice" or "Receipt" with no GSTIN line and no tax rows
+       (an unregistered business may not collect GST, and a "bill of supply" is a registered person's document).
+       Once registered: "Tax invoice", "Receipt voucher" (advance), "Refund voucher" or "Credit note".
+       The platform's system of record for invoices is Zoho Books (D-13); this template is the brand reference
+       and the fallback for receipts. A flowing document: long line lists continue with the table header repeated. -->
+  <article class="iiic-sheet iiic-sheet-bar iiic-sheet-flow iiic-doc-compact">
+    <header class="iiic-sheet-head">
+      <img src="../../logo/iiic-logo.svg" alt="Indian Institute of Image Catalysts">
+      <address>
+        <strong>Indian Institute of Image Catalysts</strong>
+        408, The Claywalls, Hebatpur Road<br>Thaltej, Ahmedabad, Gujarat 382455<br>
+        +91 96240 46464 · {{EMAIL}}<br>GSTIN {{gstin}} · {{udyam}}
+      </address>
+    </header>
+
+    <div class="iiic-doc-kicker">{{document_type}}</div>
+    <h1 class="iiic-doc-title">{{invoice_number}}</h1>
+
+    <div class="iiic-doc-meta-row" style="margin-top:6mm">
+      <div>
+        <h4>Billed to</h4>
+        <strong>{{client_name}}</strong><br>{{client_address}}<br>GSTIN {{client_gstin}}
+      </div>
+      <div>
+        <h4>Details</h4>
+        <table style="border-collapse:collapse;width:100%">
+          <tr><td style="color:var(--iiic-slate-500);padding:.3mm 0;width:34mm">Invoice date</td><td>{{invoice_date}}</td></tr>
+          <tr><td style="color:var(--iiic-slate-500);padding:.3mm 0">Due</td><td><strong>{{due_date}}</strong></td></tr>
+          <tr><td style="color:var(--iiic-slate-500);padding:.3mm 0">Place of supply</td><td>{{place_of_supply}}</td></tr>
+          <tr><td style="color:var(--iiic-slate-500);padding:.3mm 0">Reverse charge</td><td>{{reverse_charge}}</td></tr>
+          <tr><td style="color:var(--iiic-slate-500);padding:.3mm 0">Reference</td><td>{{reference}}</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <table class="iiic-doc-table">
+      <thead><tr><th style="width:50%">Description</th><th>SAC</th><th class="num">Qty</th><th class="num">Rate (₹)</th><th class="num">Amount (₹)</th></tr></thead>
+      <tbody>
+        {{line_items}}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="4" class="num">Taxable value</td><td class="num">{{subtotal}}</td></tr>
+        <tr><td colspan="4" class="num">CGST {{cgst_rate}}%</td><td class="num">{{cgst}}</td></tr>
+        <tr><td colspan="4" class="num">SGST {{sgst_rate}}%</td><td class="num">{{sgst}}</td></tr>
+      </tfoot>
+    </table>
+    <!-- One line item: <tr><td>{{description}}<small>{{detail}}</small></td><td>{{sac}}</td><td class="num">{{qty}}</td><td class="num">{{rate}}</td><td class="num">{{amount}}</td></tr>
+         Out-of-state client: replace the CGST and SGST rows with one IGST row. -->
+
+    <div class="iiic-doc-total"><div><span>Total due</span><strong>₹{{total}}</strong></div></div>
+
+    <div class="iiic-doc-note">
+      <strong>Amount in words:</strong> {{total_in_words}}<br>
+      <strong>Pay to:</strong> {{bank_name}} · Account name {{account_name}} · Account no. {{account_number}} · IFSC {{ifsc}} · UPI {{upi_id}}<br>
+      <strong>Terms:</strong> {{payment_terms}}
+    </div>
+
+    <div class="iiic-doc-sign">
+      <div style="border:0"></div>
+      <div><strong>For Indian Institute of Image Catalysts</strong>{{signatory_name}} · Authorised signatory<br><small>{{signature_note}}</small></div>
+    </div>
+
+    <!-- Screen preview only; in print the page footer comes from @page iiic-flow -->
+    <footer class="iiic-sheet-foot">
+      <span><strong>IIIC</strong> · Indian Institute of Image Catalysts · Ahmedabad</span>
+      <span>Page 1</span>
+    </footer>
+  </article>
+</body>
+</html>

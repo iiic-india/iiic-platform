@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Social templates · IIIC</title>
+  <link rel="stylesheet" href="../../css/iiic.css">
+  <style>
+    /* Social artboards. Each .s-art is drawn at its exact pixel size and exported to PNG
+       (see README). Text in {{braces}} is replaced per post; the specimen text below
+       only shows the type sizes. Nothing here is dark: paper, white, yellow, ink type. */
+    body { background: var(--iiic-paper-2); padding: 40px; display: grid; gap: 40px; justify-items: start; }
+    .s-art { position: relative; overflow: hidden; background: var(--iiic-paper); color: var(--iiic-ink); font-family: var(--iiic-font); box-shadow: var(--iiic-shadow-md); }
+    .s-kicker { font-size: 15px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--iiic-slate); display: flex; align-items: center; gap: 12px; }
+    .s-kicker::before { content: ""; width: 5px; height: 18px; background: var(--iiic-yellow); border-radius: 1px; }
+    .s-head { font-family: var(--iiic-font-display); font-weight: 500; letter-spacing: -.02em; line-height: 1.04; font-variation-settings: "opsz" 144; margin: 0; }
+    .s-field { position: absolute; top: 0; bottom: 0; right: 0; background: var(--iiic-yellow); display: grid; place-items: center; }
+
+    /* LinkedIn company page cover · 1128 × 191. The page logo overlaps the lower left, so keep that corner empty. */
+    .s-banner-company { width: 1128px; height: 191px; }
+    .s-banner-company .s-field { width: 230px; }
+    .s-banner-company .s-field img { height: 150px; }
+    .s-banner-company .s-copy { position: absolute; right: 270px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; gap: 12px; text-align: right; }
+    .s-banner-company .s-head { font-size: 44px; }
+    .s-banner-company .s-kicker { font-size: 13px; }
+
+    /* LinkedIn personal profile banner · 1584 × 396. The profile photo covers the lower left (about 400 px). */
+    .s-banner-profile { width: 1584px; height: 396px; }
+    .s-banner-profile .s-field { width: 396px; }
+    .s-banner-profile .s-field img { height: 300px; }
+    .s-banner-profile .s-copy { position: absolute; right: 460px; left: 480px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; gap: 20px; }
+    .s-banner-profile .s-head { font-size: 64px; }
+
+    /* Square post · 1080 × 1080 · a pull quote on paper */
+    .s-post-quote { width: 1080px; height: 1080px; padding: 96px; box-sizing: border-box; display: flex; flex-direction: column; }
+    .s-post-quote .s-mark { display: grid; place-items: center; width: 132px; height: 132px; padding-top: 50px; box-sizing: border-box; border-radius: 32px; background: var(--iiic-yellow); color: var(--iiic-ink); font-family: var(--iiic-font-display); font-size: 150px; line-height: 1; }   /* ink on a yellow tile: yellow is never type */
+    .s-post-quote blockquote { margin: 40px 0 0; font-family: var(--iiic-font-display); font-weight: 500; font-size: 64px; line-height: 1.16; letter-spacing: -.015em; font-variation-settings: "opsz" 96; flex: 1; }
+    .s-post-quote cite { font-style: normal; font-size: 24px; color: var(--iiic-slate-500); font-weight: 600; }
+    .s-foot { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-top: 32px; margin-top: 40px; border-top: 2px solid var(--iiic-mist); font-size: 22px; font-weight: 600; color: var(--iiic-slate-500); }
+    .s-foot img { height: 64px; }
+
+    /* Portrait post · 1080 × 1350 · an announcement: yellow field, white base with the lockup */
+    .s-post-announce { width: 1080px; height: 1350px; background: var(--iiic-white); }
+    .s-post-announce .s-top { position: absolute; left: 0; right: 0; top: 0; height: 860px; background: var(--iiic-yellow); padding: 96px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }
+    .s-post-announce .s-top .s-kicker { color: var(--iiic-ink); }
+    .s-post-announce .s-top .s-kicker::before { background: var(--iiic-ink); }
+    .s-post-announce .s-head { font-size: 104px; max-width: 12ch; }
+    .s-post-announce .s-base { position: absolute; left: 0; right: 0; bottom: 0; height: 490px; padding: 72px 96px; box-sizing: border-box; display: grid; grid-template-columns: auto 1fr; gap: 56px; align-items: center; }
+    .s-post-announce .s-base img { height: 210px; }
+    .s-post-announce .s-details { font-size: 30px; line-height: 1.45; }
+    .s-post-announce .s-details strong { display: block; font-family: var(--iiic-font-display); font-weight: 500; font-size: 40px; line-height: 1.15; margin-bottom: 12px; }
+    .s-post-announce .s-details span { display: inline-block; margin-top: 24px; padding: 14px 28px; border-radius: 999px; background: var(--iiic-yellow); font-weight: 700; font-size: 26px; }
+  </style>
+</head>
+<body>
+  <section class="s-art s-banner-company" id="linkedin-company-cover">
+    <div class="s-copy"><div class="s-kicker">{{kicker}}</div><p class="s-head">{{headline}}</p></div>
+    <div class="s-field"><img src="../../logo/iiic-mark.svg" alt=""></div>
+  </section>
+
+  <section class="s-art s-banner-profile" id="linkedin-profile-banner">
+    <div class="s-copy"><div class="s-kicker">{{kicker}}</div><p class="s-head">{{headline}}</p></div>
+    <div class="s-field"><img src="../../logo/iiic-mark.svg" alt=""></div>
+  </section>
+
+  <section class="s-art s-post-quote" id="post-quote">
+    <div class="s-mark">&ldquo;</div>
+    <blockquote>{{quote}}</blockquote>
+    <cite>{{attribution}}</cite>
+    <div class="s-foot"><span>Indian Institute of Image Catalysts · {{SITE_DISPLAY}}</span><img src="../../logo/iiic-mark.svg" alt="IIIC"></div>
+  </section>
+
+  <section class="s-art s-post-announce" id="post-announcement">
+    <div class="s-top"><div class="s-kicker">{{kicker}}</div><p class="s-head">{{headline}}</p></div>
+    <div class="s-base">
+      <img src="../../logo/iiic-logo.svg" alt="Indian Institute of Image Catalysts">
+      <div class="s-details"><strong>{{when}}</strong>{{where}}<br><span>{{cta}}</span></div>
+    </div>
+  </section>
+</body>
+</html>
