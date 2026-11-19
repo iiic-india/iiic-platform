@@ -67,7 +67,7 @@ Every section that makes a claim has, beside it, someone who lived it saying so 
 - **Motion:** the kit's reveal once as the voice enters (opacity, 8 px rise, 320 ms); nothing under reduced motion; never a rotation, an auto-advance, a slider or a marquee.
 - **Counselling pages:** plain cards inside the text, no sticky column, no reveal; initials and place unless the person chose more.
 - **Not on:** booking flows, the Map, error pages, legal pages, emails and messages.
-- **Performance:** voices are part of the page's static HTML and are revalidated when a review is published, changed or withdrawn; no image unless the person agreed to a photograph (then 48 px, lazy-loaded, with width and height); a video review shows a poster and plays only when asked, with captions and a transcript.
+- **Performance:** voices are part of the page's server-rendered HTML, and their data is revalidated when a review is published, changed or withdrawn; no image unless the person agreed to a photograph (then 48 px, lazy-loaded, with width and height); a video review shows a poster and plays only when asked, with captions and a transcript.
 - **Empty slot:** renders nothing, and the section stays one column.
 - **Choosing:** the editor pins a review to each slot from the reviews tagged for that section's theme (`content/copy-architecture.md` §6); a review appears once per page; the selection changes only when the editor changes it.
 
@@ -87,7 +87,7 @@ Order and copy are in `content/copy-architecture.md` §4.1; this is the choreogr
 | 8 | The Journal (three) | Nothing | |
 | 9 | Closing band (yellow): the heading, the Sanskrit line, the action | The bar reaches full width as the band enters | The page's one yellow band |
 
-The whole page is static HTML with one small script for the reveals and flips (under 6 KB gzipped) and no third-party code. `content-visibility: auto` on sections 4–9 with `contain-intrinsic-size` set from their rendered heights.
+The whole page is server-rendered HTML with one small script for the reveals and flips (under 6 KB gzipped) and no third-party code. `content-visibility: auto` on sections 4–9 with `contain-intrinsic-size` set from their rendered heights.
 
 ## 5. Error pages, search and small pages
 

@@ -1,6 +1,7 @@
 import '@/brand/dist/iiic.min.css'
 
 import type { Metadata, Viewport } from 'next'
+import { connection } from 'next/server'
 import type { ReactNode } from 'react'
 
 import { env } from '@/lib/env'
@@ -27,7 +28,10 @@ export const viewport: Viewport = {
   colorScheme: 'only light',
 }
 
-export default function PlatformRootLayout({ children }: { children: ReactNode }) {
+export default async function PlatformRootLayout({ children }: { children: ReactNode }) {
+  // Every page renders per request, so that Next.js can put the CSP nonce on its scripts
+  // (D-42); CMS data is cached by tag instead of the page (docs/12 §1).
+  await connection()
   return (
     <html lang="en-IN" className={`${manrope.variable} ${fraunces.variable}`}>
       <body>{children}</body>

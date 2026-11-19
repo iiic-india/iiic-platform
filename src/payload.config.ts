@@ -44,6 +44,9 @@ export default buildConfig({
     importMap: { baseDir: path.resolve(dirname) },
     // No dark mode anywhere, the admin included (CLAUDE.md #2).
     theme: 'light',
+    // Payload's default avatar is Gravatar, which would send a hash of each staff email to a
+    // third party and break the CSP (img-src 'self').
+    avatar: 'default',
   },
   collections: [Users, Media],
   editor: lexicalEditor(),
