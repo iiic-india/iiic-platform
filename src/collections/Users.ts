@@ -10,6 +10,7 @@ import {
 import { allow, POLICY } from '@/access/policy'
 import { hasRole, isOwnerField, ROLE_LABELS, ROLES } from '@/access/roles'
 import { createRecoveryCodes, recoverTwoFactor } from '@/lib/auth/recoveryEndpoints'
+import { RESET_EMAIL_SUBJECT, resetEmailHtml } from '@/lib/auth/resetEmail'
 import { resetTwoFactor } from '@/lib/auth/resetTwoFactor'
 import { env } from '@/lib/env'
 import { mayCreateFirstOwner } from '@/lib/ownerSetup'
@@ -151,6 +152,11 @@ export const Users: CollectionConfig = {
     tokenExpiration: 60 * 60 * 12,
     maxLoginAttempts: 5,
     lockTime: 15 * 60 * 1000,
+    // The reset email in IIIC's words (src/lib/auth/resetEmail.ts), linking to this site.
+    forgotPassword: {
+      generateEmailSubject: () => RESET_EMAIL_SUBJECT,
+      generateEmailHTML: (args) => resetEmailHtml(env().siteUrl, args?.token ?? ''),
+    },
     cookies: {
       sameSite: 'Lax',
       secure: process.env.NODE_ENV === 'production',

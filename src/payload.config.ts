@@ -2,6 +2,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { postgresAdapter } from '@payloadcms/db-postgres'
+import { resendAdapter } from '@payloadcms/email-resend'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { buildConfig, type EmailAdapter } from 'payload'
@@ -80,7 +81,13 @@ export default buildConfig({
   },
   collections: [Users, Media, StaffRecoveryCodes, AuditLog],
   editor: lexicalEditor(),
-  email: emailNotConfigured,
+  email: config.RESEND_API_KEY
+    ? resendAdapter({
+        apiKey: config.RESEND_API_KEY,
+        defaultFromAddress: config.EMAIL_FROM_ADDRESS,
+        defaultFromName: 'IIIC',
+      })
+    : emailNotConfigured,
   db: postgresAdapter({
     // A small pool per function instance (docs/12 §4); the statement timeout lives on
     // the database role (src/scripts/db-settings.ts), because the transaction pooler
