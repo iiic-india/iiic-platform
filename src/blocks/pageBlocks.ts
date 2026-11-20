@@ -237,6 +237,41 @@ const Points: Block = {
   ],
 }
 
+/** A grid of cards: pillars, services, anything with a name and a line. A card may link. */
+const Cards: Block = {
+  slug: 'cards',
+  interfaceName: 'CardsBlock',
+  labels: { singular: 'Cards', plural: 'Cards' },
+  fields: [
+    kicker,
+    heading,
+    intro,
+    {
+      name: 'cards',
+      type: 'array',
+      required: true,
+      minRows: 1,
+      labels: { singular: 'Card', plural: 'Cards' },
+      fields: [
+        { name: 'title', type: 'text', required: true },
+        { name: 'text', type: 'textarea' },
+        {
+          type: 'row',
+          fields: [
+            { name: 'href', type: 'text', label: 'Link', validate: isSitePath },
+            {
+              name: 'action',
+              type: 'text',
+              admin: { description: 'The words on the button, when the card links.' },
+            },
+          ],
+        },
+      ],
+    },
+    copyStatus,
+  ],
+}
+
 const FactList: Block = {
   slug: 'factList',
   interfaceName: 'FactListBlock',
@@ -313,6 +348,7 @@ export const PAGE_BLOCKS: Block[] = [
   Steps,
   Comparison,
   Points,
+  Cards,
   FactList,
   FounderNote,
   Band,

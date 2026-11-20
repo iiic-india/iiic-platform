@@ -5,6 +5,7 @@ import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { renderText } from '@/components/blocks/text'
 import { FRAMEWORK, FRAMEWORK_IIIC_LINES } from '@/content/starter/framework'
 import { HOME, HOME_IIIC_LINES } from '@/content/starter/home'
+import { ORGANISATIONS, ORGANISATIONS_IIIC_LINES } from '@/content/starter/organisations'
 import type { PageContent } from '@/lib/content/types'
 
 afterEach(cleanup)
@@ -181,5 +182,76 @@ describe('the framework starter page, drawn', () => {
       expect(level - previous).toBeLessThanOrEqual(1)
       return level
     })
+  })
+})
+
+describe('the organisations starter page, drawn', () => {
+  const draw = () => render(<RenderBlocks layout={ORGANISATIONS.layout} />)
+
+  it('sets out IIIC’s three pillars in IIIC’s sentences, then the services awaiting copy', () => {
+    const { container } = draw()
+    const cards = [...container.querySelectorAll('.iiic-grid > .iiic-card')]
+    expect(cards.map((card) => card.querySelector('h3')?.textContent)).toEqual([
+      'People',
+      'Processes',
+      'Culture',
+      'Organisation planning',
+      'Marketing and sales',
+      'Brand positioning',
+    ])
+    expect(cards[0]?.textContent).toContain(ORGANISATIONS_IIIC_LINES.people)
+    expect(cards[1]?.textContent).toContain(ORGANISATIONS_IIIC_LINES.processes)
+    expect(cards[2]?.textContent).toContain(ORGANISATIONS_IIIC_LINES.culture)
+    // Three to a row on the kit’s twelve-column grid.
+    for (const card of cards) expect(card.className).toContain('iiic-span-4')
+    // What each service offers is IIIC’s to say (I-11): a placeholder, never copy.
+    for (const card of cards.slice(3)) {
+      expect(card.querySelector('.iiic-todo')?.getAttribute('data-todo')).toBe('I-11')
+    }
+    // A card without a link is an article, not a link to nowhere.
+    expect(cards.every((card) => card.tagName === 'ARTICLE')).toBe(true)
+  })
+
+  it('asks for the proposal call in the hero and again in the band, in IIIC’s closing words', () => {
+    const { container } = draw()
+    const calls = screen.getAllByRole('link', { name: 'Book a proposal call' })
+    expect(calls).toHaveLength(2)
+    for (const call of calls) expect(call.getAttribute('href')).toBe('/book/call')
+    const band = container.querySelector('.iiic-band-yellow') as HTMLElement
+    expect(band.textContent).toContain(ORGANISATIONS_IIIC_LINES.sustainable)
+    expect(band.textContent).toContain('Leadership · Systems · Culture')
+  })
+
+  it('leaves the Team Map’s description to IIIC and offers the request', () => {
+    const { container } = draw()
+    const waiting = [...container.querySelectorAll('.iiic-todo')].map((chip) =>
+      chip.getAttribute('data-todo'),
+    )
+    expect(waiting.sort()).toEqual(['I-11', 'I-11', 'I-11', 'I-12'])
+    const request = screen.getByRole('link', { name: 'Request a Team Map' })
+    expect(request.getAttribute('href')).toBe('/organisations/team-map')
+  })
+})
+
+describe('cards', () => {
+  it('links a card that has somewhere to go, and sizes the row to its cards', () => {
+    const layout: PageContent['layout'] = [
+      {
+        blockType: 'cards',
+        heading: 'Fake cards',
+        cards: [
+          { title: 'Fake one', href: '/fake-one', action: 'Fake action' },
+          { title: 'Fake two' },
+        ],
+        copyStatus: 'approved',
+      },
+    ]
+    const { container } = render(<RenderBlocks layout={layout} />)
+    const [first, second] = [...container.querySelectorAll('.iiic-grid > .iiic-card')]
+    expect(first?.tagName).toBe('A')
+    expect(first?.getAttribute('href')).toBe('/fake-one')
+    expect(first?.textContent).toContain('Fake action')
+    expect(second?.tagName).toBe('ARTICLE')
+    expect(first?.className).toContain('iiic-span-6')
   })
 })
