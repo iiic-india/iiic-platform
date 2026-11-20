@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 // The public pages built so far (docs/02); each is held to the same accessibility and layout rules.
-const PAGES = ['/', '/framework', '/organisations', '/counselling', '/learn']
+const PAGES = ['/', '/framework', '/organisations', '/counselling', '/learn', '/map']
 
 test.describe('Public shell', () => {
   test('home shows the starter page: IIIC’s words, marked candidates, placeholders', async ({
@@ -76,6 +76,30 @@ test.describe('Public shell', () => {
       }
     })
   }
+
+  test('Find your path asks one question and takes the visitor to their door', async ({ page }) => {
+    await page.goto('/')
+    // The hero button; the header has the same link, behind the menu on a phone.
+    await page.locator('main').getByRole('link', { name: 'Find your path' }).first().click()
+    await expect(page).toHaveURL(/\/map$/)
+    await expect(page).toHaveTitle('Find your path · IIIC')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Who is this for?')
+    // docs/03 F1: nothing is chosen for the visitor.
+    const answers = page.getByRole('group', { name: 'Who is this for?' }).getByRole('radio')
+    await expect(answers).toHaveCount(3)
+    for (const answer of await answers.all()) await expect(answer).not.toBeChecked()
+    await page.getByRole('radio', { name: 'Your organisation' }).check()
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await expect(page).toHaveURL(/\/organisations$/)
+    await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'consultancy')
+  })
+
+  test('Find your path sends an answer it does not know back to the question', async ({ page }) => {
+    await page.goto('/map/go?who=everyone')
+    await expect(page).toHaveURL(/\/map$/)
+    await page.goto('/map/go?who=yourself')
+    await expect(page).toHaveURL(/\/counselling$/)
+  })
 
   test('the learn page: IIIC’s five pillars, and a certificate that is not a degree', async ({
     page,
