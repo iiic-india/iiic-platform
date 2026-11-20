@@ -190,6 +190,7 @@ export interface Page {
     | CardsBlock
     | FactListBlock
     | ScopeBlock
+    | CertificateBlock
     | FounderNoteBlock
     | BandBlock
   )[];
@@ -462,6 +463,15 @@ export interface ScopeBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CertificateBlock".
+ */
+export interface CertificateBlock {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'certificate';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "FounderNoteBlock".
  */
 export interface FounderNoteBlock {
@@ -707,6 +717,7 @@ export interface PagesSelect<T extends boolean = true> {
         cards?: T | CardsBlockSelect<T>;
         factList?: T | FactListBlockSelect<T>;
         scope?: T | ScopeBlockSelect<T>;
+        certificate?: T | CertificateBlockSelect<T>;
         founderNote?: T | FounderNoteBlockSelect<T>;
         band?: T | BandBlockSelect<T>;
       };
@@ -895,6 +906,14 @@ export interface FactListBlockSelect<T extends boolean = true> {
  * via the `definition` "ScopeBlock_select".
  */
 export interface ScopeBlockSelect<T extends boolean = true> {
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CertificateBlock_select".
+ */
+export interface CertificateBlockSelect<T extends boolean = true> {
   id?: T;
   blockName?: T;
 }

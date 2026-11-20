@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 // The public pages built so far (docs/02); each is held to the same accessibility and layout rules.
-const PAGES = ['/', '/framework', '/organisations', '/counselling']
+const PAGES = ['/', '/framework', '/organisations', '/counselling', '/learn']
 
 test.describe('Public shell', () => {
   test('home shows the starter page: IIIC’s words, marked candidates, placeholders', async ({
@@ -76,6 +76,28 @@ test.describe('Public shell', () => {
       }
     })
   }
+
+  test('the learn page: IIIC’s five pillars, and a certificate that is not a degree', async ({
+    page,
+  }) => {
+    const response = await page.goto('/learn')
+    expect(response?.status()).toBe(200)
+    await expect(page).toHaveTitle('Learn · IIIC')
+    await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'education')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Education That Teaches the Why.',
+    )
+    await expect(page.locator('.iiic-grid > .iiic-card h3')).toHaveText([
+      'Purpose',
+      'Identity',
+      'Significance',
+      'Logic',
+      'Accountability',
+    ])
+    // docs/08 §7: the fixed statement, on the course page.
+    await expect(page.locator('#certificate')).toContainText('Not a degree or diploma')
+    await expect(page.locator('main')).not.toContainText(/₹|Rs\.?\s?\d/)
+  })
 
   test('the counselling page carries the scope statement and the crisis numbers', async ({
     page,

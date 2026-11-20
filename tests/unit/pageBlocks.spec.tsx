@@ -6,7 +6,9 @@ import { renderText } from '@/components/blocks/text'
 import { COUNSELLING, COUNSELLING_IIIC_LINES } from '@/content/starter/counselling'
 import { FRAMEWORK, FRAMEWORK_IIIC_LINES } from '@/content/starter/framework'
 import { HOME, HOME_IIIC_LINES } from '@/content/starter/home'
+import { LEARN, LEARN_IIIC_LINES, PDEU_WORKSHOP } from '@/content/starter/learn'
 import { ORGANISATIONS, ORGANISATIONS_IIIC_LINES } from '@/content/starter/organisations'
+import { CERTIFICATE_STATEMENT } from '@/lib/certificates/statement'
 import type { PageContent } from '@/lib/content/types'
 import { CRISIS_LINES, SCOPE_STATEMENT } from '@/lib/counselling/scope'
 
@@ -325,5 +327,70 @@ describe('the counselling starter page, drawn', () => {
         (step) => step.textContent,
       ),
     ).toEqual(['We listen.', 'We explain.', 'We equip.'])
+  })
+})
+
+describe('the learn starter page, drawn', () => {
+  const draw = () => render(<RenderBlocks layout={LEARN.layout} />)
+
+  it('sets out the five pillars, each in IIIC’s own sentence', () => {
+    const { container } = draw()
+    const cards = [...container.querySelectorAll('.iiic-grid > .iiic-card')]
+    expect(cards.map((card) => card.querySelector('h3')?.textContent)).toEqual([
+      'Purpose',
+      'Identity',
+      'Significance',
+      'Logic',
+      'Accountability',
+    ])
+    expect(cards.map((card) => card.querySelector('p')?.textContent)).toEqual([
+      LEARN_IIIC_LINES.purpose,
+      LEARN_IIIC_LINES.identity,
+      LEARN_IIIC_LINES.significance,
+      LEARN_IIIC_LINES.logic,
+      LEARN_IIIC_LINES.accountability,
+    ])
+  })
+
+  it('carries the certificate’s fixed statement, marked as a draft for the lawyer', () => {
+    const { container } = draw()
+    const certificate = container.querySelector('#certificate') as HTMLElement
+    for (const sentence of CERTIFICATE_STATEMENT) {
+      expect(certificate.textContent).toContain(sentence)
+    }
+    expect(certificate.querySelector('[data-draft]')?.getAttribute('data-draft')).toBe('I-22')
+  })
+
+  it('never calls the course a degree or implies recognition, outside that statement', () => {
+    const { container } = draw()
+    container.querySelector('#certificate')?.remove()
+    const text = container.textContent ?? ''
+    // src/brand/VOICE.md, "Words to avoid" and "Certificates and affiliation"; docs/08 §7.
+    expect(text).not.toMatch(/degree|diploma|accredit|recognis|approved|affiliat|guarantee/i)
+    // A university IIIC worked with may be named; the course is never called one.
+    expect(text.match(/universit(y|ies)/gi)).toEqual(['universities', 'University'])
+    expect(text).toContain(PDEU_WORKSHOP)
+    expect(text).not.toMatch(/₹|\bRs\b/)
+  })
+
+  it('offers the info session to learners and the partnership to institutions', () => {
+    draw()
+    const sessions = screen.getAllByRole('link', { name: 'Join a free info session' })
+    expect(sessions).toHaveLength(3)
+    for (const link of sessions) expect(link.getAttribute('href')).toBe('/book/info')
+    const partner = screen.getAllByRole('link', { name: 'Partner with IIIC' })
+    expect(partner).toHaveLength(2)
+    for (const link of partner) expect(link.getAttribute('href')).toBe('/institute')
+  })
+
+  it('leaves the course, the info session and the programmes for institutes to IIIC', () => {
+    const { container } = draw()
+    const waiting = [...container.querySelectorAll('.iiic-todo')].map((chip) =>
+      chip.getAttribute('data-todo'),
+    )
+    expect(waiting.sort()).toEqual(['I-11', 'I-13', 'I-14'])
+    expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
+      candidates(LEARN.layout),
+    )
   })
 })
