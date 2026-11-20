@@ -107,18 +107,35 @@ describe('deactivation', () => {
     ).rejects.toMatchObject({ status: 403 })
   })
 
-  it('lets only an owner deactivate someone', async () => {
-    await payload
-      .update({
+  it('lets only an owner deactivate someone, even on their own record', async () => {
+    // An editor may edit their own record, but the active flag is the owners' alone.
+    await payload.update({
+      collection: 'users',
+      id: staff.editor.id,
+      data: { active: false },
+      user: staff.editor,
+      overrideAccess: false,
+    })
+    const editor = await payload.findByID({ collection: 'users', id: staff.editor.id })
+    expect(editor.active).not.toBe(false)
+  })
+
+  it('refuses a bulk edit of staff, even by an owner', async () => {
+    await expect(
+      payload.update({
         collection: 'users',
-        id: staff.finance.id,
+        where: { email: { like: 'int.access.' } },
         data: { active: false },
-        user: staff.editor,
+        user: staff.owner,
         overrideAccess: false,
-      })
-      .catch(() => undefined)
-    const finance = await payload.findByID({ collection: 'users', id: staff.finance.id })
-    expect(finance.active).not.toBe(false)
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+    const stillActive = await payload.count({
+      collection: 'users',
+      where: { and: [{ email: { like: 'int.access.' } }, { active: { equals: false } }] },
+    })
+    // Only the practitioner, deactivated above, is inactive.
+    expect(stillActive.totalDocs).toBe(1)
   })
 
   it('keeps at least one active owner', async () => {
