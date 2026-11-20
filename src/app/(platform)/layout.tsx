@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from 'next'
 import { connection } from 'next/server'
 import type { ReactNode } from 'react'
 
+import favicon from '@/brand/logo/favicon.svg'
 import { env } from '@/lib/env'
 
 import { fraunces, manrope } from '../fonts'
@@ -21,6 +22,8 @@ export const metadata: Metadata = {
   description:
     'The Indian Institute of Image Catalysts operates across three distinct service verticals: Education, Counselling, and Business & Management Consultancy.',
   applicationName: 'IIIC',
+  // The kit's icon, used as it is; declared, so browsers do not ask for a missing /favicon.ico.
+  icons: { icon: { url: favicon.src, type: 'image/svg+xml' } },
 }
 
 export const viewport: Viewport = {
