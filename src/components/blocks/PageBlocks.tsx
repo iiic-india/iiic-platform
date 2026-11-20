@@ -4,6 +4,7 @@ import { Todo } from '@/components/Todo'
 import type { PageBlock, PageContent } from '@/lib/content/types'
 import type {
   BandBlock,
+  CardsBlock,
   ComparisonBlock,
   DoorsBlock,
   FactListBlock,
@@ -212,6 +213,45 @@ function Points({ block }: { block: PointsBlock }) {
   )
 }
 
+/** How wide a card is on the kit's twelve-column grid, by how many share the row. */
+function cardSpan(count: number): string {
+  if (count === 1) return 'iiic-span-12'
+  if (count === 2) return 'iiic-span-6'
+  return count === 4 ? 'iiic-span-3' : 'iiic-span-4'
+}
+
+function Cards({ block }: { block: CardsBlock }) {
+  const span = cardSpan(block.cards.length)
+  return (
+    <section className="iiic-section">
+      <CandidateMark status={block.copyStatus} />
+      <SectionHead kicker={block.kicker} heading={block.heading} intro={block.intro} />
+      <div className="iiic-grid">
+        {block.cards.map((card, index) => {
+          const content = (
+            <>
+              <h3>{renderText(card.title)}</h3>
+              {card.text ? <p>{renderText(card.text)}</p> : null}
+              {card.href && card.action ? (
+                <span className="iiic-btn iiic-btn-secondary">{card.action}</span>
+              ) : null}
+            </>
+          )
+          return card.href ? (
+            <Link className={`iiic-card ${span}`} href={card.href} key={card.id ?? index}>
+              {content}
+            </Link>
+          ) : (
+            <article className={`iiic-card ${span}`} key={card.id ?? index}>
+              {content}
+            </article>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 function FactList({ block }: { block: FactListBlock }) {
   return (
     <section className="iiic-section">
@@ -287,6 +327,8 @@ function Section({ block }: { block: Exclude<PageBlock, BandBlock> }) {
       return <Comparison block={block} />
     case 'points':
       return <Points block={block} />
+    case 'cards':
+      return <Cards block={block} />
     case 'factList':
       return <FactList block={block} />
     case 'founderNote':

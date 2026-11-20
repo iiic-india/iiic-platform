@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 // The public pages built so far (docs/02); each is held to the same accessibility and layout rules.
-const PAGES = ['/', '/framework']
+const PAGES = ['/', '/framework', '/organisations']
 
 test.describe('Public shell', () => {
   test('home shows the starter page: IIIC’s words, marked candidates, placeholders', async ({
@@ -76,6 +76,34 @@ test.describe('Public shell', () => {
       }
     })
   }
+
+  test('the organisations page speaks in the consultancy register, in IIIC’s words', async ({
+    page,
+  }) => {
+    const response = await page.goto('/organisations')
+    expect(response?.status()).toBe(200)
+    await expect(page).toHaveTitle('For organisations · IIIC')
+    // docs/02: the consultancy register, set on the frame around header, page and footer.
+    await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'consultancy')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Your Business Grows as Far as Your Thinking Goes.',
+    )
+    await expect(
+      page.getByText(
+        "We don't just build businesses; we build the people, systems and cultures that make businesses sustainable.",
+      ),
+    ).toBeVisible()
+    // The three organisational pillars, then the three services (I-11).
+    await expect(page.locator('.iiic-grid > .iiic-card h3')).toHaveText([
+      'People',
+      'Processes',
+      'Culture',
+      'Organisation planning',
+      'Marketing and sales',
+      'Brand positioning',
+    ])
+    await expect(page.locator('.iiic-band-yellow')).toHaveCount(1)
+  })
 
   test('the framework page: the comparison as a table, IIIC’s lines, one closing band', async ({
     page,

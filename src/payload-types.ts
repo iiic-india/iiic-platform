@@ -187,6 +187,7 @@ export interface Page {
     | StepsBlock
     | ComparisonBlock
     | PointsBlock
+    | CardsBlock
     | FactListBlock
     | FounderNoteBlock
     | BandBlock
@@ -382,6 +383,38 @@ export interface PointsBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'points';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CardsBlock".
+ */
+export interface CardsBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  heading: string;
+  /**
+   * A sentence or two beside the heading. Optional.
+   */
+  intro?: string | null;
+  cards: {
+    title: string;
+    text?: string | null;
+    href?: string | null;
+    /**
+     * The words on the button, when the card links.
+     */
+    action?: string | null;
+    id?: string | null;
+  }[];
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus: 'approved' | 'candidate';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'cards';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -653,6 +686,7 @@ export interface PagesSelect<T extends boolean = true> {
         steps?: T | StepsBlockSelect<T>;
         comparison?: T | ComparisonBlockSelect<T>;
         points?: T | PointsBlockSelect<T>;
+        cards?: T | CardsBlockSelect<T>;
         factList?: T | FactListBlockSelect<T>;
         founderNote?: T | FounderNoteBlockSelect<T>;
         band?: T | BandBlockSelect<T>;
@@ -790,6 +824,27 @@ export interface PointsBlockSelect<T extends boolean = true> {
     | T
     | {
         text?: T;
+        id?: T;
+      };
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CardsBlock_select".
+ */
+export interface CardsBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  intro?: T;
+  cards?:
+    | T
+    | {
+        title?: T;
+        text?: T;
+        href?: T;
+        action?: T;
         id?: T;
       };
   copyStatus?: T;
