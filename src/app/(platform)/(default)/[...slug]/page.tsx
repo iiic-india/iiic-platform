@@ -28,5 +28,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CmsPage({ params }: Props) {
   const page = await pageAt(params)
   if (!page) notFound()
-  return <RenderBlocks layout={page.layout} />
+  return <RenderBlocks layout={page.layout} legalReview={page.legalReview} />
 }

@@ -50,6 +50,7 @@ const LEGAL = [
   { href: '/terms', label: 'Terms' },
   { href: '/refunds', label: 'Refunds' },
   { href: '/grievance', label: 'Grievance officer' },
+  { href: '/accessibility', label: 'Accessibility' },
 ] as const
 
 export function SiteFooter() {

@@ -68,6 +68,20 @@ export const Pages: CollectionConfig = {
       },
     },
     {
+      name: 'legalReview',
+      type: 'select',
+      label: 'Legal review',
+      options: [
+        { label: 'Draft, awaiting legal review (I-22)', value: 'draft' },
+        { label: 'Reviewed by IIIC’s lawyer', value: 'approved' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description:
+          'For the legal pages only. A draft carries a marker on the page until the lawyer has reviewed it (I-22).',
+      },
+    },
+    {
       name: 'description',
       type: 'textarea',
       maxLength: 155,

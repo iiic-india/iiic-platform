@@ -177,6 +177,10 @@ export interface Page {
    */
   slug: string;
   /**
+   * For the legal pages only. A draft carries a marker on the page until the lawyer has reviewed it (I-22).
+   */
+  legalReview?: ('draft' | 'approved') | null;
+  /**
    * One or two sentences for search results and shared links, up to 155 characters.
    */
   description?: string | null;
@@ -714,6 +718,7 @@ export interface UsersSelect<T extends boolean = true> {
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
+  legalReview?: T;
   description?: T;
   layout?:
     | T
