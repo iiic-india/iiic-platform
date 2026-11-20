@@ -1,5 +1,6 @@
 import { ResetTwoFactor as ResetTwoFactor_e94e3f5aaf5e593a401f32ca6bf3a47c } from '../../../components/admin/ResetTwoFactor'
 import { TOTPField as TOTPField_4eaf6cb33cfb75be01716613e3c9a512 } from 'payload-totp/rsc'
+import { StarterPages as StarterPages_afde4e3c4dfe0fc6948513e90ac74a06 } from '../../../components/admin/StarterPages'
 import { RecoveryCodes as RecoveryCodes_43c30919611f069a63a0aff35f9170f5 } from '../../../components/admin/RecoveryCodes'
 import { TOTPProvider as TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512 } from 'payload-totp/rsc'
 import { SetupTwoFactor as SetupTwoFactor_2abdb0aaa2f84dde7ee21588072499e4 } from '../../../components/admin/SetupTwoFactor'
@@ -11,6 +12,7 @@ import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc056
 export const importMap = {
   "/components/admin/ResetTwoFactor#ResetTwoFactor": ResetTwoFactor_e94e3f5aaf5e593a401f32ca6bf3a47c,
   "payload-totp/rsc#TOTPField": TOTPField_4eaf6cb33cfb75be01716613e3c9a512,
+  "/components/admin/StarterPages#StarterPages": StarterPages_afde4e3c4dfe0fc6948513e90ac74a06,
   "/components/admin/RecoveryCodes#RecoveryCodes": RecoveryCodes_43c30919611f069a63a0aff35f9170f5,
   "payload-totp/rsc#TOTPProvider": TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512,
   "/components/admin/SetupTwoFactor#SetupTwoFactor": SetupTwoFactor_2abdb0aaa2f84dde7ee21588072499e4,
