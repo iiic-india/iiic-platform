@@ -128,6 +128,10 @@ export interface User {
    * What this person can see and do.
    */
   roles: ('owner' | 'operator' | 'practitioner' | 'editor' | 'finance')[];
+  /**
+   * Untick to deactivate the account: signing in is refused and open sessions end at once.
+   */
+  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -251,6 +255,7 @@ export interface PayloadMigration {
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
   roles?: T;
+  active?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

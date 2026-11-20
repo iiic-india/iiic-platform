@@ -21,7 +21,7 @@ The back office where IIIC runs the platform. It is built for a small team with 
 | Editor | Anyone writing the Journal or pages | Pages, posts, FAQs, media | Any client, lead, booking or payment data |
 | Finance | The accountant (optional) | Payments, refunds (view), invoices, exports | Client notes, Map results, messages |
 
-Two-factor authentication is mandatory for every role. Owners can deactivate a user in one click; deactivation ends their sessions immediately.
+Two-factor authentication is mandatory for every role. Owners can deactivate a user in one click; deactivation ends their sessions immediately. Only owners manage staff accounts: everyone else sees and edits only their own (name, email, password). Staff are deactivated, never deleted (`04`), and accounts are changed one at a time. The last active owner can be neither deactivated nor stripped of the owner role, so someone can always manage staff (D-44).
 
 ## Navigation
 

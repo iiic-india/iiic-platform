@@ -1,0 +1,41 @@
+import type { Access } from 'payload'
+
+import { hasRole, isActive, type Role } from './roles'
+
+/**
+ * Who may do what in the admin, collection by collection: docs/05 ("Who uses it") and
+ * docs/04 (access per entity). Collections build their access from this table, and the
+ * tests hold every role to docs/05, so a permission changes here and nowhere else.
+ * - `roles`: the roles that may, on every document;
+ * - `self`: any active staff user may, on their own record;
+ * - `anyone`: no sign-in needed (public media).
+ * A deactivated account is refused everything (src/access/roles.ts).
+ */
+export type Rule = { roles?: readonly Role[]; self?: true; anyone?: true }
+
+export const POLICY = {
+  users: {
+    read: { roles: ['owner'], self: true },
+    create: { roles: ['owner'] },
+    update: { roles: ['owner'], self: true },
+    // Staff are deactivated, never deleted, so the audit trail keeps its actors (docs/04).
+    delete: {},
+    unlock: { roles: ['owner'] },
+  },
+  media: {
+    read: { anyone: true },
+    create: { roles: ['owner', 'operator', 'editor'] },
+    update: { roles: ['owner', 'operator', 'editor'] },
+    delete: { roles: ['owner', 'editor'] },
+  },
+} as const satisfies Record<string, Record<string, Rule>>
+
+/** A Payload access function for one rule of the table. */
+export function allow(rule: Rule): Access {
+  return ({ req: { user } }) => {
+    if (rule.anyone) return true
+    if (rule.roles?.length && hasRole(user, ...rule.roles)) return true
+    if (rule.self && user && isActive(user)) return { id: { equals: user.id } }
+    return false
+  }
+}
