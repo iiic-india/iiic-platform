@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test'
 
 // The security headers on every route group (docs/12 §5, §14; D-42). Only Vercel's production
-// deployment may be indexed: set E2E_INDEXABLE=true when PLAYWRIGHT_BASE_URL points at it.
+// deployment may be indexed, and only once the site has launched (D-50): set E2E_INDEXABLE=true
+// when PLAYWRIGHT_BASE_URL points at the launched site.
 const INDEXABLE = process.env.E2E_INDEXABLE === 'true'
 // Locally the tests run against `next dev`, whose CSP also allows eval for React's debugging.
 const DEV_SERVER = !process.env.CI && !process.env.PLAYWRIGHT_BASE_URL

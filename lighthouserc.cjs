@@ -11,7 +11,8 @@ module.exports = {
       url: ['http://localhost:3000/'],
       numberOfRuns: 3,
       settings: {
-        // Every deployment except production is noindex on purpose (docs/12 §3), CI included.
+        // Every deployment except the launched production site is noindex on purpose
+        // (docs/12 §3, D-50), CI included.
         skipAudits: ['is-crawlable'],
       },
     },

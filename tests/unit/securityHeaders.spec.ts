@@ -20,15 +20,24 @@ describe('headerRules', () => {
     }
   })
 
-  it('keeps every deployment but production out of search engines', () => {
+  it('keeps every deployment but production out of search engines, whatever the switch says', () => {
     for (const vercelEnv of ['preview', 'development', undefined]) {
-      const rules = headerRules(vercelEnv)
-      expect(keys(rules[0]?.headers ?? [])).toContain('X-Robots-Tag')
+      for (const searchIndexing of [undefined, 'on']) {
+        const rules = headerRules(vercelEnv, searchIndexing)
+        expect(keys(rules[0]?.headers ?? [])).toContain('X-Robots-Tag')
+      }
     }
   })
 
-  it('lets production be indexed, except its private routes', () => {
-    const [everyRoute, ...rest] = headerRules('production')
+  it('keeps production out of search engines until the site has launched (D-50)', () => {
+    for (const searchIndexing of [undefined, '', 'off', 'true', 'ON']) {
+      const rules = headerRules('production', searchIndexing)
+      expect(rules[0]?.headers).toContainEqual({ key: 'X-Robots-Tag', value: 'noindex' })
+    }
+  })
+
+  it('lets the launched production site be indexed, except its private routes', () => {
+    const [everyRoute, ...rest] = headerRules('production', 'on')
     const privateRoutes = rest.slice(0, PRIVATE_ROUTES.length)
     expect(keys(everyRoute?.headers ?? [])).not.toContain('X-Robots-Tag')
     expect(privateRoutes.map((rule) => rule.source)).toEqual([...PRIVATE_ROUTES])
