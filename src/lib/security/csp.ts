@@ -5,7 +5,7 @@
  * they import. Styles may be inline: Payload's admin injects <style> tags at runtime
  * (react-select through Emotion) and React renders style attributes; inline styles cannot
  * run code. Third-party origins join with the features that need them: Cloudflare's beacon
- * and Turnstile (M2), Sentry (M1, through a same-origin tunnel), Razorpay on the payment
+ * and Turnstile (M2), Razorpay on the payment
  * step only (M3).
  */
 export type CspOptions = {
