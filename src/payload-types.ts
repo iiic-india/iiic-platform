@@ -189,6 +189,7 @@ export interface Page {
     | PointsBlock
     | CardsBlock
     | FactListBlock
+    | ScopeBlock
     | FounderNoteBlock
     | BandBlock
   )[];
@@ -226,6 +227,10 @@ export interface HeroBlock {
     label?: string | null;
     href?: string | null;
   };
+  /**
+   * A line of small print under the actions. Optional.
+   */
+  note?: string | null;
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
@@ -320,6 +325,10 @@ export interface StepsBlock {
    */
   kicker?: string | null;
   heading: string;
+  /**
+   * The line the steps follow.
+   */
+  lead?: string | null;
   steps: {
     title: string;
     text?: string | null;
@@ -441,6 +450,15 @@ export interface FactListBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'factList';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ScopeBlock".
+ */
+export interface ScopeBlock {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'scope';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -688,6 +706,7 @@ export interface PagesSelect<T extends boolean = true> {
         points?: T | PointsBlockSelect<T>;
         cards?: T | CardsBlockSelect<T>;
         factList?: T | FactListBlockSelect<T>;
+        scope?: T | ScopeBlockSelect<T>;
         founderNote?: T | FounderNoteBlockSelect<T>;
         band?: T | BandBlockSelect<T>;
       };
@@ -723,6 +742,7 @@ export interface HeroBlockSelect<T extends boolean = true> {
         label?: T;
         href?: T;
       };
+  note?: T;
   copyStatus?: T;
   id?: T;
   blockName?: T;
@@ -781,6 +801,7 @@ export interface StatementBlockSelect<T extends boolean = true> {
 export interface StepsBlockSelect<T extends boolean = true> {
   kicker?: T;
   heading?: T;
+  lead?: T;
   steps?:
     | T
     | {
@@ -866,6 +887,14 @@ export interface FactListBlockSelect<T extends boolean = true> {
         id?: T;
       };
   copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ScopeBlock_select".
+ */
+export interface ScopeBlockSelect<T extends boolean = true> {
   id?: T;
   blockName?: T;
 }

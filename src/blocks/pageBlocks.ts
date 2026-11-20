@@ -72,6 +72,11 @@ const Hero: Block = {
     { name: 'lead', type: 'textarea' },
     action('primary', 'Main action'),
     action('secondary', 'Second action'),
+    {
+      name: 'note',
+      type: 'textarea',
+      admin: { description: 'A line of small print under the actions. Optional.' },
+    },
     copyStatus,
   ],
 }
@@ -167,6 +172,7 @@ const Steps: Block = {
   fields: [
     kicker,
     heading,
+    { name: 'lead', type: 'textarea', admin: { description: 'The line the steps follow.' } },
     {
       name: 'steps',
       type: 'array',
@@ -299,6 +305,20 @@ const FactList: Block = {
   ],
 }
 
+/**
+ * The counselling scope statement and the crisis numbers (docs/08 §7). The block has no
+ * fields: its wording is fixed in src/lib/counselling/scope.ts, the same on every surface.
+ */
+const Scope: Block = {
+  slug: 'scope',
+  interfaceName: 'ScopeBlock',
+  labels: {
+    singular: 'Counselling scope and crisis numbers',
+    plural: 'Counselling scope and crisis numbers',
+  },
+  fields: [],
+}
+
 const FounderNote: Block = {
   slug: 'founderNote',
   interfaceName: 'FounderNoteBlock',
@@ -350,6 +370,7 @@ export const PAGE_BLOCKS: Block[] = [
   Points,
   Cards,
   FactList,
+  Scope,
   FounderNote,
   Band,
 ]

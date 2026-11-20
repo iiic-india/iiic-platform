@@ -12,6 +12,7 @@ module.exports = {
         'http://localhost:3000/',
         'http://localhost:3000/framework',
         'http://localhost:3000/organisations',
+        'http://localhost:3000/counselling',
       ],
       numberOfRuns: 3,
       settings: {

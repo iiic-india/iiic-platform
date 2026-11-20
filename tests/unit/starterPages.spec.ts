@@ -21,6 +21,7 @@ const sources = readdirSync(SOURCES)
   .replace(/^> ?/gm, '')
   .replace(/\s+/g, ' ')
 const inputs = readFileSync(join(process.cwd(), 'docs/09-content-and-inputs.md'), 'utf8')
+const decisions = readFileSync(join(process.cwd(), 'docs/decisions.md'), 'utf8')
 
 /** Every string in a page, whatever field holds it. */
 function strings(value: unknown): string[] {
@@ -68,11 +69,13 @@ describe.each(Object.entries(STARTER_PAGES))('starter page "%s"', (slug, page) =
     for (const href of links) expect(isSitePath(href), href).toBe(true)
   })
 
-  it('points every placeholder at an input that exists (docs/09)', () => {
+  it('points every placeholder at an input or a decision that exists', () => {
     const placeholders = strings(page.layout).flatMap((text) => [
-      ...text.matchAll(/\[\[TODO: .+?, (I-\d+)\]\]/g),
+      ...text.matchAll(/\[\[TODO: .+?, ([ID]-\d+)\]\]/g),
     ])
-    for (const [, id] of placeholders) expect(inputs, id).toContain(`| ${id} |`)
+    for (const [, id] of placeholders) {
+      expect(id?.startsWith('I') ? inputs : decisions, id).toContain(`| ${id} |`)
+    }
     // Anything that looks like a placeholder must be a well-formed one.
     const loose = strings(page.layout).filter((text) =>
       /\[\[|\]\]/.test(text.replace(/\[\[TODO: .+?, [ID]-\d+\]\]/g, '')),
