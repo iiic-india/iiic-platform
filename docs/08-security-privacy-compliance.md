@@ -99,7 +99,7 @@ The platform plan's "Not now" label for bridges becomes **"No, thanks"** with eq
 | Vercel | Application runtime, request logs | Functions in Mumbai (`bom1`); company in the US | DPA |
 | Supabase | The database (all S1–S3 data) | Mumbai (`ap-south-1`) | DPA |
 | Cloudflare | DNS, R2 files (media, invoices, certificates), Turnstile, Web Analytics | Global network; R2 location set to Asia-Pacific | DPA |
-| Resend | Email addresses and message content in transit | US / EU / Japan (no India region) | DPA |
+| Resend | Email addresses and message content in transit | Japan (Tokyo, the region of the sending domain; Resend has no India region) | DPA |
 | WhatsApp provider (AiSensy) and Meta | Phone numbers, template messages | India (provider); Meta global | Provider terms, Meta terms |
 | Razorpay | Payment data (card data never touches IIIC) | India | Merchant agreement |
 | Zoho Books | Invoices, customer billing details | India data centre | DPA |

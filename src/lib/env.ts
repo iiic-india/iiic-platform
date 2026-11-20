@@ -52,8 +52,8 @@ const schema = z.object({
     (value) => (value === '' ? undefined : value),
     z.string().optional(),
   ),
-  // Resend's shared sender until the platform domain is verified (D-05); it delivers only to the
-  // Resend account's own address.
+  // Resend's shared sender where none is set (development); it delivers only to the Resend
+  // account's own address. Vercel sets the platform's own sender (D-47).
   EMAIL_FROM_ADDRESS: z.string().default('onboarding@resend.dev'),
   // Error reports to Sentry (docs/12 §7, D-49). Vercel's Sentry integration sets the NEXT_PUBLIC_
   // name; only the server reads either. Without one nothing is sent (development, CI).
