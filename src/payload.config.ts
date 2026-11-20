@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url'
 
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { s3Storage } from '@payloadcms/storage-s3'
 import { buildConfig, type EmailAdapter } from 'payload'
 import { payloadTotp } from 'payload-totp'
 import sharp from 'sharp'
@@ -97,7 +98,37 @@ export default buildConfig({
   // The admin uses REST and server functions; GraphQL stays off to keep the surface small.
   graphQL: { disable: true },
   telemetry: false,
+  // Uploads pass through the server, so the request must stay under Vercel's 4.5 MB body limit
+  // (D-46); images are re-encoded there before they are stored.
+  upload: {
+    limits: { fileSize: 4 * 1024 * 1024 },
+    abortOnLimit: true,
+    responseOnLimit: 'Choose an image under 4 MB.',
+  },
   plugins: [
+    // Media in Cloudflare R2's public bucket (docs/07) once R2 is configured; on the local disk
+    // before that (development, CI). Files are served straight from the bucket's public URL.
+    s3Storage({
+      enabled: Boolean(config.R2_ACCESS_KEY_ID),
+      // The same columns with R2 on or off, so CI, local and Vercel share one schema.
+      alwaysInsertFields: true,
+      collections: {
+        media: {
+          disablePayloadAccessControl: true,
+          generateFileURL: ({ filename, prefix }) =>
+            `${config.R2_PUBLIC_BASE_URL}/${prefix ? `${prefix}/` : ''}${filename}`,
+        },
+      },
+      bucket: config.R2_BUCKET_PUBLIC,
+      config: {
+        endpoint: `https://${config.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+        region: 'auto',
+        credentials: {
+          accessKeyId: config.R2_ACCESS_KEY_ID ?? '',
+          secretAccessKey: config.R2_SECRET_ACCESS_KEY ?? '',
+        },
+      },
+    }),
     // Staff two-factor (docs/08 §9). It wraps the access of every collection before it, so it
     // stays the last plugin that adds collections; the two transforms after it only add hooks
     // and replace its English strings.

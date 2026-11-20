@@ -50,6 +50,7 @@ export function proxy(request: NextRequest) {
     nonce: createNonce(),
     development: process.env.NODE_ENV === 'development',
     https: nextUrl.protocol === 'https:',
+    imageOrigins: env().mediaOrigin ? [env().mediaOrigin as string] : [],
   })
   const headers = new Headers(request.headers)
   headers.set('Content-Security-Policy', csp)

@@ -5,6 +5,7 @@ import { TOTPProvider as TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512 } from 'p
 import { SetupTwoFactor as SetupTwoFactor_2abdb0aaa2f84dde7ee21588072499e4 } from '../../../components/admin/SetupTwoFactor'
 import { VerifyTwoFactor as VerifyTwoFactor_546c8ab8e10ca06b3c0d6d60bcd95510 } from '../../../components/admin/VerifyTwoFactor'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
+import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
@@ -14,5 +15,6 @@ export const importMap = {
   "payload-totp/rsc#TOTPProvider": TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512,
   "/components/admin/SetupTwoFactor#SetupTwoFactor": SetupTwoFactor_2abdb0aaa2f84dde7ee21588072499e4,
   "/components/admin/VerifyTwoFactor#VerifyTwoFactor": VerifyTwoFactor_546c8ab8e10ca06b3c0d6d60bcd95510,
-  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
+  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
+  "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24
 }

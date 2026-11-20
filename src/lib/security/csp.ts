@@ -17,9 +17,11 @@ export type CspOptions = {
    * page's own requests to https, which nothing serves.
    */
   https: boolean
+  /** Where public images are served from besides this site: the R2 media bucket. */
+  imageOrigins?: readonly string[]
 }
 
-export function buildCsp({ nonce, development, https }: CspOptions): string {
+export function buildCsp({ nonce, development, https, imageOrigins = [] }: CspOptions): string {
   const directives: [string, ...string[]][] = [
     ['default-src', "'self'"],
     [
@@ -30,7 +32,7 @@ export function buildCsp({ nonce, development, https }: CspOptions): string {
       ...(development ? ["'unsafe-eval'"] : []),
     ],
     ['style-src', "'self'", "'unsafe-inline'"],
-    ['img-src', "'self'", 'data:', 'blob:'],
+    ['img-src', "'self'", 'data:', 'blob:', ...imageOrigins],
     ['font-src', "'self'"],
     ['connect-src', "'self'"],
     ['frame-src', "'none'"],

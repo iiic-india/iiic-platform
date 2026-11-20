@@ -37,6 +37,16 @@ const schema = z.object({
       )
       .optional(),
   ),
+  // Cloudflare R2 (docs/07): all four together, or none, and media stays on the local disk
+  // (development and CI). The public base URL is the bucket's public address.
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_PUBLIC: z.string().default('iiic-media'),
+  R2_PUBLIC_BASE_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.url().optional(),
+  ),
   PLATFORM_HOSTS: z.string().default('localhost:3000'),
   INSTITUTE_HOSTS: z.string().default(''),
   // Set by Vercel on every deployment (hostnames, without the scheme).
@@ -51,6 +61,8 @@ export type ServerEnv = z.infer<typeof schema> & {
   siteUrl: string
   /** Every origin allowed to call the API with a session cookie (Payload's CSRF list). */
   allowedOrigins: string[]
+  /** The R2 media bucket's public origin, when R2 is configured. */
+  mediaOrigin?: string
 }
 
 const LOCAL = 'http://localhost:3000'
@@ -77,7 +89,19 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
       : undefined
   const siteUrl = data.NEXT_PUBLIC_SITE_URL ?? productionOrigin ?? vercelOrigins[0] ?? LOCAL
   const allowedOrigins = [...new Set([siteUrl, ...vercelOrigins])]
-  return { ...data, siteUrl, allowedOrigins }
+  const r2 = [
+    data.R2_ACCOUNT_ID,
+    data.R2_ACCESS_KEY_ID,
+    data.R2_SECRET_ACCESS_KEY,
+    data.R2_PUBLIC_BASE_URL,
+  ]
+  if (r2.some(Boolean) && !r2.every(Boolean)) {
+    throw new Error(
+      'Invalid environment:\n- R2: set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_PUBLIC_BASE_URL together, or none of them',
+    )
+  }
+  const mediaOrigin = data.R2_PUBLIC_BASE_URL ? new URL(data.R2_PUBLIC_BASE_URL).origin : undefined
+  return { ...data, siteUrl, allowedOrigins, mediaOrigin }
 }
 
 let cached: ServerEnv | undefined
