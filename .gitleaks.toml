@@ -10,4 +10,7 @@ regexes = [
   '''test-only-[A-Za-z0-9-]+''',
   '''local-only-dummy-[A-Za-z0-9-]+''',
   '''JBSWY3DPEHPK3PXP''',
+  # The alphabet and the digits: a made-up token one test used (commit ed9e7cd) before it took the
+  # test-only- form. It stays in the history, so it is named here.
+  '''abcdefghijklmnopqrstuvwxyz0123456789ABCD''',
 ]

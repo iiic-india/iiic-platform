@@ -15,6 +15,7 @@ import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Users } from './collections/Users'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
+import { reportServerError, reportTestError } from './lib/monitoring/sentry'
 import { auditLog } from './plugins/auditLog'
 import { totpCopy } from './plugins/totpCopy'
 import { totpSecretAtRest } from './plugins/totpSecretAtRest'
@@ -117,6 +118,10 @@ export default buildConfig({
     abortOnLimit: true,
     responseOnLimit: 'Choose an image under 4 MB.',
   },
+  // The server's own faults go to Sentry, scrubbed (src/lib/monitoring/sentry.ts, D-49); an owner
+  // can send a test error to check that reports arrive.
+  hooks: { afterError: [reportServerError] },
+  endpoints: [{ path: '/report-test-error', method: 'post', handler: reportTestError }],
   plugins: [
     // Media in Cloudflare R2's public bucket (docs/07) once R2 is configured; on the local disk
     // before that (development, CI). Files are served straight from the bucket's public URL.

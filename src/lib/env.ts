@@ -55,6 +55,13 @@ const schema = z.object({
   // Resend's shared sender until the platform domain is verified (D-05); it delivers only to the
   // Resend account's own address.
   EMAIL_FROM_ADDRESS: z.string().default('onboarding@resend.dev'),
+  // Error reports to Sentry (docs/12 §7, D-49). Vercel's Sentry integration sets the NEXT_PUBLIC_
+  // name; only the server reads either. Without one nothing is sent (development, CI).
+  SENTRY_DSN: z.preprocess((value) => (value === '' ? undefined : value), z.url().optional()),
+  NEXT_PUBLIC_SENTRY_DSN: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.url().optional(),
+  ),
   PLATFORM_HOSTS: z.string().default('localhost:3000'),
   INSTITUTE_HOSTS: z.string().default(''),
   // Set by Vercel on every deployment (hostnames, without the scheme).
@@ -62,6 +69,8 @@ const schema = z.object({
   VERCEL_URL: z.string().optional(),
   VERCEL_BRANCH_URL: z.string().optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
+  // The commit a deployment was built from; error reports carry it as their release.
+  VERCEL_GIT_COMMIT_SHA: z.string().optional(),
 })
 
 export type ServerEnv = z.infer<typeof schema> & {
@@ -71,6 +80,8 @@ export type ServerEnv = z.infer<typeof schema> & {
   allowedOrigins: string[]
   /** The R2 media bucket's public origin, when R2 is configured. */
   mediaOrigin?: string
+  /** Where error reports go, when Sentry is configured. */
+  sentryDsn?: string
 }
 
 const LOCAL = 'http://localhost:3000'
@@ -109,7 +120,8 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
     )
   }
   const mediaOrigin = data.R2_PUBLIC_BASE_URL ? new URL(data.R2_PUBLIC_BASE_URL).origin : undefined
-  return { ...data, siteUrl, allowedOrigins, mediaOrigin }
+  const sentryDsn = data.SENTRY_DSN ?? data.NEXT_PUBLIC_SENTRY_DSN
+  return { ...data, siteUrl, allowedOrigins, mediaOrigin, sentryDsn }
 }
 
 let cached: ServerEnv | undefined
