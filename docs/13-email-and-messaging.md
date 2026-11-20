@@ -24,7 +24,7 @@ Transactional mail never goes through a mailbox and mailboxes never send automat
 | `v=spf1 include:_spf.google.com -all` | `<domain>` | Only Google sends as the root domain |
 | Google DKIM (2048-bit), selector `google` | `<domain>` | Signs mailbox mail |
 | `_dmarc.<domain>`: `v=DMARC1; p=none; rua=mailto:<dmarc reports address>; adkim=s; aspf=r` (SPF alignment relaxed because Resend's bounce address lives on a subdomain of the sending subdomain; DKIM alignment strict) at setup → `p=quarantine` after two clean weeks → `p=reject` after a month | `<domain>` | Policy for the whole domain and its subdomains |
-| Resend's records for `notify.<domain>` (DKIM TXT, the return-path MX and SPF on its subdomain) | `notify.<domain>` | Transactional sending |
+| Resend's records for `notify.<domain>` (the DKIM TXT and the return-path records on its subdomains, as Resend lists them) | `notify.<domain>` | Transactional sending |
 | Resend's records for `news.<domain>` | `news.<domain>` | Newsletter sending, separate reputation |
 | Google site verification TXT; Search Console | `<domain>` | Postmaster Tools and Search Console |
 | MTA-STS and TLS-RPT (optional, Google supports both) | `mta-sts.<domain>`, `_smtp._tls` | Enforce TLS for inbound mail |

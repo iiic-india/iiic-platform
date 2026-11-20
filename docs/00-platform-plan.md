@@ -31,7 +31,7 @@ The whole ecosystem you drew (all three applications, the Map, accounts and book
 
 Why: ERNET's undertaking limits the .edu.in to "bonafide academic/educational and or research purpose only and not for any other business", so a single site that sells consultancy and cross-sells all three can only live on the business domain. This refines the earlier split: course sales and delivery now sit on the platform too, so cross-selling never has to cross a domain.
 
-|  | Platform: bare iiic domain (e.g. iiic.works) | Institute: iiic.edu.in, once ERNET approves |
+|  | Platform: imagecatalysts.in (D-05) | Institute: iiic.edu.in, once ERNET approves |
 |---|---|---|
 | Job | Run the ecosystem: sell, book, deliver, cross-sell | Prove the institute: research, standards, partnerships |
 | Holds | Framework intro, the Map, consultancy, course sales and learning, counselling, proof hub, journal, My IIIC | Framework research, course syllabus and certification standards, certificate verification, university partnerships, publications |
