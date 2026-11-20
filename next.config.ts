@@ -15,10 +15,11 @@ const nextConfig: NextConfig = {
   images: {
     localPatterns: [{ pathname: '/api/media/file/**' }],
   },
-  // Security headers on every route, noindex everywhere but Vercel's production (docs/12 §5).
+  // Security headers on every route; noindex everywhere but Vercel's production once the site
+  // has launched (docs/12 §5, D-50).
   // The Content-Security-Policy is set per request by src/proxy.ts.
   async headers() {
-    return headerRules(process.env.VERCEL_ENV)
+    return headerRules(process.env.VERCEL_ENV, process.env.SEARCH_INDEXING)
   },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {

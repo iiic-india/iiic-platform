@@ -37,18 +37,23 @@ export const PRIVATE_ROUTES = [
 ] as const
 
 /**
- * The header rules for next.config.ts. Only Vercel's production deployment may be indexed:
- * previews, local builds and CI send noindex on every route (docs/12 §5, Previews).
+ * The header rules for next.config.ts. A deployment may be indexed only when it is Vercel's
+ * production deployment and the site has launched: SEARCH_INDEXING is set to "on" at launch and
+ * at no other time (D-50). Previews, local builds, CI and the production site before launch send
+ * noindex on every route (docs/12 §3, §5).
  */
-export function headerRules(vercelEnv: string | undefined): HeaderRule[] {
+export function headerRules(
+  vercelEnv: string | undefined,
+  searchIndexing?: string | undefined,
+): HeaderRule[] {
+  const indexable = vercelEnv === 'production' && searchIndexing === 'on'
   const everyRoute: HeaderRule = {
     source: '/:path*',
-    headers: [...SECURITY_HEADERS, ...(vercelEnv === 'production' ? [] : [NOINDEX])],
+    headers: [...SECURITY_HEADERS, ...(indexable ? [] : [NOINDEX])],
   }
-  const privateRoutes: HeaderRule[] =
-    vercelEnv === 'production'
-      ? PRIVATE_ROUTES.map((source) => ({ source, headers: [NOINDEX] }))
-      : []
+  const privateRoutes: HeaderRule[] = indexable
+    ? PRIVATE_ROUTES.map((source) => ({ source, headers: [NOINDEX] }))
+    : []
   return [everyRoute, ...privateRoutes, STATIC_ASSETS, ...ROUTE_EXCEPTIONS]
 }
 
