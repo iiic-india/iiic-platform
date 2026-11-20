@@ -47,6 +47,14 @@ const schema = z.object({
     (value) => (value === '' ? undefined : value),
     z.url().optional(),
   ),
+  // Email through Resend (D-47). Without a key, messages are dropped with a note in the log.
+  RESEND_API_KEY: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().optional(),
+  ),
+  // Resend's shared sender until the platform domain is verified (D-05); it delivers only to the
+  // Resend account's own address.
+  EMAIL_FROM_ADDRESS: z.string().default('onboarding@resend.dev'),
   PLATFORM_HOSTS: z.string().default('localhost:3000'),
   INSTITUTE_HOSTS: z.string().default(''),
   // Set by Vercel on every deployment (hostnames, without the scheme).
