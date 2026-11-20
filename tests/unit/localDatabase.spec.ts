@@ -19,7 +19,8 @@ describe('assertLocalDatabase', () => {
       'postgres://postgres.fake:secret-password@aws-0-ap-south-1.pooler.supabase.com:6543/postgres',
       'postgres://u:p@localhost.example.com/iiic',
       'not a url',
-      undefined,
+      // No URL at all (passing undefined would fall back to DATABASE_URL itself).
+      '',
     ]) {
       expect(() => assertLocalDatabase(url), String(url)).toThrow(/only against a local database/)
       try {
