@@ -3,6 +3,7 @@ import { blocks as validateBlocks } from 'payload/shared'
 
 import { allow, POLICY } from '@/access/policy'
 import { oneClosingBand, PAGE_BLOCKS } from '@/blocks/pageBlocks'
+import { copyStarterPage } from '@/lib/content/copyStarter'
 import { revalidatePages } from '@/lib/content/revalidate'
 import { PAGE_SLUG } from '@/lib/content/slug'
 
@@ -17,6 +18,8 @@ export const Pages: CollectionConfig = {
     group: 'Content',
     useAsTitle: 'title',
     defaultColumns: ['title', 'slug', '_status', 'updatedAt'],
+    // Above the list: the starter pages that are not here yet, each with a way in (D-54).
+    components: { beforeListTable: ['/components/admin/StarterPages#StarterPages'] },
   },
   // src/access/policy.ts (docs/05): anyone reads a published page; owners, operators and
   // editors draft and publish; owners and editors delete.
@@ -30,6 +33,8 @@ export const Pages: CollectionConfig = {
   // (payload-totp) stays off this one operation; every write still needs a verified code.
   custom: { totp: { disableAccessWrapper: { read: true } } },
   versions: { drafts: true, maxPerDoc: 25 },
+  // Copies a starter page in as a draft (src/lib/content/copyStarter.ts, D-54).
+  endpoints: [{ path: '/from-starter', method: 'post', handler: copyStarterPage }],
   hooks: {
     // An editor's change is on the site at the next request (docs/12 §4).
     afterChange: [

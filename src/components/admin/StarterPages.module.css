@@ -1,0 +1,33 @@
+/* The starter pages panel above the Pages list; colours and type come from the admin's own
+   styles and theme tokens. */
+.panel {
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-m);
+}
+
+.heading {
+  margin: 0 0 4px;
+}
+
+.intro {
+  margin: 0 0 16px;
+}
+
+/* As many columns as fit; each row keeps its page and its button together. */
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 8px 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
