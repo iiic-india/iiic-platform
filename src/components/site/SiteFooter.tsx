@@ -3,6 +3,7 @@ import Link from 'next/link'
 
 import logo from '@/brand/logo/iiic-logo.svg'
 import { Todo } from '@/components/Todo'
+import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
 import { CONTACT, mailHref, telHref } from '@/lib/site/contact'
 
 import styles from './SiteFooter.module.css'
@@ -83,10 +84,7 @@ export function SiteFooter() {
       <div className="iiic-footer-legal">
         <span>
           © {year} Indian Institute of Image Catalysts ·{' '}
-          <Todo
-            what="statement that IIIC is privately owned and not affiliated with any Government body"
-            id="I-30"
-          />
+          <Todo {...FIXED_PLACEHOLDERS.footerAffiliation} />
         </span>
         <span>
           {LEGAL.map((link, index) => (

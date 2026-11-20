@@ -75,6 +75,8 @@ export default buildConfig({
     components: {
       // Recovery codes for staff two-factor (src/lib/auth/recoveryEndpoints.ts).
       beforeDashboard: ['/components/admin/RecoveryCodes#RecoveryCodes'],
+      // Content → Placeholders: what the pages still wait for (D-56).
+      afterNavLinks: ['/components/admin/PlaceholdersNavLink#PlaceholdersNavLink'],
       // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
       // plugin spreads after its own, so these win. One labelled code field each; the verify
       // view also takes a recovery code.
@@ -83,6 +85,12 @@ export default buildConfig({
         SetupTOTPBackslash: twoFactorView('SetupTwoFactor', '/setup-totp'),
         VerifyTOTP: twoFactorView('VerifyTwoFactor', '/verify-totp'),
         VerifyTOTPBackslash: twoFactorView('VerifyTwoFactor', '/verify-totp'),
+        // The view checks the user and the role itself (CLAUDE.md #6).
+        placeholders: {
+          Component: '/components/admin/PlaceholdersView#PlaceholdersView',
+          path: '/placeholders',
+          exact: true,
+        },
       },
     },
   },
