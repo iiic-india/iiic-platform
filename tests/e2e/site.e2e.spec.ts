@@ -6,6 +6,7 @@ const PAGES = [
   '/',
   '/framework',
   '/organisations',
+  '/founders',
   '/counselling',
   '/learn',
   '/map',
@@ -158,6 +159,30 @@ test.describe('Public shell', () => {
     )
     await expect(contact.locator('.iiic-todo')).toHaveAttribute('data-todo', 'I-33')
     await expect(page.locator('main')).not.toContainText(/₹|Rs\.?\s?\d/)
+  })
+
+  test('the founders’ page: IIIC’s narrative, labelled as an illustration', async ({ page }) => {
+    const response = await page.goto('/founders')
+    expect(response?.status()).toBe(200)
+    await expect(page).toHaveTitle('For founders · IIIC')
+    await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'consultancy')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'From ₹100 Crore to ₹1000 Crore, the Journey Begins Within',
+    )
+    // The hero's button leads into the story, and the story says what it is (D-28).
+    await page.getByRole('link', { name: 'Begin Your Journey' }).click()
+    await expect(page).toHaveURL(/\/founders#story$/)
+    const story = page.locator('#story')
+    await expect(story).toBeInViewport()
+    await expect(story.locator('.iiic-kicker')).toHaveText(
+      'IIIC’s illustration, not a client’s story',
+    )
+    // I-36: the supplied label, on the proposal call.
+    await expect(page.getByRole('link', { name: 'Book a Founder Consultation' })).toHaveAttribute(
+      'href',
+      '/book/call',
+    )
+    await expect(page.locator('.iiic-band [lang="sa"]')).toHaveText('आत्मानं विद्धि')
   })
 
   test('the institute page: the plan’s sections, one partnership as it happened', async ({

@@ -128,7 +128,7 @@ function Hero({ block, draft }: { block: HeroBlock; draft: boolean }) {
 
 function Doors({ block }: { block: DoorsBlock }) {
   return (
-    <section className="iiic-section">
+    <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} intro={block.intro} />
       <div className="iiic-doors">
@@ -155,7 +155,7 @@ function Doors({ block }: { block: DoorsBlock }) {
 
 function Statement({ block }: { block: StatementBlock }) {
   return (
-    <section className="iiic-section">
+    <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} />
       <div className="iiic-prose">
@@ -176,7 +176,7 @@ function Statement({ block }: { block: StatementBlock }) {
 
 function Steps({ block }: { block: StepsBlock }) {
   return (
-    <section className="iiic-section">
+    <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} />
       {block.lead ? (
@@ -201,7 +201,7 @@ function Steps({ block }: { block: StepsBlock }) {
  */
 function Comparison({ block }: { block: ComparisonBlock }) {
   return (
-    <section className="iiic-section">
+    <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} />
       {/* On a narrow screen the table scrolls inside this region, never the page; the region
@@ -233,7 +233,7 @@ function Comparison({ block }: { block: ComparisonBlock }) {
 
 function Points({ block }: { block: PointsBlock }) {
   return (
-    <section className="iiic-section">
+    <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} />
       <div className="iiic-prose">
@@ -258,7 +258,7 @@ function cardSpan(count: number): string {
 function Cards({ block }: { block: CardsBlock }) {
   const span = cardSpan(block.cards.length)
   return (
-    <section className="iiic-section">
+    <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} intro={block.intro} />
       <div className="iiic-grid">
@@ -289,7 +289,7 @@ function Cards({ block }: { block: CardsBlock }) {
 
 function FactList({ block }: { block: FactListBlock }) {
   return (
-    <section className="iiic-section">
+    <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} />
       <div className="iiic-strip">
@@ -360,7 +360,7 @@ function Certificate() {
 
 function FounderNote({ block }: { block: FounderNoteBlock }) {
   return (
-    <section className="iiic-section iiic-split">
+    <section className="iiic-section iiic-split" id={block.anchor ?? undefined}>
       <div className="iiic-image-frame">
         <Todo what="the founder’s photograph, as he wants it published" id="I-10" />
       </div>

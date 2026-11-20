@@ -1,11 +1,14 @@
 import type { PageContent } from '@/lib/content/types'
 
+import { FOUNDERS_IIIC_LINES, FOUNDERS_STORY_ANCHOR, FOUNDERS_STORY_LABEL } from './founders'
+
 /**
  * The page for organisations as docs/content/copy-architecture.md §4.4 lays it out, for the
  * time before the page exists in the CMS (D-51). Labels as in home.ts: [IIIC] lines are word
  * for word from docs/content/sources/, [CS] lines are candidates (I-41), and what nobody has
- * supplied is a placeholder. The link to the founders' story, the proof section and the
- * voices beside sections 2, 4 and 5 join the page with the founders' page and the reviews.
+ * supplied is a placeholder. Section 3 is a way to the founders' story, which is told once,
+ * on its own page (D-28); the proof section and the voices beside sections 2, 4 and 5 join
+ * the page with the reviews.
  */
 
 /** IIIC's own lines on this page, exactly as the sources have them. */
@@ -56,6 +59,15 @@ export const ORGANISATIONS: PageContent = {
         { text: 'Your team waits for direction.' },
         { text: 'You know the next level calls for a different you.' },
       ],
+      copyStatus: 'candidate',
+    },
+    {
+      blockType: 'statement',
+      // The story is IIIC's and lives on /founders; here its heading, its first line and a way in.
+      kicker: FOUNDERS_STORY_LABEL,
+      heading: FOUNDERS_IIIC_LINES.storyHeading,
+      paragraphs: [{ text: FOUNDERS_IIIC_LINES.shed }],
+      action: { label: 'Read the story', href: `/founders#${FOUNDERS_STORY_ANCHOR}` },
       copyStatus: 'candidate',
     },
     {

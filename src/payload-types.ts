@@ -288,6 +288,10 @@ export interface DoorsBlock {
     id?: string | null;
   }[];
   /**
+   * A short name to link to this section by: with "story", a link to /page#story opens here. Optional.
+   */
+  anchor?: string | null;
+  /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
   copyStatus: 'approved' | 'candidate';
@@ -313,6 +317,10 @@ export interface StatementBlock {
     label?: string | null;
     href?: string | null;
   };
+  /**
+   * A short name to link to this section by: with "story", a link to /page#story opens here. Optional.
+   */
+  anchor?: string | null;
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
@@ -341,6 +349,10 @@ export interface StepsBlock {
     id?: string | null;
   }[];
   /**
+   * A short name to link to this section by: with "story", a link to /page#story opens here. Optional.
+   */
+  anchor?: string | null;
+  /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
   copyStatus: 'approved' | 'candidate';
@@ -365,6 +377,10 @@ export interface ComparisonBlock {
     right: string;
     id?: string | null;
   }[];
+  /**
+   * A short name to link to this section by: with "story", a link to /page#story opens here. Optional.
+   */
+  anchor?: string | null;
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
@@ -391,6 +407,10 @@ export interface PointsBlock {
     text: string;
     id?: string | null;
   }[];
+  /**
+   * A short name to link to this section by: with "story", a link to /page#story opens here. Optional.
+   */
+  anchor?: string | null;
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
@@ -424,6 +444,10 @@ export interface CardsBlock {
     id?: string | null;
   }[];
   /**
+   * A short name to link to this section by: with "story", a link to /page#story opens here. Optional.
+   */
+  anchor?: string | null;
+  /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
   copyStatus: 'approved' | 'candidate';
@@ -449,6 +473,10 @@ export interface FactListBlock {
     source?: string | null;
     id?: string | null;
   }[];
+  /**
+   * A short name to link to this section by: with "story", a link to /page#story opens here. Optional.
+   */
+  anchor?: string | null;
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
@@ -490,6 +518,10 @@ export interface FounderNoteBlock {
    */
   note: string;
   attribution?: string | null;
+  /**
+   * A short name to link to this section by: with "story", a link to /page#story opens here. Optional.
+   */
+  anchor?: string | null;
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
@@ -794,6 +826,7 @@ export interface DoorsBlockSelect<T extends boolean = true> {
         action?: T;
         id?: T;
       };
+  anchor?: T;
   copyStatus?: T;
   id?: T;
   blockName?: T;
@@ -817,6 +850,7 @@ export interface StatementBlockSelect<T extends boolean = true> {
         label?: T;
         href?: T;
       };
+  anchor?: T;
   copyStatus?: T;
   id?: T;
   blockName?: T;
@@ -836,6 +870,7 @@ export interface StepsBlockSelect<T extends boolean = true> {
         text?: T;
         id?: T;
       };
+  anchor?: T;
   copyStatus?: T;
   id?: T;
   blockName?: T;
@@ -856,6 +891,7 @@ export interface ComparisonBlockSelect<T extends boolean = true> {
         right?: T;
         id?: T;
       };
+  anchor?: T;
   copyStatus?: T;
   id?: T;
   blockName?: T;
@@ -874,6 +910,7 @@ export interface PointsBlockSelect<T extends boolean = true> {
         text?: T;
         id?: T;
       };
+  anchor?: T;
   copyStatus?: T;
   id?: T;
   blockName?: T;
@@ -895,6 +932,7 @@ export interface CardsBlockSelect<T extends boolean = true> {
         action?: T;
         id?: T;
       };
+  anchor?: T;
   copyStatus?: T;
   id?: T;
   blockName?: T;
@@ -913,6 +951,7 @@ export interface FactListBlockSelect<T extends boolean = true> {
         source?: T;
         id?: T;
       };
+  anchor?: T;
   copyStatus?: T;
   id?: T;
   blockName?: T;
@@ -942,6 +981,7 @@ export interface FounderNoteBlockSelect<T extends boolean = true> {
   heading?: T;
   note?: T;
   attribution?: T;
+  anchor?: T;
   copyStatus?: T;
   id?: T;
   blockName?: T;

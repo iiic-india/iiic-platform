@@ -36,6 +36,29 @@ const intro: Field = {
   admin: { description: 'A sentence or two beside the heading. Optional.' },
 }
 
+/** The ids the fixed blocks carry (scope, certificate, contact): no section may take one. */
+export const FIXED_ANCHORS = ['scope', 'certificate', 'contact'] as const
+
+/** A short name a link opens a section by: small letters, numbers and hyphens. */
+export function isAnchor(value: unknown): true | string {
+  if (value === undefined || value === null || value === '') return true
+  return (
+    (typeof value === 'string' && /^[a-z][a-z0-9-]{0,39}$/.test(value)) ||
+    'Use small letters, numbers and hyphens, starting with a letter, such as the-story.'
+  )
+}
+
+const anchor: Field = {
+  name: 'anchor',
+  type: 'text',
+  label: 'Link name',
+  validate: isAnchor,
+  admin: {
+    description:
+      'A short name to link to this section by: with "story", a link to /page#story opens here. Optional.',
+  },
+}
+
 /** A path on this site. Links to other sites are added when a page needs one. */
 export function isSitePath(value: unknown): true | string {
   if (value === undefined || value === null || value === '') return true
@@ -141,6 +164,7 @@ const Doors: Block = {
         { name: 'action', type: 'text', admin: { description: 'The words on the button.' } },
       ],
     },
+    anchor,
     copyStatus,
   ],
 }
@@ -161,6 +185,7 @@ const Statement: Block = {
       fields: [{ name: 'text', type: 'textarea', required: true }],
     },
     action('action', 'Action'),
+    anchor,
     copyStatus,
   ],
 }
@@ -184,6 +209,7 @@ const Steps: Block = {
         { name: 'text', type: 'textarea' },
       ],
     },
+    anchor,
     copyStatus,
   ],
 }
@@ -219,6 +245,7 @@ const Comparison: Block = {
         },
       ],
     },
+    anchor,
     copyStatus,
   ],
 }
@@ -239,6 +266,7 @@ const Points: Block = {
       labels: { singular: 'Point', plural: 'Points' },
       fields: [{ name: 'text', type: 'text', required: true }],
     },
+    anchor,
     copyStatus,
   ],
 }
@@ -274,6 +302,7 @@ const Cards: Block = {
         },
       ],
     },
+    anchor,
     copyStatus,
   ],
 }
@@ -301,6 +330,7 @@ const FactList: Block = {
         },
       ],
     },
+    anchor,
     copyStatus,
   ],
 }
@@ -358,6 +388,7 @@ const FounderNote: Block = {
       },
     },
     { name: 'attribution', type: 'text' },
+    anchor,
     copyStatus,
   ],
 }
@@ -409,6 +440,20 @@ export function oneClosingBand(layout: unknown): true | string {
   if (bands.length > 1) return 'A page has one yellow band at most.'
   if (bands.length === 1 && blocks.at(-1)?.blockType !== 'band') {
     return 'The yellow band closes the page: move it to the end.'
+  }
+  return true
+}
+
+/** No two sections of a page answer to the same link name, and none takes a fixed block's. */
+export function uniqueAnchors(layout: unknown): true | string {
+  const blocks = Array.isArray(layout) ? (layout as { anchor?: unknown }[]) : []
+  const taken = new Set<string>(FIXED_ANCHORS)
+  for (const block of blocks) {
+    if (typeof block.anchor !== 'string' || block.anchor === '') continue
+    if (taken.has(block.anchor)) {
+      return `The link name "${block.anchor}" is already taken on this page.`
+    }
+    taken.add(block.anchor)
   }
   return true
 }

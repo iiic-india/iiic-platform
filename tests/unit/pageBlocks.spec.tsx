@@ -5,6 +5,12 @@ import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { renderText } from '@/components/blocks/text'
 import { ABOUT, ABOUT_IIIC_LINES, PUBLIC_WORKSHOP } from '@/content/starter/about'
 import { COUNSELLING, COUNSELLING_IIIC_LINES } from '@/content/starter/counselling'
+import {
+  FOUNDERS,
+  FOUNDERS_IIIC_LINES,
+  FOUNDERS_NARRATIVE_FIGURES,
+  FOUNDERS_STORY_LABEL,
+} from '@/content/starter/founders'
 import { FRAMEWORK, FRAMEWORK_IIIC_LINES } from '@/content/starter/framework'
 import { HOME, HOME_IIIC_LINES } from '@/content/starter/home'
 import { INSTITUTE, INSTITUTE_IIIC_LINES } from '@/content/starter/institute'
@@ -559,6 +565,144 @@ describe('the institute starter page, drawn', () => {
     expect(waiting.sort()).toEqual(['D-39', 'I-14', 'I-43'])
     expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
       candidates(INSTITUTE.layout),
+    )
+  })
+})
+
+describe('the founders starter page, drawn', () => {
+  const draw = () => render(<RenderBlocks layout={FOUNDERS.layout} />)
+  const LINES = FOUNDERS_IIIC_LINES
+
+  it('opens with IIIC’s headline, and its button leads into the story', () => {
+    const { container } = draw()
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(LINES.headline)
+    const hero = container.querySelector('.iiic-hero') as HTMLElement
+    expect(hero.textContent).toContain(LINES.subheadline)
+    expect(hero.textContent).toContain('Built on Subjective Self')
+    expect(screen.getByRole('link', { name: LINES.begin }).getAttribute('href')).toBe(
+      '/founders#story',
+    )
+    const story = container.querySelector('#story') as HTMLElement
+    expect(within(story).getByRole('heading', { level: 2 }).textContent).toBe(LINES.storyHeading)
+  })
+
+  it('tells the story in IIIC’s words and says it is an illustration (D-28)', () => {
+    const { container } = draw()
+    const story = container.querySelector('#story') as HTMLElement
+    expect(story.querySelector('.iiic-kicker')?.textContent).toBe(FOUNDERS_STORY_LABEL)
+    expect([...story.querySelectorAll('.iiic-prose p')].map((p) => p.textContent)).toEqual([
+      LINES.shed,
+      LINES.today,
+      LINES.cabin,
+      LINES.question,
+      LINES.hands,
+      LINES.chapter,
+    ])
+    // No review, name or badge stands beside the illustration, here or anywhere on the page.
+    expect(story.querySelector('.iiic-card, blockquote, figure')).toBeNull()
+    expect(container.textContent).not.toMatch(/verified|testimonial|case study|client story/i)
+  })
+
+  it('sets out the six insights, each in IIIC’s own sentences', () => {
+    const { container } = draw()
+    const cards = [...container.querySelectorAll('.iiic-grid > .iiic-card')]
+    expect(cards.map((card) => card.querySelector('h3')?.textContent)).toEqual([
+      'The Empire',
+      'Decisions',
+      'Systems',
+      'People',
+      'Gratitude',
+      'Brand and Worth',
+    ])
+    expect(cards.map((card) => card.querySelector('p')?.textContent)).toEqual([
+      LINES.empire,
+      LINES.decisions,
+      LINES.systems,
+      LINES.people,
+      LINES.gratitude,
+      LINES.brand,
+    ])
+  })
+
+  it('lists what moves differently, in IIIC’s order', () => {
+    draw()
+    const section = screen
+      .getByRole('heading', { level: 2, name: LINES.rhythmHeading })
+      .closest('section') as HTMLElement
+    expect(section.querySelector('p.iiic-lede')?.textContent).toBe(LINES.rhythm)
+    expect([...section.querySelectorAll('li')].map((item) => item.textContent)).toEqual([
+      LINES.ownership,
+      LINES.load,
+      LINES.speaks,
+      LINES.space,
+    ])
+  })
+
+  it('closes on the signature line and the consultation, which books the proposal call', () => {
+    const { container } = draw()
+    const band = container.querySelector('.iiic-band') as HTMLElement
+    expect(within(band).getByRole('heading', { level: 2 }).textContent).toBe(LINES.closingHeading)
+    expect(band.textContent).toContain(LINES.supporting)
+    expect(band.querySelector('[lang="sa"]')?.textContent).toBe('आत्मानं विद्धि')
+    expect(band.textContent).toContain('Know thyself')
+    // I-36: the supplied label, on the free proposal call, until IIIC defines the offer.
+    expect(
+      within(band).getByRole('link', { name: 'Book a Founder Consultation' }).getAttribute('href'),
+    ).toBe('/book/call')
+  })
+
+  it('names money only as the turnover in the story, never as a price (D-21)', () => {
+    const { container } = draw()
+    const text = container.textContent ?? ''
+    expect(text.match(FOUNDERS_NARRATIVE_FIGURES)).toEqual([
+      '₹100 Crore',
+      '₹1000 Crore',
+      '₹100 crore',
+      '₹1000 crore',
+      '₹900 crore',
+    ])
+    expect(text.replace(FOUNDERS_NARRATIVE_FIGURES, '')).not.toMatch(/₹|\bRs\b|\bINR\b|\bfee\b/i)
+  })
+
+  it('keeps “journey” to IIIC’s two lines, and marks only the heading IIIC has not seen', () => {
+    const { container } = draw()
+    expect((container.textContent ?? '').match(/journey/gi)).toHaveLength(2)
+    const marks = [...container.querySelectorAll('[data-candidate="I-41"]')]
+    expect(marks).toHaveLength(1)
+    expect(marks[0]?.closest('section')?.querySelector('h2')?.textContent).toBe('Six Insights')
+    expect(container.querySelector('.iiic-todo')).toBeNull()
+    expect(container.querySelector('[data-draft]')).toBeNull()
+  })
+})
+
+describe('a section’s link name', () => {
+  it('is the section’s id, and a section without one has no id', () => {
+    const section = (anchor?: string) => ({
+      blockType: 'statement' as const,
+      heading: anchor ? 'Named' : 'Unnamed',
+      paragraphs: [{ text: 'Fake paragraph' }],
+      copyStatus: 'approved' as const,
+      ...(anchor ? { anchor } : {}),
+    })
+    const { container } = render(<RenderBlocks layout={[section('story'), section()]} />)
+    const sections = [...container.querySelectorAll('section')]
+    expect(sections.map((element) => element.getAttribute('id'))).toEqual(['story', null])
+  })
+})
+
+describe('the way from the organisations page to the founders’ story', () => {
+  it('shows the story’s heading and first line, says what it is, and leads to it', () => {
+    render(<RenderBlocks layout={ORGANISATIONS.layout} />)
+    const section = screen
+      .getByRole('heading', { level: 2, name: FOUNDERS_IIIC_LINES.storyHeading })
+      .closest('section') as HTMLElement
+    expect(section.querySelector('.iiic-kicker')?.textContent).toBe(FOUNDERS_STORY_LABEL)
+    // The narrative is told once, on its own page: one line of it here, no more.
+    expect([...section.querySelectorAll('.iiic-prose p')].map((p) => p.textContent)).toEqual([
+      FOUNDERS_IIIC_LINES.shed,
+    ])
+    expect(within(section).getByRole('link', { name: 'Read the story' }).getAttribute('href')).toBe(
+      '/founders#story',
     )
   })
 })
