@@ -330,6 +330,17 @@ const Certificate: Block = {
   fields: [],
 }
 
+/**
+ * IIIC's contact details, and the place the footer's Contact link opens (docs/02, /about).
+ * The block has no fields: the details are in src/lib/site/contact.ts, the same as the footer's.
+ */
+const Contact: Block = {
+  slug: 'contact',
+  interfaceName: 'ContactBlock',
+  labels: { singular: 'Contact details', plural: 'Contact details' },
+  fields: [],
+}
+
 const FounderNote: Block = {
   slug: 'founderNote',
   interfaceName: 'FounderNoteBlock',
@@ -341,7 +352,10 @@ const FounderNote: Block = {
       name: 'note',
       type: 'textarea',
       required: true,
-      admin: { description: 'In his own words. Never written for him (I-10).' },
+      admin: {
+        description:
+          'His note in his own words, or his biography as IIIC has published it. One paragraph a line. Never written for him (I-10).',
+      },
     },
     { name: 'attribution', type: 'text' },
     copyStatus,
@@ -384,6 +398,7 @@ export const PAGE_BLOCKS: Block[] = [
   Scope,
   Certificate,
   FounderNote,
+  Contact,
   Band,
 ]
 

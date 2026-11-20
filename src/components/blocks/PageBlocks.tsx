@@ -13,8 +13,8 @@ import {
   SCOPE_AWAITS,
   SCOPE_HEADING,
   SCOPE_STATEMENT,
-  telHref,
 } from '@/lib/counselling/scope'
+import { ADDRESS_AWAITS, CONTACT, CONTACT_HEADING, mailHref, telHref } from '@/lib/site/contact'
 import type {
   BandBlock,
   CardsBlock,
@@ -360,11 +360,64 @@ function FounderNote({ block }: { block: FounderNoteBlock }) {
         <CandidateMark status={block.copyStatus} />
         {block.kicker ? <div className="iiic-kicker">{renderText(block.kicker)}</div> : null}
         <h2 className={`iiic-marked ${styles.splitHeading}`}>{renderText(block.heading)}</h2>
-        <p className="iiic-lede iiic-prose">{renderText(block.note)}</p>
+        <div className="iiic-prose">
+          {block.note
+            .split('\n')
+            .filter((line) => line.trim() !== '')
+            .map((line, index) => (
+              <p className={index === 0 ? 'iiic-lede' : undefined} key={line}>
+                {renderText(line)}
+              </p>
+            ))}
+        </div>
         {block.attribution ? (
           <p className="iiic-type-small">{renderText(block.attribution)}</p>
         ) : null}
       </div>
+    </section>
+  )
+}
+
+/**
+ * IIIC's contact details (D-31), the same as the footer's. The footer's Contact link and the
+ * About page's main action open this section by its id. The address prints without a PIN
+ * until IIIC confirms it (I-33); the map follows the confirmed address.
+ */
+function Contact() {
+  return (
+    <section className="iiic-section" id="contact">
+      <SectionHead heading={CONTACT_HEADING} />
+      <address className={styles.contact}>
+        <dl className={styles.contactList}>
+          <div>
+            <dt className="iiic-kicker">Phone</dt>
+            <dd>
+              <a className="iiic-link" href={telHref(CONTACT.phone)}>
+                {CONTACT.phone}
+              </a>
+            </dd>
+          </div>
+          <div>
+            <dt className="iiic-kicker">Email</dt>
+            <dd>
+              <a className="iiic-link" href={mailHref(CONTACT.email)}>
+                {CONTACT.email}
+              </a>
+            </dd>
+          </div>
+          <div>
+            <dt className="iiic-kicker">Office hours</dt>
+            <dd>{CONTACT.hours}</dd>
+          </div>
+          <div>
+            <dt className="iiic-kicker">Address</dt>
+            <dd>
+              {CONTACT.address}{' '}
+              <Todo what="the address as it should print, with its PIN" id={ADDRESS_AWAITS} />
+            </dd>
+          </div>
+        </dl>
+      </address>
     </section>
   )
 }
@@ -418,6 +471,8 @@ function Section({ block }: { block: Exclude<PageBlock, BandBlock> }) {
       return <Certificate />
     case 'founderNote':
       return <FounderNote block={block} />
+    case 'contact':
+      return <Contact />
   }
 }
 

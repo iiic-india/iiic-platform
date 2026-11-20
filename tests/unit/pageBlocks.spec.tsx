@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { renderText } from '@/components/blocks/text'
+import { ABOUT, ABOUT_IIIC_LINES, PUBLIC_WORKSHOP } from '@/content/starter/about'
 import { COUNSELLING, COUNSELLING_IIIC_LINES } from '@/content/starter/counselling'
 import { FRAMEWORK, FRAMEWORK_IIIC_LINES } from '@/content/starter/framework'
 import { HOME, HOME_IIIC_LINES } from '@/content/starter/home'
@@ -11,6 +12,7 @@ import { ORGANISATIONS, ORGANISATIONS_IIIC_LINES } from '@/content/starter/organ
 import { CERTIFICATE_STATEMENT } from '@/lib/certificates/statement'
 import type { PageContent } from '@/lib/content/types'
 import { CRISIS_LINES, SCOPE_STATEMENT } from '@/lib/counselling/scope'
+import { CONTACT } from '@/lib/site/contact'
 
 afterEach(cleanup)
 
@@ -392,5 +394,101 @@ describe('the learn starter page, drawn', () => {
     expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
       candidates(LEARN.layout),
     )
+  })
+})
+
+describe('the about starter page, drawn', () => {
+  const draw = () => render(<RenderBlocks layout={ABOUT.layout} />)
+
+  it('is headed by the institute’s name until the headline has its years (I-32)', () => {
+    const { container } = draw()
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+      'Indian Institute of Image Catalysts',
+    )
+    const hero = container.querySelector('.iiic-hero') as HTMLElement
+    expect(hero.textContent).toContain(ABOUT_IIIC_LINES.opening)
+    expect(hero.querySelector('.iiic-todo')?.getAttribute('data-todo')).toBe('I-32')
+    // No number of years is printed as a headline before the founder settles on one.
+    expect(container.textContent).not.toMatch(/\b(25|30) years\b/)
+  })
+
+  it('opens the larger vision at its second sentence, without naming IIIC first (I-31)', () => {
+    const { container } = draw()
+    const vision = screen.getByRole('heading', { level: 2, name: 'The Larger Vision' })
+    const section = vision.closest('section') as HTMLElement
+    expect([...section.querySelectorAll('p')].map((p) => p.textContent)).toEqual([
+      ABOUT_IIIC_LINES.purpose,
+      ABOUT_IIIC_LINES.progress,
+    ])
+    expect(section.querySelector('[data-candidate]')).toBeNull()
+    expect(container.textContent).not.toMatch(/\bfirst\b/i)
+  })
+
+  it('gives the founder’s biography as the brochure has it, less its guarantee', () => {
+    const { container } = draw()
+    const founder = container.querySelector('.iiic-split') as HTMLElement
+    expect(within(founder).getByRole('heading', { level: 2 }).textContent).toBe('Gaurang Mistry')
+    expect([...founder.querySelectorAll('.iiic-prose p')].map((p) => p.textContent)).toEqual([
+      ABOUT_IIIC_LINES.founder,
+      ABOUT_IIIC_LINES.research,
+      '[[TODO: one factual line about Ankvishwa, in his own words, I-10]]',
+    ])
+    // The photograph and the Ankvishwa line are his to give (I-10, D-26).
+    expect(
+      [...founder.querySelectorAll('.iiic-todo')].map((chip) => chip.getAttribute('data-todo')),
+    ).toEqual(['I-10', 'I-10'])
+    const text = container.textContent ?? ''
+    expect(text).not.toMatch(/guarantee|assessment|date of birth|\bDr\b/i)
+    expect(text.match(/ankvishwa/gi)).toHaveLength(1)
+  })
+
+  it('lists the institutional work exactly as IIIC’s site records it', () => {
+    const { container } = draw()
+    const text = container.textContent ?? ''
+    expect(text).toContain(PDEU_WORKSHOP)
+    expect(text).toContain(PUBLIC_WORKSHOP)
+    expect(screen.getByRole('link', { name: 'Partner with IIIC' }).getAttribute('href')).toBe(
+      '/institute',
+    )
+  })
+
+  it('ends on the contact section the main action and the footer open', () => {
+    const { container } = draw()
+    expect(screen.getByRole('link', { name: 'Contact' }).getAttribute('href')).toBe(
+      '/about#contact',
+    )
+    const contact = container.querySelector('#contact') as HTMLElement
+    expect(container.querySelector('.iiic-page > section:last-child')).toBe(contact)
+    expect(within(contact).getByRole('heading', { level: 2 }).textContent).toBe('Contact')
+    expect([...contact.querySelectorAll('dt')].map((term) => term.textContent)).toEqual([
+      'Phone',
+      'Email',
+      'Office hours',
+      'Address',
+    ])
+    expect(within(contact).getByRole('link', { name: CONTACT.phone }).getAttribute('href')).toBe(
+      'tel:+919624046464',
+    )
+    expect(within(contact).getByRole('link', { name: CONTACT.email }).getAttribute('href')).toBe(
+      'mailto:info@iiicedu.com',
+    )
+    expect(contact.textContent).toContain(CONTACT.hours)
+    expect(contact.textContent).toContain(CONTACT.address)
+    // The address prints without a PIN until IIIC confirms it (D-31, I-33).
+    expect(contact.textContent).not.toMatch(/\b3[0-9]{5}\b/)
+    expect(contact.querySelector('.iiic-todo')?.getAttribute('data-todo')).toBe('I-33')
+    expect(container.querySelector('.iiic-band')).toBeNull()
+  })
+
+  it('leaves the team and the organisations to IIIC, and marks what it has not approved', () => {
+    const { container } = draw()
+    const waiting = [...container.querySelectorAll('.iiic-todo')].map((chip) =>
+      chip.getAttribute('data-todo'),
+    )
+    expect(waiting.sort()).toEqual(['I-09', 'I-10', 'I-10', 'I-32', 'I-33', 'I-38'])
+    expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
+      candidates(ABOUT.layout),
+    )
+    expect(container.textContent).not.toMatch(/₹|\bRs\b/)
   })
 })

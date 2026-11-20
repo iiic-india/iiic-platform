@@ -28,6 +28,4 @@ export const CRISIS_LINES = [
 ] as const
 
 /** A number as a link a phone can dial. */
-export function telHref(number: string): string {
-  return `tel:${number.replace(/[^\d+]/g, '')}`
-}
+export { telHref } from '@/lib/site/contact'

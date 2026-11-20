@@ -192,6 +192,7 @@ export interface Page {
     | ScopeBlock
     | CertificateBlock
     | FounderNoteBlock
+    | ContactBlock
     | BandBlock
   )[];
   /**
@@ -481,7 +482,7 @@ export interface FounderNoteBlock {
   kicker?: string | null;
   heading: string;
   /**
-   * In his own words. Never written for him (I-10).
+   * His note in his own words, or his biography as IIIC has published it. One paragraph a line. Never written for him (I-10).
    */
   note: string;
   attribution?: string | null;
@@ -492,6 +493,15 @@ export interface FounderNoteBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'founderNote';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ContactBlock".
+ */
+export interface ContactBlock {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'contact';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -719,6 +729,7 @@ export interface PagesSelect<T extends boolean = true> {
         scope?: T | ScopeBlockSelect<T>;
         certificate?: T | CertificateBlockSelect<T>;
         founderNote?: T | FounderNoteBlockSelect<T>;
+        contact?: T | ContactBlockSelect<T>;
         band?: T | BandBlockSelect<T>;
       };
   facts?:
@@ -927,6 +938,14 @@ export interface FounderNoteBlockSelect<T extends boolean = true> {
   note?: T;
   attribution?: T;
   copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ContactBlock_select".
+ */
+export interface ContactBlockSelect<T extends boolean = true> {
   id?: T;
   blockName?: T;
 }

@@ -36,6 +36,25 @@
   margin-top: 16px;
 }
 
+/* The contact details: each label over its value, side by side where there is room.
+   <address> is italic by default; the details stay upright as in the kit's footer. */
+.contact {
+  font-style: normal;
+}
+
+.contactList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 28px 32px;
+  margin: 0;
+}
+
+.contactList dd {
+  margin: 8px 0 0;
+  font-size: var(--iiic-text-lg);
+  overflow-wrap: anywhere;
+}
+
 /* The line a list of steps follows. */
 .stepsLead {
   margin: 0 0 28px;

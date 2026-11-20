@@ -10,6 +10,7 @@ import * as migration_20261120_171130_page_comparison_points from './20261120_17
 import * as migration_20261120_172749_page_cards from './20261120_172749_page_cards';
 import * as migration_20261120_184904_page_scope_and_notes from './20261120_184904_page_scope_and_notes';
 import * as migration_20261120_191404_page_certificate from './20261120_191404_page_certificate';
+import * as migration_20261120_195622_page_contact from './20261120_195622_page_contact';
 
 export const migrations = [
   {
@@ -70,6 +71,11 @@ export const migrations = [
   {
     up: migration_20261120_191404_page_certificate.up,
     down: migration_20261120_191404_page_certificate.down,
-    name: '20261120_191404_page_certificate'
+    name: '20261120_191404_page_certificate',
+  },
+  {
+    up: migration_20261120_195622_page_contact.up,
+    down: migration_20261120_195622_page_contact.down,
+    name: '20261120_195622_page_contact'
   },
 ];
