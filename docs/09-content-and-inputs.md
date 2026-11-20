@@ -71,6 +71,7 @@ Owners: Yash and Aum own what they can supply themselves; everything that comes 
 | I-40 | What already exists and must stay aligned: the office geofencing system (what it does, who uses it), the current CRM (which tool, what data, who uses it), the WhatsApp Business account (number, app or API), any other tool in use | Before M1 (architecture), M4 (pipeline), M6 (messaging) | Yash | The platform as the system of record; nothing integrated |
 | I-41 | Copy approvals: who approves copy for IIIC; approval of every `[CS]` and `[proposal]` line in `content/copy-architecture.md`; the counselling "who it helps" scope (couples, grief) | M2 | Team | `[CS]` lines marked as candidates in staging; `[proposal]` lines as placeholders |
 | I-42 | The reviews IIIC holds about Gaurang Mistry's programmes, in the intake sheet (`content/reviews-intake-template.xlsx`): the name as it may be shown, designation, organisation if the person wants it shown, place, the programme as it was called, the year, the review exactly as written, its language and any translation, where it came from and where the original is kept, any connection the writer has to Gaurang Mistry or IIIC, the screening result, and the consent status with its evidence (`content/review-consent-request.md`, which also holds the message that asks for new reviews). The contact column stays in IIIC's own copy and is deleted before the sheet goes to anyone outside IIIC. The 24 PDEU cards (I-37) go into the same sheet | M2 home, founders, doors, Proof | Team | No voices beside the sections; "In their words" and Proof show the empty state |
+| I-43 | For the institute pages: the methodology, the papers, talks and research pieces, and the credentials of the founder and the faculty exactly as they appear on their certificates | R1 `/institute` (R3 institute domain) | Team | Placeholders; `/framework` stands in for the theory |
 
 ## Page content inventory (Release 1)
 
@@ -85,7 +86,7 @@ Owners: Yash and Aum own what they can supply themselves; everything that comes 
 | Counselling | Approach (modest claims), direction line, up to three counselling reviews (initials and place by default), who you will meet, session lengths and formats (no prices until published), how booking works, policies, scope statement and signposting, FAQs | I-07, I-08, I-09, I-20, I-22, I-24, I-30, I-41, I-42 |
 | Proof | In their words (every published review, filterable), institutional work (known), verified stories (R2), case studies, organisations list, counters with definitions | I-16, I-37, I-38, I-42 |
 | About | IIIC, founder, team, partnerships, contact (address, phone, email, hours, socials), map | I-02, I-09, I-10, I-26, I-33, I-34 |
-| Institute | Research, programmes, partnerships (PDEU 2023, known), verify (R2) | I-14 |
+| Institute | Research, programmes, partnerships (PDEU 2023, known), verify (R2) | I-14, I-43 |
 | Legal | Privacy notice, terms, refund policy, grievance page, accessibility statement | I-07, I-21, I-22, I-26 |
 | 404, search | The reflective question pool (approved), search index | I-41 |
 

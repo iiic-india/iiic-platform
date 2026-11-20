@@ -7,6 +7,7 @@ import { ABOUT, ABOUT_IIIC_LINES, PUBLIC_WORKSHOP } from '@/content/starter/abou
 import { COUNSELLING, COUNSELLING_IIIC_LINES } from '@/content/starter/counselling'
 import { FRAMEWORK, FRAMEWORK_IIIC_LINES } from '@/content/starter/framework'
 import { HOME, HOME_IIIC_LINES } from '@/content/starter/home'
+import { INSTITUTE, INSTITUTE_IIIC_LINES } from '@/content/starter/institute'
 import { LEARN, LEARN_IIIC_LINES, PDEU_WORKSHOP } from '@/content/starter/learn'
 import { ORGANISATIONS, ORGANISATIONS_IIIC_LINES } from '@/content/starter/organisations'
 import { CERTIFICATE_STATEMENT } from '@/lib/certificates/statement'
@@ -490,5 +491,74 @@ describe('the about starter page, drawn', () => {
       candidates(ABOUT.layout),
     )
     expect(container.textContent).not.toMatch(/₹|\bRs\b/)
+  })
+})
+
+describe('the institute starter page, drawn', () => {
+  const draw = () => render(<RenderBlocks layout={INSTITUTE.layout} />)
+
+  it('opens with the plan’s list and IIIC’s own line on education', () => {
+    const { container } = draw()
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+      'Research, programmes and partnerships',
+    )
+    expect(container.querySelector('.iiic-hero p')?.textContent).toBe(
+      INSTITUTE_IIIC_LINES.education,
+    )
+  })
+
+  it('sets out the plan’s sections in order, with the certificate’s fixed statement', () => {
+    const { container } = draw()
+    expect(
+      screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent),
+    ).toEqual([
+      'Framework and research',
+      'Programmes',
+      'The certificate',
+      'Partnerships',
+      'Verify a certificate',
+    ])
+    const certificate = container.querySelector('#certificate') as HTMLElement
+    for (const sentence of CERTIFICATE_STATEMENT) {
+      expect(certificate.textContent).toContain(sentence)
+    }
+    expect(certificate.querySelector('[data-draft]')?.getAttribute('data-draft')).toBe('I-22')
+  })
+
+  it('describes the one partnership as it happened and implies no recognition', () => {
+    const { container } = draw()
+    container.querySelector('#certificate')?.remove()
+    const text = container.textContent ?? ''
+    expect(text).toContain(PDEU_WORKSHOP)
+    // src/brand/VOICE.md, "Certificates and affiliation"; docs/08 §7.
+    expect(text).not.toMatch(
+      /degree|diploma|accredit|recognis|approved|affiliat|guarantee|\bMoUs?\b/i,
+    )
+    expect(text.match(/universit(y|ies)/gi)).toEqual(['University'])
+    expect(text).not.toMatch(/₹|\bRs\b/)
+  })
+
+  it('leads to pages that exist, and to the contact details for an enquiry', () => {
+    draw()
+    expect(screen.getByRole('link', { name: 'Read the framework' }).getAttribute('href')).toBe(
+      '/framework',
+    )
+    expect(
+      screen.getByRole('link', { name: 'See the certification course' }).getAttribute('href'),
+    ).toBe('/learn')
+    const contact = screen.getAllByRole('link', { name: 'Contact' })
+    expect(contact).toHaveLength(2)
+    for (const link of contact) expect(link.getAttribute('href')).toBe('/about#contact')
+  })
+
+  it('leaves the research, the programmes and verification as placeholders', () => {
+    const { container } = draw()
+    const waiting = [...container.querySelectorAll('.iiic-todo')].map((chip) =>
+      chip.getAttribute('data-todo'),
+    )
+    expect(waiting.sort()).toEqual(['D-39', 'I-14', 'I-43'])
+    expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
+      candidates(INSTITUTE.layout),
+    )
   })
 })
