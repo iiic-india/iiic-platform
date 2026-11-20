@@ -1,0 +1,13 @@
+# Secret scanning in CI (docs/12 §5): gitleaks' default rules over the whole history, minus the
+# obviously fake values the tests and CI use, which are named so that nobody mistakes them.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Obviously fake test and CI values"
+regexes = [
+  '''ci-only-[A-Za-z0-9-]+''',
+  '''test-only-[A-Za-z0-9-]+''',
+  '''local-only-dummy-[A-Za-z0-9-]+''',
+  '''JBSWY3DPEHPK3PXP''',
+]

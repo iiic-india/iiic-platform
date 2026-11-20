@@ -38,6 +38,8 @@ export default defineConfig([
     'src/migrations/**',
     'src/app/(payload)/**',
     'next-env.d.ts',
+    // A CommonJS tool config, outside the file types Next's preset sets the plugins up for.
+    'lighthouserc.cjs',
     'playwright-report/**',
     'test-results/**',
   ]),
