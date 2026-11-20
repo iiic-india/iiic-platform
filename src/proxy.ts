@@ -15,7 +15,16 @@ import { buildCsp, createNonce } from '@/lib/security/csp'
  *   directly: a request for one gets the site's 404, rendered with the nonce.
  * Headers that never change per request are set in next.config.ts.
  */
-const PRERENDERED_ERROR_PAGES = new Set(['/_not-found', '/_global-error'])
+const PRERENDERED_ERROR_PAGES = new Set(['/_not-found', '/_global-error', '/404', '/500'])
+
+/** The path as Next.js's own file lookup sees it, so an encoded `/%5Fnot-found` is caught too. */
+function decodedPath(pathname: string): string {
+  try {
+    return decodeURIComponent(pathname)
+  } catch {
+    return pathname
+  }
+}
 // A path no route claims, which the catch-all renders as the site's 404 (Next.js maps /404 to
 // its own prerendered page, so that path cannot be used).
 const NOT_FOUND_PATH = '/page-not-found'
@@ -31,7 +40,7 @@ export function proxy(request: NextRequest) {
   headers.set('Content-Security-Policy', csp)
   headers.set('x-pathname', nextUrl.pathname)
 
-  const rewrite = PRERENDERED_ERROR_PAGES.has(nextUrl.pathname)
+  const rewrite = PRERENDERED_ERROR_PAGES.has(decodedPath(nextUrl.pathname))
     ? NOT_FOUND_PATH
     : instituteRewrite(nextUrl.host, nextUrl.pathname, parseHosts(env().INSTITUTE_HOSTS))
   const response = rewrite

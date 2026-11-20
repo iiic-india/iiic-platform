@@ -65,7 +65,14 @@ describe('proxy', () => {
   })
 
   it("serves the site's 404 instead of Next.js's prerendered error pages", () => {
-    for (const path of ['/_not-found', '/_global-error']) {
+    for (const path of [
+      '/_not-found',
+      '/_global-error',
+      '/404',
+      '/500',
+      '/%5Fnot-found',
+      '/_not%2Dfound',
+    ]) {
       const response = proxy(new NextRequest(`https://iiic.example${path}`))
       expect(response.headers.get('x-middleware-rewrite')).toBe(
         'https://iiic.example/page-not-found',

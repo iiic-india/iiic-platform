@@ -10,16 +10,31 @@ import {
 type Args<T extends (...args: never[]) => unknown> = Parameters<T>[0]
 
 describe('refuseDeactivated', () => {
-  it('refuses to sign in a deactivated account', () => {
-    expect(() =>
-      refuseDeactivated({ user: { id: 1, active: false } } as Args<typeof refuseDeactivated>),
-    ).toThrow(expect.objectContaining({ status: 403 }))
+  /** The sign-in's user, and the row as committed outside the sign-in's transaction. */
+  function run(user: { id: number; active?: boolean | null }, committedActive = user.active) {
+    const findOne = vi.fn(async () => ({ id: user.id, active: committedActive }))
+    const result = refuseDeactivated({
+      user,
+      req: { payload: { db: { findOne } } },
+    } as unknown as Args<typeof refuseDeactivated>)
+    return { result, findOne }
+  }
+
+  it('refuses to sign in a deactivated account', async () => {
+    await expect(run({ id: 1, active: false }).result).rejects.toMatchObject({ status: 403 })
   })
 
-  it('lets an active account (or one from before the flag) sign in', () => {
+  it('refuses when the account was deactivated while the sign-in was under way', async () => {
+    const { result, findOne } = run({ id: 1, active: true }, false)
+    await expect(result).rejects.toMatchObject({ status: 403 })
+    // Read outside the sign-in's transaction: no req is passed.
+    expect(findOne).toHaveBeenCalledWith({ collection: 'users', where: { id: { equals: 1 } } })
+  })
+
+  it('lets an active account (or one from before the flag) sign in', async () => {
     for (const active of [true, null, undefined]) {
       const user = { id: 1, active }
-      expect(refuseDeactivated({ user } as Args<typeof refuseDeactivated>)).toBe(user)
+      await expect(run(user).result).resolves.toBe(user)
     }
   })
 })

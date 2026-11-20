@@ -37,11 +37,21 @@ export const firstAccountIsOwner: CollectionBeforeChangeHook = async ({ req, ope
   return { ...data, roles: ['owner'] }
 }
 
-/** A deactivated account cannot sign in (docs/05, "Who uses it"). */
-export const refuseDeactivated: CollectionBeforeLoginHook = ({ user }) => {
-  if (user?.active === false) {
-    throw new APIError('This account is deactivated. An owner can turn it back on.', 403)
-  }
+const DEACTIVATED = 'This account is deactivated. An owner can turn it back on.'
+
+/**
+ * A deactivated account cannot sign in (docs/05, "Who uses it"). Payload's sign-in writes back
+ * the whole row it read when it started, so a deactivation committed in between would be
+ * undone; the flag is therefore read again outside the sign-in's transaction, and refusing
+ * rolls that write back.
+ */
+export const refuseDeactivated: CollectionBeforeLoginHook = async ({ req, user }) => {
+  if (user?.active === false) throw new APIError(DEACTIVATED, 403)
+  const committed = await req.payload.db.findOne<{ id: number | string; active?: boolean | null }>({
+    collection: 'users',
+    where: { id: { equals: user.id } },
+  })
+  if (committed?.active === false) throw new APIError(DEACTIVATED, 403)
   return user
 }
 
@@ -109,6 +119,9 @@ export const endSessionsOnDeactivation: CollectionAfterChangeHook = async ({
 export const Users: CollectionConfig = {
   slug: 'users',
   labels: { singular: 'Staff user', plural: 'Staff users' },
+  // One account at a time: a bulk edit runs every record's checks before any write, so it
+  // could take away the last active owner. Payload refuses bulk updates here outright.
+  disableBulkEdit: true,
   admin: {
     useAsTitle: 'email',
     defaultColumns: ['name', 'email', 'roles', 'active'],
