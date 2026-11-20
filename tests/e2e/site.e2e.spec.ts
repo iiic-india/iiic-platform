@@ -2,14 +2,28 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 test.describe('Public shell', () => {
-  test('home renders the shell with placeholders, not invented copy', async ({ page }) => {
+  test('home shows the starter page: IIIC’s words, marked candidates, placeholders', async ({
+    page,
+  }) => {
     await page.goto('/')
     await expect(page).toHaveTitle('Indian Institute of Image Catalysts · Subjective Self')
     // docs/12 §3: descriptions are at most 155 characters.
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /^.{1,155}$/)
     await expect(page.locator('html')).toHaveAttribute('lang', 'en-IN')
     await expect(page.getByRole('link', { name: /IIIC/ }).first()).toBeVisible()
-    await expect(page.locator('h1 .iiic-todo')).toHaveText(/^\[\[TODO: .+, I-41\]\]$/)
+    // docs/content/copy-architecture.md §4.1, until the page is published in the CMS (D-51).
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Know Yourself. Every Answer Follows.',
+    )
+    await expect(
+      page.getByText('Counselling transforms how people perceive, interpret and understand.'),
+    ).toBeVisible()
+    // Candidate copy is marked, and an unsupplied fact is a placeholder (I-41, I-10).
+    await expect(page.locator('[data-candidate="I-41"]').first()).toBeVisible()
+    await expect(page.locator('.iiic-todo[data-todo="I-10"]').first()).toHaveText(
+      /^\[\[TODO: .+, I-10\]\]$/,
+    )
+    await expect(page.locator('.iiic-band-yellow [lang="sa"]')).toHaveText('आत्मानं विद्धि')
     await expect(page.locator('footer')).toContainText('+91 96240 46464')
   })
 

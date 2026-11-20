@@ -1,0 +1,32 @@
+/* App styles for the page blocks. The kit's classes do the work; these add the little a
+   block needs beyond them, with no colour of their own (CLAUDE.md, non-negotiable 2). */
+
+/* Room under the header, as the kit's landing template gives its main. */
+.page {
+  padding-top: 32px;
+}
+
+/* The hero without artwork (copy architecture §4.1): its text takes the full width. The
+   doubled class outranks the kit's two-column rule whichever stylesheet loads first. */
+.heroSolo.heroSolo {
+  grid-template-columns: 1fr;
+}
+
+/* The marker on copy IIIC has not approved yet (I-41). */
+.candidate {
+  margin: 0 0 12px;
+}
+
+.actions {
+  margin-top: 24px;
+}
+
+/* The kit's split pattern sets these margins on its heading inline. */
+.splitHeading {
+  margin: 12px 0 16px;
+}
+
+/* The space the kit's landing template puts above its closing band. */
+.band {
+  margin-top: 80px;
+}

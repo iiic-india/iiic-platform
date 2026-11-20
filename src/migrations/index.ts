@@ -5,6 +5,7 @@ import * as migration_20261119_162709_staff_recovery_codes from './20261119_1627
 import * as migration_20261120_094503_audit_log from './20261120_094503_audit_log';
 import * as migration_20261120_094534_audit_log_append_only from './20261120_094534_audit_log_append_only';
 import * as migration_20261120_112710_media_object_key from './20261120_112710_media_object_key';
+import * as migration_20261120_153934_pages from './20261120_153934_pages';
 
 export const migrations = [
   {
@@ -40,6 +41,11 @@ export const migrations = [
   {
     up: migration_20261120_112710_media_object_key.up,
     down: migration_20261120_112710_media_object_key.down,
-    name: '20261120_112710_media_object_key'
+    name: '20261120_112710_media_object_key',
+  },
+  {
+    up: migration_20261120_153934_pages.up,
+    down: migration_20261120_153934_pages.down,
+    name: '20261120_153934_pages'
   },
 ];

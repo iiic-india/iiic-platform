@@ -68,6 +68,7 @@ export interface Config {
   blocks: {};
   collections: {
     users: User;
+    pages: Page;
     media: Media;
     'staff-recovery-codes': StaffRecoveryCode;
     'audit-log': AuditLog;
@@ -80,6 +81,7 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
+    pages: PagesSelect<false> | PagesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'staff-recovery-codes': StaffRecoveryCodesSelect<false> | StaffRecoveryCodesSelect<true>;
     'audit-log': AuditLogSelect<false> | AuditLogSelect<true>;
@@ -159,6 +161,242 @@ export interface User {
     | null;
   password?: string | null;
   collection: 'users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages".
+ */
+export interface Page {
+  id: number;
+  /**
+   * The name of the page, as the browser tab and this list show it.
+   */
+  title: string;
+  /**
+   * Where the page lives: "home" for the first page, "framework" for /framework.
+   */
+  slug: string;
+  /**
+   * One or two sentences for search results and shared links, up to 155 characters.
+   */
+  description?: string | null;
+  layout: (HeroBlock | DoorsBlock | StatementBlock | StepsBlock | FactListBlock | FounderNoteBlock | BandBlock)[];
+  /**
+   * Every claim the page makes, with where it comes from (docs/content/README.md). A claim with no source does not go on the page.
+   */
+  facts?:
+    | {
+        statement: string;
+        source: 'brochure' | 'site' | 'founder' | 'description' | 'counted';
+        checkedAt?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HeroBlock".
+ */
+export interface HeroBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  heading: string;
+  lead?: string | null;
+  primary?: {
+    label?: string | null;
+    href?: string | null;
+  };
+  secondary?: {
+    label?: string | null;
+    href?: string | null;
+  };
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus: 'approved' | 'candidate';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'hero';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "DoorsBlock".
+ */
+export interface DoorsBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  heading: string;
+  doors: {
+    /**
+     * One letter for the tile.
+     */
+    glyph?: string | null;
+    /**
+     * The small line, such as For organisations.
+     */
+    audience?: string | null;
+    href: string;
+    /**
+     * The reader's own line, in the first person.
+     */
+    question: string;
+    /**
+     * IIIC's line for the vertical.
+     */
+    line?: string | null;
+    /**
+     * The outcome band, such as Perspective · Acceptance · Growth.
+     */
+    outcomes?: string | null;
+    /**
+     * The words on the button.
+     */
+    action?: string | null;
+    id?: string | null;
+  }[];
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus: 'approved' | 'candidate';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'doors';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StatementBlock".
+ */
+export interface StatementBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  heading: string;
+  paragraphs: {
+    text: string;
+    id?: string | null;
+  }[];
+  action?: {
+    label?: string | null;
+    href?: string | null;
+  };
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus: 'approved' | 'candidate';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'statement';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StepsBlock".
+ */
+export interface StepsBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  heading: string;
+  steps: {
+    title: string;
+    text?: string | null;
+    id?: string | null;
+  }[];
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus: 'approved' | 'candidate';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'steps';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FactListBlock".
+ */
+export interface FactListBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  heading: string;
+  facts: {
+    statement: string;
+    /**
+     * Where the fact comes from, as the page shows it.
+     */
+    source?: string | null;
+    id?: string | null;
+  }[];
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus: 'approved' | 'candidate';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'factList';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FounderNoteBlock".
+ */
+export interface FounderNoteBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  heading: string;
+  /**
+   * In his own words. Never written for him (I-10).
+   */
+  note: string;
+  attribution?: string | null;
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus: 'approved' | 'candidate';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'founderNote';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "BandBlock".
+ */
+export interface BandBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  heading: string;
+  lead?: string | null;
+  /**
+   * The signature line in Devanagari, once per page.
+   */
+  sanskrit?: string | null;
+  /**
+   * Its English.
+   */
+  translation?: string | null;
+  primary?: {
+    label?: string | null;
+    href?: string | null;
+  };
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus: 'approved' | 'candidate';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'band';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -252,6 +490,10 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'pages';
+        value: number | Page;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
       } | null)
@@ -328,6 +570,176 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages_select".
+ */
+export interface PagesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  description?: T;
+  layout?:
+    | T
+    | {
+        hero?: T | HeroBlockSelect<T>;
+        doors?: T | DoorsBlockSelect<T>;
+        statement?: T | StatementBlockSelect<T>;
+        steps?: T | StepsBlockSelect<T>;
+        factList?: T | FactListBlockSelect<T>;
+        founderNote?: T | FounderNoteBlockSelect<T>;
+        band?: T | BandBlockSelect<T>;
+      };
+  facts?:
+    | T
+    | {
+        statement?: T;
+        source?: T;
+        checkedAt?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HeroBlock_select".
+ */
+export interface HeroBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  lead?: T;
+  primary?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+      };
+  secondary?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+      };
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "DoorsBlock_select".
+ */
+export interface DoorsBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  doors?:
+    | T
+    | {
+        glyph?: T;
+        audience?: T;
+        href?: T;
+        question?: T;
+        line?: T;
+        outcomes?: T;
+        action?: T;
+        id?: T;
+      };
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StatementBlock_select".
+ */
+export interface StatementBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  paragraphs?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  action?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+      };
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StepsBlock_select".
+ */
+export interface StepsBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  steps?:
+    | T
+    | {
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FactListBlock_select".
+ */
+export interface FactListBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  facts?:
+    | T
+    | {
+        statement?: T;
+        source?: T;
+        id?: T;
+      };
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FounderNoteBlock_select".
+ */
+export interface FounderNoteBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  note?: T;
+  attribution?: T;
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "BandBlock_select".
+ */
+export interface BandBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  lead?: T;
+  sanskrit?: T;
+  translation?: T;
+  primary?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+      };
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
