@@ -12,6 +12,7 @@ import {
 import { z } from 'zod'
 
 import { isActive } from '@/access/roles'
+import { recordAudit } from '@/lib/audit/record'
 import { TWO_FACTOR_COPY } from '@/plugins/totpCopy'
 
 import { newAuthenticator } from './newAuthenticator'
@@ -158,6 +159,11 @@ export const createRecoveryCodes: PayloadHandler = async (req) => {
           req,
         })
       }
+      await recordAudit(req, {
+        action: 'create-recovery-codes',
+        entity: 'users',
+        entityId: user.id,
+      })
     })
   } catch (error) {
     return failed(req, 'Creating recovery codes', error)
@@ -200,6 +206,7 @@ export const recoverTwoFactor: PayloadHandler = async (req) => {
 
     const fresh = await newAuthenticator(user.email)
     const currentSession = (user as { _sid?: string })._sid
+    req.context.auditAction = 'recover-two-factor'
     await inTransaction(req, async () => {
       if (!(await claimCode(req, match))) throw new CodeAlreadyUsed()
       await req.payload.update({

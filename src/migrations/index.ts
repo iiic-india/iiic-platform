@@ -2,6 +2,8 @@ import * as migration_20261119_125620_initial from './20261119_125620_initial';
 import * as migration_20261119_160247_staff_active from './20261119_160247_staff_active';
 import * as migration_20261119_161126_staff_totp from './20261119_161126_staff_totp';
 import * as migration_20261119_162709_staff_recovery_codes from './20261119_162709_staff_recovery_codes';
+import * as migration_20261120_094503_audit_log from './20261120_094503_audit_log';
+import * as migration_20261120_094534_audit_log_append_only from './20261120_094534_audit_log_append_only';
 
 export const migrations = [
   {
@@ -22,6 +24,16 @@ export const migrations = [
   {
     up: migration_20261119_162709_staff_recovery_codes.up,
     down: migration_20261119_162709_staff_recovery_codes.down,
-    name: '20261119_162709_staff_recovery_codes'
+    name: '20261119_162709_staff_recovery_codes',
+  },
+  {
+    up: migration_20261120_094503_audit_log.up,
+    down: migration_20261120_094503_audit_log.down,
+    name: '20261120_094503_audit_log',
+  },
+  {
+    up: migration_20261120_094534_audit_log_append_only.up,
+    down: migration_20261120_094534_audit_log_append_only.down,
+    name: '20261120_094534_audit_log_append_only'
   },
 ];

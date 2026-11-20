@@ -70,6 +70,7 @@ export interface Config {
     users: User;
     media: Media;
     'staff-recovery-codes': StaffRecoveryCode;
+    'audit-log': AuditLog;
     'totp-attempts': TotpAttempt;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -81,6 +82,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'staff-recovery-codes': StaffRecoveryCodesSelect<false> | StaffRecoveryCodesSelect<true>;
+    'audit-log': AuditLogSelect<false> | AuditLogSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -191,6 +193,24 @@ export interface StaffRecoveryCode {
   usedAt?: string | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-log".
+ */
+export interface AuditLog {
+  id: number;
+  at: string;
+  actorId?: string | null;
+  actorEmail?: string | null;
+  action: string;
+  entity: string;
+  entityId?: string | null;
+  /**
+   * The fields that changed, never their values.
+   */
+  changed?: string | null;
+  ip?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -335,6 +355,20 @@ export interface StaffRecoveryCodesSelect<T extends boolean = true> {
   usedAt?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-log_select".
+ */
+export interface AuditLogSelect<T extends boolean = true> {
+  at?: T;
+  actorId?: T;
+  actorEmail?: T;
+  action?: T;
+  entity?: T;
+  entityId?: T;
+  changed?: T;
+  ip?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

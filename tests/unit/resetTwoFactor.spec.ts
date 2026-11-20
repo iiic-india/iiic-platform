@@ -18,6 +18,7 @@ function call(
   const req = {
     user,
     routeParams: { id },
+    context: {},
     payload: { update, delete: remove, unlock, db: {}, logger: { error } },
   } as unknown as PayloadRequest
   return { response: resetTwoFactor(req), update, remove, unlock, error }

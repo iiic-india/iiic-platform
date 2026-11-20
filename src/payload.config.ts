@@ -7,11 +7,13 @@ import { buildConfig, type EmailAdapter } from 'payload'
 import { payloadTotp } from 'payload-totp'
 import sharp from 'sharp'
 
+import { AuditLog } from './collections/AuditLog'
 import { Media } from './collections/Media'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Users } from './collections/Users'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
+import { auditLog } from './plugins/auditLog'
 import { totpCopy } from './plugins/totpCopy'
 import { totpSecretAtRest } from './plugins/totpSecretAtRest'
 
@@ -75,7 +77,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, StaffRecoveryCodes],
+  collections: [Users, Media, StaffRecoveryCodes, AuditLog],
   editor: lexicalEditor(),
   email: emailNotConfigured,
   db: postgresAdapter({
@@ -102,6 +104,8 @@ export default buildConfig({
     payloadTotp(TOTP_OPTIONS),
     totpSecretAtRest({ collection: 'users', previousSecret: config.PAYLOAD_SECRET_PREVIOUS }),
     totpCopy(),
+    // Last, so it sees every collection (src/plugins/auditLog.ts).
+    auditLog(),
   ],
   sharp,
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },

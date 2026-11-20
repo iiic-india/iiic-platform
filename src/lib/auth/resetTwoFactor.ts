@@ -30,6 +30,8 @@ export const resetTwoFactor: PayloadHandler = async (req) => {
     return json({ message: 'Ask another owner to reset your two-factor.' }, 400)
   }
   const owned = await initTransaction(req)
+  // The audit entry names what the owner did (src/plugins/auditLog.ts).
+  req.context.auditAction = 'reset-two-factor'
   try {
     const person = await req.payload.update({
       collection: 'users',
