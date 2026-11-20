@@ -4,8 +4,8 @@ import { allow, POLICY } from '@/access/policy'
 
 /**
  * Images for public pages. Alt text is required (docs/12 §9). Files are re-encoded by
- * sharp on upload, which strips metadata. Storage moves to the R2 public bucket in a
- * later M1 slice; until then files stay on the local disk in development.
+ * sharp on upload, which strips metadata, and stored in the R2 public bucket once R2 is
+ * configured (src/payload.config.ts); up to 4 MB each (D-46).
  */
 export const Media: CollectionConfig = {
   slug: 'media',

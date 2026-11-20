@@ -4,6 +4,7 @@ import * as migration_20261119_161126_staff_totp from './20261119_161126_staff_t
 import * as migration_20261119_162709_staff_recovery_codes from './20261119_162709_staff_recovery_codes';
 import * as migration_20261120_094503_audit_log from './20261120_094503_audit_log';
 import * as migration_20261120_094534_audit_log_append_only from './20261120_094534_audit_log_append_only';
+import * as migration_20261120_112710_media_object_key from './20261120_112710_media_object_key';
 
 export const migrations = [
   {
@@ -34,6 +35,11 @@ export const migrations = [
   {
     up: migration_20261120_094534_audit_log_append_only.up,
     down: migration_20261120_094534_audit_log_append_only.down,
-    name: '20261120_094534_audit_log_append_only'
+    name: '20261120_094534_audit_log_append_only',
+  },
+  {
+    up: migration_20261120_112710_media_object_key.up,
+    down: migration_20261120_112710_media_object_key.down,
+    name: '20261120_112710_media_object_key'
   },
 ];
