@@ -44,14 +44,15 @@ const config = {
   },
 } satisfies NextConfig
 
-// Where Sentry's token is present (Vercel builds, through its integration), the build uploads
-// source maps so that error reports show the real code, then deletes them; elsewhere it does
-// nothing. No browser script is added: reporting is server-side only (D-49).
+// Sentry's build step uploads no source maps: to match them it puts a debug ID in every script,
+// the browser's included, and only where its token is present (Vercel), so the pages would carry
+// bytes the budget check in CI never measured (D-49). With the token the build still records the
+// deployment as a release. No browser script is added: reporting is server-side only.
 export default withSentryConfig(config, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
   silent: true,
   telemetry: false,
-  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN, deleteSourcemapsAfterUpload: true },
+  sourcemaps: { disable: true },
 })
