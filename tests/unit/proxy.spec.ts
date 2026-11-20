@@ -72,9 +72,12 @@ describe('proxy', () => {
       '/500',
       '/%5Fnot-found',
       '/_not%2Dfound',
+      '/_app',
+      '/_document',
+      '/_error',
     ]) {
       const response = proxy(new NextRequest(`https://iiic.example${path}`))
-      expect(response.headers.get('x-middleware-rewrite')).toBe(
+      expect(response.headers.get('x-middleware-rewrite'), path).toBe(
         'https://iiic.example/page-not-found',
       )
     }

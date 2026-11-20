@@ -88,10 +88,19 @@ test('every script the server renders carries the nonce, and the nonce changes p
 test("Next.js's prerendered error pages are never served without the nonce", async ({
   request,
 }) => {
-  for (const path of ['/_not-found', '/_global-error', '/404', '/500', '/%5Fnot-found']) {
+  for (const path of [
+    '/_not-found',
+    '/_global-error',
+    '/404',
+    '/500',
+    '/%5Fnot-found',
+    '/_app',
+    '/_error',
+  ]) {
     const response = await request.get(path)
     expect(response.status(), path).toBe(404)
     const nonce = nonceOf(response.headers()['content-security-policy'])
+    expect(nonce, path).toBeTruthy()
     for (const script of (await response.text()).match(/<script\b[^>]*>/g) ?? []) {
       expect(script, `${path}: ${script}`).toContain(`nonce="${nonce}"`)
     }
