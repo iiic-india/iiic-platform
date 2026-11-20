@@ -37,6 +37,11 @@ test.describe('Admin', () => {
   test('the admin is not reachable without signing in', async ({ page }) => {
     await page.goto('/admin/collections/users')
     await expect(page).toHaveURL(/\/admin\/login/)
+    // The admin carries IIIC's tab icon, not Payload's (D-48).
+    await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute(
+      'href',
+      '/icon.svg',
+    )
   })
 
   test('the password alone reaches nothing until the code is entered', async ({ page }) => {

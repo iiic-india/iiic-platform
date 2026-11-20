@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>IIIC</title>
+  <!-- The tab icon (D-48): the logo's own "iiic" lettering, three i's of growing length and the
+       leaf-shaped dot on the middle one. Drawn on a 16-pixel grid (4 units = 1 px), so every
+       stroke lands on whole pixels in a browser tab. Run `pnpm icons` after changing it. -->
+  <rect width="64" height="64" rx="14" fill="#FFDD00"/>
+  <g fill="#1C262B">
+    <circle cx="8" cy="12" r="4"/>
+    <rect x="4" y="20" width="8" height="20" rx="2"/>
+    <path d="M15 17A10 10 0 0 0 25 7A10 10 0 0 0 15 17Z"/>
+    <rect x="16" y="20" width="8" height="28" rx="2"/>
+    <circle cx="32" cy="12" r="4"/>
+    <rect x="28" y="20" width="8" height="36" rx="2"/>
+  </g>
+  <path d="M55.5 26.34A7 10 0 1 0 55.5 41.66" fill="none" stroke="#1C262B" stroke-width="8" stroke-linecap="round"/>
+</svg>

@@ -34,6 +34,11 @@ describe('instituteRewrite', () => {
     expect(instituteRewrite('iiic.edu.in', '/admin', institute)).toBe('/institute/admin')
   })
 
+  it('leaves the shared tab icon where it is', () => {
+    expect(instituteRewrite('iiic.edu.in', '/icon.svg', institute)).toBeNull()
+    expect(instituteRewrite('iiic.edu.in', '/favicon.ico', institute)).toBeNull()
+  })
+
   it('changes nothing while no institute host is configured', () => {
     expect(instituteRewrite('iiic.edu.in', '/verify', parseHosts(''))).toBeNull()
   })

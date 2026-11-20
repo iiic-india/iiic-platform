@@ -13,6 +13,9 @@ export function parseHosts(value: string | undefined): Set<string> {
   )
 }
 
+/** Files both sites share from the app's root, so an institute host is not sent looking under /institute. */
+const SHARED_FILES = new Set(['/favicon.ico', '/icon.svg'])
+
 /**
  * The path to serve instead, when the request arrived on an institute host; otherwise null.
  * The admin answers only on the platform host: on an institute host it resolves under
@@ -25,5 +28,6 @@ export function instituteRewrite(
 ): string | null {
   if (!host || !instituteHosts.has(host.toLowerCase())) return null
   if (pathname === '/institute' || pathname.startsWith('/institute/')) return null
+  if (SHARED_FILES.has(pathname)) return null
   return pathname === '/' ? '/institute' : `/institute${pathname}`
 }

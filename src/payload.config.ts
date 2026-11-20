@@ -58,7 +58,12 @@ export default buildConfig({
   secret: config.PAYLOAD_SECRET,
   admin: {
     user: Users.slug,
-    meta: { titleSuffix: ' · IIIC admin' },
+    meta: {
+      titleSuffix: ' · IIIC admin',
+      // IIIC's own tab icon in place of Payload's (src/app/icon.svg, D-48); Next.js links
+      // src/app/favicon.ico by itself.
+      icons: [{ rel: 'icon', url: '/icon.svg', type: 'image/svg+xml' }],
+    },
     importMap: { baseDir: path.resolve(dirname) },
     // No dark mode anywhere, the admin included (CLAUDE.md #2).
     theme: 'light',

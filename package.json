@@ -16,6 +16,7 @@
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "vercel-build": "pnpm migrate && pnpm db:settings && pnpm totp:rekey && pnpm build",
     "migrate": "cross-env NODE_OPTIONS=--no-deprecation PAYLOAD_MIGRATING=true payload migrate",
+    "icons": "node scripts/make-favicon.mjs",
     "totp:rekey": "cross-env NODE_OPTIONS=--no-deprecation payload run src/scripts/rekey-totp.ts",
     "db:settings": "cross-env NODE_OPTIONS=--no-deprecation PAYLOAD_MIGRATING=true payload run src/scripts/db-settings.ts",
     "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation PAYLOAD_MIGRATING=true payload migrate:create",
