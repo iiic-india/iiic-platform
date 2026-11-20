@@ -319,6 +319,17 @@ const Scope: Block = {
   fields: [],
 }
 
+/**
+ * What the certificate is and is not (docs/08 §7). Like the scope block it has no fields:
+ * its wording is fixed in src/lib/certificates/statement.ts, the same on every surface.
+ */
+const Certificate: Block = {
+  slug: 'certificate',
+  interfaceName: 'CertificateBlock',
+  labels: { singular: 'Certificate statement', plural: 'Certificate statements' },
+  fields: [],
+}
+
 const FounderNote: Block = {
   slug: 'founderNote',
   interfaceName: 'FounderNoteBlock',
@@ -371,6 +382,7 @@ export const PAGE_BLOCKS: Block[] = [
   Cards,
   FactList,
   Scope,
+  Certificate,
   FounderNote,
   Band,
 ]

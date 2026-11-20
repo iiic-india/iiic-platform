@@ -1,6 +1,11 @@
 import Link from 'next/link'
 
 import { Todo } from '@/components/Todo'
+import {
+  CERTIFICATE_AWAITS,
+  CERTIFICATE_HEADING,
+  CERTIFICATE_STATEMENT,
+} from '@/lib/certificates/statement'
 import type { PageBlock, PageContent } from '@/lib/content/types'
 import {
   CRISIS_HEADING,
@@ -323,6 +328,28 @@ function Scope() {
   )
 }
 
+/**
+ * What the certificate is and is not (docs/08 §7), in the one wording every certificate and
+ * the course page share. Until the lawyer clears the wording it is marked as a draft (I-22).
+ */
+function Certificate() {
+  return (
+    <section className="iiic-section" id="certificate">
+      <div className={styles.candidate}>
+        <span className="iiic-badge" data-draft={CERTIFICATE_AWAITS}>
+          Draft wording, awaiting legal review ({CERTIFICATE_AWAITS})
+        </span>
+      </div>
+      <SectionHead heading={CERTIFICATE_HEADING} />
+      <div className="iiic-prose">
+        {CERTIFICATE_STATEMENT.map((sentence) => (
+          <p key={sentence}>{sentence}</p>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function FounderNote({ block }: { block: FounderNoteBlock }) {
   return (
     <section className="iiic-section iiic-split">
@@ -387,6 +414,8 @@ function Section({ block }: { block: Exclude<PageBlock, BandBlock> }) {
       return <FactList block={block} />
     case 'scope':
       return <Scope />
+    case 'certificate':
+      return <Certificate />
     case 'founderNote':
       return <FounderNote block={block} />
   }
