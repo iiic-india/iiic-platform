@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
 import { Todo } from '@/components/Todo'
+import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
 import { STEP_ZERO_CHOICES, STEP_ZERO_QUESTION } from '@/lib/map/stepZero'
 
 export const metadata: Metadata = { title: 'Find your path' }
@@ -17,7 +18,7 @@ export default function FindYourPathPage() {
       <div className="iiic-kicker">Find your path</div>
       <h1 style={{ margin: '14px 0 16px' }}>{STEP_ZERO_QUESTION}</h1>
       <p className="iiic-lede">
-        <Todo what="approval of the line under the question" id="I-41" />
+        <Todo {...FIXED_PLACEHOLDERS.mapLine} />
       </p>
       <form action="/map/go" method="get" style={{ marginTop: 32 }}>
         <fieldset className="iiic-fieldset">

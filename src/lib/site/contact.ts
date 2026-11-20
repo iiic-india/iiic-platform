@@ -12,9 +12,6 @@ export const CONTACT = {
   hours: 'Monday to Friday, 10 AM – 6 PM',
 } as const
 
-/** The input the printed address waits on. */
-export const ADDRESS_AWAITS = 'I-33'
-
 export const CONTACT_HEADING = 'Contact'
 
 /** A phone number as a link a phone can dial (E.164, no spaces). */

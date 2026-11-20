@@ -7,6 +7,7 @@ import {
   CERTIFICATE_STATEMENT,
 } from '@/lib/certificates/statement'
 import { LEGAL_REVIEW_AWAITS } from '@/lib/content/legalReview'
+import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
 import type { PageBlock, PageContent } from '@/lib/content/types'
 import {
   CRISIS_HEADING,
@@ -15,7 +16,7 @@ import {
   SCOPE_HEADING,
   SCOPE_STATEMENT,
 } from '@/lib/counselling/scope'
-import { ADDRESS_AWAITS, CONTACT, CONTACT_HEADING, mailHref, telHref } from '@/lib/site/contact'
+import { CONTACT, CONTACT_HEADING, mailHref, telHref } from '@/lib/site/contact'
 import type {
   BandBlock,
   CardsBlock,
@@ -362,7 +363,7 @@ function FounderNote({ block }: { block: FounderNoteBlock }) {
   return (
     <section className="iiic-section iiic-split" id={block.anchor ?? undefined}>
       <div className="iiic-image-frame">
-        <Todo what="the founder’s photograph, as he wants it published" id="I-10" />
+        <Todo {...FIXED_PLACEHOLDERS.founderPhoto} />
       </div>
       <div>
         <CandidateMark status={block.copyStatus} />
@@ -420,8 +421,7 @@ function Contact() {
           <div>
             <dt className="iiic-kicker">Address</dt>
             <dd>
-              {CONTACT.address}{' '}
-              <Todo what="the address as it should print, with its PIN" id={ADDRESS_AWAITS} />
+              {CONTACT.address} <Todo {...FIXED_PLACEHOLDERS.contactAddress} />
             </dd>
           </div>
         </dl>

@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { Todo } from '@/components/Todo'
-
-/** A placeholder as it is typed into a text field: [[TODO: what is missing, I-xx]]. */
-const PLACEHOLDER = /\[\[TODO: (.+?), ([ID]-\d+)\]\]/g
+import { PLACEHOLDER } from '@/lib/content/placeholders'
 
 /**
  * Text from the CMS or the starter pages, with its placeholders drawn as the kit's chip
