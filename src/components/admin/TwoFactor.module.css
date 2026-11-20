@@ -1,0 +1,47 @@
+/* Spacing for IIIC's two-factor views inside Payload's minimal template; colours and type come
+   from the admin's own styles and theme tokens. */
+.form {
+  display: grid;
+  gap: 16px;
+  justify-items: start;
+}
+
+.form :global(.field-type) {
+  width: 100%;
+}
+
+/* --theme-error-500 is about 4.1:1 on white; 650 keeps error text above 4.5:1. */
+.error {
+  margin: 8px 0 0;
+  color: var(--theme-error-650);
+}
+
+.qr {
+  display: block;
+  margin: 16px 0;
+  width: 228px;
+  max-width: 100%;
+  height: auto;
+}
+
+.disclosure {
+  margin: 0 0 24px;
+}
+
+.disclosure summary {
+  cursor: pointer;
+}
+
+.key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 0;
+}
+
+.key code {
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  overflow-wrap: anywhere;
+}

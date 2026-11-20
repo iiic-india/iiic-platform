@@ -23,6 +23,8 @@ The back office where IIIC runs the platform. It is built for a small team with 
 
 Two-factor authentication is mandatory for every role. Owners can deactivate a user in one click; deactivation ends their sessions immediately. Only owners manage staff accounts: everyone else sees and edits only their own (name, email, password). Staff are deactivated, never deleted (`04`), and accounts are changed one at a time. The last active owner can be neither deactivated nor stripped of the owner role, so someone can always manage staff (D-44).
 
+When someone loses their phone, an owner resets their two-factor from their staff record: their sessions end, any lock from wrong codes is lifted, and they set up a new authenticator when they next sign in. The reset leaves the password as it is, so after a lost or stolen phone the owner sets a new password for them too. An owner's own two-factor is reset by another owner (D-44).
+
 ## Navigation
 
 ```

@@ -1,4 +1,10 @@
-import { getPayload, type Payload } from 'payload'
+import {
+  createLocalReq,
+  getPayload,
+  logoutOperation,
+  refreshOperation,
+  type Payload,
+} from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { User } from '@/payload-types'
@@ -62,6 +68,35 @@ describe('the TOTP secret at rest', () => {
       select: { totpSecret: true },
     })) as { totpSecret?: string }
     expect(doc.totpSecret).toBe(SECRET)
+  })
+
+  it('stays encrypted through sign-in, refresh and sign-out, which write the raw row back', async () => {
+    const { token } = await payload.login({
+      collection: 'users',
+      data: { email: email('enrolled'), password: PASSWORD },
+    })
+    const { user } = await payload.auth({ headers: new Headers({ Authorization: `JWT ${token}` }) })
+    expect(user?.id).toBe(enrolled.id)
+    // The signed-in user carries no secret: the field is hidden from ordinary reads.
+    expect((user as { totpSecret?: string } | null)?.totpSecret).toBeUndefined()
+    // Payload's own writes are under test; payload-totp's cookie hooks need a Next.js request.
+    const users = payload.collections.users
+    const collection = {
+      ...users,
+      config: {
+        ...users.config,
+        hooks: { ...users.config.hooks, afterRefresh: [], afterLogout: [] },
+      },
+    }
+    const req = await createLocalReq({ user: user as User }, payload)
+    await refreshOperation({ collection, req })
+    await logoutOperation({ collection, req })
+    const row = (await payload.db.findOne({
+      collection: 'users',
+      where: { id: { equals: enrolled.id } },
+    })) as { totpSecret?: string } | null
+    expect(row?.totpSecret?.startsWith('v1:')).toBe(true)
+    expect(row?.totpSecret).not.toContain(SECRET)
   })
 
   it('is never readable through the API, even by its owner', async () => {

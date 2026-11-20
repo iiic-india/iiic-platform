@@ -3,10 +3,11 @@ import { expect } from '@playwright/test'
 
 import { totpCode } from './seedUser'
 
-/** Types a code into payload-totp's code boxes, as a person would. */
+/** Types a code into the two-factor field and submits it, as a person would. */
 export async function enterCode(page: Page, code: string): Promise<void> {
-  await page.locator('form input[maxlength="1"]').first().click()
-  await page.keyboard.type(code)
+  const field = page.getByLabel('Code', { exact: true })
+  await field.fill(code)
+  await field.press('Enter')
 }
 
 /** Signs in with email and password and, for an account with an authenticator, its code. */
