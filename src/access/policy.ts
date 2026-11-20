@@ -28,6 +28,13 @@ export const POLICY = {
     update: { roles: ['owner', 'operator', 'editor'] },
     delete: { roles: ['owner', 'editor'] },
   },
+  // Owners read it; entries are written only by the server, never changed (D-43).
+  auditLog: {
+    read: { roles: ['owner'] },
+    create: {},
+    update: {},
+    delete: {},
+  },
 } as const satisfies Record<string, Record<string, Rule>>
 
 /** A Payload access function for one rule of the table. */
