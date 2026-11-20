@@ -123,7 +123,7 @@ Cohort outcome data, Gujarati and Hindi pages (start with counselling), alumni c
 
 | Area | Requirement |
 | --- | --- |
-| Performance | Largest Contentful Paint under 2.5 s and Interaction to Next Paint under 200 ms at the 75th percentile on a mid-range Android phone on 4G in India (field); the stricter lab budgets in `12-engineering-standards.md` §2; public pages static and revalidated on publish; JavaScript on marketing pages under 150 KB gzipped |
+| Performance | Largest Contentful Paint under 2.5 s and Interaction to Next Paint under 200 ms at the 75th percentile on a mid-range Android phone on 4G in India (field); the stricter lab budgets in `12-engineering-standards.md` §2; public pages rendered per request with their content cached and revalidated on publish (D-42); JavaScript on marketing pages under 150 KB gzipped |
 | Accessibility | WCAG 2.2 AA (which supersedes the plan's 2.1 AA) across public pages, booking and accounts; keyboard and screen-reader paths tested on every release |
 | Responsiveness | 320 px to 1600 px with no horizontal scroll; booking completes comfortably on a phone |
 | Reliability | 99.9% monthly availability target for the public site and booking; payments confirmed only by verified gateway webhooks; every automation idempotent and retried |

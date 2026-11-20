@@ -6,15 +6,15 @@ The bar the platform is built to: performance, search, security, caching, the ba
 
 | Route group | Rendering | Cache | Why |
 | --- | --- | --- | --- |
-| Public pages: `/`, `/framework`, `/founders`, `/organisations/*`, `/learn`, `/counselling`, `/proof/*`, `/about`, `/institute/*`, legal pages | Static, regenerated on demand | Rendered at build and revalidated by tag when the editor publishes (a Payload `afterChange` hook calls `revalidateTag` for the page, its collection and the sitemap; on Next.js 16 the call takes a cache-life profile as its second argument) | Marketing pages never wait for the database; a traffic spike costs nothing |
-| `/journal/*` | Static, revalidated on publish; the index also revalidates every 10 minutes | Same | Same |
-| `/map` (step 0), `/search`, `/404` | Static shell; the search and the 404 log call small route handlers | — | Fast first paint; the dynamic part is tiny |
+| Public pages: `/`, `/framework`, `/founders`, `/organisations/*`, `/learn`, `/counselling`, `/proof/*`, `/about`, `/institute/*`, legal pages | Rendered per request (D-42) | The CMS data a page reads is cached and revalidated by tag when the editor publishes (a Payload `afterChange` hook calls `revalidateTag` for the page, its collection and the sitemap; on Next.js 16 the call takes a cache-life profile as its second argument); the HTML is not cached, because each response carries its own CSP nonce | Marketing pages never wait for the database; a traffic spike costs function time, not database load |
+| `/journal/*` | Rendered per request (D-42); data revalidated on publish, and the index's every 10 minutes | Same | Same |
+| `/map` (step 0), `/search`, `/404` | A light shell rendered per request (D-42); the search and the 404 log call small route handlers | — | Fast first paint; the dynamic part is tiny |
 | `/book/*`, `/b/*`, `/feedback/*`, `/subscribe/confirm/*`, `/account/*` (R2) | Dynamic, server-rendered per request, `Cache-Control: private, no-store` | — | Personal and time-sensitive |
 | `/admin/*` | Payload's admin (dynamic) | `no-store` | — |
 | `/api/*` | Route handlers: webhooks, cron, `.ics`, PDFs, search, health, the 404 log | `no-store` unless a response is public and versioned | — |
 | `/opengraph-image`, `/sitemap.xml`, `/robots.txt`, `/humans.txt`, `/.well-known/security.txt`, `/manifest.webmanifest` | Generated, cached at the edge with `s-maxage` of a day and `stale-while-revalidate` | — | — |
 
-Data access is through Payload's local API inside server components and server actions (no HTTP round-trip to the app itself), with `depth` set explicitly on every query (no accidental deep population) and `select` limited to the fields the page renders. The institute domain is served by the same app through host-based routing in the request middleware (`middleware.ts`, or `proxy.ts` on Next.js 16; use whichever the pinned Next.js major that Payload 3.94 documents provides).
+Data access is through Payload's local API inside server components and server actions (no HTTP round-trip to the app itself), with `depth` set explicitly on every query (no accidental deep population) and `select` limited to the fields the page renders. The institute domain is served by the same app through host-based routing in the request proxy (`src/proxy.ts`, Next.js 16's name for middleware): a request on an institute host is served from `/institute` (`INSTITUTE_HOSTS`).
 
 ## 2. Performance budgets
 
@@ -25,7 +25,7 @@ Measured on Lighthouse CI's throttled mobile profile (a mid-range Android on 4G)
 | Largest Contentful Paint (lab) | ≤ 2.0 s | ≤ 2.5 s | — |
 | Interaction to Next Paint (lab) | ≤ 150 ms | ≤ 200 ms | ≤ 300 ms |
 | Cumulative Layout Shift | ≤ 0.05 | ≤ 0.05 | ≤ 0.1 |
-| Time to First Byte from India | ≤ 600 ms (static pages served from the edge: ≤ 200 ms) | ≤ 800 ms | — |
+| Time to First Byte from India | ≤ 600 ms (pages render per request in Mumbai, D-42) | ≤ 800 ms | — |
 | JavaScript, gzipped, per page | ≤ 150 KB total; ≤ 6 KB for the experience devices (`11` §7) | ≤ 250 KB (the checkout script loads only on the payment step) | not budgeted, but Payload's admin bundle is not loaded on public routes |
 | CSS, gzipped | ≤ 40 KB (the kit is ≈ 11 KB) | ≤ 40 KB | — |
 | Fonts on first view | ≤ 120 KB: Manrope (Latin) preloaded; Fraunces loads on demand behind its size-adjusted fallback, because `next/font` cannot preload one face of a family and both faces together are about 150 KB; the rest on demand | same | — |
@@ -59,7 +59,7 @@ Everything a search engine, a link preview or a voice assistant reads comes from
 
 ## 4. Caching and data
 
-- **Edge cache** for static pages and generated assets (Vercel's CDN); on-demand revalidation by tag from Payload hooks so an editor's change is live within seconds without a rebuild; a scheduled revalidation every 10 minutes for indexes as a safety net.
+- **Cache** for page data and generated assets: pages render per request (D-42), the CMS data they read is cached by tag, and generated assets are cached at the edge (Vercel's CDN); on-demand revalidation by tag from Payload hooks so an editor's change is live within seconds without a rebuild; a scheduled revalidation every 10 minutes for indexes as a safety net.
 - **Images**: `next/image` with a long `minimumCacheTTL` (a month); media files in the public R2 bucket are served through the app's image route, never hot-linked; file names include a content hash so they can be cached as immutable.
 - **Database**: Supabase's connection pooler in transaction mode from serverless functions, with a small pool per function instance (`max` 3–5; 3 now) and `statement_timeout` set on the app's database role (15 s, applied after the migrations on every deployment by `pnpm db:settings`, because the transaction pooler ignores session settings); indexes on every foreign key and on the columns the booking engine filters (practitioner, start, status); the slot exclusion constraint (`04` § Rules the schema enforces) guarantees no double booking; `EXPLAIN ANALYZE` checked for the booking, Today and Pipeline queries before M3 and M5 ship; no query without a limit.
 - **Jobs**: the queue table is indexed on `(status, run_at)`; the cron runner takes a bounded batch and finishes well inside the function's `maxDuration`; long work (PDFs, resyncs) is split into steps.
@@ -70,7 +70,7 @@ Everything a search engine, a link preview or a voice assistant reads comes from
 
 | Area | Standard |
 | --- | --- |
-| Headers | `Content-Security-Policy` with per-request nonces (set in the request middleware) and `strict-dynamic`; `default-src 'self'`; `script-src 'self' 'nonce-…'` plus Cloudflare's beacon, Turnstile, Sentry's ingest and, on the payment step only, the Razorpay origins its checkout documentation lists; `frame-src` only Turnstile and Razorpay; `connect-src 'self'` plus the same; `img-src 'self' data: blob:` plus the R2 public bucket; `font-src 'self'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`; `frame-ancestors 'none'`; `upgrade-insecure-requests`. `Strict-Transport-Security: max-age=63072000; includeSubDomains` at launch, `preload` submitted after a month without incident. `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` denying camera, microphone, geolocation, payment (except the payment step), `Cross-Origin-Opener-Policy: same-origin`, relaxed to `same-origin-allow-popups` on the payment step if Razorpay's checkout needs `window.opener` for bank or UPI pop-ups (verify against its documentation in M3). A Playwright test asserts the headers on every route group |
+| Headers | `Content-Security-Policy` with per-request nonces (set in the request proxy, `src/proxy.ts`; every HTML route renders per request, D-42) and `strict-dynamic`; `default-src 'self'`; `script-src 'self' 'nonce-…'` plus Cloudflare's beacon, Turnstile, Sentry's ingest and, on the payment step only, the Razorpay origins its checkout documentation lists; `style-src 'self' 'unsafe-inline'` (Payload's admin injects styles at runtime; inline styles cannot run code); `frame-src` only Turnstile and Razorpay; `connect-src 'self'` plus the same; `img-src 'self' data: blob:` plus the R2 public bucket; `font-src 'self'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`; `frame-ancestors 'none'`; `upgrade-insecure-requests` (over HTTPS only; locally and in CI it would send the page's own requests to an https nothing serves). Under `next dev` only, `script-src` also allows `'unsafe-eval'` for React's debugging. The proxy runs on every path except `/api` and Next.js's own build assets, and skips nothing on a request header. `X-Frame-Options: DENY` backs up `frame-ancestors` for older browsers. `Strict-Transport-Security: max-age=63072000; includeSubDomains` at launch, `preload` submitted after a month without incident. `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` (`no-referrer` on the owner setup link, whose query carries its token, D-41), `Permissions-Policy` denying camera, microphone, geolocation, payment (except the payment step), `Cross-Origin-Opener-Policy: same-origin`, relaxed to `same-origin-allow-popups` on the payment step if Razorpay's checkout needs `window.opener` for bank or UPI pop-ups (verify against its documentation in M3). Payload's colour-scheme client hints (`Accept-CH`, `Vary`, `Critical-CH`) are dropped: the admin is light only, and `Critical-CH` would make Chrome send a first visit's request twice. A Playwright test asserts the headers on every route group, that every script the server renders carries the nonce, and that pages and the admin run without a CSP violation |
 | Previews | Vercel's deployment protection (Vercel Authentication) on every preview deployment, so seed data is never public; previews send `X-Robots-Tag: noindex` |
 | Supabase | The project is used as plain Postgres: the Data API (PostgREST) must not expose Payload's tables; the `public` schema is removed from the exposed schemas (or Payload uses its own schema that is never exposed); the anon and service keys are not used by the app and are rotated at setup; Supabase's network restrictions are not relied on (Vercel Pro functions have no fixed egress addresses), so the database password is long, held only in Vercel's environment variables and rotated on schedule |
 | Rate limits | Vercel's firewall rules (custom rules on every plan; rate limiting on Pro: check the plan's limits) for `/api/*`, `/book/*`, `/login/*` and the forms and the certificate lookup; application-level counters in Postgres for holds, code requests and feedback submissions keyed by identifier and IP; Turnstile on every public form and code request |
@@ -175,14 +175,14 @@ Nothing in analytics ever records what is said in counselling, a Map answer, a n
 
 ## 13. Scalability
 
-The platform is small by design and stays cheap by keeping public pages static. What grows, and what to do when it does:
+The platform is small by design and stays cheap by caching what public pages read (D-42). What grows, and what to do when it does:
 
 | Growth | What strains first | Response |
 | --- | --- | --- |
-| Traffic × 10 (a viral article, a campaign) | Nothing on static pages; the booking functions and the database pool | Vercel scales functions; raise the pooler's pool size and Supabase compute one step; the exclusion constraint (`04`) keeps bookings correct under concurrency (tested in M3) |
+| Traffic × 10 (a viral article, a campaign) | Function time for page renders (their data is cached, so the database is not touched); the booking functions and the database pool | Vercel scales functions; raise the pooler's pool size and Supabase compute one step; the exclusion constraint (`04`) keeps bookings correct under concurrency (tested in M3) |
 | Bookings × 10 | WhatsApp and email volumes (provider rate limits), Google Calendar API calls (quota is generous), job throughput | Batch the resync (B14), keep jobs small; Resend Pro; the WhatsApp provider's next tier; nothing architectural |
 | Practitioners × 10 | Calendar watch channels and working-hours screens | Channels are per calendar and renewed by B14; the admin calendar filters by practitioner |
-| Content × 10 | Build time for static pages | Pages are revalidated on demand, not rebuilt; the sitemap is paginated past 1,000 URLs |
+| Content × 10 | Nothing at build: pages render per request (D-42) | Page data is revalidated on demand; the sitemap is paginated past 1,000 URLs |
 | The Map and Team Maps (R2) | Compute is trivial; the aggregate is computed by a job | — |
 | A second language | Routes and strings | `[locale]` segment with strings externalised from M1 (`01`) |
 | The institute domain (R3) | Host routing | Already in the request middleware |

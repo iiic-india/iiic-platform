@@ -48,11 +48,12 @@ The decision log. Claude Code reads this before building and records any new dec
 | D-39 | Certificates and their QR verification ship in Release 1: the admin issues certificates (singly or in bulk) for any programme IIIC runs, each with a printed ID and a QR code that opens its verification page; revocation and reissue are audited; in Release 2 the course issues them on completion. Reason: certificates IIIC hands out from launch carry QR codes that must resolve. (`01` §4, "Certificates and QR verification") | Recommended | M5 |
 | D-40 | The best possible system design for every feature: designed before it is built, to the criteria in `01` §3 and the standards in `12`; a design that cannot meet them is recorded here before it is built. | Decided (Yash/Aum, 19 Nov 2026) | M1 |
 | D-41 | On production, and on any other production server such as a local `pnpm build && pnpm start`, the first staff account (which becomes the owner) can be created only after opening the owner setup link, which needs `OWNER_SETUP_TOKEN` (URL-safe: letters, digits, `-` and `_`) set for the occasion and deleted afterwards; previews (behind Vercel Authentication, test data only) and local development (`pnpm dev`) keep Payload's first-account screen as it is. Reason: an empty production database would otherwise make whoever opens `/admin` first the owner. | Recommended | M1 |
+| D-42 | Content Security Policy and rendering: every HTML route sends a strict CSP with a fresh nonce per request and `strict-dynamic` (no inline or eval scripts), so public pages render per request in Mumbai, with the CMS data they read cached by tag, instead of as static HTML at the edge; inline styles are allowed (Payload's admin injects them at runtime; they cannot run code). Reason: Next.js puts nonces only on pages rendered per request, and its hash-based alternative does not cover the inline scripts it writes, so static pages would need `script-src 'unsafe-inline'`. The public TTFB budget is the 600 ms row (`12` §2). | Decided (with the M1 plan, 19 Nov 2026) | M1 |
 
 ## How to record a decision
 
 ```
-| D-42 | <the decision, in one sentence> | Decided (Yash/Aum, <date>) | <milestone> |
+| D-43 | <the decision, in one sentence> | Decided (Yash/Aum, <date>) | <milestone> |
 ```
 
 If a decision changes a document, update that document in the same commit and note the decision ID in the commit message.
