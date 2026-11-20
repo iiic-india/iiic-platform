@@ -104,7 +104,8 @@ The platform plan's "Not now" label for bridges becomes **"No, thanks"** with eq
 | Razorpay | Payment data (card data never touches IIIC) | India | Merchant agreement |
 | Zoho Books | Invoices, customer billing details | India data centre | DPA |
 | Google Workspace (mailboxes, Groups, Calendar, Meet, Chat) | Staff mail; booking times and client first names on practitioners' calendars; Meet links | Global | Workspace DPA |
-| Sentry, UptimeRobot | Error reports (scrubbed of personal data), uptime checks | US / EU | DPA |
+| Sentry | Error reports (scrubbed of personal data; server-side only, D-49) | EU (the storage location chosen when the account was created) | DPA |
+| UptimeRobot | Uptime checks | US / EU | DPA |
 | Bunny (R2) | Lesson videos | EU company, global CDN | DPA |
 
 No transfer restriction has been notified under DPDP s.16; the register is reviewed when one is.
