@@ -4,10 +4,12 @@ import { Todo } from '@/components/Todo'
 import type { PageBlock, PageContent } from '@/lib/content/types'
 import type {
   BandBlock,
+  ComparisonBlock,
   DoorsBlock,
   FactListBlock,
   FounderNoteBlock,
   HeroBlock,
+  PointsBlock,
   StatementBlock,
   StepsBlock,
 } from '@/payload-types'
@@ -54,13 +56,22 @@ function ActionLink({
   )
 }
 
-function SectionHead({ kicker, heading }: { kicker?: string | null; heading: string }) {
+function SectionHead({
+  kicker,
+  heading,
+  intro,
+}: {
+  kicker?: string | null
+  heading: string
+  intro?: string | null
+}) {
   return (
     <div className="iiic-section-head">
       <div>
         {kicker ? <div className="iiic-kicker">{renderText(kicker)}</div> : null}
         <h2 className="iiic-marked">{renderText(heading)}</h2>
       </div>
+      {intro ? <p>{renderText(intro)}</p> : null}
     </div>
   )
 }
@@ -86,7 +97,7 @@ function Doors({ block }: { block: DoorsBlock }) {
   return (
     <section className="iiic-section">
       <CandidateMark status={block.copyStatus} />
-      <SectionHead kicker={block.kicker} heading={block.heading} />
+      <SectionHead kicker={block.kicker} heading={block.heading} intro={block.intro} />
       <div className="iiic-doors">
         {block.doors.map((door) => (
           <Link className="iiic-card iiic-card-door" href={door.href} key={door.id ?? door.href}>
@@ -143,6 +154,60 @@ function Steps({ block }: { block: StepsBlock }) {
           </li>
         ))}
       </ol>
+    </section>
+  )
+}
+
+/**
+ * Two ways of living, line against line, as a plain table: the view the flip of docs/11 §3.2
+ * falls back to without JavaScript and in print. Each row is headed by its first cell, so a
+ * screen reader reads the pair together.
+ */
+function Comparison({ block }: { block: ComparisonBlock }) {
+  return (
+    <section className="iiic-section">
+      <CandidateMark status={block.copyStatus} />
+      <SectionHead kicker={block.kicker} heading={block.heading} />
+      {/* On a narrow screen the table scrolls inside this region, never the page; the region
+          takes focus so that a keyboard can scroll it too (WCAG 2.1.1). */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region needs keyboard focus */}
+      <div className="iiic-table-wrap" role="region" aria-label={block.heading} tabIndex={0}>
+        <table className="iiic-table">
+          <thead>
+            <tr>
+              <th scope="col">{renderText(block.leftLabel)}</th>
+              <th scope="col">{renderText(block.rightLabel)}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {block.pairs.map((pair, index) => (
+              <tr key={pair.id ?? index}>
+                <td>{renderText(pair.left)}</td>
+                <td>
+                  <strong>{renderText(pair.right)}</strong>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
+function Points({ block }: { block: PointsBlock }) {
+  return (
+    <section className="iiic-section">
+      <CandidateMark status={block.copyStatus} />
+      <SectionHead kicker={block.kicker} heading={block.heading} />
+      <div className="iiic-prose">
+        {block.lead ? <p className="iiic-lede">{renderText(block.lead)}</p> : null}
+        <ul>
+          {block.points.map((point, index) => (
+            <li key={point.id ?? index}>{renderText(point.text)}</li>
+          ))}
+        </ul>
+      </div>
     </section>
   )
 }
@@ -218,6 +283,10 @@ function Section({ block }: { block: Exclude<PageBlock, BandBlock> }) {
       return <Statement block={block} />
     case 'steps':
       return <Steps block={block} />
+    case 'comparison':
+      return <Comparison block={block} />
+    case 'points':
+      return <Points block={block} />
     case 'factList':
       return <FactList block={block} />
     case 'founderNote':

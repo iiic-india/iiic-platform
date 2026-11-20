@@ -5,17 +5,20 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import { isSitePath, oneClosingBand } from '@/blocks/pageBlocks'
-import { STARTER_PAGES } from '@/content/starter'
-import { HOME_IIIC_LINES } from '@/content/starter/home'
+import { STARTER_IIIC_LINES, STARTER_PAGES } from '@/content/starter'
 import { PAGE_SLUG } from '@/lib/content/slug'
+import type { BandBlock, HeroBlock } from '@/payload-types'
 
 // The starter pages are IIIC's copy, not seed data (D-51): what they call IIIC's own words
 // must be in the sources exactly, and what nobody has supplied must point at a real input.
+// The sources are compared as plain text: Markdown's bold and quote marks are not words.
 const SOURCES = join(process.cwd(), 'docs/content/sources')
 const sources = readdirSync(SOURCES)
   .filter((name) => name.endsWith('.md'))
   .map((name) => readFileSync(join(SOURCES, name), 'utf8'))
   .join('\n')
+  .replace(/\*\*/g, '')
+  .replace(/^> ?/gm, '')
   .replace(/\s+/g, ' ')
 const inputs = readFileSync(join(process.cwd(), 'docs/09-content-and-inputs.md'), 'utf8')
 
@@ -38,9 +41,14 @@ function hrefs(value: unknown): string[] {
   return []
 }
 
-describe('IIIC’s own lines', () => {
-  it.each(Object.entries(HOME_IIIC_LINES))('%s is in the sources, word for word', (_, line) => {
+describe.each(Object.entries(STARTER_IIIC_LINES))('IIIC’s own lines on "%s"', (slug, lines) => {
+  it.each(Object.entries(lines))('%s is in the sources, word for word', (_, line) => {
     expect(sources).toContain(line)
+  })
+
+  it('are all on the page', () => {
+    const text = strings(STARTER_PAGES[slug]?.layout).join('\n')
+    for (const line of Object.values(lines)) expect(text, line).toContain(line)
   })
 })
 
@@ -51,6 +59,7 @@ describe.each(Object.entries(STARTER_PAGES))('starter page "%s"', (slug, page) =
     expect(page.layout.length).toBeGreaterThan(0)
     expect(oneClosingBand(page.layout)).toBe(true)
     expect(page.layout.filter((block) => block.blockType === 'hero')).toHaveLength(1)
+    expect(page.layout[0]?.blockType).toBe('hero')
   })
 
   it('links only to paths on this site', () => {
@@ -75,6 +84,12 @@ describe.each(Object.entries(STARTER_PAGES))('starter page "%s"', (slug, page) =
     const text = strings(page.layout).join('\n')
     expect(text).not.toMatch(/₹|\bRs\.?\s?\d|\bINR\b/)
     for (const fact of page.facts ?? []) expect(text, fact.statement).toContain(fact.statement)
+  })
+
+  it('repeats the hero’s action in the closing band, in the same words', () => {
+    const hero = page.layout.find((block): block is HeroBlock => block.blockType === 'hero')
+    const band = page.layout.find((block): block is BandBlock => block.blockType === 'band')
+    expect(band?.primary).toEqual(hero?.primary)
   })
 })
 

@@ -180,7 +180,17 @@ export interface Page {
    * One or two sentences for search results and shared links, up to 155 characters.
    */
   description?: string | null;
-  layout: (HeroBlock | DoorsBlock | StatementBlock | StepsBlock | FactListBlock | FounderNoteBlock | BandBlock)[];
+  layout: (
+    | HeroBlock
+    | DoorsBlock
+    | StatementBlock
+    | StepsBlock
+    | ComparisonBlock
+    | PointsBlock
+    | FactListBlock
+    | FounderNoteBlock
+    | BandBlock
+  )[];
   /**
    * Every claim the page makes, with where it comes from (docs/content/README.md). A claim with no source does not go on the page.
    */
@@ -233,6 +243,10 @@ export interface DoorsBlock {
    */
   kicker?: string | null;
   heading: string;
+  /**
+   * A sentence or two beside the heading. Optional.
+   */
+  intro?: string | null;
   doors: {
     /**
      * One letter for the tile.
@@ -244,7 +258,7 @@ export interface DoorsBlock {
     audience?: string | null;
     href: string;
     /**
-     * The reader's own line, in the first person.
+     * The card's main line: the reader's own sentence, or the name of a vertical.
      */
     question: string;
     /**
@@ -317,6 +331,57 @@ export interface StepsBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'steps';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ComparisonBlock".
+ */
+export interface ComparisonBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  heading: string;
+  leftLabel: string;
+  rightLabel: string;
+  pairs: {
+    left: string;
+    right: string;
+    id?: string | null;
+  }[];
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus: 'approved' | 'candidate';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'comparison';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PointsBlock".
+ */
+export interface PointsBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  heading: string;
+  /**
+   * The line the points follow.
+   */
+  lead?: string | null;
+  points: {
+    text: string;
+    id?: string | null;
+  }[];
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus: 'approved' | 'candidate';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'points';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -586,6 +651,8 @@ export interface PagesSelect<T extends boolean = true> {
         doors?: T | DoorsBlockSelect<T>;
         statement?: T | StatementBlockSelect<T>;
         steps?: T | StepsBlockSelect<T>;
+        comparison?: T | ComparisonBlockSelect<T>;
+        points?: T | PointsBlockSelect<T>;
         factList?: T | FactListBlockSelect<T>;
         founderNote?: T | FounderNoteBlockSelect<T>;
         band?: T | BandBlockSelect<T>;
@@ -633,6 +700,7 @@ export interface HeroBlockSelect<T extends boolean = true> {
 export interface DoorsBlockSelect<T extends boolean = true> {
   kicker?: T;
   heading?: T;
+  intro?: T;
   doors?:
     | T
     | {
@@ -683,6 +751,44 @@ export interface StepsBlockSelect<T extends boolean = true> {
     | T
     | {
         title?: T;
+        text?: T;
+        id?: T;
+      };
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ComparisonBlock_select".
+ */
+export interface ComparisonBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  leftLabel?: T;
+  rightLabel?: T;
+  pairs?:
+    | T
+    | {
+        left?: T;
+        right?: T;
+        id?: T;
+      };
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PointsBlock_select".
+ */
+export interface PointsBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  lead?: T;
+  points?:
+    | T
+    | {
         text?: T;
         id?: T;
       };
