@@ -2,7 +2,7 @@
 
 Every route the codebase serves, on both domains, with its register, purpose, data and main action. Page copy comes from `09-content-and-inputs.md`; missing facts render as placeholders. Navigation: **Framework · For organisations · Learn · Counselling · Proof · [Take the Map] · Log in** (in Release 1 the button reads **Find your path** and opens Map step 0; Log in appears in Release 2).
 
-## Platform domain (decided at D-05; `iiic.works` recommended in the plan)
+## Platform domain (`imagecatalysts.in`, D-05)
 
 | Route | Release | Register | Purpose | Main action | Data |
 | --- | --- | --- | --- | --- | --- |

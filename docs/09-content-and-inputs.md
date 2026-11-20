@@ -29,7 +29,7 @@ Owners: Yash and Aum own what they can supply themselves; everything that comes 
 
 | # | Input | Needed for | Owner | Until supplied the product shows |
 | --- | --- | --- | --- | --- |
-| I-01 | Platform domain registered (plan recommends `iiic.works`) and DNS access | R1 setup, email and WhatsApp | Aum / Yash | Staging domain |
+| I-01 | Platform domain registered and DNS access. The domain is `imagecatalysts.in`, bought at GoDaddy on 20 November 2026 (D-05); its DNS moves to Cloudflare (`12` §12) | R1 setup, email and WhatsApp | Aum / Yash | Staging domain |
 | I-02 | Email addresses on that domain (hello, bookings, privacy/grievance, security, partnerships) | R1 | Yash | Placeholder addresses in staging |
 | I-03 | The WhatsApp Business number for the platform, and whether it is also used in the WhatsApp Business app today | R1 messaging | Team | Email-only messaging in staging |
 | I-04 | Payment gateway account (KYC: PAN, ID and address proof, a business proof such as a Shops and Establishment certificate or trade licence, bank proof; GST certificate) | R1 payments | Team | Gateway test mode |

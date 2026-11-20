@@ -4,14 +4,14 @@ The decision log. Claude Code reads this before building and records any new dec
 
 | ID | Decision | Status | Needed by |
 | --- | --- | --- | --- |
-| D-A | Two domains: the platform (sell, book, deliver) on a bare-`iiic` business domain; the institute on `iiic.edu.in` when ERNET approves. Consultancy never appears on the `.edu.in`. `iiicedu.com` redirects to the platform. | Decided (Yash/Aum) | — |
+| D-A | Two domains: the platform (sell, book, deliver) on a business domain (`imagecatalysts.in`, D-05); the institute on `iiic.edu.in` when ERNET approves. Consultancy never appears on the `.edu.in`. `iiicedu.com` redirects to the platform. | Decided (Yash/Aum) | — |
 | D-B | Brand: the logo and yellow `#FFDD00` are fixed; yellow never sits on dark; no dark surfaces. Brand kit 1.0.3 is the design system. | Decided (Yash/Aum) | — |
 | D-C | Nothing invented: unknown facts appear as placeholders; proof only from real, consented sources. | Decided (Yash/Aum) | — |
 | D-01 | Release phasing: R1 launch (site, booking, payments, pipeline, journal, admin, automations, compliance); R2 engine (Map, accounts, course, certificates, verified stories, bridges, counters); R3 institute domain. | Recommended | M1 |
 | D-02 | How clients choose a time: from each counsellor's real availability (working hours set in the admin, minus their Google Calendar busy times), with "Request another time" for anything else. The current form's four fixed windows are retired. | Decided (Yash/Aum, 30 Oct 2026) | M3 |
 | D-03 | Session format: set per service (online, at the office, or both). | Decided (Yash/Aum, 30 Oct 2026) | M3 |
 | D-04 | Hosting: managed cloud in IIIC's own accounts (Vercel Pro in Mumbai, Supabase Mumbai), not the office geofencing server. Free hosting was weighed and ruled out on 19 November 2026 (`07`, Hosting). While the platform is being built, its protected previews run on Vercel's Hobby plan; the team moves to Pro before anything goes live (a release check in `10`). | Decided (Yash/Aum, 19 Nov 2026) | M1 |
-| D-05 | Platform domain: `iiic.works` (the plan's recommendation; `iiic.consulting` if counselling ever moves to the institute). | Open (Yash/Aum to register it) | M0 |
+| D-05 | Platform domain: `imagecatalysts.in`, which IIIC bought at GoDaddy on 20 November 2026 (the plan had suggested `iiic.works`). Its DNS zone goes on Cloudflare, with the records for Vercel DNS-only, and `www` redirects to the bare domain (`12` §12). | Decided (IIIC bought the domain, 20 November 2026) | M0 |
 | D-06 | Stack: Next.js 16 + Payload 3.94.x (pinned at the start of M1, 19 Nov 2026) + Supabase Postgres + R2 + Resend + a WhatsApp provider (AiSensy Basic) + Razorpay, as in `07-stack-and-integrations.md`. | Recommended | M1 |
 | D-07 | Course delivery: live cohorts, recorded lessons, or both. | Open (Team) | R2 |
 | D-08 | Login codes for accounts: emailed 6-digit codes first; WhatsApp authentication template for phone verification; SMS only if needed, after TRAI DLT registration (about ₹5,900, two to three weeks). | Recommended | R2 |
