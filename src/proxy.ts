@@ -12,10 +12,25 @@ import { buildCsp, createNonce } from '@/lib/security/csp'
  *   views in the admin read it (M1, staff two-factor);
  * - host routing: a request on an institute host is served from /institute (src/lib/hosts.ts);
  * - Next.js's own prerendered error pages, whose scripts carry no nonce, are never served
- *   directly: a request for one gets the site's 404, rendered with the nonce.
+ *   directly: a request for one, or for a page Next.js keeps to itself (`/_app`, `/_document`,
+ *   `/_error`), gets the site's 404, rendered with the nonce.
  * Headers that never change per request are set in next.config.ts.
  */
-const PRERENDERED_ERROR_PAGES = new Set(['/_not-found', '/_global-error', '/404', '/500'])
+const PRERENDERED_ERROR_PAGES = new Set([
+  '/_not-found',
+  '/_global-error',
+  '/404',
+  '/500',
+  '/_app',
+  '/_document',
+  '/_error',
+])
+
+/** Whether Next.js would answer this path with its own prerendered 404. */
+function servesNextErrorPage(pathname: string): boolean {
+  const path = decodedPath(pathname)
+  return PRERENDERED_ERROR_PAGES.has(path)
+}
 
 /** The path as Next.js's own file lookup sees it, so an encoded `/%5Fnot-found` is caught too. */
 function decodedPath(pathname: string): string {
@@ -40,7 +55,7 @@ export function proxy(request: NextRequest) {
   headers.set('Content-Security-Policy', csp)
   headers.set('x-pathname', nextUrl.pathname)
 
-  const rewrite = PRERENDERED_ERROR_PAGES.has(decodedPath(nextUrl.pathname))
+  const rewrite = servesNextErrorPage(nextUrl.pathname)
     ? NOT_FOUND_PATH
     : instituteRewrite(nextUrl.host, nextUrl.pathname, parseHosts(env().INSTITUTE_HOSTS))
   const response = rewrite
