@@ -5,6 +5,7 @@ import {
   PRIVATE_ROUTES,
   ROUTE_EXCEPTIONS,
   SECURITY_HEADERS,
+  STATIC_ASSETS,
   withoutColorSchemeHints,
 } from '@/lib/security/headers'
 
@@ -34,6 +35,18 @@ describe('headerRules', () => {
     for (const rule of privateRoutes) {
       expect(rule.headers).toEqual([{ key: 'X-Robots-Tag', value: 'noindex' }])
     }
+  })
+
+  it('gives build assets a policy that lets nothing run, on every deployment', () => {
+    for (const vercelEnv of ['production', 'preview', undefined]) {
+      expect(headerRules(vercelEnv)).toContainEqual(STATIC_ASSETS)
+    }
+    expect(STATIC_ASSETS).toEqual({
+      source: '/_next/static/:path*',
+      headers: [
+        { key: 'Content-Security-Policy', value: "default-src 'none'; frame-ancestors 'none'" },
+      ],
+    })
   })
 
   it('puts the stricter single-route rules last, so they replace the general ones', () => {
