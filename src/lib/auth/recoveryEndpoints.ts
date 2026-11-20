@@ -5,13 +5,16 @@ import {
   initTransaction,
   killTransaction,
   resetLoginAttempts,
+  type CollectionSlug,
   type PayloadHandler,
   type PayloadRequest,
 } from 'payload'
 import { z } from 'zod'
 
 import { isActive } from '@/access/roles'
+import { TWO_FACTOR_COPY } from '@/plugins/totpCopy'
 
+import { newAuthenticator } from './newAuthenticator'
 import {
   hashRecoveryCode,
   matchesRecoveryCode,
@@ -80,6 +83,32 @@ async function findUnusedCode(
 
 class CodeAlreadyUsed extends Error {}
 
+/** Logs only the error's name: a failed query's message carries its values, the person's details among them. */
+function failed(req: PayloadRequest, what: string, error: unknown) {
+  req.payload.logger.error(
+    `${what} failed (${error instanceof Error ? error.name : 'unknown error'}).`,
+  )
+  return json({ message: TWO_FACTOR_COPY.failed }, 500)
+}
+
+/**
+ * payload-totp counts wrong codes in a `totp-attempts` row of its own, keyed by the user's id,
+ * which Payload's unlock clears only for someone else's account. Codes typed before a recovery
+ * belonged to the lost authenticator, so the count starts again for the new one.
+ */
+async function clearCodeAttempts(req: PayloadRequest, userId: number | string) {
+  const collection = 'totp-attempts' as CollectionSlug
+  const id = String(userId)
+  if (await req.payload.db.findOne({ collection, where: { id: { equals: id } } })) {
+    await req.payload.db.updateOne({
+      collection,
+      id,
+      data: { attempts: 0, lockUntil: null },
+      returning: false,
+    })
+  }
+}
+
 /**
  * Marks a code used only while it is still unused, inside the request's transaction. Postgres
  * checks the condition again on the row it updates, so of two requests with the same code
@@ -112,65 +141,72 @@ export const createRecoveryCodes: PayloadHandler = async (req) => {
     return json({ message: 'Sign in with your code to create recovery codes.' }, 401)
   }
   const codes = Array.from({ length: RECOVERY_CODE_COUNT }, newRecoveryCode)
-  const hashes = await Promise.all(codes.map(hashRecoveryCode))
-  await inTransaction(req, async () => {
-    await req.payload.delete({
-      collection: 'staff-recovery-codes',
-      where: { user: { equals: user.id } },
-      overrideAccess: true,
-      req,
-    })
-    for (const codeHash of hashes) {
-      await req.payload.create({
+  try {
+    const hashes = await Promise.all(codes.map(hashRecoveryCode))
+    await inTransaction(req, async () => {
+      await req.payload.delete({
         collection: 'staff-recovery-codes',
-        data: { user: user.id, codeHash },
+        where: { user: { equals: user.id } },
         overrideAccess: true,
         req,
       })
-    }
-  })
+      for (const codeHash of hashes) {
+        await req.payload.create({
+          collection: 'staff-recovery-codes',
+          data: { user: user.id, codeHash },
+          overrideAccess: true,
+          req,
+        })
+      }
+    })
+  } catch (error) {
+    return failed(req, 'Creating recovery codes', error)
+  }
   return json({ codes })
 }
 
 /**
  * POST /api/users/recover-two-factor with `{ code }`: someone who has signed in with their
- * password, but has lost their authenticator, uses one recovery code. Their authenticator is
- * removed, their other sessions end (one of them could otherwise set up an authenticator of
- * its own), and they set up a new one straight away (the plugin's forced setup). A wrong code
- * counts towards the account lockout, as a wrong password does.
+ * password, but has lost their authenticator, uses one recovery code. The same step stores a
+ * new secret and returns it once, for the verify page to show as a QR code: the account never
+ * goes without an authenticator, which whoever signed in next with the password could set up.
+ * Their other sessions end, and a code from the new authenticator finishes the sign-in
+ * (payload-totp's /api/verify-totp). A wrong code counts towards the lockout, as a wrong
+ * password does.
  */
 export const recoverTwoFactor: PayloadHandler = async (req) => {
   const user = req.user
   if (!user || user.collection !== 'users' || !isActive(user)) {
     return json({ message: NOT_SIGNED_IN }, 401)
   }
-  const users = req.payload.collections.users.config
-  const row = await req.payload.db.findOne<StaffRow>({
-    collection: 'users',
-    where: { id: { equals: user.id } },
-    req,
-  })
-  if (!row) return json({ message: NOT_SIGNED_IN }, 401)
-  const lockedFor = (row.lockUntil ? new Date(row.lockUntil).getTime() : 0) - Date.now()
-  if (lockedFor > 0) return json({ message: lockedMessage(lockedFor) }, 423)
-
-  const body = RecoveryRequest.safeParse(await req.json?.().catch(() => null))
-  const code = body.success ? body.data.code : ''
-  const match = isRecoveryCodeShape(code) ? await findUnusedCode(req, user.id, code) : undefined
-  if (match === undefined) {
-    await incrementLoginAttempts({ collection: users, payload: req.payload, user: row as never })
-    return json({ message: NOT_A_CODE }, 400)
-  }
-
-  const currentSession = (user as { _sid?: string })._sid
   try {
+    const users = req.payload.collections.users.config
+    const row = await req.payload.db.findOne<StaffRow>({
+      collection: 'users',
+      where: { id: { equals: user.id } },
+      req,
+    })
+    if (!row) return json({ message: NOT_SIGNED_IN }, 401)
+    const lockedFor = (row.lockUntil ? new Date(row.lockUntil).getTime() : 0) - Date.now()
+    if (lockedFor > 0) return json({ message: lockedMessage(lockedFor) }, 423)
+
+    const body = RecoveryRequest.safeParse(await req.json?.().catch(() => null))
+    const code = body.success ? body.data.code : ''
+    const match = isRecoveryCodeShape(code) ? await findUnusedCode(req, user.id, code) : undefined
+    if (match === undefined) {
+      await incrementLoginAttempts({ collection: users, payload: req.payload, user: row as never })
+      return json({ message: NOT_A_CODE }, 400)
+    }
+
+    const fresh = await newAuthenticator(user.email)
+    const currentSession = (user as { _sid?: string })._sid
     await inTransaction(req, async () => {
       if (!(await claimCode(req, match))) throw new CodeAlreadyUsed()
       await req.payload.update({
         collection: 'users',
         id: user.id,
         data: {
-          totpSecret: null,
+          totpSecret: fresh.secret,
           sessions: (row.sessions ?? []).filter((session) => session.id === currentSession),
         },
         overrideAccess: true,
@@ -178,10 +214,12 @@ export const recoverTwoFactor: PayloadHandler = async (req) => {
       })
       await resetLoginAttempts({ collection: users, doc: row, payload: req.payload, req })
     })
+    await clearCodeAttempts(req, user.id)
+    // Returned only here, with no-store, so only this person can scan it.
+    return json({ ok: true, secret: fresh.secret, qr: fresh.qr })
   } catch (error) {
     // The same code, used a moment earlier by a parallel request.
     if (error instanceof CodeAlreadyUsed) return json({ message: NOT_A_CODE }, 400)
-    throw error
+    return failed(req, 'Using a recovery code', error)
   }
-  return json({ ok: true })
 }

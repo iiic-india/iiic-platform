@@ -47,6 +47,8 @@ type Props = {
   buttonStyle?: 'primary' | 'secondary'
   /** Sent with the code while setting up: the new secret the QR code holds. */
   secret?: string
+  /** Called with the response instead of moving on to `next`, when the page has a next step. */
+  onAccepted?: (data: Record<string, unknown>) => void
 }
 
 /**
@@ -62,6 +64,7 @@ export function TwoFactorCodeForm({
   submitLabel,
   buttonStyle = 'primary',
   secret,
+  onAccepted,
 }: Props) {
   const settings = KINDS[kind]
   const errorId = `${settings.id}-error`
@@ -84,6 +87,7 @@ export function TwoFactorCodeForm({
     setError(undefined)
     setPending(true)
     let accepted = false
+    let data: { ok?: boolean; message?: string } = {}
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -91,7 +95,7 @@ export function TwoFactorCodeForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [settings.key]: value, ...(secret ? { secret } : {}) }),
       })
-      const data = (await response.json().catch(() => ({}))) as { ok?: boolean; message?: string }
+      data = (await response.json().catch(() => ({}))) as typeof data
       accepted = response.ok && data.ok === true
       if (!accepted) fail(data.message ?? COPY.failed)
     } catch {
@@ -99,8 +103,10 @@ export function TwoFactorCodeForm({
     } finally {
       if (!accepted) setPending(false)
     }
+    if (!accepted) return
+    if (onAccepted) return onAccepted(data)
     // A full load, so that the sign-in is read again.
-    if (accepted) location.replace(next)
+    location.replace(next)
   }
 
   return (

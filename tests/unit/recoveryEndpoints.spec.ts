@@ -13,6 +13,7 @@ function request(user: Record<string, unknown> | null) {
     delete: vi.fn(),
     update: vi.fn(),
     db: { findOne: vi.fn() },
+    logger: { error: vi.fn() },
     collections: { users: { config: {} } },
   }
   const req = {
@@ -66,5 +67,15 @@ describe('using a recovery code', () => {
         'This account is locked after too many wrong attempts. Try again in 5 minutes, or ask an owner to lift the lock.',
     })
     expect(payload.find).not.toHaveBeenCalled()
+  })
+
+  it('reports a failure as one, logging only the error name', async () => {
+    const { req, payload } = request(person)
+    payload.db.findOne.mockRejectedValue(
+      new TypeError('query failed for person.fake@example.invalid'),
+    )
+    const response = await recoverTwoFactor(req)
+    expect(response.status).toBe(500)
+    expect(payload.logger.error).toHaveBeenCalledWith('Using a recovery code failed (TypeError).')
   })
 })

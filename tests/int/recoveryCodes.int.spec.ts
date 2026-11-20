@@ -1,4 +1,10 @@
-import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
+import {
+  createLocalReq,
+  getPayload,
+  type CollectionSlug,
+  type Payload,
+  type PayloadRequest,
+} from 'payload'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { ROLES } from '@/access/roles'
@@ -137,14 +143,19 @@ describe('creating recovery codes', () => {
 })
 
 describe('using a recovery code', () => {
-  it('removes the authenticator once, so the person sets up a new one', async () => {
+  it('replaces the authenticator once, returning the new key only to the person', async () => {
     const [code = ''] = await newCodes(person)
-    expect((await recover(code)).status).toBe(200)
-    expect(await secretOf(person.id)).toBeFalsy()
+    const response = await recover(code)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Cache-Control')).toBe('no-store')
+    const { secret, qr } = (await response.json()) as { secret: string; qr: string }
+    expect(secret).toMatch(/^[A-Z2-7]{32}$/)
+    expect(qr.startsWith('data:image/png;base64,')).toBe(true)
+    // Never without an authenticator: the new secret is stored in the same step.
+    expect(await secretOf(person.id)).toBe(secret)
 
-    await payload.update({ collection: 'users', id: person.id, data: { totpSecret: SECRET } })
     expect((await recover(code)).status).toBe(400)
-    expect(await secretOf(person.id)).toBe(SECRET)
+    expect(await secretOf(person.id)).toBe(secret)
   })
 
   it('lets only one of two requests with the same code through', async () => {
@@ -187,11 +198,20 @@ describe('using a recovery code', () => {
   })
 
   it('clears the count of wrong attempts once a code works', async () => {
+    // payload-totp's own count of wrong authenticator codes, as a previous sign-in left it.
+    const attempts = 'totp-attempts' as CollectionSlug
+    const where = { id: { equals: String(person.id) } }
+    await payload.db.deleteMany({ collection: attempts, where })
+    await payload.db.create({ collection: attempts, data: { id: String(person.id), attempts: 4 } })
     for (let i = 0; i < 3; i++) await recover(WRONG_CODE)
     expect((await rowOf(person.id)).loginAttempts).toBe(3)
     const [code = ''] = await newCodes(person)
     expect((await recover(code)).status).toBe(200)
     expect((await rowOf(person.id)).loginAttempts).toBe(0)
+    const left = (await payload.db.findOne({ collection: attempts, where })) as {
+      attempts?: number
+    }
+    expect(left.attempts).toBe(0)
   })
 })
 

@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { SetupTwoFactor } from '@/components/admin/SetupTwoFactor'
 import { TwoFactorCodeForm } from '@/components/admin/TwoFactorCodeForm'
 import { VerifyTwoFactor } from '@/components/admin/VerifyTwoFactor'
+import { VerifyTwoFactorSteps } from '@/components/admin/VerifyTwoFactorSteps'
 
 // Next.js's redirect throws to stop rendering; here it throws something the tests can read.
 vi.mock('next/navigation', () => ({
@@ -54,16 +55,14 @@ describe('the verify view', () => {
 
   it('asks for the code, offers a recovery code, and returns only inside the admin', () => {
     const page = VerifyTwoFactor(view({ hasTotp: true, _strategy: 'local-jwt' }, '//evil.example'))
-    const [code, recovery] = propsOf(page, TwoFactorCodeForm)
-    expect(code).toMatchObject({ endpoint: '/api/verify-totp', next: '/admin' })
-    expect(recovery).toMatchObject({
-      kind: 'recovery',
-      endpoint: '/api/users/recover-two-factor',
-      next: '/admin/setup-totp?back=%2Fadmin',
+    expect(propsOf(page, VerifyTwoFactorSteps)[0]).toEqual({
+      verifyEndpoint: '/api/verify-totp',
+      recoveryEndpoint: '/api/users/recover-two-factor',
+      next: '/admin',
     })
 
     const back = VerifyTwoFactor(view({ hasTotp: true }, '/admin/collections/media?page=2'))
-    expect(propsOf(back, TwoFactorCodeForm)[0]?.next).toBe('/admin/collections/media?page=2')
+    expect(propsOf(back, VerifyTwoFactorSteps)[0]?.next).toBe('/admin/collections/media?page=2')
   })
 })
 

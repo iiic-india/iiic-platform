@@ -47,6 +47,9 @@ export const TWO_FACTOR_COPY = {
   recoveryFormat:
     'Enter a recovery code from your saved list: 16 letters and digits, with or without the dashes.',
   recoverySubmit: 'Use recovery code',
+  newAuthenticatorHeading: 'Set up your new authenticator',
+  newAuthenticatorIntro:
+    'Your recovery code worked, and the lost authenticator no longer counts. Scan this QR code with your authenticator app, then enter the code it shows.',
 
   // The recovery-codes panel on the dashboard.
   codesHeading: 'Recovery codes',
@@ -57,7 +60,7 @@ export const TWO_FACTOR_COPY = {
   createNewCodes: 'Create new codes',
   newCodesHeading: 'Create new codes?',
   newCodesBody:
-    'The codes you have now stop working, and you get a new set of ten. Save the new ones before you leave this page.',
+    'The codes you have now stop working, and you get a new set of 10. Save the new ones before you leave this page.',
   cancel: 'Cancel',
   copyCodes: 'Copy codes',
   codesCopied: 'Codes copied.',

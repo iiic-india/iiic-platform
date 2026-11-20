@@ -17,7 +17,7 @@ function unusedLine(unused: number): string {
   if (unused === 0) return COPY.codesNone
   const count = unused < WORDS.length ? WORDS[unused] : String(unused)
   const codes = unused === 1 ? 'recovery code' : 'recovery codes'
-  return `You have ${count} unused ${codes}. Creating new codes cancels them.`
+  return `You have ${count} unused ${codes}. Creating new codes cancels ${unused === 1 ? 'it' : 'them'}.`
 }
 
 /** The dashboard panel for recovery codes, built from Payload's admin components. */

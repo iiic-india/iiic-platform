@@ -137,7 +137,10 @@ test.describe('Admin', () => {
 
     await field.fill(saved[0] ?? '')
     await theirPage.getByRole('button', { name: 'Use recovery code' }).click()
-    await theirPage.waitForURL(/\/admin\/setup-totp/)
+    // A new authenticator at once, on the same page; focus moves to its heading.
+    await expect(
+      theirPage.getByRole('heading', { name: 'Set up your new authenticator' }),
+    ).toBeFocused()
     await theirPage.getByText('Enter a setup key instead').click()
     const secret = (await theirPage.locator('code').first().innerText()).replace(/\s/g, '')
     await enterCode(theirPage, totpCode(secret))
