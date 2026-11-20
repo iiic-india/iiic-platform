@@ -49,7 +49,20 @@ export function headerRules(vercelEnv: string | undefined): HeaderRule[] {
     vercelEnv === 'production'
       ? PRIVATE_ROUTES.map((source) => ({ source, headers: [NOINDEX] }))
       : []
-  return [everyRoute, ...privateRoutes, ...ROUTE_EXCEPTIONS]
+  return [everyRoute, ...privateRoutes, STATIC_ASSETS, ...ROUTE_EXCEPTIONS]
+}
+
+/**
+ * Next.js's build assets are outside the proxy, which would otherwise run for every script and
+ * style. A file that is missing there still renders the site's 404 page, so these responses get
+ * a policy of their own that lets nothing run. Scripts, styles and fonts the pages load ignore
+ * a policy on their own response, and the build starts no workers.
+ */
+export const STATIC_ASSETS: HeaderRule = {
+  source: '/_next/static/:path*',
+  headers: [
+    { key: 'Content-Security-Policy', value: "default-src 'none'; frame-ancestors 'none'" },
+  ],
 }
 
 /**

@@ -88,7 +88,7 @@ test('every script the server renders carries the nonce, and the nonce changes p
 test("Next.js's prerendered error pages are never served without the nonce", async ({
   request,
 }) => {
-  for (const path of ['/_not-found', '/_global-error']) {
+  for (const path of ['/_not-found', '/_global-error', '/404', '/500', '/%5Fnot-found']) {
     const response = await request.get(path)
     expect(response.status(), path).toBe(404)
     const nonce = nonceOf(response.headers()['content-security-policy'])
@@ -96,6 +96,13 @@ test("Next.js's prerendered error pages are never served without the nonce", asy
       expect(script, `${path}: ${script}`).toContain(`nonce="${nonce}"`)
     }
   }
+})
+
+test('a missing build asset gets a policy that lets nothing run', async ({ request }) => {
+  const response = await request.get('/_next/static/chunks/missing.js')
+  expect(response.headers()['content-security-policy']).toBe(
+    "default-src 'none'; frame-ancestors 'none'",
+  )
 })
 
 test('public pages run under the policy without a violation', async ({ page }) => {
