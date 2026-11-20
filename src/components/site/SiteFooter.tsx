@@ -3,6 +3,7 @@ import Link from 'next/link'
 
 import logo from '@/brand/logo/iiic-logo.svg'
 import { Todo } from '@/components/Todo'
+import { CONTACT, mailHref, telHref } from '@/lib/site/contact'
 
 import styles from './SiteFooter.module.css'
 
@@ -10,9 +11,8 @@ import styles from './SiteFooter.module.css'
  * The kit's footer (src/brand/templates/web/page-shell.html) inside one <footer>
  * landmark, so the legal row belongs to it too; the kit styles both parts by class.
  * It carries the eight main links (docs/12 §3, listed in docs/11 §5.1): the logo links
- * home, and Contact opens the contact section of /about. Contact details follow D-31:
- * the brochure address without a PIN until I-33 is answered, the phone from both 2026
- * brochures, and info@iiicedu.com until the platform domain's addresses exist (I-02).
+ * home, and Contact opens the contact section of /about. The contact details are the ones
+ * that section shows (D-31; src/lib/site/contact.ts).
  * The affiliation statement waits on the lawyer (D-20).
  */
 const COLUMNS = [
@@ -63,11 +63,9 @@ export function SiteFooter() {
           </Link>
           {/* The kit sets footer links to display: block, so each sits on its own line. */}
           <address className={styles.contact}>
-            <p>
-              408, The Claywalls, above Bonanza Salon, Zydus Hospital Lane, Hebatpur Road, Ahmedabad
-            </p>
-            <a href="tel:+919624046464">+91 96240 46464</a>
-            <a href="mailto:info@iiicedu.com">info@iiicedu.com</a>
+            <p>{CONTACT.address}</p>
+            <a href={telHref(CONTACT.phone)}>{CONTACT.phone}</a>
+            <a href={mailHref(CONTACT.email)}>{CONTACT.email}</a>
           </address>
         </div>
         {COLUMNS.map((column) => (

@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 // The public pages built so far (docs/02); each is held to the same accessibility and layout rules.
-const PAGES = ['/', '/framework', '/organisations', '/counselling', '/learn', '/map']
+const PAGES = ['/', '/framework', '/organisations', '/counselling', '/learn', '/map', '/about']
 
 test.describe('Public shell', () => {
   test('home shows the starter page: IIIC’s words, marked candidates, placeholders', async ({
@@ -120,6 +120,28 @@ test.describe('Public shell', () => {
     ])
     // docs/08 §7: the fixed statement, on the course page.
     await expect(page.locator('#certificate')).toContainText('Not a degree or diploma')
+    await expect(page.locator('main')).not.toContainText(/₹|Rs\.?\s?\d/)
+  })
+
+  test('the about page: IIIC in its own words, and the contact section the footer opens', async ({
+    page,
+  }) => {
+    const response = await page.goto('/about')
+    expect(response?.status()).toBe(200)
+    await expect(page).toHaveTitle('About · IIIC')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Indian Institute of Image Catalysts',
+    )
+    // The footer's Contact link opens the section, with the details the footer gives (D-31).
+    await page.locator('footer').getByRole('link', { name: 'Contact', exact: true }).click()
+    await expect(page).toHaveURL(/\/about#contact$/)
+    const contact = page.locator('#contact')
+    await expect(contact).toBeInViewport()
+    await expect(contact.getByRole('link', { name: '+91 96240 46464' })).toHaveAttribute(
+      'href',
+      'tel:+919624046464',
+    )
+    await expect(contact.locator('.iiic-todo')).toHaveAttribute('data-todo', 'I-33')
     await expect(page.locator('main')).not.toContainText(/₹|Rs\.?\s?\d/)
   })
 

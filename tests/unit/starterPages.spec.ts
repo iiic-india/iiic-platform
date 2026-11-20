@@ -89,10 +89,11 @@ describe.each(Object.entries(STARTER_PAGES))('starter page "%s"', (slug, page) =
     for (const fact of page.facts ?? []) expect(text, fact.statement).toContain(fact.statement)
   })
 
-  it('repeats the hero’s action in the closing band, in the same words', () => {
+  it('repeats the hero’s action in its closing band, in the same words', () => {
     const hero = page.layout.find((block): block is HeroBlock => block.blockType === 'hero')
     const band = page.layout.find((block): block is BandBlock => block.blockType === 'band')
-    expect(band?.primary).toEqual(hero?.primary)
+    // A page may end without a band: the About page ends on its contact section.
+    if (band) expect(band.primary).toEqual(hero?.primary)
   })
 })
 
