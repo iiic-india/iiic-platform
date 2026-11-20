@@ -1,4 +1,4 @@
-import type { Access } from 'payload'
+import type { Access, AccessResult } from 'payload'
 
 import { hasRole, isActive, type Role } from './roles'
 
@@ -8,10 +8,11 @@ import { hasRole, isActive, type Role } from './roles'
  * tests hold every role to docs/05, so a permission changes here and nowhere else.
  * - `roles`: the roles that may, on every document;
  * - `self`: any active staff user may, on their own record;
- * - `anyone`: no sign-in needed (public media).
+ * - `anyone`: no sign-in needed (public media);
+ * - `published`: no sign-in needed for a published document; drafts stay with `roles`.
  * A deactivated account is refused everything (src/access/roles.ts).
  */
-export type Rule = { roles?: readonly Role[]; self?: true; anyone?: true }
+export type Rule = { roles?: readonly Role[]; self?: true; anyone?: true; published?: true }
 
 export const POLICY = {
   users: {
@@ -28,6 +29,14 @@ export const POLICY = {
     update: { roles: ['owner', 'operator', 'editor'] },
     delete: { roles: ['owner', 'editor'] },
   },
+  // Anyone reads a published page; the staff who edit content read drafts too. Operators
+  // edit content, editors own it (docs/05).
+  pages: {
+    read: { roles: ['owner', 'operator', 'editor'], published: true },
+    create: { roles: ['owner', 'operator', 'editor'] },
+    update: { roles: ['owner', 'operator', 'editor'] },
+    delete: { roles: ['owner', 'editor'] },
+  },
   // Owners read it; entries are written only by the server, never changed (D-43).
   auditLog: {
     read: { roles: ['owner'] },
@@ -39,10 +48,11 @@ export const POLICY = {
 
 /** A Payload access function for one rule of the table. */
 export function allow(rule: Rule): Access {
-  return ({ req: { user } }) => {
+  return ({ req: { user } }): AccessResult => {
     if (rule.anyone) return true
     if (rule.roles?.length && hasRole(user, ...rule.roles)) return true
     if (rule.self && user && isActive(user)) return { id: { equals: user.id } }
+    if (rule.published) return { _status: { equals: 'published' } }
     return false
   }
 }
