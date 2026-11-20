@@ -8,6 +8,7 @@ import {
 
 import { allow, POLICY } from '@/access/policy'
 import { hasRole, isOwnerField, ROLE_LABELS, ROLES } from '@/access/roles'
+import { resetTwoFactor } from '@/lib/auth/resetTwoFactor'
 import { env } from '@/lib/env'
 import { mayCreateFirstOwner } from '@/lib/ownerSetup'
 
@@ -113,7 +114,8 @@ export const endSessionsOnDeactivation: CollectionAfterChangeHook = async ({
 
 /**
  * Staff accounts for /admin: identity, roles, deactivation and safe sessions. Access comes
- * from src/access/policy.ts (docs/05). TOTP two-factor joins in the next M1 slice.
+ * from src/access/policy.ts (docs/05); TOTP two-factor from payload-totp (src/lib/auth/totp.ts),
+ * which adds its fields, views and endpoints to this collection.
  */
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -152,6 +154,7 @@ export const Users: CollectionConfig = {
     beforeChange: [firstAccountIsOwner, keepAnActiveOwner],
     afterChange: [endSessionsOnDeactivation],
   },
+  endpoints: [{ path: '/:id/reset-two-factor', method: 'post', handler: resetTwoFactor }],
   fields: [
     { name: 'name', type: 'text', required: true },
     {
@@ -173,6 +176,15 @@ export const Users: CollectionConfig = {
         position: 'sidebar',
         description:
           'Untick to deactivate the account: signing in is refused and open sessions end at once.',
+      },
+    },
+    {
+      // Owners only, on someone else's record (src/components/admin/ResetTwoFactor.tsx).
+      name: 'resetTwoFactor',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: { Field: '/components/admin/ResetTwoFactor#ResetTwoFactor' },
       },
     },
   ],

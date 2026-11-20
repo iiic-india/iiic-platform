@@ -19,6 +19,8 @@ export default defineConfig({
           include: ['tests/int/**/*.int.spec.ts'],
           environment: 'node',
           fileParallelism: false,
+          // Refuses any database that is not local (tests/helpers/localDatabase.ts).
+          setupFiles: ['./tests/int/setup.ts'],
         },
       },
     ],

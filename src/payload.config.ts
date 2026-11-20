@@ -4,11 +4,15 @@ import { fileURLToPath } from 'url'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig, type EmailAdapter } from 'payload'
+import { payloadTotp } from 'payload-totp'
 import sharp from 'sharp'
 
 import { Media } from './collections/Media'
 import { Users } from './collections/Users'
+import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
+import { totpCopy } from './plugins/totpCopy'
+import { totpSecretAtRest } from './plugins/totpSecretAtRest'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -33,6 +37,15 @@ const emailNotConfigured: EmailAdapter = ({ payload }) => ({
   },
 })
 
+/** One of IIIC's two-factor views (src/components/admin/), registered as payload-totp registers its own. */
+const twoFactorView = (component: string, path: `/${string}`) => ({
+  Component: `/components/admin/${component}#${component}`,
+  path,
+  exact: true,
+  strict: true,
+  sensitive: false,
+})
+
 export default buildConfig({
   // Only an explicit origin (production with its domain, or local) becomes the server URL;
   // otherwise the admin uses relative URLs, so previews and the vercel.app alias both work.
@@ -47,6 +60,16 @@ export default buildConfig({
     // Payload's default avatar is Gravatar, which would send a hash of each staff email to a
     // third party and break the CSP (img-src 'self').
     avatar: 'default',
+    components: {
+      // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
+      // plugin spreads after its own, so these win. One labelled code field each.
+      views: {
+        SetupTOTP: twoFactorView('SetupTwoFactor', '/setup-totp'),
+        SetupTOTPBackslash: twoFactorView('SetupTwoFactor', '/setup-totp'),
+        VerifyTOTP: twoFactorView('VerifyTwoFactor', '/verify-totp'),
+        VerifyTOTPBackslash: twoFactorView('VerifyTwoFactor', '/verify-totp'),
+      },
+    },
   },
   collections: [Users, Media],
   editor: lexicalEditor(),
@@ -68,6 +91,14 @@ export default buildConfig({
   // The admin uses REST and server functions; GraphQL stays off to keep the surface small.
   graphQL: { disable: true },
   telemetry: false,
+  plugins: [
+    // Staff two-factor (docs/08 §9). It wraps the access of every collection before it, so it
+    // stays the last plugin that adds collections; the two transforms after it only add hooks
+    // and replace its English strings.
+    payloadTotp(TOTP_OPTIONS),
+    totpSecretAtRest({ collection: 'users', previousSecret: config.PAYLOAD_SECRET_PREVIOUS }),
+    totpCopy(),
+  ],
   sharp,
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
 })

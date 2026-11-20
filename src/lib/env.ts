@@ -13,6 +13,12 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
   PAYLOAD_SECRET: z.string().min(32, 'PAYLOAD_SECRET must be at least 32 characters'),
+  // Only while PAYLOAD_SECRET is being rotated (docs/08 §9): the value it replaced, so staff
+  // two-factor secrets encrypted under it still open. The empty line from .env.example is unset.
+  PAYLOAD_SECRET_PREVIOUS: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(32, 'PAYLOAD_SECRET_PREVIOUS must be at least 32 characters').optional(),
+  ),
   DATABASE_URL: z
     .string()
     .startsWith('postgres', 'DATABASE_URL must be a Postgres connection string'),
