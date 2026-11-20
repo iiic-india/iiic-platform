@@ -7,9 +7,10 @@ const json = (body: Record<string, unknown>, status = 200) =>
 
 /**
  * POST /api/users/:id/reset-two-factor. An owner who has entered their own code clears another
- * staff member's authenticator, signs them out everywhere and lifts a lock left by wrong
- * codes; at their next sign-in they set up a new authenticator (docs/05: owners manage staff).
- * Their password stays as it is: after a lost phone, the owner sets a new one as well.
+ * staff member's authenticator, cancels their recovery codes, signs them out everywhere and
+ * lifts a lock left by wrong codes; at their next sign-in they set up a new authenticator
+ * (docs/05: owners manage staff). Their password stays as it is: after a lost phone, the owner
+ * sets a new one as well.
  */
 export const resetTwoFactor: PayloadHandler = async (req) => {
   const actor = req.user
@@ -34,6 +35,12 @@ export const resetTwoFactor: PayloadHandler = async (req) => {
       collection: 'users',
       id,
       data: { totpSecret: null, sessions: [] },
+      overrideAccess: true,
+      req,
+    })
+    await req.payload.delete({
+      collection: 'staff-recovery-codes',
+      where: { user: { equals: id } },
       overrideAccess: true,
       req,
     })

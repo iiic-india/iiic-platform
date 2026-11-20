@@ -11,26 +11,34 @@ function call(
   id: unknown = 2,
   update = vi.fn(async () => ({ id: 2, email: 'person.fake@example.invalid' })),
 ) {
+  const remove = vi.fn(async () => ({}))
   const unlock = vi.fn(async () => true)
   const error = vi.fn()
   // No transactions in this stub database: the handler then runs each write on its own.
   const req = {
     user,
     routeParams: { id },
-    payload: { update, unlock, db: {}, logger: { error } },
+    payload: { update, delete: remove, unlock, db: {}, logger: { error } },
   } as unknown as PayloadRequest
-  return { response: resetTwoFactor(req), update, unlock, error }
+  return { response: resetTwoFactor(req), update, remove, unlock, error }
 }
 
 describe('resetTwoFactor', () => {
-  it('lets an owner who entered their code reset someone else, ending their sessions', async () => {
-    const { response, update, unlock } = call({ ...owner, _strategy: 'totp' })
+  it('lets an owner who entered their code reset someone else, ending their sessions and codes', async () => {
+    const { response, update, remove, unlock } = call({ ...owner, _strategy: 'totp' })
     expect((await response).status).toBe(200)
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'users',
         id: 2,
         data: { totpSecret: null, sessions: [] },
+        overrideAccess: true,
+      }),
+    )
+    expect(remove).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'staff-recovery-codes',
+        where: { user: { equals: 2 } },
         overrideAccess: true,
       }),
     )

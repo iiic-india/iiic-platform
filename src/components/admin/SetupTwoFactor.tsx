@@ -1,11 +1,9 @@
 import { MinimalTemplate } from '@payloadcms/next/templates'
 import { redirect } from 'next/navigation'
-import { Secret, TOTP } from 'otpauth'
 import type { AdminViewServerProps } from 'payload'
-import { toDataURL } from 'qrcode'
 
+import { newAuthenticator } from '@/lib/auth/newAuthenticator'
 import { safeBack } from '@/lib/auth/safeBack'
-import { TOTP_OPTIONS } from '@/lib/auth/totp'
 import { TOTP_COPY, TWO_FACTOR_COPY } from '@/plugins/totpCopy'
 
 import { CopyButton } from './CopyButton'
@@ -31,11 +29,8 @@ export async function SetupTwoFactor({ initPageResult, searchParams }: AdminView
   if (!user) redirect(`${serverURL}${adminRoute}/login`)
   if (user.hasTotp) redirect(`${serverURL}${adminRoute}`)
 
-  // 160 bits, the length RFC 4226 recommends; a new one on every visit until a code confirms it.
-  const secret = new Secret({ size: 20 })
-  const { issuer, algorithm, digits, period } = TOTP_OPTIONS.totp ?? {}
-  const uri = new TOTP({ issuer, label: user.email, algorithm, digits, period, secret }).toString()
-  const qr = await toDataURL(uri, { margin: 1, width: 456 })
+  // A new one on every visit, until a code confirms it.
+  const { secret, qr } = await newAuthenticator(user.email)
 
   return (
     <MinimalTemplate>
@@ -48,9 +43,9 @@ export async function SetupTwoFactor({ initPageResult, searchParams }: AdminView
         <summary>{TOTP_COPY.setup.addCodeManually}</summary>
         <p>{TWO_FACTOR_COPY.setupKeyIntro}</p>
         <div className={styles.key}>
-          <code>{grouped(secret.base32)}</code>
+          <code>{grouped(secret)}</code>
           <CopyButton
-            value={secret.base32}
+            value={secret}
             label={TWO_FACTOR_COPY.copyKey}
             copied={TWO_FACTOR_COPY.keyCopied}
           />
@@ -61,7 +56,7 @@ export async function SetupTwoFactor({ initPageResult, searchParams }: AdminView
         endpoint={`${serverURL}${apiRoute}/setup-totp`}
         next={safeBack(searchParams?.back, adminRoute)}
         submitLabel={TWO_FACTOR_COPY.setupSubmit}
-        secret={secret.base32}
+        secret={secret}
       />
     </MinimalTemplate>
   )

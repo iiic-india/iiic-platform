@@ -3,29 +3,71 @@
 import { Button } from '@payloadcms/ui'
 import { useRef, useState, type FormEvent } from 'react'
 
+import { isRecoveryCodeShape } from '@/lib/auth/recoveryCodeShape'
 import { TWO_FACTOR_COPY as COPY } from '@/plugins/totpCopy'
 
 import styles from './TwoFactor.module.css'
 
+/** The two codes the two-factor views ask for. */
+const KINDS = {
+  code: {
+    id: 'two-factor-code',
+    label: COPY.codeLabel,
+    // payload-totp's endpoints read `token`.
+    key: 'token',
+    inputMode: 'numeric',
+    autoComplete: 'one-time-code',
+    autoCapitalize: undefined,
+    tidy: (value: string) => value.replace(/\s/g, ''),
+    problem: (value: string) => (/^\d{6}$/.test(value) ? undefined : COPY.codeFormat),
+    // A wrong code is selected, so the next one replaces it.
+    selectOnError: true,
+  },
+  recovery: {
+    id: 'recovery-code',
+    label: COPY.recoveryLabel,
+    key: 'code',
+    inputMode: 'text',
+    autoComplete: 'off',
+    autoCapitalize: 'characters',
+    tidy: (value: string) => value.trim(),
+    problem: (value: string) => (isRecoveryCodeShape(value) ? undefined : COPY.recoveryFormat),
+    // A recovery code stays as typed, so a slip can be corrected.
+    selectOnError: false,
+  },
+} as const
+
 type Props = {
-  /** payload-totp's endpoint for this step: `/api/verify-totp` or `/api/setup-totp`. */
+  kind?: keyof typeof KINDS
+  /** The endpoint for this step: payload-totp's verify or setup, or the recovery endpoint. */
   endpoint: string
   /** Where to go once the code is accepted: a path already checked (src/lib/auth/safeBack.ts). */
   next: string
   submitLabel: string
+  buttonStyle?: 'primary' | 'secondary'
   /** Sent with the code while setting up: the new secret the QR code holds. */
   secret?: string
+  /** Called with the response instead of moving on to `next`, when the page has a next step. */
+  onAccepted?: (data: Record<string, unknown>) => void
 }
 
-const FIELD = 'two-factor-code'
-const ERROR = 'two-factor-code-error'
-
 /**
- * One labelled field for the six-digit code, in place of payload-totp's six unlabelled boxes
- * (the kit's single code field, src/brand/AUDIT.md #33). An error appears under the field and
- * is read out, and the field keeps focus with its text selected, so the next code replaces it.
+ * One labelled field for a code, in place of payload-totp's six unlabelled boxes (the kit's
+ * single code field, src/brand/AUDIT.md #33). An error appears under the field and is read out,
+ * and the field keeps focus. A code in the wrong form is caught here, so it does not count
+ * towards the lockout.
  */
-export function TwoFactorCodeForm({ endpoint, next, submitLabel, secret }: Props) {
+export function TwoFactorCodeForm({
+  kind = 'code',
+  endpoint,
+  next,
+  submitLabel,
+  buttonStyle = 'primary',
+  secret,
+  onAccepted,
+}: Props) {
+  const settings = KINDS[kind]
+  const errorId = `${settings.id}-error`
   const input = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string>()
   // A new key each time, so the same message is read out again.
@@ -36,26 +78,27 @@ export function TwoFactorCodeForm({ endpoint, next, submitLabel, secret }: Props
     setError(message)
     setAttempt((count) => count + 1)
     input.current?.focus()
-    input.current?.select()
+    if (settings.selectOnError) input.current?.select()
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (pending) return
-    const token = (input.current?.value ?? '').replace(/\s/g, '')
-    // Checked here first, so a mistyped code does not count towards the lockout.
-    if (!/^\d{6}$/.test(token)) return fail(COPY.codeFormat)
+    const value = settings.tidy(input.current?.value ?? '')
+    const problem = settings.problem(value)
+    if (problem) return fail(problem)
     setError(undefined)
     setPending(true)
     let accepted = false
+    let data: { ok?: boolean; message?: string } = {}
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(secret ? { token, secret } : { token }),
+        body: JSON.stringify({ [settings.key]: value, ...(secret ? { secret } : {}) }),
       })
-      const data = (await response.json().catch(() => ({}))) as { ok?: boolean; message?: string }
+      data = (await response.json().catch(() => ({}))) as typeof data
       accepted = response.ok && data.ok === true
       if (!accepted) fail(data.message ?? COPY.failed)
     } catch {
@@ -63,34 +106,37 @@ export function TwoFactorCodeForm({ endpoint, next, submitLabel, secret }: Props
     } finally {
       if (!accepted) setPending(false)
     }
-    // A full load, so that the sign-in is read again with the code.
-    if (accepted) location.replace(next)
+    if (!accepted) return
+    if (onAccepted) return onAccepted(data)
+    // A full load, so that the sign-in is read again.
+    location.replace(next)
   }
 
   return (
     <form className={styles.form} method="post" onSubmit={submit} noValidate>
       <div className="field-type text">
-        <label className="field-label" htmlFor={FIELD}>
-          {COPY.codeLabel}
+        <label className="field-label" htmlFor={settings.id}>
+          {settings.label}
         </label>
         <input
           ref={input}
-          id={FIELD}
-          name="token"
-          inputMode="numeric"
-          autoComplete="one-time-code"
+          id={settings.id}
+          name={settings.key}
+          inputMode={settings.inputMode}
+          autoComplete={settings.autoComplete}
+          autoCapitalize={settings.autoCapitalize}
           spellCheck={false}
           required
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? ERROR : undefined}
+          aria-describedby={error ? errorId : undefined}
         />
         {error ? (
-          <p key={attempt} id={ERROR} role="alert" className={styles.error}>
+          <p key={attempt} id={errorId} role="alert" className={styles.error}>
             {error}
           </p>
         ) : null}
       </div>
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" buttonStyle={buttonStyle} disabled={pending}>
         {submitLabel}
       </Button>
     </form>

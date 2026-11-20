@@ -8,6 +8,7 @@ import { payloadTotp } from 'payload-totp'
 import sharp from 'sharp'
 
 import { Media } from './collections/Media'
+import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Users } from './collections/Users'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
@@ -61,8 +62,11 @@ export default buildConfig({
     // third party and break the CSP (img-src 'self').
     avatar: 'default',
     components: {
+      // Recovery codes for staff two-factor (src/lib/auth/recoveryEndpoints.ts).
+      beforeDashboard: ['/components/admin/RecoveryCodes#RecoveryCodes'],
       // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
-      // plugin spreads after its own, so these win. One labelled code field each.
+      // plugin spreads after its own, so these win. One labelled code field each; the verify
+      // view also takes a recovery code.
       views: {
         SetupTOTP: twoFactorView('SetupTwoFactor', '/setup-totp'),
         SetupTOTPBackslash: twoFactorView('SetupTwoFactor', '/setup-totp'),
@@ -71,7 +75,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media],
+  collections: [Users, Media, StaffRecoveryCodes],
   editor: lexicalEditor(),
   email: emailNotConfigured,
   db: postgresAdapter({

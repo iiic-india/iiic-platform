@@ -3,14 +3,15 @@ import { redirect } from 'next/navigation'
 import type { AdminViewServerProps } from 'payload'
 
 import { safeBack } from '@/lib/auth/safeBack'
-import { TOTP_COPY, TWO_FACTOR_COPY } from '@/plugins/totpCopy'
+import { TOTP_COPY } from '@/plugins/totpCopy'
 
-import { TwoFactorCodeForm } from './TwoFactorCodeForm'
+import { VerifyTwoFactorSteps } from './VerifyTwoFactorSteps'
 
 /**
  * The code after the password. Replaces payload-totp's verify view (same keys and path,
- * src/payload.config.ts) to ask for the code in one labelled field; the plugin's
- * /api/verify-totp still checks it and counts the attempt.
+ * src/payload.config.ts) to ask for the code in one labelled field, and to take a recovery code
+ * instead (src/lib/auth/recoveryEndpoints.ts); the plugin's /api/verify-totp still checks the
+ * code and counts the attempt.
  */
 export function VerifyTwoFactor({ initPageResult, searchParams }: AdminViewServerProps) {
   const { req } = initPageResult
@@ -25,10 +26,10 @@ export function VerifyTwoFactor({ initPageResult, searchParams }: AdminViewServe
     <MinimalTemplate>
       <h1>{TOTP_COPY.verify.title}</h1>
       <p>{TOTP_COPY.setup.enterCode}</p>
-      <TwoFactorCodeForm
-        endpoint={`${serverURL}${apiRoute}/verify-totp`}
+      <VerifyTwoFactorSteps
+        verifyEndpoint={`${serverURL}${apiRoute}/verify-totp`}
+        recoveryEndpoint={`${serverURL}${apiRoute}/users/recover-two-factor`}
         next={safeBack(searchParams?.back, adminRoute)}
-        submitLabel={TWO_FACTOR_COPY.verifySubmit}
       />
     </MinimalTemplate>
   )
