@@ -10,6 +10,7 @@ const PAGES = [
   '/learn',
   '/map',
   '/about',
+  '/institute',
   '/legal',
   '/privacy',
   '/terms',
@@ -156,6 +157,29 @@ test.describe('Public shell', () => {
       'tel:+919624046464',
     )
     await expect(contact.locator('.iiic-todo')).toHaveAttribute('data-todo', 'I-33')
+    await expect(page.locator('main')).not.toContainText(/₹|Rs\.?\s?\d/)
+  })
+
+  test('the institute page: the plan’s sections, one partnership as it happened', async ({
+    page,
+  }) => {
+    const response = await page.goto('/institute')
+    expect(response?.status()).toBe(200)
+    await expect(page).toHaveTitle('Institute · IIIC')
+    await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'education')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Research, programmes and partnerships',
+    )
+    await expect(page.locator('main h2')).toHaveText([
+      'Framework and research',
+      'Programmes',
+      'The certificate',
+      'Partnerships',
+      'Verify a certificate',
+    ])
+    // docs/08 §7: the fixed statement, wherever certificates are described.
+    await expect(page.locator('#certificate')).toContainText('Not a degree or diploma')
+    await expect(page.locator('main')).toContainText('Pandit Deendayal Energy University')
     await expect(page.locator('main')).not.toContainText(/₹|Rs\.?\s?\d/)
   })
 

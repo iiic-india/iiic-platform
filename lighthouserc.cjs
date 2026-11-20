@@ -16,6 +16,7 @@ module.exports = {
         'http://localhost:3000/learn',
         'http://localhost:3000/map',
         'http://localhost:3000/about',
+        'http://localhost:3000/institute',
         // The legal pages share one template; the longest stands for them.
         'http://localhost:3000/privacy',
       ],

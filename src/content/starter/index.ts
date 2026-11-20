@@ -4,6 +4,7 @@ import { ABOUT, ABOUT_IIIC_LINES } from './about'
 import { COUNSELLING, COUNSELLING_IIIC_LINES } from './counselling'
 import { FRAMEWORK, FRAMEWORK_IIIC_LINES } from './framework'
 import { HOME, HOME_IIIC_LINES } from './home'
+import { INSTITUTE, INSTITUTE_IIIC_LINES } from './institute'
 import { LEARN, LEARN_IIIC_LINES } from './learn'
 import { ACCESSIBILITY, LEGAL_PAGES } from './legal'
 import { ORGANISATIONS, ORGANISATIONS_IIIC_LINES } from './organisations'
@@ -20,6 +21,7 @@ export const STARTER_PAGES: Readonly<Record<string, PageContent>> = {
   [COUNSELLING.slug]: COUNSELLING,
   [LEARN.slug]: LEARN,
   [ABOUT.slug]: ABOUT,
+  [INSTITUTE.slug]: INSTITUTE,
   ...Object.fromEntries(LEGAL_PAGES.map((page) => [page.slug, page])),
   [ACCESSIBILITY.slug]: ACCESSIBILITY,
 }
@@ -32,4 +34,5 @@ export const STARTER_IIIC_LINES: Readonly<Record<string, Readonly<Record<string,
   [COUNSELLING.slug]: COUNSELLING_IIIC_LINES,
   [LEARN.slug]: LEARN_IIIC_LINES,
   [ABOUT.slug]: ABOUT_IIIC_LINES,
+  [INSTITUTE.slug]: INSTITUTE_IIIC_LINES,
 }
