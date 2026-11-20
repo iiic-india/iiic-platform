@@ -1,0 +1,6 @@
+# Who reviews changes to each area (docs/12 §8). GitHub applies this file to a private
+# repository once the account is on GitHub Pro or Team; the owner must be a collaborator.
+/docs/              @ofcyashsharma
+/.claude/           @ofcyashsharma
+/src/collections/   @ofcyashsharma
+/src/lib/payments/  @ofcyashsharma
