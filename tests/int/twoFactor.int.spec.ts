@@ -29,6 +29,10 @@ beforeAll(async () => {
     data: { totpSecret: SECRET },
     overrideAccess: true,
   })
+  // Read the account again, as a request does: `hasTotp` is worked out when it is read, so the
+  // object returned before the secret was set still says it has none.
+  enrolled = await payload.findByID({ collection: 'users', id: enrolled.id, overrideAccess: true })
+  expect((enrolled as { hasTotp?: boolean }).hasTotp).toBe(true)
   notEnrolled = await payload.create({
     collection: 'users',
     data: { name: 'Fake New', email: email('new'), password: PASSWORD, roles: ['owner'] },
