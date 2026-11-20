@@ -28,6 +28,9 @@ export default defineConfig([
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/no-explicit-any': 'error',
+      // The kit's choice card holds its text three elements deep (label, span, strong), one
+      // deeper than the rule looks by default.
+      'jsx-a11y/label-has-associated-control': ['error', { depth: 3 }],
     },
   },
   globalIgnores([

@@ -14,6 +14,7 @@ module.exports = {
         'http://localhost:3000/organisations',
         'http://localhost:3000/counselling',
         'http://localhost:3000/learn',
+        'http://localhost:3000/map',
       ],
       numberOfRuns: 3,
       settings: {
