@@ -36,7 +36,7 @@
   margin-top: 16px;
 }
 
-/* The contact details: each label over its value, side by side where there is room.
+/* The contact details: each label over its value, two to a row.
    <address> is italic by default; the details stay upright as in the kit's footer. */
 .contact {
   font-style: normal;
@@ -44,9 +44,17 @@
 
 .contactList {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 28px 32px;
   margin: 0;
+  max-width: 760px;
+}
+
+/* One to a row where two would crowd an email address or the office address. */
+@media (max-width: 600px) {
+  .contactList {
+    grid-template-columns: 1fr;
+  }
 }
 
 .contactList dd {
