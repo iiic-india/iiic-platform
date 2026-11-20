@@ -38,6 +38,15 @@ const emailNotConfigured: EmailAdapter = ({ payload }) => ({
   },
 })
 
+/** One of IIIC's two-factor views (src/components/admin/), registered as payload-totp registers its own. */
+const twoFactorView = (component: string, path: `/${string}`) => ({
+  Component: `/components/admin/${component}#${component}`,
+  path,
+  exact: true,
+  strict: true,
+  sensitive: false,
+})
+
 export default buildConfig({
   // Only an explicit origin (production with its domain, or local) becomes the server URL;
   // otherwise the admin uses relative URLs, so previews and the vercel.app alias both work.
@@ -55,22 +64,14 @@ export default buildConfig({
     components: {
       // Recovery codes for staff two-factor (src/lib/auth/recoveryEndpoints.ts).
       beforeDashboard: ['/components/admin/RecoveryCodes#RecoveryCodes'],
+      // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
+      // plugin spreads after its own, so these win. One labelled code field each; the verify
+      // view also takes a recovery code.
       views: {
-        // Replaces payload-totp's verify view (same keys and path), adding recovery codes.
-        VerifyTOTP: {
-          Component: '/components/admin/VerifyTwoFactor#VerifyTwoFactor',
-          path: '/verify-totp',
-          exact: true,
-          strict: true,
-          sensitive: false,
-        },
-        VerifyTOTPBackslash: {
-          Component: '/components/admin/VerifyTwoFactor#VerifyTwoFactor',
-          path: '/verify-totp',
-          exact: true,
-          strict: true,
-          sensitive: false,
-        },
+        SetupTOTP: twoFactorView('SetupTwoFactor', '/setup-totp'),
+        SetupTOTPBackslash: twoFactorView('SetupTwoFactor', '/setup-totp'),
+        VerifyTOTP: twoFactorView('VerifyTwoFactor', '/verify-totp'),
+        VerifyTOTPBackslash: twoFactorView('VerifyTwoFactor', '/verify-totp'),
       },
     },
   },
@@ -97,7 +98,7 @@ export default buildConfig({
     // stays the last plugin that adds collections; the two transforms after it only add hooks
     // and replace its English strings.
     payloadTotp(TOTP_OPTIONS),
-    totpSecretAtRest({ collection: 'users' }),
+    totpSecretAtRest({ collection: 'users', previousSecret: config.PAYLOAD_SECRET_PREVIOUS }),
     totpCopy(),
   ],
   sharp,

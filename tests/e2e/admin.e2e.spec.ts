@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
+import { expect, test, type Page } from '@playwright/test'
 
 import { enterCode, login, signIn } from '../helpers/login'
 import {
@@ -11,6 +12,14 @@ import {
 } from '../helpers/seedUser'
 
 let ids: { ownerId: number | string; newcomerId: number | string }
+
+/** Serious and critical axe findings on the page as it is now. */
+async function blockingViolations(page: Page): Promise<string[]> {
+  const results = await new AxeBuilder({ page }).analyze()
+  return results.violations
+    .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
+    .map((violation) => violation.id)
+}
 
 test.describe('Admin', () => {
   test.describe.configure({ mode: 'serial' })
@@ -37,6 +46,28 @@ test.describe('Admin', () => {
     await expect(page).toHaveURL(/\/admin\/verify-totp/)
   })
 
+  test('the code step asks in one labelled field, says what went wrong, and passes axe', async ({
+    page,
+  }) => {
+    await signIn(page, { email: testUser.email, password: testUser.password })
+    await page.waitForURL(/\/admin\/verify-totp/)
+    expect(await blockingViolations(page)).toEqual([])
+
+    const field = page.getByLabel('Code', { exact: true })
+    await expect(field).toHaveAttribute('autocomplete', 'one-time-code')
+    // A short code is caught before it reaches the server, so it does not count as an attempt.
+    await enterCode(page, '123')
+    // By its id: Next.js adds a role="alert" route announcer of its own to every page.
+    const error = page.locator('#two-factor-code-error')
+    await expect(error).toHaveText('Enter the six-digit code from your authenticator app.')
+    await expect(error).toHaveAttribute('role', 'alert')
+    await expect(field).toBeFocused()
+    await expect(field).toHaveAttribute('aria-invalid', 'true')
+
+    await enterCode(page, totpCode(testUser.totpSecret))
+    await page.waitForURL(/\/admin$/)
+  })
+
   test('someone without an authenticator sets one up before reaching anything', async ({
     page,
   }) => {
@@ -44,10 +75,12 @@ test.describe('Admin', () => {
     await page.waitForURL(/\/admin\/setup-totp/)
     await page.goto('/admin/collections/media')
     await expect(page).toHaveURL(/\/admin\/setup-totp/)
+    expect(await blockingViolations(page)).toEqual([])
+    await expect(page.getByAltText('QR code for your authenticator app')).toBeVisible()
 
-    await page.getByRole('button', { name: 'Enter a setup key instead' }).click()
+    await page.getByText('Enter a setup key instead').click()
     const secret = (await page.locator('code').first().innerText()).replace(/\s/g, '')
-    expect(secret).toMatch(/^[A-Z2-7]{16,}$/)
+    expect(secret).toMatch(/^[A-Z2-7]{32}$/)
     await enterCode(page, totpCode(secret))
     await page.waitForURL(/\/admin(\/collections\/media)?$/)
     await expect(page.locator('h1, span[title="Dashboard"]').first()).toBeVisible()
@@ -58,13 +91,13 @@ test.describe('Admin', () => {
     browser,
   }) => {
     await login(page, testUser)
-    await page.goto(`/admin/collections/users/${ids.newcomerId}`)
-    await expect(page.getByRole('button', { name: 'Reset two-factor' }).first()).toBeVisible()
     await page.goto(`/admin/collections/users/${ids.ownerId}`)
     await expect(page.getByRole('button', { name: 'Reset two-factor' })).toHaveCount(0)
 
-    const reset = await page.request.post(`/api/users/${ids.newcomerId}/reset-two-factor`)
-    expect(reset.status()).toBe(200)
+    await page.goto(`/admin/collections/users/${ids.newcomerId}`)
+    await page.getByRole('button', { name: 'Reset two-factor' }).first().click()
+    await page.locator('#confirm-action').click()
+    await expect(page.getByText('Two-factor reset.', { exact: false })).toBeVisible()
 
     const context = await browser.newContext()
     const theirPage = await context.newPage()

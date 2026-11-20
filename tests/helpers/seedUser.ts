@@ -1,11 +1,12 @@
 import { Secret, TOTP } from 'otpauth'
 import { getPayload } from 'payload'
 
+import { assertLocalDatabase } from './localDatabase'
 import config from '../../src/payload.config'
 
 type Role = 'owner' | 'operator' | 'practitioner' | 'editor' | 'finance'
 
-// The RFC 6238 example secret: obviously not a real one.
+// Google Authenticator's documented example key, written twice: obviously not a real one.
 const EXAMPLE_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP'
 
 /** Clearly fake staff accounts for end-to-end tests (CLAUDE.md: seed data is obviously fake). */
@@ -51,6 +52,7 @@ export async function seedTestUsers(): Promise<{
   ownerId: number | string
   newcomerId: number | string
 }> {
+  assertLocalDatabase()
   const payload = await getPayload({ config })
   await payload.delete({ collection: 'users', where: { email: { in: EMAILS } } })
   const owner = await payload.create({ collection: 'users', data: testUser })
@@ -60,6 +62,7 @@ export async function seedTestUsers(): Promise<{
 }
 
 export async function cleanupTestUsers(): Promise<void> {
+  assertLocalDatabase()
   const payload = await getPayload({ config })
   await payload.delete({ collection: 'users', where: { email: { in: EMAILS } } })
 }

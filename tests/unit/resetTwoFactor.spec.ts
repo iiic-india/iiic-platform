@@ -6,20 +6,26 @@ import { resetTwoFactor } from '@/lib/auth/resetTwoFactor'
 
 const owner = { id: 1, collection: 'users', roles: ['owner'], active: true }
 
-function call(user: Record<string, unknown> | null, id: unknown = 2, update = vi.fn()) {
+function call(
+  user: Record<string, unknown> | null,
+  id: unknown = 2,
+  update = vi.fn(async () => ({ id: 2, email: 'person.fake@example.invalid' })),
+) {
   const remove = vi.fn(async () => ({}))
+  const unlock = vi.fn(async () => true)
+  const error = vi.fn()
   // No transactions in this stub database: the handler then runs each write on its own.
   const req = {
     user,
     routeParams: { id },
-    payload: { update, delete: remove, db: {} },
+    payload: { update, delete: remove, unlock, db: {}, logger: { error } },
   } as unknown as PayloadRequest
-  return { response: resetTwoFactor(req), update, remove }
+  return { response: resetTwoFactor(req), update, remove, unlock, error }
 }
 
 describe('resetTwoFactor', () => {
   it('lets an owner who entered their code reset someone else, ending their sessions and codes', async () => {
-    const { response, update, remove } = call({ ...owner, _strategy: 'totp' })
+    const { response, update, remove, unlock } = call({ ...owner, _strategy: 'totp' })
     expect((await response).status).toBe(200)
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -33,6 +39,14 @@ describe('resetTwoFactor', () => {
       expect.objectContaining({
         collection: 'staff-recovery-codes',
         where: { user: { equals: 2 } },
+        overrideAccess: true,
+      }),
+    )
+    // Lifts a lock left by wrong codes, so the person can set up again at once.
+    expect(unlock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'users',
+        data: { email: 'person.fake@example.invalid' },
         overrideAccess: true,
       }),
     )
@@ -63,8 +77,24 @@ describe('resetTwoFactor', () => {
 
   it('answers 404 for an account that does not exist', async () => {
     const missing = vi.fn(async () => {
-      throw new Error('Not Found')
+      throw Object.assign(new Error('Not Found'), { status: 404 })
     })
-    expect((await call({ ...owner, _strategy: 'totp' }, 99, missing).response).status).toBe(404)
+    const { response, unlock, error } = call({ ...owner, _strategy: 'totp' }, 99, missing)
+    expect((await response).status).toBe(404)
+    expect(unlock).not.toHaveBeenCalled()
+    expect(error).not.toHaveBeenCalled()
+  })
+
+  it('reports any other failure as one, and logs it without its details', async () => {
+    const broken = vi.fn(async () => {
+      throw new TypeError('connection refused for person.fake@example.invalid')
+    })
+    const { response, error } = call({ ...owner, _strategy: 'totp' }, 2, broken)
+    const result = await response
+    expect(result.status).toBe(500)
+    expect(await result.json()).toEqual({ message: 'Two-factor was not reset. Try again.' })
+    expect(error).toHaveBeenCalledOnce()
+    expect(String(error.mock.calls[0]?.[0])).toContain('TypeError')
+    expect(String(error.mock.calls[0]?.[0])).not.toContain('example.invalid')
   })
 })

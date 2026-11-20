@@ -9,7 +9,7 @@ export const TOTP_COPY = {
   authApp: 'Authenticator app',
   configured: 'Set up',
   errors: { alreadySet: 'Two-factor is already set up on this account.' },
-  fieldDescription: 'Your authenticator app shows a new code each time you sign in.',
+  fieldDescription: 'Your authenticator app shows a new code every 30 seconds.',
   setup: {
     addCodeManually: 'Enter a setup key instead',
     button: 'Set up',
@@ -20,6 +20,24 @@ export const TOTP_COPY = {
     title: 'Set up two-factor sign-in',
   },
   verify: { title: 'Enter your code' },
+}
+
+/**
+ * The strings of IIIC's own two-factor views (src/components/admin/), which replace the
+ * plugin's setup and verify views; same patterns as above.
+ */
+export const TWO_FACTOR_COPY = {
+  codeLabel: 'Code',
+  codeFormat: 'Enter the six-digit code from your authenticator app.',
+  verifySubmit: 'Sign in',
+  setupSubmit: 'Turn on two-factor',
+  qrAlt: 'QR code for your authenticator app',
+  setupKeyIntro: 'Type this key into your authenticator app instead of scanning the QR code.',
+  copyKey: 'Copy key',
+  keyCopied: 'Key copied.',
+  copyFailed: 'Copying did not work. Select the text and copy it yourself.',
+  failed: 'That did not work. Try again.',
+  offline: 'That did not go through. Check your connection and try again.',
 }
 
 export function totpCopy() {

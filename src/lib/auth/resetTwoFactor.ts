@@ -7,8 +7,10 @@ const json = (body: Record<string, unknown>, status = 200) =>
 
 /**
  * POST /api/users/:id/reset-two-factor. An owner who has entered their own code clears another
- * staff member's authenticator, cancels their recovery codes and signs them out everywhere; at
- * their next sign-in they set up a new authenticator (docs/05: owners manage staff).
+ * staff member's authenticator, cancels their recovery codes, signs them out everywhere and
+ * lifts a lock left by wrong codes; at their next sign-in they set up a new authenticator
+ * (docs/05: owners manage staff). Their password stays as it is: after a lost phone, the owner
+ * sets a new one as well.
  */
 export const resetTwoFactor: PayloadHandler = async (req) => {
   const actor = req.user
@@ -29,7 +31,7 @@ export const resetTwoFactor: PayloadHandler = async (req) => {
   }
   const owned = await initTransaction(req)
   try {
-    await req.payload.update({
+    const person = await req.payload.update({
       collection: 'users',
       id,
       data: { totpSecret: null, sessions: [] },
@@ -42,10 +44,27 @@ export const resetTwoFactor: PayloadHandler = async (req) => {
       overrideAccess: true,
       req,
     })
+    // Payload's unlock lifts the sign-in lock, and payload-totp then clears its count of
+    // wrong codes, so the person is not refused when they come to set up a new authenticator.
+    await req.payload.unlock({
+      collection: 'users',
+      // Payload's generated type lists a password for every auth operation; unlock reads only
+      // the email.
+      data: { email: person.email } as { email: string; password: string },
+      overrideAccess: true,
+      req,
+    })
     if (owned) await commitTransaction(req)
-  } catch {
+  } catch (error) {
     if (owned) await killTransaction(req)
-    return json({ message: 'That staff account was not found.' }, 404)
+    if ((error as { status?: number } | null)?.status === 404) {
+      return json({ message: 'That staff account was not found.' }, 404)
+    }
+    // The error's name only: its message can carry the query and the person's details.
+    req.payload.logger.error(
+      `Resetting two-factor failed (${error instanceof Error ? error.name : 'unknown error'}).`,
+    )
+    return json({ message: 'Two-factor was not reset. Try again.' }, 500)
   }
   return json({ ok: true })
 }

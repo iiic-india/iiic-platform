@@ -5,9 +5,9 @@ import { Secret } from 'otpauth'
 /**
  * Every staff account's TOTP secret is encrypted at rest (docs/08 §9); payload-totp itself
  * stores it as plain text. AES-256-GCM, with a key derived from PAYLOAD_SECRET by HKDF, so a
- * copy of the database alone cannot produce codes and no new variable is needed. Rotating
- * PAYLOAD_SECRET leaves every stored secret unreadable: staff then cannot verify, and an owner
- * resets their two-factor.
+ * copy of the database alone cannot produce codes and no new variable is needed. When
+ * PAYLOAD_SECRET is rotated, the old value stays in PAYLOAD_SECRET_PREVIOUS until every secret
+ * has been written again under the new one (src/plugins/totpSecretAtRest.ts).
  */
 const PREFIX = 'v1:'
 const IV_BYTES = 12
@@ -15,6 +15,11 @@ const TAG_BYTES = 16
 
 function keyFrom(payloadSecret: string): Buffer {
   return Buffer.from(hkdfSync('sha256', payloadSecret, Buffer.alloc(0), 'iiic/staff-totp/v1', 32))
+}
+
+/** Whether a stored value is in this module's format (whichever key wrote it). */
+export function isEncryptedTotpSecret(stored: string): boolean {
+  return stored.startsWith(PREFIX)
 }
 
 export function encryptTotpSecret(secret: string, payloadSecret: string): string {
@@ -26,7 +31,7 @@ export function encryptTotpSecret(secret: string, payloadSecret: string): string
 
 /** The secret, or null when the value was not written by this module or fails to decrypt. */
 export function decryptTotpSecret(stored: string, payloadSecret: string): string | null {
-  if (!stored.startsWith(PREFIX)) return null
+  if (!isEncryptedTotpSecret(stored)) return null
   try {
     const raw = Buffer.from(stored.slice(PREFIX.length), 'base64')
     const decipher = createDecipheriv(

@@ -31,16 +31,23 @@ export function ResetTwoFactor() {
     return null
   }
 
+  // Never throws: Payload's modal waits for this to finish before it closes.
   async function reset() {
-    const response = await fetch(`${serverURL}${api}/users/${id}/reset-two-factor`, {
-      method: 'POST',
-      credentials: 'include',
-    })
-    const body: { message?: string } = await response.json().catch(() => ({}))
-    if (response.ok) {
-      toast.success('Two-factor reset. They set up a new authenticator when they next sign in.')
-    } else {
-      toast.error(body.message ?? 'Two-factor was not reset. Try again.')
+    try {
+      const response = await fetch(`${serverURL}${api}/users/${id}/reset-two-factor`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const body: { message?: string } = await response.json().catch(() => ({}))
+      if (response.ok) {
+        toast.success('Two-factor reset. They set up a new authenticator when they next sign in.')
+      } else {
+        toast.error(body.message ?? 'Two-factor was not reset. Try again.')
+      }
+    } catch {
+      toast.error(
+        'Two-factor was not reset: that did not go through. Check your connection and try again.',
+      )
     }
   }
 
@@ -52,7 +59,7 @@ export function ResetTwoFactor() {
       <ConfirmationModal
         modalSlug={MODAL}
         heading="Reset two-factor?"
-        body="Their open sessions end, and they set up a new authenticator when they next sign in."
+        body="Their open sessions end, and they set up a new authenticator when they next sign in. Their password stays the same: if their phone was lost or someone else may know the password, set a new one for them too."
         confirmLabel="Reset two-factor"
         cancelLabel="Cancel"
         onConfirm={reset}
