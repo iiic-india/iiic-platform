@@ -3,12 +3,18 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { renderText } from '@/components/blocks/text'
+import { COUNSELLING, COUNSELLING_IIIC_LINES } from '@/content/starter/counselling'
 import { FRAMEWORK, FRAMEWORK_IIIC_LINES } from '@/content/starter/framework'
 import { HOME, HOME_IIIC_LINES } from '@/content/starter/home'
 import { ORGANISATIONS, ORGANISATIONS_IIIC_LINES } from '@/content/starter/organisations'
 import type { PageContent } from '@/lib/content/types'
+import { CRISIS_LINES, SCOPE_STATEMENT } from '@/lib/counselling/scope'
 
 afterEach(cleanup)
+
+/** How many blocks of a page carry copy IIIC has not approved yet. */
+const candidates = (layout: PageContent['layout']) =>
+  layout.filter((block) => 'copyStatus' in block && block.copyStatus === 'candidate').length
 
 describe('renderText', () => {
   it('shows text exactly as written', () => {
@@ -80,7 +86,7 @@ describe('the home starter page, drawn', () => {
   it('marks every block whose wording IIIC has not approved yet (I-41)', () => {
     const { container } = draw()
     expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
-      HOME.layout.filter((block) => block.copyStatus === 'candidate').length,
+      candidates(HOME.layout),
     )
   })
 
@@ -165,7 +171,7 @@ describe('the framework starter page, drawn', () => {
   it('leaves IIIC’s own section unmarked and marks the candidate ones', () => {
     const { container } = draw()
     expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
-      FRAMEWORK.layout.filter((block) => block.copyStatus === 'candidate').length,
+      candidates(FRAMEWORK.layout),
     )
     const own = screen.getByRole('heading', { level: 2, name: 'Human transformation' })
     expect(own.closest('section')?.querySelector('[data-candidate]')).toBeNull()
@@ -253,5 +259,71 @@ describe('cards', () => {
     expect(first?.textContent).toContain('Fake action')
     expect(second?.tagName).toBe('ARTICLE')
     expect(first?.className).toContain('iiic-span-6')
+  })
+})
+
+describe('the counselling starter page, drawn', () => {
+  const draw = () => render(<RenderBlocks layout={COUNSELLING.layout} />)
+
+  it('carries the scope statement in its fixed wording, marked as a draft for the lawyer', () => {
+    const { container } = draw()
+    const scope = container.querySelector('#scope') as HTMLElement
+    for (const sentence of SCOPE_STATEMENT) expect(scope.textContent).toContain(sentence)
+    expect(scope.querySelector('[data-draft]')?.getAttribute('data-draft')).toBe('I-22')
+  })
+
+  it('lists the crisis numbers as links a phone can dial', () => {
+    const { container } = draw()
+    const scope = container.querySelector('#scope') as HTMLElement
+    const links = [...scope.querySelectorAll<HTMLAnchorElement>('a[href^="tel:"]')]
+    expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
+      ['14416', 'tel:14416'],
+      ['1-800-891-4416', 'tel:18008914416'],
+      ['112', 'tel:112'],
+      ['1098', 'tel:1098'],
+    ])
+    expect(links).toHaveLength(CRISIS_LINES.flatMap((line) => line.numbers).length)
+    expect(scope.textContent).toContain('Tele-MANAS: 14416 or 1-800-891-4416 (free, 24×7)')
+  })
+
+  it('points from the hero to the statement instead of promising confidentiality outright', () => {
+    draw()
+    const pointer = screen.getByRole('link', { name: 'What that means, and what we keep private' })
+    expect(pointer.getAttribute('href')).toBe('/counselling#scope')
+    expect(screen.getByText('Sessions are non-clinical conversations.')).toBeTruthy()
+    expect(screen.getByText(COUNSELLING_IIIC_LINES.lead)).toBeTruthy()
+  })
+
+  it('never describes counselling in clinical words, outside the statement that rules them out', () => {
+    const { container } = draw()
+    container.querySelector('#scope')?.remove()
+    const text = container.textContent ?? ''
+    // src/brand/VOICE.md, "Words to avoid" and "Counselling copy"; docs/08 §7.
+    expect(text).not.toMatch(
+      /therap|psycholog|(?<!non-)clinical|diagnos|treatment|\bcure|\bheal|safe space|guarantee/i,
+    )
+    expect(text).not.toMatch(/confidential/i)
+    expect(text).not.toMatch(/₹|\bRs\b/)
+  })
+
+  it('leaves what IIIC and its lawyer have yet to supply as placeholders', () => {
+    const { container } = draw()
+    const waiting = [...container.querySelectorAll('.iiic-todo')].map((chip) =>
+      chip.getAttribute('data-todo'),
+    )
+    expect(waiting.sort()).toEqual(['D-19', 'I-08', 'I-09', 'I-20', 'I-31'])
+    expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
+      candidates(COUNSELLING.layout),
+    )
+  })
+
+  it('gives the steps their line, in IIIC’s words', () => {
+    const { container } = draw()
+    expect(screen.getByText(COUNSELLING_IIIC_LINES.how)).toBeTruthy()
+    expect(
+      [...container.querySelectorAll('ol.iiic-steps > li > strong')].map(
+        (step) => step.textContent,
+      ),
+    ).toEqual(['We listen.', 'We explain.', 'We equip.'])
   })
 })

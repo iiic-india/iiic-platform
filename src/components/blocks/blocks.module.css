@@ -30,3 +30,13 @@
 .band {
   margin-top: 80px;
 }
+
+/* The small print under the actions of a hero. */
+.heroNote {
+  margin-top: 16px;
+}
+
+/* The line a list of steps follows. */
+.stepsLead {
+  margin: 0 0 28px;
+}

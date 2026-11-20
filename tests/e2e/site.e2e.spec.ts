@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 // The public pages built so far (docs/02); each is held to the same accessibility and layout rules.
-const PAGES = ['/', '/framework', '/organisations']
+const PAGES = ['/', '/framework', '/organisations', '/counselling']
 
 test.describe('Public shell', () => {
   test('home shows the starter page: IIIC’s words, marked candidates, placeholders', async ({
@@ -76,6 +76,34 @@ test.describe('Public shell', () => {
       }
     })
   }
+
+  test('the counselling page carries the scope statement and the crisis numbers', async ({
+    page,
+  }) => {
+    const response = await page.goto('/counselling')
+    expect(response?.status()).toBe(200)
+    await expect(page).toHaveTitle('Counselling · IIIC')
+    await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'counselling')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Be Heard. Be Understood. Know Yourself.',
+    )
+    // docs/08 §7: non-clinical, not an emergency service, and where to call instead.
+    const scope = page.locator('#scope')
+    await expect(scope).toContainText('non-clinical conversations')
+    await expect(scope).toContainText('not an emergency service')
+    await expect(scope.getByRole('link', { name: '14416' })).toHaveAttribute('href', 'tel:14416')
+    await expect(scope.getByRole('link', { name: '1-800-891-4416' })).toHaveAttribute(
+      'href',
+      'tel:18008914416',
+    )
+    await expect(scope.getByRole('link', { name: '112' })).toHaveAttribute('href', 'tel:112')
+    await expect(scope.getByRole('link', { name: '1098' })).toHaveAttribute('href', 'tel:1098')
+    // The hero points at the statement instead of promising confidentiality outright.
+    await page.getByRole('link', { name: 'What that means, and what we keep private' }).click()
+    await expect(page).toHaveURL(/\/counselling#scope$/)
+    // No price while prices are unpublished (D-21).
+    await expect(page.locator('main')).not.toContainText(/₹|Rs\.?\s?\d/)
+  })
 
   test('the organisations page speaks in the consultancy register, in IIIC’s words', async ({
     page,

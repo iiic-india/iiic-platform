@@ -2,6 +2,14 @@ import Link from 'next/link'
 
 import { Todo } from '@/components/Todo'
 import type { PageBlock, PageContent } from '@/lib/content/types'
+import {
+  CRISIS_HEADING,
+  CRISIS_LINES,
+  SCOPE_AWAITS,
+  SCOPE_HEADING,
+  SCOPE_STATEMENT,
+  telHref,
+} from '@/lib/counselling/scope'
 import type {
   BandBlock,
   CardsBlock,
@@ -89,6 +97,9 @@ function Hero({ block }: { block: HeroBlock }) {
           <ActionLink action={block.primary} variant="primary" large />
           <ActionLink action={block.secondary} variant="secondary" large />
         </div>
+        {block.note ? (
+          <div className={`iiic-type-small ${styles.heroNote}`}>{renderText(block.note)}</div>
+        ) : null}
       </div>
     </section>
   )
@@ -147,6 +158,9 @@ function Steps({ block }: { block: StepsBlock }) {
     <section className="iiic-section">
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} />
+      {block.lead ? (
+        <p className={`iiic-lede iiic-prose ${styles.stepsLead}`}>{renderText(block.lead)}</p>
+      ) : null}
       <ol className="iiic-steps">
         {block.steps.map((step, index) => (
           <li key={step.id ?? index}>
@@ -269,6 +283,46 @@ function FactList({ block }: { block: FactListBlock }) {
   )
 }
 
+/**
+ * The counselling scope statement and the crisis numbers (docs/08 §7), in the one wording
+ * every counselling surface shares. The hero links here by its id. Until the lawyer fixes the
+ * wording it is marked as a draft (I-22).
+ */
+function Scope() {
+  return (
+    <section className="iiic-section" id="scope">
+      <div className={styles.candidate}>
+        <span className="iiic-badge" data-draft={SCOPE_AWAITS}>
+          Draft wording, awaiting legal review ({SCOPE_AWAITS})
+        </span>
+      </div>
+      <SectionHead heading={SCOPE_HEADING} />
+      <div className="iiic-prose">
+        {SCOPE_STATEMENT.map((sentence) => (
+          <p key={sentence}>{sentence}</p>
+        ))}
+        <h3>{CRISIS_HEADING}</h3>
+        <ul>
+          {CRISIS_LINES.map((line) => (
+            <li key={line.label}>
+              {line.label}:{' '}
+              {line.numbers.map((number, index) => (
+                <span key={number}>
+                  {index > 0 ? ' or ' : null}
+                  <a className="iiic-link" href={telHref(number)}>
+                    {number}
+                  </a>
+                </span>
+              ))}
+              {line.note ? ` (${line.note})` : null}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
 function FounderNote({ block }: { block: FounderNoteBlock }) {
   return (
     <section className="iiic-section iiic-split">
@@ -331,6 +385,8 @@ function Section({ block }: { block: Exclude<PageBlock, BandBlock> }) {
       return <Cards block={block} />
     case 'factList':
       return <FactList block={block} />
+    case 'scope':
+      return <Scope />
     case 'founderNote':
       return <FounderNote block={block} />
   }

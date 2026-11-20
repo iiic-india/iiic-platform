@@ -1,5 +1,6 @@
 import type { PageContent } from '@/lib/content/types'
 
+import { COUNSELLING, COUNSELLING_IIIC_LINES } from './counselling'
 import { FRAMEWORK, FRAMEWORK_IIIC_LINES } from './framework'
 import { HOME, HOME_IIIC_LINES } from './home'
 import { ORGANISATIONS, ORGANISATIONS_IIIC_LINES } from './organisations'
@@ -13,6 +14,7 @@ export const STARTER_PAGES: Readonly<Record<string, PageContent>> = {
   [HOME.slug]: HOME,
   [FRAMEWORK.slug]: FRAMEWORK,
   [ORGANISATIONS.slug]: ORGANISATIONS,
+  [COUNSELLING.slug]: COUNSELLING,
 }
 
 /** Every line the starter pages call IIIC's own, by page; tests hold them to the sources. */
@@ -20,4 +22,5 @@ export const STARTER_IIIC_LINES: Readonly<Record<string, Readonly<Record<string,
   [HOME.slug]: HOME_IIIC_LINES,
   [FRAMEWORK.slug]: FRAMEWORK_IIIC_LINES,
   [ORGANISATIONS.slug]: ORGANISATIONS_IIIC_LINES,
+  [COUNSELLING.slug]: COUNSELLING_IIIC_LINES,
 }
