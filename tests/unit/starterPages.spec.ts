@@ -4,8 +4,15 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { isSitePath, oneClosingBand } from '@/blocks/pageBlocks'
+import {
+  FIXED_ANCHORS,
+  isAnchor,
+  isSitePath,
+  oneClosingBand,
+  uniqueAnchors,
+} from '@/blocks/pageBlocks'
 import { STARTER_IIIC_LINES, STARTER_PAGES } from '@/content/starter'
+import { FOUNDERS_NARRATIVE_FIGURES } from '@/content/starter/founders'
 import { PAGE_SLUG } from '@/lib/content/slug'
 import type { BandBlock, HeroBlock } from '@/payload-types'
 
@@ -85,15 +92,37 @@ describe.each(Object.entries(STARTER_PAGES))('starter page "%s"', (slug, page) =
 
   it('shows no price (D-21) and traces every fact it lists to the page', () => {
     const text = strings(page.layout).join('\n')
-    expect(text).not.toMatch(/₹|\bRs\.?\s?\d|\bINR\b/)
+    // The founders' story names a company's turnover in IIIC's words: that is not a price.
+    const priced = slug === 'founders' ? text.replace(FOUNDERS_NARRATIVE_FIGURES, '') : text
+    expect(priced).not.toMatch(/₹|\bRs\.?\s?\d|\bINR\b/)
     for (const fact of page.facts ?? []) expect(text, fact.statement).toContain(fact.statement)
   })
 
   it('repeats the hero’s action in its closing band, in the same words', () => {
     const hero = page.layout.find((block): block is HeroBlock => block.blockType === 'hero')
     const band = page.layout.find((block): block is BandBlock => block.blockType === 'band')
-    // A page may end without a band: the About page ends on its contact section.
-    if (band) expect(band.primary).toEqual(hero?.primary)
+    // A page may end without a band: the About page ends on its contact section. And a hero
+    // whose button only moves down its own page (the founders' story) leaves the band its own.
+    const movesDown = hero?.primary?.href?.startsWith(`/${slug}#`) ?? false
+    if (band && !movesDown) expect(band.primary).toEqual(hero?.primary)
+  })
+
+  it('opens a section that exists wherever a link names one', () => {
+    for (const href of hrefs(page.layout)) {
+      const [path, name] = href.split('#')
+      if (!name || !path) continue
+      // A page that is not built yet has no sections to check.
+      const target = STARTER_PAGES[path === '/' ? 'home' : path.slice(1)]
+      if (!target) continue
+      const names = target.layout.flatMap((block) => {
+        if ('anchor' in block && block.anchor) return [block.anchor]
+        return (FIXED_ANCHORS as readonly string[]).includes(block.blockType)
+          ? [block.blockType]
+          : []
+      })
+      expect(names, href).toContain(name)
+    }
+    expect(uniqueAnchors(page.layout)).toBe(true)
   })
 })
 
@@ -114,6 +143,23 @@ describe('page rules', () => {
     for (const bad of ['framework', '//evil.example', 'https://example.com', '/a b', 7]) {
       expect(isSitePath(bad), String(bad)).toMatch(/path on this site/)
     }
+  })
+
+  it('accepts short, lower-case link names, each once a page', () => {
+    for (const ok of ['story', 'the-story', 'q2', undefined, null, '']) {
+      expect(isAnchor(ok), String(ok)).toBe(true)
+    }
+    for (const bad of ['Story', 'the story', '2nd', '-story', '#story', 'a'.repeat(41), 7]) {
+      expect(isAnchor(bad), String(bad)).toMatch(/small letters/)
+    }
+    const section = (anchor?: string) => ({ blockType: 'statement', anchor })
+    expect(uniqueAnchors([section('story'), section('shift'), section(), section('')])).toBe(true)
+    expect(uniqueAnchors([section('story'), section('story')])).toMatch(/"story" is already taken/)
+    // The fixed blocks keep their own ids: no section may take one of them.
+    for (const fixed of FIXED_ANCHORS) {
+      expect(uniqueAnchors([section(fixed)]), fixed).toMatch(/already taken/)
+    }
+    expect(uniqueAnchors(undefined)).toBe(true)
   })
 
   it('accepts only lower-case, hyphenated addresses', () => {

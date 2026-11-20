@@ -73,8 +73,23 @@ jobs:
         run: pnpm test:int
       - name: Build
         run: pnpm build
+      # The browser download is the slowest and least steady step, so it is kept between runs,
+      # keyed by the Playwright version.
+      - name: Read the Playwright version
+        id: playwright
+        run: echo "version=$(pnpm -s exec playwright --version | tr ' ' '-')" >> "$GITHUB_OUTPUT"
+      - name: Restore the browser
+        id: browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
       - name: Install Chromium
+        if: steps.browser.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
+      - name: Install Chromium's system libraries
+        if: steps.browser.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
       - name: End-to-end tests (desktop and phone, with axe)
         run: pnpm test:e2e
       - name: Lighthouse budgets (docs/12 §2)

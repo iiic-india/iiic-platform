@@ -2,6 +2,7 @@ import type { PageContent } from '@/lib/content/types'
 
 import { ABOUT, ABOUT_IIIC_LINES } from './about'
 import { COUNSELLING, COUNSELLING_IIIC_LINES } from './counselling'
+import { FOUNDERS, FOUNDERS_IIIC_LINES } from './founders'
 import { FRAMEWORK, FRAMEWORK_IIIC_LINES } from './framework'
 import { HOME, HOME_IIIC_LINES } from './home'
 import { INSTITUTE, INSTITUTE_IIIC_LINES } from './institute'
@@ -18,6 +19,7 @@ export const STARTER_PAGES: Readonly<Record<string, PageContent>> = {
   [HOME.slug]: HOME,
   [FRAMEWORK.slug]: FRAMEWORK,
   [ORGANISATIONS.slug]: ORGANISATIONS,
+  [FOUNDERS.slug]: FOUNDERS,
   [COUNSELLING.slug]: COUNSELLING,
   [LEARN.slug]: LEARN,
   [ABOUT.slug]: ABOUT,
@@ -31,6 +33,7 @@ export const STARTER_IIIC_LINES: Readonly<Record<string, Readonly<Record<string,
   [HOME.slug]: HOME_IIIC_LINES,
   [FRAMEWORK.slug]: FRAMEWORK_IIIC_LINES,
   [ORGANISATIONS.slug]: ORGANISATIONS_IIIC_LINES,
+  [FOUNDERS.slug]: FOUNDERS_IIIC_LINES,
   [COUNSELLING.slug]: COUNSELLING_IIIC_LINES,
   [LEARN.slug]: LEARN_IIIC_LINES,
   [ABOUT.slug]: ABOUT_IIIC_LINES,

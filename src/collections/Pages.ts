@@ -2,7 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { blocks as validateBlocks } from 'payload/shared'
 
 import { allow, POLICY } from '@/access/policy'
-import { oneClosingBand, PAGE_BLOCKS } from '@/blocks/pageBlocks'
+import { oneClosingBand, PAGE_BLOCKS, uniqueAnchors } from '@/blocks/pageBlocks'
 import { copyStarterPage } from '@/lib/content/copyStarter'
 import { revalidatePages } from '@/lib/content/revalidate'
 import { PAGE_SLUG } from '@/lib/content/slug'
@@ -105,7 +105,9 @@ export const Pages: CollectionConfig = {
       blocks: PAGE_BLOCKS,
       validate: async (value, options) => {
         const base = await validateBlocks(value, options)
-        return base === true ? oneClosingBand(value) : base
+        if (base !== true) return base
+        const band = oneClosingBand(value)
+        return band === true ? uniqueAnchors(value) : band
       },
     },
     {
