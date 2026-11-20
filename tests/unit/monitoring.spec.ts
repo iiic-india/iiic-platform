@@ -23,7 +23,7 @@ vi.mock('@/lib/env', () => ({ env: vi.fn() }))
 const sentry = vi.mocked(Sentry)
 // Obviously fake values.
 const DSN = 'https://publickey@o0.ingest.example.invalid/1'
-const TOKEN = 'abcdefghijklmnopqrstuvwxyz0123456789ABCD'
+const TOKEN = 'test-only-0123456789-abcdefghijklmnopqrstuv'
 
 beforeEach(() => {
   vi.clearAllMocks()
