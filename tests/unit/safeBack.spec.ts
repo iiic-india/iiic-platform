@@ -34,5 +34,6 @@ describe('safeBack', () => {
   it('works when the admin is served from the root', () => {
     expect(safeBack('/collections/users', '')).toBe('/collections/users')
     expect(safeBack('//evil.example', '/')).toBe('/')
+    expect(safeBack('/.//evil.example', '/')).toBe('/')
   })
 })

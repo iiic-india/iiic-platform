@@ -28,10 +28,13 @@ const ERROR = 'two-factor-code-error'
 export function TwoFactorCodeForm({ endpoint, next, submitLabel, secret }: Props) {
   const input = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string>()
+  // A new key each time, so the same message is read out again.
+  const [attempt, setAttempt] = useState(0)
   const [pending, setPending] = useState(false)
 
   function fail(message: string) {
     setError(message)
+    setAttempt((count) => count + 1)
     input.current?.focus()
     input.current?.select()
   }
@@ -65,7 +68,7 @@ export function TwoFactorCodeForm({ endpoint, next, submitLabel, secret }: Props
   }
 
   return (
-    <form className={styles.form} onSubmit={submit} noValidate>
+    <form className={styles.form} method="post" onSubmit={submit} noValidate>
       <div className="field-type text">
         <label className="field-label" htmlFor={FIELD}>
           {COPY.codeLabel}
@@ -82,7 +85,7 @@ export function TwoFactorCodeForm({ endpoint, next, submitLabel, secret }: Props
           aria-describedby={error ? ERROR : undefined}
         />
         {error ? (
-          <p id={ERROR} role="alert" className={styles.error}>
+          <p key={attempt} id={ERROR} role="alert" className={styles.error}>
             {error}
           </p>
         ) : null}

@@ -4,7 +4,7 @@ import { payloadTotp } from 'payload-totp'
 import { describe, expect, it } from 'vitest'
 
 import { TOTP_OPTIONS } from '@/lib/auth/totp'
-import { TOTP_COPY, totpCopy } from '@/plugins/totpCopy'
+import { TOTP_COPY, totpCopy, TWO_FACTOR_COPY } from '@/plugins/totpCopy'
 
 describe('totpCopy', () => {
   it("replaces payload-totp's English strings when listed after it, and keeps other languages", () => {
@@ -16,6 +16,8 @@ describe('totpCopy', () => {
       { totpPlugin?: unknown }
     >
     expect(translations.en?.totpPlugin).toEqual(TOTP_COPY)
+    const errors = (translations.en as { error?: { userLocked?: string } }).error
+    expect(errors?.userLocked).toBe(TWO_FACTOR_COPY.locked)
     expect(translations.de?.totpPlugin).toBeTruthy()
   })
 

@@ -1,3 +1,4 @@
+import { sql } from '@payloadcms/db-postgres'
 import {
   createLocalReq,
   getPayload,
@@ -7,6 +8,8 @@ import {
 } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { rekeyTotpSecrets } from '@/lib/security/rekeyTotpSecrets'
+import { decryptTotpSecret, encryptTotpSecret } from '@/lib/security/totpSecret'
 import type { User } from '@/payload-types'
 import config from '@/payload.config'
 
@@ -97,6 +100,26 @@ describe('the TOTP secret at rest', () => {
     })) as { totpSecret?: string } | null
     expect(row?.totpSecret?.startsWith('v1:')).toBe(true)
     expect(row?.totpSecret).not.toContain(SECRET)
+  })
+
+  it('moves a secret under the previous key with pnpm totp:rekey, and sign-in never waits on it', async () => {
+    const OLD = 'test-only-previous-payload-secret-0000000'
+    const current = process.env.PAYLOAD_SECRET ?? ''
+    await payload.db.drizzle.execute(
+      sql`UPDATE "users" SET "totp_secret" = ${encryptTotpSecret(SECRET, OLD)} WHERE "id" = ${enrolled.id}`,
+    )
+    // Reads never write, so a sign-in finishes even while the secret is under the old key.
+    await payload.login({
+      collection: 'users',
+      data: { email: email('enrolled'), password: PASSWORD },
+    })
+    const { moved } = await rekeyTotpSecrets(payload, { current, previous: OLD })
+    expect(moved).toBeGreaterThanOrEqual(1)
+    const row = (await payload.db.findOne({
+      collection: 'users',
+      where: { id: { equals: enrolled.id } },
+    })) as { totpSecret?: string } | null
+    expect(decryptTotpSecret(row?.totpSecret ?? '', current)).toBe(SECRET)
   })
 
   it('is never readable through the API, even by its owner', async () => {

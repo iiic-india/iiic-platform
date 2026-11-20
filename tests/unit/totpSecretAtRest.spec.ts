@@ -25,29 +25,24 @@ function hooks(previousSecret?: string) {
   } as unknown as Config)
   const field = config.collections?.[0]?.fields[1] as TextField
   const warn = vi.fn()
-  const updateOne = vi.fn(async () => null)
-  const args = (value: unknown) =>
-    ({
-      value,
-      data: { id: 7 },
-      req: { payload: { logger: { warn }, db: { updateOne } } },
-    }) as unknown as Parameters<FieldHook>[0]
+  // One request: an update reads the stored document, then writes it, with the same req.
+  const req = { context: {}, payload: { logger: { warn } } }
+  const args = (value: unknown) => ({ value, req }) as unknown as Parameters<FieldHook>[0]
   return {
     field,
     warn,
-    updateOne,
     encrypt: (value: unknown) => field.hooks?.beforeChange?.[0]?.(args(value)),
-    decrypt: async (value: unknown) => field.hooks?.afterRead?.[0]?.(args(value)),
+    decrypt: (value: unknown) => field.hooks?.afterRead?.[0]?.(args(value)),
     untouched: config.collections?.[0]?.fields[0],
   }
 }
 
 describe('totpSecretAtRest', () => {
-  it('encrypts what is written and decrypts what is read', async () => {
+  it('encrypts what is written and decrypts what is read', () => {
     const { encrypt, decrypt } = hooks()
     const stored = encrypt(SECRET) as string
     expect(decryptTotpSecret(stored, KEY)).toBe(SECRET)
-    expect(await decrypt(stored)).toBe(SECRET)
+    expect(decrypt(stored)).toBe(SECRET)
   })
 
   it('does not encrypt twice, and leaves an empty secret empty', () => {
@@ -62,44 +57,33 @@ describe('totpSecretAtRest', () => {
     expect(hooks().field.hidden).toBe(true)
   })
 
-  it('fails closed on a secret no key opens, and says so in the log without details', async () => {
-    const { decrypt, warn, updateOne } = hooks()
-    const unreadable = encryptTotpSecret(SECRET, `${KEY}-unknown`)
-    const result = await decrypt(unreadable)
+  it('fails closed on a secret no key opens, and says so in the log without details', () => {
+    const { decrypt, warn } = hooks()
+    const result = decrypt(encryptTotpSecret(SECRET, `${KEY}-unknown`))
     expect(result).toMatch(/^[A-Z2-7]{32}$/)
     expect(result).not.toBe(SECRET)
     expect(warn).toHaveBeenCalledOnce()
     expect(String(warn.mock.calls[0]?.[0])).not.toContain(SECRET)
-    expect(updateOne).not.toHaveBeenCalled()
   })
 
-  it('passes an already opened secret through on a second read, without a warning', async () => {
+  it('keeps the stored value when an update writes back the stand-in it read', () => {
+    const { decrypt, encrypt } = hooks()
+    const unreadable = encryptTotpSecret(SECRET, `${KEY}-unknown`)
+    expect(encrypt(decrypt(unreadable))).toBe(unreadable)
+  })
+
+  it('passes an already opened secret through on a second read, without a warning', () => {
     const { decrypt, warn } = hooks()
-    const first = await decrypt(encryptTotpSecret(SECRET, KEY))
-    expect(await decrypt(first)).toBe(SECRET)
+    const first = decrypt(encryptTotpSecret(SECRET, KEY))
+    expect(decrypt(first)).toBe(SECRET)
     expect(warn).not.toHaveBeenCalled()
   })
 
-  it('opens a secret under the previous key and stores it again under the current one', async () => {
-    const { decrypt, encrypt, updateOne } = hooks(OLD_KEY)
+  it('opens a secret under the previous key, and moves it to the current key on a write', () => {
+    const { decrypt, encrypt } = hooks(OLD_KEY)
     const underOldKey = encryptTotpSecret(SECRET, OLD_KEY)
-    expect(await decrypt(underOldKey)).toBe(SECRET)
-    expect(updateOne).toHaveBeenCalledOnce()
-    const write = (updateOne.mock.calls[0] as unknown[] | undefined)?.[0] as {
-      id: number
-      data: { totpSecret: string }
-    }
-    expect(write.id).toBe(7)
-    expect(decryptTotpSecret(write.data.totpSecret, KEY)).toBe(SECRET)
-
-    // A stored value passed back in on a write is moved to the current key the same way.
+    expect(decrypt(underOldKey)).toBe(SECRET)
     expect(decryptTotpSecret(encrypt(underOldKey) as string, KEY)).toBe(SECRET)
-  })
-
-  it('does not rewrite a secret already under the current key', async () => {
-    const { decrypt, updateOne } = hooks(OLD_KEY)
-    await decrypt(encryptTotpSecret(SECRET, KEY))
-    expect(updateOne).not.toHaveBeenCalled()
   })
 
   it('leaves every other field alone, and refuses a collection without the field', () => {
