@@ -54,11 +54,12 @@ The decision log. Claude Code reads this before building and records any new dec
 | D-45 | Bundle sizes are checked per page by Lighthouse CI's resource summary (JavaScript ≤ 150 KB, CSS ≤ 40 KB, fonts ≤ 120 KB, transferred) instead of `size-limit`, and `knip` waits until the codebase settles. Reason: under Turbopack `size-limit` cannot see which chunks one route loads, while Lighthouse measures what the page actually downloads; Payload's admin components are referenced by string paths, which `knip` would report as unused. (`12` §2, §8) | Decided (IIIC delegated the M1 decisions, 20 November 2026) | M1 |
 | D-46 | Media uploads go through the server, not straight from the browser to R2, and are limited to 4 MB each (under Vercel's 4.5 MB request limit); files are served from the public bucket's own address. Reason: the server re-encodes every image before it is stored, so no original with its metadata ever reaches the bucket; web images rarely approach 4 MB. Direct uploads come back if larger files (video, documents) need them. (`07` Files, `12` §5 Uploads) | Decided (IIIC delegated the M1 decisions, 20 November 2026) | M1 |
 | D-47 | Staff email (the password reset) goes through Resend now, from Resend's shared sender `onboarding@resend.dev` until the platform domain is verified (D-05), with the reset email in IIIC's words; the rest of messaging stays in M6. Reason: with no email at all, a staff member who forgets their password cannot get back in. Until the domain is verified, Resend delivers only to its own account's address. (`13`, M6) | Decided (IIIC delegated the M1 decisions, 20 November 2026) | M1 |
+| D-48 | The tab icon (favicon) is the logo's own "iiic" lettering on the yellow tile: three i's of growing length, the leaf-shaped dot on the middle one, and the c, drawn on a 16-pixel grid so it stays sharp in a browser tab (`src/app/icon.svg`, with an `.ico` built from it by `pnpm icons`). It replaces the kit's single "i", which read as an information sign; the whole face mark is too fine to survive at 16 px, so it stays for the home-screen icon and everything larger. More widely, IIIC lets the design move beyond the kit where that makes the product better: such a change is made in the app's own files, recorded here first, and `src/brand/` itself stays read-only. | Decided (IIIC asked for a better tab icon and allowed design changes beyond the kit, 20 November 2026) | M1 |
 
 ## How to record a decision
 
 ```
-| D-48 | <the decision, in one sentence> | Decided (Yash/Aum, <date>) | <milestone> |
+| D-49 | <the decision, in one sentence> | Decided (Yash/Aum, <date>) | <milestone> |
 ```
 
 If a decision changes a document, update that document in the same commit and note the decision ID in the commit message.

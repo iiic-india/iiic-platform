@@ -13,6 +13,20 @@ test.describe('Public shell', () => {
     await expect(page.locator('footer')).toContainText('+91 96240 46464')
   })
 
+  test("the tab icon is IIIC's own, as an SVG and as an .ico (D-48)", async ({ page, request }) => {
+    await page.goto('/')
+    await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute(
+      'href',
+      '/icon.svg',
+    )
+    const svg = await request.get('/icon.svg')
+    expect(svg.status()).toBe(200)
+    expect(svg.headers()['content-type']).toContain('image/svg+xml')
+    const ico = await request.get('/favicon.ico')
+    expect(ico.status()).toBe(200)
+    expect(ico.headers()['content-type']).toMatch(/image\/(x-icon|vnd\.microsoft\.icon)/)
+  })
+
   test('the skip link is the first stop and moves focus to main', async ({ page }) => {
     await page.goto('/')
     await page.keyboard.press('Tab')
