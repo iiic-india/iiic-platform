@@ -689,3 +689,20 @@ describe('a section’s link name', () => {
     expect(sections.map((element) => element.getAttribute('id'))).toEqual(['story', null])
   })
 })
+
+describe('the way from the organisations page to the founders’ story', () => {
+  it('shows the story’s heading and first line, says what it is, and leads to it', () => {
+    render(<RenderBlocks layout={ORGANISATIONS.layout} />)
+    const section = screen
+      .getByRole('heading', { level: 2, name: FOUNDERS_IIIC_LINES.storyHeading })
+      .closest('section') as HTMLElement
+    expect(section.querySelector('.iiic-kicker')?.textContent).toBe(FOUNDERS_STORY_LABEL)
+    // The narrative is told once, on its own page: one line of it here, no more.
+    expect([...section.querySelectorAll('.iiic-prose p')].map((p) => p.textContent)).toEqual([
+      FOUNDERS_IIIC_LINES.shed,
+    ])
+    expect(within(section).getByRole('link', { name: 'Read the story' }).getAttribute('href')).toBe(
+      '/founders#story',
+    )
+  })
+})
