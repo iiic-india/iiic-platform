@@ -6,6 +6,7 @@ import {
   CERTIFICATE_HEADING,
   CERTIFICATE_STATEMENT,
 } from '@/lib/certificates/statement'
+import { LEGAL_REVIEW_AWAITS } from '@/lib/content/legalReview'
 import type { PageBlock, PageContent } from '@/lib/content/types'
 import {
   CRISIS_HEADING,
@@ -43,6 +44,20 @@ function CandidateMark({ status }: { status: 'approved' | 'candidate' }) {
     <div className={styles.candidate}>
       <span className="iiic-badge" data-candidate="I-41">
         Candidate copy, awaiting IIIC’s approval (I-41)
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Marks wording a lawyer has yet to review (I-22): the fixed statements, and a legal page that
+ * is still a draft. It goes when the review is done.
+ */
+function DraftMark({ what, awaits = LEGAL_REVIEW_AWAITS }: { what: string; awaits?: string }) {
+  return (
+    <div className={styles.candidate}>
+      <span className="iiic-badge" data-draft={awaits}>
+        {what}, awaiting legal review ({awaits})
       </span>
     </div>
   )
@@ -90,10 +105,11 @@ function SectionHead({
   )
 }
 
-function Hero({ block }: { block: HeroBlock }) {
+function Hero({ block, draft }: { block: HeroBlock; draft: boolean }) {
   return (
     <section className={`iiic-hero ${styles.heroSolo}`}>
       <div>
+        {draft ? <DraftMark what="Draft page" /> : null}
         <CandidateMark status={block.copyStatus} />
         {block.kicker ? <div className="iiic-kicker">{renderText(block.kicker)}</div> : null}
         <h1>{renderText(block.heading)}</h1>
@@ -296,11 +312,7 @@ function FactList({ block }: { block: FactListBlock }) {
 function Scope() {
   return (
     <section className="iiic-section" id="scope">
-      <div className={styles.candidate}>
-        <span className="iiic-badge" data-draft={SCOPE_AWAITS}>
-          Draft wording, awaiting legal review ({SCOPE_AWAITS})
-        </span>
-      </div>
+      <DraftMark what="Draft wording" awaits={SCOPE_AWAITS} />
       <SectionHead heading={SCOPE_HEADING} />
       <div className="iiic-prose">
         {SCOPE_STATEMENT.map((sentence) => (
@@ -335,11 +347,7 @@ function Scope() {
 function Certificate() {
   return (
     <section className="iiic-section" id="certificate">
-      <div className={styles.candidate}>
-        <span className="iiic-badge" data-draft={CERTIFICATE_AWAITS}>
-          Draft wording, awaiting legal review ({CERTIFICATE_AWAITS})
-        </span>
-      </div>
+      <DraftMark what="Draft wording" awaits={CERTIFICATE_AWAITS} />
       <SectionHead heading={CERTIFICATE_HEADING} />
       <div className="iiic-prose">
         {CERTIFICATE_STATEMENT.map((sentence) => (
@@ -447,10 +455,10 @@ function Band({ block, marked }: { block: BandBlock; marked: boolean }) {
   )
 }
 
-function Section({ block }: { block: Exclude<PageBlock, BandBlock> }) {
+function Section({ block, draft }: { block: Exclude<PageBlock, BandBlock>; draft: boolean }) {
   switch (block.blockType) {
     case 'hero':
-      return <Hero block={block} />
+      return <Hero block={block} draft={draft} />
     case 'doors':
       return <Doors block={block} />
     case 'statement':
@@ -476,8 +484,17 @@ function Section({ block }: { block: Exclude<PageBlock, BandBlock> }) {
   }
 }
 
-/** A page's sections in order, in the page column, and its closing band across the window. */
-export function RenderBlocks({ layout }: { layout: PageContent['layout'] }) {
+/**
+ * A page's sections in order, in the page column, and its closing band across the window. A
+ * legal page that is still a draft says so above its heading (D-52).
+ */
+export function RenderBlocks({
+  layout,
+  legalReview,
+}: {
+  layout: PageContent['layout']
+  legalReview?: PageContent['legalReview']
+}) {
   const band = layout.find((block): block is BandBlock => block.blockType === 'band')
   const sections = layout.filter(
     (block): block is Exclude<PageBlock, BandBlock> => block.blockType !== 'band',
@@ -486,7 +503,7 @@ export function RenderBlocks({ layout }: { layout: PageContent['layout'] }) {
     <>
       <div className={`iiic-page ${styles.page}`}>
         {sections.map((block, index) => (
-          <Section block={block} key={block.id ?? index} />
+          <Section block={block} draft={legalReview === 'draft'} key={block.id ?? index} />
         ))}
         {band?.copyStatus === 'candidate' ? (
           <div className={styles.band}>

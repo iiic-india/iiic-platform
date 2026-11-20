@@ -12,7 +12,7 @@ import { RenderBlocks } from './PageBlocks'
 export async function PageAt({ slug }: { slug: string }) {
   const page = await getPage(slug)
   if (!page) notFound()
-  return <RenderBlocks layout={page.layout} />
+  return <RenderBlocks layout={page.layout} legalReview={page.legalReview} />
 }
 
 /** A page's title and description for the browser tab, search results and shared links. */

@@ -62,7 +62,8 @@ The decision log. Claude Code reads this before building and records any new dec
 ## How to record a decision
 
 ```
-| D-52 | <the decision, in one sentence> | Decided (Yash/Aum, <date>) | <milestone> |
+| D-52 | The legal pages (`/legal`, `/privacy`, `/terms`, `/refunds`, `/grievance`) are starter pages too (D-51), written as drafts: each sentence states what the site does today or a rule already set in `08` and `12`, and everything else is a placeholder. A page carries a `legalReview` state (draft or approved); a draft shows "Draft page, awaiting legal review (I-22)" above its heading until the lawyer's version is published and marked approved (the M7 launch check). `/accessibility` is IIIC's own statement and is marked as candidate copy until the full statement is written in M7. The privacy draft's "What this site collects today" is read again with every release. | Decided (IIIC delegated the build decisions, 21 November 2026) | M2 |
+| D-53 | <the decision, in one sentence> | Decided (Yash/Aum, <date>) | <milestone> |
 ```
 
 If a decision changes a document, update that document in the same commit and note the decision ID in the commit message.

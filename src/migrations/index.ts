@@ -11,6 +11,7 @@ import * as migration_20261120_172749_page_cards from './20261120_172749_page_ca
 import * as migration_20261120_184904_page_scope_and_notes from './20261120_184904_page_scope_and_notes';
 import * as migration_20261120_191404_page_certificate from './20261120_191404_page_certificate';
 import * as migration_20261120_195622_page_contact from './20261120_195622_page_contact';
+import * as migration_20261120_200720_page_legal_review from './20261120_200720_page_legal_review';
 
 export const migrations = [
   {
@@ -76,6 +77,11 @@ export const migrations = [
   {
     up: migration_20261120_195622_page_contact.up,
     down: migration_20261120_195622_page_contact.down,
-    name: '20261120_195622_page_contact'
+    name: '20261120_195622_page_contact',
+  },
+  {
+    up: migration_20261120_200720_page_legal_review.up,
+    down: migration_20261120_200720_page_legal_review.down,
+    name: '20261120_200720_page_legal_review'
   },
 ];

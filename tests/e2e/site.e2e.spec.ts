@@ -2,7 +2,21 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
 // The public pages built so far (docs/02); each is held to the same accessibility and layout rules.
-const PAGES = ['/', '/framework', '/organisations', '/counselling', '/learn', '/map', '/about']
+const PAGES = [
+  '/',
+  '/framework',
+  '/organisations',
+  '/counselling',
+  '/learn',
+  '/map',
+  '/about',
+  '/legal',
+  '/privacy',
+  '/terms',
+  '/refunds',
+  '/grievance',
+  '/accessibility',
+]
 
 test.describe('Public shell', () => {
   test('home shows the starter page: IIIC’s words, marked candidates, placeholders', async ({
@@ -143,6 +157,33 @@ test.describe('Public shell', () => {
     )
     await expect(contact.locator('.iiic-todo')).toHaveAttribute('data-todo', 'I-33')
     await expect(page.locator('main')).not.toContainText(/₹|Rs\.?\s?\d/)
+  })
+
+  test('the legal pages are drafts and say so; the accessibility page is IIIC’s own', async ({
+    page,
+  }) => {
+    const legal = [
+      ['/legal', 'Legal information'],
+      ['/privacy', 'Privacy notice'],
+      ['/terms', 'Terms of use'],
+      ['/refunds', 'Cancellations and refunds'],
+      ['/grievance', 'Grievance officer'],
+    ] as const
+    for (const [path, heading] of legal) {
+      const response = await page.goto(path)
+      expect(response?.status(), path).toBe(200)
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading)
+      // D-52: a draft until the lawyer has reviewed it (I-22).
+      await expect(page.locator('.iiic-hero [data-draft="I-22"]')).toHaveText(
+        'Draft page, awaiting legal review (I-22)',
+      )
+      await expect(page.locator('main')).not.toContainText(/₹|Rs\.?\s?\d/)
+    }
+    await page.goto('/privacy')
+    await page.locator('footer').getByRole('link', { name: 'Accessibility' }).click()
+    await expect(page).toHaveURL(/\/accessibility$/)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Accessibility')
+    await expect(page.locator('[data-draft]')).toHaveCount(0)
   })
 
   test('the counselling page carries the scope statement and the crisis numbers', async ({

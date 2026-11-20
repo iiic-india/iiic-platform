@@ -20,7 +20,7 @@ async function findPublishedPage(slug: string): Promise<PageContent | null> {
     pagination: false,
     depth: 0,
     overrideAccess: false,
-    select: { title: true, slug: true, description: true, layout: true },
+    select: { title: true, slug: true, description: true, layout: true, legalReview: true },
   })
   return docs[0] ?? null
 }

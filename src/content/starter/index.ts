@@ -5,6 +5,7 @@ import { COUNSELLING, COUNSELLING_IIIC_LINES } from './counselling'
 import { FRAMEWORK, FRAMEWORK_IIIC_LINES } from './framework'
 import { HOME, HOME_IIIC_LINES } from './home'
 import { LEARN, LEARN_IIIC_LINES } from './learn'
+import { ACCESSIBILITY, LEGAL_PAGES } from './legal'
 import { ORGANISATIONS, ORGANISATIONS_IIIC_LINES } from './organisations'
 
 /**
@@ -19,6 +20,8 @@ export const STARTER_PAGES: Readonly<Record<string, PageContent>> = {
   [COUNSELLING.slug]: COUNSELLING,
   [LEARN.slug]: LEARN,
   [ABOUT.slug]: ABOUT,
+  ...Object.fromEntries(LEGAL_PAGES.map((page) => [page.slug, page])),
+  [ACCESSIBILITY.slug]: ACCESSIBILITY,
 }
 
 /** Every line the starter pages call IIIC's own, by page; tests hold them to the sources. */
