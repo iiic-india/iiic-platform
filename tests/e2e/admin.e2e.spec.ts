@@ -112,31 +112,50 @@ test.describe('Admin', () => {
   }) => {
     await login(page, recoverer)
     await page.getByRole('button', { name: 'Create recovery codes' }).click()
-    const codes = await page.locator('ol li code').allInnerTexts()
-    expect(codes).toHaveLength(10)
+    const codes = page.locator('ol li code')
+    await expect(codes).toHaveCount(10)
+    // Focus moves to the line above the codes, so a screen reader reads them next.
+    await expect(
+      page.getByText('Save these codes somewhere safe now', { exact: false }),
+    ).toBeFocused()
+    await expect(page.getByRole('button', { name: 'Copy codes' })).toBeVisible()
+    const saved = await codes.allInnerTexts()
 
     const context = await browser.newContext()
     const theirPage = await context.newPage()
     await signIn(theirPage, { email: recoverer.email, password: recoverer.password })
     await theirPage.waitForURL(/\/admin\/verify-totp/)
     await theirPage.getByText('Lost your authenticator?').click()
-    await theirPage.getByLabel('Recovery code').fill('AAAA-AAAA-AAAA')
+    const field = theirPage.getByLabel('Recovery code')
+    await field.fill('AAAA-AAAA-AAAA-AAAA')
     await theirPage.getByRole('button', { name: 'Use recovery code' }).click()
-    await expect(
-      theirPage.getByText('That code is not one of your unused recovery codes.'),
-    ).toBeVisible()
+    await expect(theirPage.locator('#recovery-code-error')).toHaveText(
+      'That code is not one of your unused recovery codes. Check it against your saved list.',
+    )
+    // The typed code stays, so a slip can be corrected.
+    await expect(field).toHaveValue('AAAA-AAAA-AAAA-AAAA')
 
-    await theirPage.getByLabel('Recovery code').fill(codes[0] ?? '')
+    await field.fill(saved[0] ?? '')
     await theirPage.getByRole('button', { name: 'Use recovery code' }).click()
     await theirPage.waitForURL(/\/admin\/setup-totp/)
-    await theirPage.getByRole('button', { name: 'Enter a setup key instead' }).click()
+    await theirPage.getByText('Enter a setup key instead').click()
     const secret = (await theirPage.locator('code').first().innerText()).replace(/\s/g, '')
     await enterCode(theirPage, totpCode(secret))
     await theirPage.waitForURL(/\/admin$/)
     await expect(
       theirPage.getByText('You have nine unused recovery codes.', { exact: false }),
     ).toBeVisible()
+
+    // Replacing a set asks first, and cancelling keeps the codes.
+    await theirPage.getByRole('button', { name: 'Create new codes' }).click()
+    await expect(theirPage.getByRole('heading', { name: 'Create new codes?' })).toBeVisible()
+    await theirPage.locator('#confirm-cancel').click()
+    await expect(theirPage.getByRole('heading', { name: 'Create new codes?' })).toHaveCount(0)
     await context.close()
+
+    // The session that was still open elsewhere has ended.
+    await page.goto('/admin')
+    await expect(page).toHaveURL(/\/admin\/login/)
   })
 
   test('signing in sets only the session and the code cookies, HttpOnly and SameSite=Lax (docs/12 §10)', async ({

@@ -1,9 +1,9 @@
 import type { CollectionConfig } from 'payload'
 
 /**
- * Hashes of staff recovery codes (src/lib/auth/recoveryCodes.ts). Nobody reads or writes them
- * through the API or the admin: only the Users endpoints that create and use codes touch this
- * collection, with access overridden.
+ * Salted PBKDF2 hashes of staff recovery codes (src/lib/auth/recoveryCodes.ts). Nobody reads or
+ * writes them through the API or the admin: only the Users endpoints that create and use codes
+ * touch this collection, with access overridden.
  */
 export const StaffRecoveryCodes: CollectionConfig = {
   slug: 'staff-recovery-codes',

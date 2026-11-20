@@ -8,7 +8,7 @@ Sensitivity: **S3** = most sensitive (counselling notes, Map answers), **S2** = 
 
 | Entity | Key fields | Sensitivity · access | Retention |
 | --- | --- | --- | --- |
-| `staff_recovery_codes` | `staff_id`, code hash (SHA-256 of a single-use code), used_at | S2 · nobody reads them; created and used only through the staff sign-in endpoints | With the staff account; a new set cancels the old |
+| `staff_recovery_codes` | `staff_id`, code hash (PBKDF2-SHA256 with a salt of its own, of a single-use 16-character code), used_at | S2 · nobody reads them; created and used only through the staff sign-in endpoints | With the staff account; a new set cancels the old |
 | `staff` | name, email, role (owner · operator · practitioner · editor · finance), 2FA secret (encrypted at rest), active | S2 · owners manage | While employed, then deactivated (never deleted, for the audit trail) |
 | `people` | full name, mobile (E.164, unique when verified), email (unique when verified), preferred channel, language, age band, city, source and UTM, tags, `organisation_id?` | S2 · operator, owner; practitioners see their own clients | Until erasure request, or 3 years after last activity (setting; to confirm with a lawyer) |
 | `accounts` (R2) | `person_id`, verified identifiers, last sign-in, trusted devices | S2 · the person; owners | With the person |

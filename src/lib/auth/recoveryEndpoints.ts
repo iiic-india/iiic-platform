@@ -1,3 +1,4 @@
+import { sql } from '@payloadcms/db-postgres'
 import {
   commitTransaction,
   incrementLoginAttempts,
@@ -7,20 +8,43 @@ import {
   type PayloadHandler,
   type PayloadRequest,
 } from 'payload'
+import { z } from 'zod'
 
 import { isActive } from '@/access/roles'
 
 import {
   hashRecoveryCode,
+  matchesRecoveryCode,
   newRecoveryCode,
-  normaliseRecoveryCode,
   RECOVERY_CODE_COUNT,
 } from './recoveryCodes'
+import { isRecoveryCodeShape } from './recoveryCodeShape'
 
 const json = (body: Record<string, unknown>, status = 200) =>
   Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
 
 const strategyOf = (req: PayloadRequest) => (req.user as { _strategy?: string } | null)?._strategy
+
+const NOT_SIGNED_IN = 'Sign in with your email and password first.'
+const NOT_A_CODE =
+  'That code is not one of your unused recovery codes. Check it against your saved list.'
+
+/** The request body: one code, of a sane length; its shape is checked after normalising. */
+const RecoveryRequest = z.object({ code: z.string().max(64) })
+
+/** The staff row as the database holds it, for the lock and the sessions. */
+type StaffRow = {
+  id: number | string
+  lockUntil?: string | null
+  sessions?: { id: string }[] | null
+}
+
+function lockedMessage(remainingMs: number): string {
+  const minutes = Math.max(1, Math.ceil(remainingMs / 60_000))
+  return `This account is locked after too many wrong attempts. Try again in ${minutes} ${
+    minutes === 1 ? 'minute' : 'minutes'
+  }, or ask an owner to lift the lock.`
+}
 
 async function inTransaction<T>(req: PayloadRequest, work: () => Promise<T>): Promise<T> {
   const owned = await initTransaction(req)
@@ -34,6 +58,49 @@ async function inTransaction<T>(req: PayloadRequest, work: () => Promise<T>): Pr
   }
 }
 
+/** The id of the person's unused code that matches, trying each of their (at most ten). */
+async function findUnusedCode(
+  req: PayloadRequest,
+  userId: number | string,
+  code: string,
+): Promise<number | string | undefined> {
+  const { docs } = await req.payload.find({
+    collection: 'staff-recovery-codes',
+    where: { and: [{ user: { equals: userId } }, { usedAt: { exists: false } }] },
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+    req,
+  })
+  for (const doc of docs) {
+    if (await matchesRecoveryCode(code, doc.codeHash)) return doc.id
+  }
+  return undefined
+}
+
+class CodeAlreadyUsed extends Error {}
+
+/**
+ * Marks a code used only while it is still unused, inside the request's transaction. Postgres
+ * checks the condition again on the row it updates, so of two requests with the same code
+ * exactly one claims it; Payload's own update reads first and writes by id, which both would
+ * pass.
+ */
+async function claimCode(req: PayloadRequest, id: number | string): Promise<boolean> {
+  const adapter = req.payload.db
+  const transactionID = await req.transactionID
+  // The transaction's own connection, found as @payloadcms/drizzle's getTransaction does.
+  const db = ((transactionID !== undefined && transactionID !== null
+    ? adapter.sessions?.[transactionID]?.db
+    : undefined) ?? adapter.drizzle) as unknown as {
+    execute: (query: ReturnType<typeof sql>) => Promise<{ rows: unknown[] }>
+  }
+  const result = await db.execute(
+    sql`UPDATE "staff_recovery_codes" SET "used_at" = now(), "updated_at" = now() WHERE "id" = ${id} AND "used_at" IS NULL RETURNING "id"`,
+  )
+  return result.rows.length === 1
+}
+
 /**
  * POST /api/users/recovery-codes: a new set of ten codes for the signed-in staff member, who
  * must have entered their two-factor code. The old set stops working. The codes are returned
@@ -45,6 +112,7 @@ export const createRecoveryCodes: PayloadHandler = async (req) => {
     return json({ message: 'Sign in with your code to create recovery codes.' }, 401)
   }
   const codes = Array.from({ length: RECOVERY_CODE_COUNT }, newRecoveryCode)
+  const hashes = await Promise.all(codes.map(hashRecoveryCode))
   await inTransaction(req, async () => {
     await req.payload.delete({
       collection: 'staff-recovery-codes',
@@ -52,10 +120,10 @@ export const createRecoveryCodes: PayloadHandler = async (req) => {
       overrideAccess: true,
       req,
     })
-    for (const code of codes) {
+    for (const codeHash of hashes) {
       await req.payload.create({
         collection: 'staff-recovery-codes',
-        data: { user: user.id, codeHash: hashRecoveryCode(code) },
+        data: { user: user.id, codeHash },
         overrideAccess: true,
         req,
       })
@@ -67,69 +135,53 @@ export const createRecoveryCodes: PayloadHandler = async (req) => {
 /**
  * POST /api/users/recover-two-factor with `{ code }`: someone who has signed in with their
  * password, but has lost their authenticator, uses one recovery code. Their authenticator is
- * removed and they set up a new one straight away (the plugin's forced setup). A wrong code
+ * removed, their other sessions end (one of them could otherwise set up an authenticator of
+ * its own), and they set up a new one straight away (the plugin's forced setup). A wrong code
  * counts towards the account lockout, as a wrong password does.
  */
 export const recoverTwoFactor: PayloadHandler = async (req) => {
   const user = req.user
   if (!user || user.collection !== 'users' || !isActive(user)) {
-    return json({ message: 'Sign in with your email and password first.' }, 401)
+    return json({ message: NOT_SIGNED_IN }, 401)
   }
   const users = req.payload.collections.users.config
-  const row = await req.payload.db.findOne<Record<string, unknown> & { id: number | string }>({
+  const row = await req.payload.db.findOne<StaffRow>({
     collection: 'users',
     where: { id: { equals: user.id } },
     req,
   })
-  if (!row) return json({ message: 'Sign in with your email and password first.' }, 401)
-  const lockedUntil = typeof row.lockUntil === 'string' ? new Date(row.lockUntil).getTime() : 0
-  if (lockedUntil > Date.now()) {
-    return json(
-      { message: 'Too many wrong codes. Wait 15 minutes, or ask an owner to unlock your account.' },
-      423,
-    )
-  }
+  if (!row) return json({ message: NOT_SIGNED_IN }, 401)
+  const lockedFor = (row.lockUntil ? new Date(row.lockUntil).getTime() : 0) - Date.now()
+  if (lockedFor > 0) return json({ message: lockedMessage(lockedFor) }, 423)
 
-  const body = (await req.json?.().catch(() => null)) as { code?: unknown } | null
-  const code = typeof body?.code === 'string' ? body.code : ''
-  const { docs } =
-    normaliseRecoveryCode(code).length === 12
-      ? await req.payload.find({
-          collection: 'staff-recovery-codes',
-          where: {
-            and: [
-              { user: { equals: user.id } },
-              { codeHash: { equals: hashRecoveryCode(code) } },
-              { usedAt: { exists: false } },
-            ],
-          },
-          limit: 1,
-          overrideAccess: true,
-          req,
-        })
-      : { docs: [] }
-  const match = docs[0]
-  if (!match) {
+  const body = RecoveryRequest.safeParse(await req.json?.().catch(() => null))
+  const code = body.success ? body.data.code : ''
+  const match = isRecoveryCodeShape(code) ? await findUnusedCode(req, user.id, code) : undefined
+  if (match === undefined) {
     await incrementLoginAttempts({ collection: users, payload: req.payload, user: row as never })
-    return json({ message: 'That code is not one of your unused recovery codes.' }, 400)
+    return json({ message: NOT_A_CODE }, 400)
   }
 
-  await inTransaction(req, async () => {
-    await req.payload.update({
-      collection: 'staff-recovery-codes',
-      id: match.id,
-      data: { usedAt: new Date().toISOString() },
-      overrideAccess: true,
-      req,
+  const currentSession = (user as { _sid?: string })._sid
+  try {
+    await inTransaction(req, async () => {
+      if (!(await claimCode(req, match))) throw new CodeAlreadyUsed()
+      await req.payload.update({
+        collection: 'users',
+        id: user.id,
+        data: {
+          totpSecret: null,
+          sessions: (row.sessions ?? []).filter((session) => session.id === currentSession),
+        },
+        overrideAccess: true,
+        req,
+      })
+      await resetLoginAttempts({ collection: users, doc: row, payload: req.payload, req })
     })
-    await req.payload.update({
-      collection: 'users',
-      id: user.id,
-      data: { totpSecret: null },
-      overrideAccess: true,
-      req,
-    })
-    await resetLoginAttempts({ collection: users, doc: row, payload: req.payload, req })
-  })
+  } catch (error) {
+    // The same code, used a moment earlier by a parallel request.
+    if (error instanceof CodeAlreadyUsed) return json({ message: NOT_A_CODE }, 400)
+    throw error
+  }
   return json({ ok: true })
 }

@@ -23,8 +23,8 @@ export const TOTP_COPY = {
 }
 
 /**
- * The strings of IIIC's own two-factor views (src/components/admin/), which replace the
- * plugin's setup and verify views; same patterns as above.
+ * The strings of IIIC's own two-factor views and the recovery codes (src/components/admin/),
+ * which replace the plugin's setup and verify views; same patterns as above.
  */
 export const TWO_FACTOR_COPY = {
   codeLabel: 'Code',
@@ -38,6 +38,30 @@ export const TWO_FACTOR_COPY = {
   copyFailed: 'Copying did not work. Select the text and copy it yourself.',
   failed: 'That did not work. Try again.',
   offline: 'That did not go through. Check your connection and try again.',
+
+  // Using a recovery code, on the verify page.
+  lostAuthenticator: 'Lost your authenticator?',
+  recoveryIntro:
+    'Use one of the recovery codes you saved. Each works once, and you then set up a new authenticator.',
+  recoveryLabel: 'Recovery code',
+  recoveryFormat:
+    'Enter a recovery code from your saved list: 16 letters and digits, with or without the dashes.',
+  recoverySubmit: 'Use recovery code',
+
+  // The recovery-codes panel on the dashboard.
+  codesHeading: 'Recovery codes',
+  codesNone:
+    'If you lose your authenticator, a recovery code lets you sign in once and set up a new one. You have none yet.',
+  codesSave: 'Save these codes somewhere safe now: they are shown only this once. Each works once.',
+  createCodes: 'Create recovery codes',
+  createNewCodes: 'Create new codes',
+  newCodesHeading: 'Create new codes?',
+  newCodesBody:
+    'The codes you have now stop working, and you get a new set of ten. Save the new ones before you leave this page.',
+  cancel: 'Cancel',
+  copyCodes: 'Copy codes',
+  codesCopied: 'Codes copied.',
+  codesNotCreated: 'No codes were created. Try again.',
 }
 
 export function totpCopy() {
