@@ -6,8 +6,7 @@
       "Read(/.env.production)",
       "Read(/.env.production.local)",
       "Read(/.env.development.local)",
-      "Read(/.env.test.local)",
-      "Edit(/src/brand/**)"
+      "Read(/.env.test.local)"
     ]
   }
 }

@@ -32,20 +32,20 @@ Everything needed to build the IIIC platform with Claude Code: what the product 
 | 13 | `13-email-and-messaging.md` | Domains and DNS, addresses and owners, what is automated and what is human, templates, deliverability, WhatsApp, internal alerts, offboarding | M0, M6, M7 |
 | 14 | `14-technical-direction.md` | The CTO's brief: direction, registers, what to monitor, what to grow, the next 90 days, risks | The CTO, monthly |
 | — | `content/` | `copy-architecture.md` (every page, section by section) and `sources/` (IIIC's texts, brochures, feedback, the copy system, the old site, verbatim) | M2 |
-| — | `decisions.md` | D-A to D-C and D-01 to D-52 with status | Every milestone |
+| — | `decisions.md` | D-A to D-C and D-01 to D-53 with status | Every milestone |
 | — | `research/` | The four research reports behind `07` and `08` (messaging, architecture, compliance, payments), verbatim, with sources, October 2026 | When a choice is questioned |
 | — | `prototype-prompt.md` | Optional: a clickable HTML prototype to test the flows with real people before M3 | Before M1 (optional) |
 
 ## The brand kit
 
-`../src/brand/` is brand kit 1.0.3, read-only (Claude Code's project settings deny edits there). Start with its `README.md` (classes, roles, registers, integration), `VOICE.md` (copy rules, the writing standard, words to avoid, counselling and certificate wording) and `gallery.html` (every component and pattern, rendered). Print, email and web templates are in `templates/`.
+`../src/brand/` is brand kit 1.0.3. Its files may be edited since D-53, each change recorded in `decisions.md` first. Start with its `README.md` (classes, roles, registers, integration), `VOICE.md` (copy rules, the writing standard, words to avoid, counselling and certificate wording) and `gallery.html` (every component and pattern, rendered). Print, email and web templates are in `templates/`.
 
 ## Claude Code set-up in this repository
 
 | File | Purpose |
 | --- | --- |
 | `../CLAUDE.md` | Loaded into every session |
-| `../.claude/settings.json` | Denies reading local secrets (`.env`, `.env.local`, `.env.production`) and editing the brand kit |
+| `../.claude/settings.json` | Denies reading local secrets (`.env`, `.env.local`, `.env.production`) |
 | `../.claude/agents/iiic-reviewer.md` | A reviewer subagent that checks a change against the non-negotiables (including the writing standard and the engineering standards) before a pull request |
 | `../.claude/skills/milestone/SKILL.md` | `/milestone M3` starts a milestone in plan mode with the right documents loaded |
 | `../.claude/skills/copy-check/SKILL.md` | `/copy-check <path>` checks user-facing copy against the writing standard, the proof rule and the counselling and certificate wording |
