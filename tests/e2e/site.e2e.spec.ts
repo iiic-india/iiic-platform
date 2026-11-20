@@ -1,6 +1,9 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
+// The public pages built so far (docs/02); each is held to the same accessibility and layout rules.
+const PAGES = ['/', '/framework']
+
 test.describe('Public shell', () => {
   test('home shows the starter page: IIIC’s words, marked candidates, placeholders', async ({
     page,
@@ -50,24 +53,55 @@ test.describe('Public shell', () => {
     await expect(page).toHaveURL(/#main$/)
   })
 
-  test('no serious or critical accessibility violations', async ({ page }) => {
-    await page.goto('/')
-    const results = await new AxeBuilder({ page }).analyze()
-    const blocking = results.violations.filter(
-      (v) => v.impact === 'serious' || v.impact === 'critical',
-    )
-    expect(blocking, JSON.stringify(blocking.map((v) => v.id))).toEqual([])
-  })
-
-  test('no horizontal scroll from 320 to 1600 px', async ({ page }) => {
-    for (const width of [320, 768, 1600]) {
-      await page.setViewportSize({ width, height: 900 })
-      await page.goto('/')
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - window.innerWidth,
+  for (const path of PAGES) {
+    test(`no serious or critical accessibility violations on ${path}`, async ({ page }) => {
+      await page.goto(path)
+      const results = await new AxeBuilder({ page }).analyze()
+      const blocking = results.violations.filter(
+        (v) => v.impact === 'serious' || v.impact === 'critical',
       )
-      expect(overflow, `${width} px`).toBeLessThanOrEqual(0)
-    }
+      expect(blocking, JSON.stringify(blocking.map((v) => v.id))).toEqual([])
+    })
+  }
+
+  for (const path of PAGES) {
+    test(`no horizontal scroll from 320 to 1600 px on ${path}`, async ({ page }) => {
+      for (const width of [320, 768, 1600]) {
+        await page.setViewportSize({ width, height: 900 })
+        await page.goto(path)
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        )
+        expect(overflow, `${width} px`).toBeLessThanOrEqual(0)
+      }
+    })
+  }
+
+  test('the framework page: the comparison as a table, IIIC’s lines, one closing band', async ({
+    page,
+  }) => {
+    const response = await page.goto('/framework')
+    expect(response?.status()).toBe(200)
+    await expect(page).toHaveTitle('Framework · IIIC')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'You Are the Subject of Your Life.',
+    )
+    // docs/11 §3.2: the plain two-column view, five pairs, each column named.
+    const comparison = page.getByRole('table')
+    await expect(comparison.getByRole('columnheader')).toHaveText([
+      'Living as the object',
+      'Living as the subject',
+    ])
+    await expect(comparison.locator('tbody tr')).toHaveCount(5)
+    await expect(page.getByText('The aim is not motivation, but mental clarity.')).toBeVisible()
+    await expect(page.locator('.iiic-band-yellow')).toHaveCount(1)
+    // The footer follows the closing band at once, as in the kit’s landing template.
+    const gap = await page.evaluate(() => {
+      const band = document.querySelector('.iiic-band-yellow')?.getBoundingClientRect()
+      const footer = document.querySelector('footer')?.getBoundingClientRect()
+      return band && footer ? Math.round(footer.top - band.bottom) : null
+    })
+    expect(gap).toBe(0)
   })
 
   test('an unknown address gets the site’s own 404 inside the shell', async ({ page }) => {

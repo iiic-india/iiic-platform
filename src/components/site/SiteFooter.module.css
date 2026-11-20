@@ -24,3 +24,9 @@
   padding: 0;
   width: fit-content;
 }
+
+/* After the closing band of a page the footer follows at once, as in the landing template of
+   the kit (src/brand/templates/web/landing.html), instead of standing 80 px below it. */
+:global(main):has(> :global(.iiic-band):last-child) + .footer :global(.iiic-footer-grid) {
+  margin-top: 0;
+}

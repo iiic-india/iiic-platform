@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { renderText } from '@/components/blocks/text'
+import { FRAMEWORK, FRAMEWORK_IIIC_LINES } from '@/content/starter/framework'
 import { HOME, HOME_IIIC_LINES } from '@/content/starter/home'
 import type { PageContent } from '@/lib/content/types'
 
@@ -107,5 +108,78 @@ describe('approved copy', () => {
     const { container } = render(<RenderBlocks layout={layout} />)
     expect(container.querySelectorAll('[data-candidate]')).toHaveLength(0)
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Fake approved heading')
+  })
+})
+
+describe('the framework starter page, drawn', () => {
+  const draw = () => render(<RenderBlocks layout={FRAMEWORK.layout} />)
+
+  it('sets Object against Subject as a table a screen reader can follow', () => {
+    draw()
+    const table = screen.getByRole('table')
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((cell) => cell.textContent),
+    ).toEqual(['Living as the object', 'Living as the subject'])
+    const rows = within(table).getAllByRole('row').slice(1)
+    expect(rows).toHaveLength(5)
+    expect(rows[0]?.textContent).toBe('Life happens to meI shape how I meet life')
+    // The kit's wrapper lets a narrow screen scroll the table, never the page.
+    expect(table.parentElement?.className).toContain('iiic-table-wrap')
+  })
+
+  it('lists what changes in IIIC’s words, after the line they follow', () => {
+    const { container } = draw()
+    expect(screen.getByText(FRAMEWORK_IIIC_LINES.move)).toBeTruthy()
+    expect(
+      [...container.querySelectorAll('.iiic-prose ul > li')].map((li) => li.textContent),
+    ).toEqual([
+      FRAMEWORK_IIIC_LINES.decisions,
+      FRAMEWORK_IIIC_LINES.reasoning,
+      FRAMEWORK_IIIC_LINES.discipline,
+      FRAMEWORK_IIIC_LINES.trueSelf,
+      FRAMEWORK_IIIC_LINES.goals,
+    ])
+  })
+
+  it('shows the three applications in the order of IIIC’s diagram, under its own line', () => {
+    const { container } = draw()
+    const doors = [...container.querySelectorAll<HTMLAnchorElement>('a.iiic-card-door')]
+    expect(doors.map((door) => door.getAttribute('href'))).toEqual([
+      '/learn',
+      '/organisations',
+      '/counselling',
+    ])
+    expect(doors.map((door) => door.querySelector('h3')?.textContent)).toEqual([
+      'Education',
+      'Business & Management',
+      'Counselling',
+    ])
+    expect(
+      screen.getByText(FRAMEWORK_IIIC_LINES.foundation).closest('.iiic-section-head'),
+    ).not.toBeNull()
+  })
+
+  it('leaves IIIC’s own section unmarked and marks the candidate ones', () => {
+    const { container } = draw()
+    expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
+      FRAMEWORK.layout.filter((block) => block.copyStatus === 'candidate').length,
+    )
+    const own = screen.getByRole('heading', { level: 2, name: 'Human transformation' })
+    expect(own.closest('section')?.querySelector('[data-candidate]')).toBeNull()
+  })
+
+  it('keeps one h1 and never skips a heading level', () => {
+    const { container } = draw()
+    const levels = [...container.querySelectorAll('h1, h2, h3, h4')].map((h) =>
+      Number(h.tagName[1]),
+    )
+    expect(levels.filter((level) => level === 1)).toHaveLength(1)
+    expect(levels[0]).toBe(1)
+    levels.reduce((previous, level) => {
+      expect(level - previous).toBeLessThanOrEqual(1)
+      return level
+    })
   })
 })

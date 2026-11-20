@@ -8,7 +8,7 @@ module.exports = {
     collect: {
       startServerCommand: 'pnpm start',
       startServerReadyPattern: 'Ready',
-      url: ['http://localhost:3000/'],
+      url: ['http://localhost:3000/', 'http://localhost:3000/framework'],
       numberOfRuns: 3,
       settings: {
         // Every deployment except the launched production site is noindex on purpose

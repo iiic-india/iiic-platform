@@ -30,6 +30,12 @@ const kicker: Field = {
 
 const heading: Field = { name: 'heading', type: 'text', required: true }
 
+const intro: Field = {
+  name: 'intro',
+  type: 'textarea',
+  admin: { description: 'A sentence or two beside the heading. Optional.' },
+}
+
 /** A path on this site. Links to other sites are added when a page needs one. */
 export function isSitePath(value: unknown): true | string {
   if (value === undefined || value === null || value === '') return true
@@ -77,6 +83,7 @@ const Doors: Block = {
   fields: [
     kicker,
     heading,
+    intro,
     {
       name: 'doors',
       type: 'array',
@@ -113,8 +120,12 @@ const Doors: Block = {
         {
           name: 'question',
           type: 'text',
+          label: 'Title',
           required: true,
-          admin: { description: "The reader's own line, in the first person." },
+          admin: {
+            description:
+              "The card's main line: the reader's own sentence, or the name of a vertical.",
+          },
         },
         { name: 'line', type: 'textarea', admin: { description: "IIIC's line for the vertical." } },
         {
@@ -166,6 +177,61 @@ const Steps: Block = {
         { name: 'title', type: 'text', required: true },
         { name: 'text', type: 'textarea' },
       ],
+    },
+    copyStatus,
+  ],
+}
+
+/** Two ways of living, line against line: the framework's Object and Subject (docs/11 §3.2). */
+const Comparison: Block = {
+  slug: 'comparison',
+  interfaceName: 'ComparisonBlock',
+  labels: { singular: 'Comparison', plural: 'Comparisons' },
+  fields: [
+    kicker,
+    heading,
+    {
+      type: 'row',
+      fields: [
+        { name: 'leftLabel', type: 'text', label: 'First column', required: true },
+        { name: 'rightLabel', type: 'text', label: 'Second column', required: true },
+      ],
+    },
+    {
+      name: 'pairs',
+      type: 'array',
+      required: true,
+      minRows: 1,
+      labels: { singular: 'Pair', plural: 'Pairs' },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            { name: 'left', type: 'text', label: 'First column', required: true },
+            { name: 'right', type: 'text', label: 'Second column', required: true },
+          ],
+        },
+      ],
+    },
+    copyStatus,
+  ],
+}
+
+const Points: Block = {
+  slug: 'points',
+  interfaceName: 'PointsBlock',
+  labels: { singular: 'Points', plural: 'Points' },
+  fields: [
+    kicker,
+    heading,
+    { name: 'lead', type: 'textarea', admin: { description: 'The line the points follow.' } },
+    {
+      name: 'points',
+      type: 'array',
+      required: true,
+      minRows: 1,
+      labels: { singular: 'Point', plural: 'Points' },
+      fields: [{ name: 'text', type: 'text', required: true }],
     },
     copyStatus,
   ],
@@ -240,7 +306,17 @@ const Band: Block = {
   ],
 }
 
-export const PAGE_BLOCKS: Block[] = [Hero, Doors, Statement, Steps, FactList, FounderNote, Band]
+export const PAGE_BLOCKS: Block[] = [
+  Hero,
+  Doors,
+  Statement,
+  Steps,
+  Comparison,
+  Points,
+  FactList,
+  FounderNote,
+  Band,
+]
 
 /** The brand kit allows one yellow band a page, and it closes the page. */
 export function oneClosingBand(layout: unknown): true | string {

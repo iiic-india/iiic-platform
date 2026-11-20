@@ -6,6 +6,7 @@ import * as migration_20261120_094503_audit_log from './20261120_094503_audit_lo
 import * as migration_20261120_094534_audit_log_append_only from './20261120_094534_audit_log_append_only';
 import * as migration_20261120_112710_media_object_key from './20261120_112710_media_object_key';
 import * as migration_20261120_153934_pages from './20261120_153934_pages';
+import * as migration_20261120_171130_page_comparison_points from './20261120_171130_page_comparison_points';
 
 export const migrations = [
   {
@@ -46,6 +47,11 @@ export const migrations = [
   {
     up: migration_20261120_153934_pages.up,
     down: migration_20261120_153934_pages.down,
-    name: '20261120_153934_pages'
+    name: '20261120_153934_pages',
+  },
+  {
+    up: migration_20261120_171130_page_comparison_points.up,
+    down: migration_20261120_171130_page_comparison_points.down,
+    name: '20261120_171130_page_comparison_points'
   },
 ];
