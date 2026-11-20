@@ -7,7 +7,7 @@ Read `docs/README.md` for the reading order. The product source of truth is `doc
 ## Non-negotiables
 
 1. **Never invent a fact.** No testimonials, client names, counts, credentials, prices, dates, policies or outcomes that are not in `docs/09-content-and-inputs.md` or the CMS. No price appears on any page, email or template while the `prices_public` setting is off (D-21). The words IIIC has written are in `docs/content/` and are used verbatim; candidate lines are used only once approved. Render unknowns as `<span class="iiic-todo">[[TODO: what is missing, I-xx]]</span>`. Seed data must be obviously fake and must never reach production.
-2. **The brand kit is the design system.** Use `src/brand/` (kit 1.0.3) as-is; do not edit its files. Yellow `#FFDD00` lives on paper, white or its own tints, never on a dark surface; nothing dark is filled next to yellow; no dark mode. Use the kit's classes and semantic roles (`--iiic-surface`, `--iiic-text`, `--iiic-accent`, …); never raw colour tokens in page CSS; never redefine an `--iiic-` variable. A design change beyond the kit (the tab icon was the first, D-48) is made in the app's own files and recorded in `docs/decisions.md` first; the kit's files stay as they are. Copy follows `src/brand/VOICE.md`, including its writing standard: nothing that reads as generated filler ships (D-32); every user-facing string is checked against it.
+2. **The brand kit is the design system.** Build on `src/brand/` (kit 1.0.3). Yellow `#FFDD00` lives on paper, white or its own tints, never on a dark surface; nothing dark is filled next to yellow; no dark mode. Use the kit's classes and semantic roles (`--iiic-surface`, `--iiic-text`, `--iiic-accent`, …); never raw colour tokens in page CSS; never redefine an `--iiic-` variable. A design change beyond the kit (the tab icon was the first, D-48) is recorded in `docs/decisions.md` first. Make it in the app's own files where that is enough; a kit file, `VOICE.md` included, may be edited when the improvement belongs in the kit itself (D-53), and the decision names the file. Copy follows `src/brand/VOICE.md`, including its writing standard: nothing that reads as generated filler ships (D-32); every user-facing string is checked against it.
 3. **Counselling is private.** Nothing said in counselling is used for marketing, routing or analytics. No offers in session messages, notes or reminders. Session notes are readable only by their author, encrypted at rest, and every read is audited.
 4. **Consent before storage.** Record consent (purpose, notice version, time, evidence) before storing Map answers, profile answers or marketing preferences. Promotional messages need the matching consent and stop when it is withdrawn.
 5. **Payments are confirmed only by verified gateway webhooks** (or server-side verification), processed idempotently by event id. Money is integer paise. Tax and totals are computed on the server.
@@ -31,7 +31,7 @@ src/
   app/(payload)/admin/…     Payload admin
   app/api/…                 webhooks, cron runner, health, internal endpoints
   access/                   role helpers shared by collections and views
-  brand/                    brand kit 1.0.3 — read-only
+  brand/                    brand kit 1.0.3 — changed only with a decision (D-53)
   collections/              Payload collections (one file each, with access rules)
   migrations/               Payload migrations (generated, committed, never edited by hand)
   components/               React components built on the kit's classes (site/ holds the page shell)
@@ -51,7 +51,7 @@ tests/                      unit, integration, e2e
 
 - Start or resume a milestone with `/milestone M1` (any ID from `docs/10-build-plan.md`); it loads the right documents and plans before code.
 - After writing or changing copy, run `/copy-check <path>`; before every pull request, run the `iiic-reviewer` subagent on the diff and fix its Blocker and Fix findings.
-- `.claude/settings.json` denies reading local secret files and editing `src/brand/`. Do not work around either rule; if the kit itself needs a change, stop and ask.
+- `.claude/settings.json` denies reading local secret files. Do not work around that rule. The brand kit is no longer locked (D-53): record a change to a kit file in `docs/decisions.md` before making it.
 
 ## Commands
 
