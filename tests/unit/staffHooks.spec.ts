@@ -28,7 +28,11 @@ describe('refuseDeactivated', () => {
     const { result, findOne } = run({ id: 1, active: true }, false)
     await expect(result).rejects.toMatchObject({ status: 403 })
     // Read outside the sign-in's transaction: no req is passed.
-    expect(findOne).toHaveBeenCalledWith({ collection: 'users', where: { id: { equals: 1 } } })
+    expect(findOne).toHaveBeenCalledWith({
+      collection: 'users',
+      where: { id: { equals: 1 } },
+      select: { active: true },
+    })
   })
 
   it('lets an active account (or one from before the flag) sign in', async () => {

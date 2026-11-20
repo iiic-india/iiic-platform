@@ -50,6 +50,7 @@ export const refuseDeactivated: CollectionBeforeLoginHook = async ({ req, user }
   const committed = await req.payload.db.findOne<{ id: number | string; active?: boolean | null }>({
     collection: 'users',
     where: { id: { equals: user.id } },
+    select: { active: true },
   })
   if (committed?.active === false) throw new APIError(DEACTIVATED, 403)
   return user
