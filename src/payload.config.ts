@@ -82,7 +82,9 @@ export default buildConfig({
     // A small pool per function instance (docs/12 §4); the statement timeout lives on
     // the database role (src/scripts/db-settings.ts), because the transaction pooler
     // ignores session settings.
-    pool: { connectionString, max: 3 },
+    // A request that cannot get a connection within 5 s fails instead of waiting forever:
+    // a sign-in holds one connection while it reads the committed deactivation flag on another.
+    pool: { connectionString, max: 3, connectionTimeoutMillis: 5_000 },
     migrationDir: path.resolve(dirname, 'migrations'),
     // Schema changes go through migrations in every environment, never push (docs/07).
     push: false,
