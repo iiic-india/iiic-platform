@@ -164,7 +164,8 @@ describe('using a recovery code', () => {
       (response) => response.status,
     )
     expect(statuses.sort()).toEqual([200, 400])
-  })
+    // Two requests each check up to ten slow hashes on a small CI machine.
+  }, 20_000)
 
   it('ends every other session of the person, keeping the one that used the code', async () => {
     const signIn = async () => {

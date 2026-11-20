@@ -110,10 +110,10 @@ async function clearCodeAttempts(req: PayloadRequest, userId: number | string) {
 }
 
 /**
- * Marks a code used only while it is still unused, inside the request's transaction. Postgres
- * checks the condition again on the row it updates, so of two requests with the same code
- * exactly one claims it; Payload's own update reads first and writes by id, which both would
- * pass.
+ * Marks a code used only while it is still unused, inside the request's transaction. The row is
+ * taken with SKIP LOCKED, so of two requests with the same code exactly one claims it and the
+ * other is refused at once, instead of holding a connection while it waits for the first;
+ * Payload's own update reads first and writes by id, which both would pass.
  */
 async function claimCode(req: PayloadRequest, id: number | string): Promise<boolean> {
   const adapter = req.payload.db
@@ -125,7 +125,7 @@ async function claimCode(req: PayloadRequest, id: number | string): Promise<bool
     execute: (query: ReturnType<typeof sql>) => Promise<{ rows: unknown[] }>
   }
   const result = await db.execute(
-    sql`UPDATE "staff_recovery_codes" SET "used_at" = now(), "updated_at" = now() WHERE "id" = ${id} AND "used_at" IS NULL RETURNING "id"`,
+    sql`UPDATE "staff_recovery_codes" SET "used_at" = now(), "updated_at" = now() WHERE "id" = (SELECT "id" FROM "staff_recovery_codes" WHERE "id" = ${id} AND "used_at" IS NULL FOR UPDATE SKIP LOCKED) RETURNING "id"`,
   )
   return result.rows.length === 1
 }
