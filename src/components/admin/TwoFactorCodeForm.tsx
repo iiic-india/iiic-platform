@@ -70,10 +70,13 @@ export function TwoFactorCodeForm({
   const errorId = `${settings.id}-error`
   const input = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string>()
+  // A new key each time, so the same message is read out again.
+  const [attempt, setAttempt] = useState(0)
   const [pending, setPending] = useState(false)
 
   function fail(message: string) {
     setError(message)
+    setAttempt((count) => count + 1)
     input.current?.focus()
     if (settings.selectOnError) input.current?.select()
   }
@@ -110,7 +113,7 @@ export function TwoFactorCodeForm({
   }
 
   return (
-    <form className={styles.form} onSubmit={submit} noValidate>
+    <form className={styles.form} method="post" onSubmit={submit} noValidate>
       <div className="field-type text">
         <label className="field-label" htmlFor={settings.id}>
           {settings.label}
@@ -128,7 +131,7 @@ export function TwoFactorCodeForm({
           aria-describedby={error ? errorId : undefined}
         />
         {error ? (
-          <p id={errorId} role="alert" className={styles.error}>
+          <p key={attempt} id={errorId} role="alert" className={styles.error}>
             {error}
           </p>
         ) : null}

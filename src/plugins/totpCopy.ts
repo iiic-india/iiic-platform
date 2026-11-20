@@ -38,6 +38,7 @@ export const TWO_FACTOR_COPY = {
   copyFailed: 'Copying did not work. Select the text and copy it yourself.',
   failed: 'That did not work. Try again.',
   offline: 'That did not go through. Check your connection and try again.',
+  locked: 'Too many wrong attempts. Try again in 15 minutes, or ask an owner to lift the lock.',
 
   // Using a recovery code, on the verify page.
   lostAuthenticator: 'Lost your authenticator?',
@@ -70,7 +71,13 @@ export const TWO_FACTOR_COPY = {
 export function totpCopy() {
   return (config: Config): Config => {
     const translations = { ...config.i18n?.translations } as Record<string, object | undefined>
-    translations.en = { ...translations.en, totpPlugin: TOTP_COPY }
+    const en = translations.en as { error?: object } | undefined
+    translations.en = {
+      ...en,
+      totpPlugin: TOTP_COPY,
+      // Payload's lock message, shown for wrong passwords and wrong codes alike.
+      error: { ...en?.error, userLocked: TWO_FACTOR_COPY.locked },
+    }
     return {
       ...config,
       i18n: {

@@ -20,6 +20,8 @@ export function safeBack(back: unknown, adminRoute: string): string {
     return home
   }
   if (url.origin !== BASE || url.username || url.password) return home
+  // '//host' as a path would leave the site once the browser reads it as a URL.
+  if (url.pathname.startsWith('//')) return home
   const base = home.endsWith('/') ? home : `${home}/`
   const inAdmin = home === '/' || url.pathname === home || url.pathname.startsWith(base)
   return inAdmin ? `${url.pathname}${url.search}${url.hash}` : home
