@@ -218,9 +218,10 @@ test.describe('Public shell', () => {
     await expect(page).toHaveURL(/\/founders#story$/)
     const story = page.locator('#story')
     await expect(story).toBeInViewport()
-    await expect(story.locator('.iiic-kicker')).toHaveText(
-      'IIIC’s illustration, not a client’s story',
-    )
+    // After the chapter's kicker, a placeholder until IIIC approves its words (docs/11 §3.5).
+    const kicker = story.locator('.iiic-kicker')
+    await expect(kicker).toHaveText(/ · IIIC’s illustration, not a client’s story$/)
+    await expect(kicker.locator('.iiic-todo')).toHaveAttribute('data-todo', 'I-41')
     // I-36: the supplied label, on the proposal call.
     await expect(page.getByRole('link', { name: 'Book a Founder Consultation' })).toHaveAttribute(
       'href',
@@ -338,7 +339,7 @@ test.describe('Public shell', () => {
     await expect(page.locator('.iiic-band-yellow')).toHaveCount(1)
   })
 
-  test('the framework page: the comparison as a table, IIIC’s lines, one closing band', async ({
+  test('the framework page: the comparison’s table, IIIC’s lines, one closing band', async ({
     page,
   }) => {
     const response = await page.goto('/framework')
@@ -347,8 +348,10 @@ test.describe('Public shell', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'You Are the Subject of Your Life.',
     )
-    // docs/11 §3.2: the plain two-column view, five pairs, each column named and each row
-    // headed by its first line, so a screen reader reads every pair together.
+    // docs/11 §3.2: the lines flip (tests/e2e/experience.e2e.spec.ts); "Show both" opens the plain
+    // two-column view, five pairs, each column named and each row headed by its first line, so
+    // a screen reader reads every pair together.
+    await page.getByRole('link', { name: 'Show both' }).click()
     const comparison = page.getByRole('table')
     await expect(comparison.getByRole('columnheader')).toHaveText([
       'Living as the object',
