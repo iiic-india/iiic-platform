@@ -251,8 +251,9 @@ test.describe('The search files, and the pages as a crawler is sent them', () =>
         expect(shared || disallowed.includes(line), `${pattern}: ${line}`).toBe(true)
       }
     }
-    // A route and what is below it, never a bare prefix ("/b" would cover "/blog").
-    for (const line of disallowed.slice(2)) expect(line, line).toMatch(/[$/]$/)
+    // A route, the route with a query and what is below it, never a bare prefix ("/b" would
+    // cover "/blog").
+    for (const line of disallowed.slice(2)) expect(line, line).toMatch(/[$/?]$/)
 
     expect(sitemap).toEqual([`Sitemap: ${ORIGIN}/sitemap.xml`])
   })
