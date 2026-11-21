@@ -35,6 +35,13 @@ const ROUTE_GROUPS: RouteGroup[] = [
   { name: 'llms.txt', path: '/llms.txt', html: true, private: true, status: 200 },
   { name: 'humans.txt', path: '/humans.txt', html: true, private: false, status: 200 },
   {
+    name: 'security.txt',
+    path: '/.well-known/security.txt',
+    html: true,
+    private: false,
+    status: 200,
+  },
+  {
     name: 'the web manifest',
     path: '/manifest.webmanifest',
     html: true,
