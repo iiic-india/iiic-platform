@@ -1,0 +1,303 @@
+/* The experience devices of the narrative pages (docs/11 §3): the bar, Flip the line, the
+   sticky question and the chapters. Built on the kit's roles only (CLAUDE.md, non-negotiable 2):
+   the bar is the kit's mark on paper or white, never on a dark surface. Every device is
+   complete without JavaScript, moves nothing under reduced motion (the kit also stops every
+   transition then, src/brand/css/03-components.css), and prints as plain content. */
+
+/* 3.1 · The bar. It sits on the header's lower rule, so it always has the header's paper or
+   white behind it, and follows the header's height when the phone menu opens. It grows with
+   the page's scroll: drawn by the browser where scroll-driven animations exist, by a small
+   passive scroll listener elsewhere (ReadingBar.tsx), and static at full width, the brand's
+   bar, under reduced motion. Without JavaScript in a browser without scroll-driven
+   animations it stays at zero. */
+.readingBar {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 6px;
+  background: var(--iiic-accent);
+  transform: scaleX(var(--progress, 0));
+  transform-origin: left;
+  pointer-events: none;
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .readingBar {
+      animation: grow linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .readingBar {
+    transform: none;
+  }
+}
+
+/* 3.2 · Flip the line. The lines and their buttons are drawn when the browser runs scripts;
+   without scripts, and on paper, the plain table stands in their place. "Show both" opens the
+   table under the lines: by its address (:target) as soon as the page is there, and by the
+   flip's own state once it runs. */
+.flip {
+  display: none;
+}
+
+@media (scripting: enabled) {
+  .flip {
+    display: block;
+  }
+
+  .both:not(:target, [data-shown]) {
+    display: none;
+  }
+}
+
+.flipLines {
+  display: grid;
+  gap: 12px;
+  max-width: 44rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flipLine {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 20px 24px 18px;
+  border: 1px solid var(--iiic-rule);
+  border-radius: var(--iiic-radius);
+  background: var(--iiic-surface-alt);
+  color: var(--iiic-heading);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--iiic-motion-fast);
+}
+
+.flipLine:hover {
+  border-color: var(--iiic-rule-strong);
+}
+
+.flipLine:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--iiic-focus);
+}
+
+/* Both sides share one cell, so a line keeps the height of its longer side and a flip moves
+   nothing around it. The side not shown is hidden from sight and from the button's name; the
+   two cross-fade in 200 ms. */
+.face {
+  grid-area: 1 / 1;
+  font-family: var(--iiic-font-display);
+  font-size: clamp(20px, 2.2vw, 24px);
+  font-weight: var(--iiic-weight-medium);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'opsz' 24;
+  transition:
+    opacity 200ms var(--iiic-ease),
+    visibility 200ms;
+}
+
+.flipLine[aria-pressed='false'] [data-face='subject'],
+.flipLine[aria-pressed='true'] [data-face='object'] {
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* Under each line a hairline, the place the bar comes to; the bar slides along it when the
+   line is read as the subject. */
+.flipBar {
+  position: relative;
+  grid-area: 2 / 1;
+  height: 6px;
+}
+
+.flipBar::before,
+.flipBar::after {
+  position: absolute;
+  right: 0;
+  left: 0;
+  content: '';
+}
+
+.flipBar::before {
+  bottom: 0;
+  height: 1px;
+  background: var(--iiic-rule);
+}
+
+.flipBar::after {
+  top: 0;
+  bottom: 0;
+  background: var(--iiic-mark);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--iiic-motion) var(--iiic-ease);
+}
+
+.flipLine[aria-pressed='true'] .flipBar::after {
+  transform: scaleX(1);
+}
+
+.flipActions {
+  margin-top: 24px;
+}
+
+.flipAll[aria-pressed='true'] {
+  border-color: var(--iiic-heading);
+  background: var(--iiic-accent-wash);
+}
+
+/* Under the lines, once shown; without scripts the table follows the heading directly. */
+@media (scripting: enabled) {
+  .both {
+    margin-top: 28px;
+  }
+}
+
+/* 3.3 · The sticky question: on wide screens (from the kit's header breakpoint) a section's
+   question stays in view beside its answers while they pass; on phones it is a heading like
+   any other. Native scrolling only. */
+@media (min-width: 1100px) {
+  .questionGrid {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    gap: 48px;
+    align-items: start;
+  }
+
+  /* Below the sticky header, with the room the kit keeps above an anchor target. */
+  .question {
+    position: sticky;
+    top: 96px;
+  }
+}
+
+/* 3.5 · The six insights: their titles beside the text on wide screens, the bar marking the
+   one in view; the cards alone, one under another, on phones. */
+.insightNav {
+  display: none;
+}
+
+.insightNav ol {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border-left: 1px solid var(--iiic-rule);
+  list-style: none;
+}
+
+.insightLink {
+  position: relative;
+  display: block;
+  padding: 9px 0 9px 20px;
+  color: var(--iiic-text-muted);
+  font-size: var(--iiic-text-md);
+  font-weight: var(--iiic-weight-semibold);
+  text-decoration: none;
+  transition: color var(--iiic-motion-fast);
+}
+
+.insightLink::before {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: -1px;
+  width: 4px;
+  background: var(--iiic-mark);
+  content: '';
+  transform: scaleY(0);
+  transition: transform var(--iiic-motion) var(--iiic-ease);
+}
+
+.insightLink:hover,
+.insightLink[aria-current='true'] {
+  color: var(--iiic-heading);
+}
+
+.insightLink[aria-current='true']::before {
+  transform: scaleY(1);
+}
+
+.insightLink:focus-visible {
+  border-radius: 3px;
+  outline: 2px solid transparent;
+  box-shadow: var(--iiic-focus);
+}
+
+.insightCards {
+  display: grid;
+  gap: 20px;
+}
+
+@media (min-width: 1100px) {
+  .insightNav {
+    display: block;
+  }
+}
+
+/* 3.5 · Chapters reveal once as they come into view: an 8 px rise and a fade, 320 ms. Only a
+   chapter still below the window is ever held back, and only once the page's script runs
+   (RevealChapters.tsx), so nothing is hidden without JavaScript or from a reader already
+   looking at it, and nothing moves the layout. */
+.chapter[data-reveal='waiting'] {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.chapter[data-reveal='in'] {
+  transition:
+    opacity 320ms var(--iiic-ease),
+    transform 320ms var(--iiic-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .face,
+  .flipBar::after,
+  .insightLink::before,
+  .chapter[data-reveal] {
+    transition: none;
+  }
+
+  .chapter[data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* On paper: the table, every chapter, and nothing that only works on a screen. */
+@media print {
+  .readingBar,
+  .flip,
+  .insightNav {
+    display: none;
+  }
+
+  .both.both.both {
+    display: block;
+  }
+
+  .chapter[data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+}
