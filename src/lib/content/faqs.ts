@@ -37,9 +37,8 @@ async function findPublishedFaqs(slug: string): Promise<FaqItem[]> {
  * deletes a question (src/collections/Faqs.ts; docs/12 §1, §4), and one request reads it once
  * however many components ask.
  */
-export const getFaqs = cache(
-  async (slug: string): Promise<FaqItem[]> =>
-    unstable_cache(() => findPublishedFaqs(slug), ['page-faqs', slug], {
-      tags: [FAQS_TAG, faqsTag(slug)],
-    })(),
+export const getFaqs = cache(async (slug: string): Promise<FaqItem[]> =>
+  unstable_cache(() => findPublishedFaqs(slug), ['page-faqs', slug], {
+    tags: [FAQS_TAG, faqsTag(slug)],
+  })(),
 )

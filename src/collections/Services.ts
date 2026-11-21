@@ -166,7 +166,9 @@ export const Services: CollectionConfig = {
         { label: 'At the office', value: 'office' },
         { label: 'Online or at the office', value: 'both' },
       ],
-      admin: { description: 'Where it takes place, as IIIC sets it for this service (D-03, I-08).' },
+      admin: {
+        description: 'Where it takes place, as IIIC sets it for this service (D-03, I-08).',
+      },
     },
     {
       name: 'options',
@@ -253,9 +255,19 @@ export const Services: CollectionConfig = {
         {
           type: 'row',
           fields: [
-            rule('noticeHours', 'Notice (hours)', 'the notice', 'The earliest a booking can start.'),
+            rule(
+              'noticeHours',
+              'Notice (hours)',
+              'the notice',
+              'The earliest a booking can start.',
+            ),
             rule('horizonDays', 'Horizon (days)', 'the horizon', 'How far ahead it can be booked.'),
-            rule('bufferMinutes', 'Buffer (minutes)', 'the buffer', 'Kept free after each booking.'),
+            rule(
+              'bufferMinutes',
+              'Buffer (minutes)',
+              'the buffer',
+              'Kept free after each booking.',
+            ),
           ],
         },
         {

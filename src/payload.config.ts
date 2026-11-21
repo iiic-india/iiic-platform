@@ -97,16 +97,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [
-    Users,
-    Pages,
-    Faqs,
-    Media,
-    Practitioners,
-    Services,
-    StaffRecoveryCodes,
-    AuditLog,
-  ],
+  collections: [Users, Pages, Faqs, Media, Practitioners, Services, StaffRecoveryCodes, AuditLog],
   editor: lexicalEditor(),
   email: config.RESEND_API_KEY
     ? resendAdapter({
