@@ -22,6 +22,9 @@ import type { PageContent } from '@/lib/content/types'
 
 // next/image needs Next's loader; the footer's structure is not what is tested here.
 vi.mock('next/image', () => ({ default: () => null }))
+// Find your path's structured data is drawn by a server component that reads the request
+// (tests/unit/seoJsonLd.spec.tsx); it holds no placeholder and is not what is tested here.
+vi.mock('@/components/seo/JsonLd', () => ({ JsonLd: () => null }))
 
 afterEach(cleanup)
 

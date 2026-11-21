@@ -22,8 +22,13 @@ const LINES = COUNSELLING_IIIC_LINES
 const BOOK_A_SESSION = { label: 'Book a session', href: '/book/session' }
 
 export const COUNSELLING: PageContent = {
-  title: 'Counselling',
+  // Search terms (D-65): counselling in Ahmedabad, counsellor in Ahmedabad, one-to-one counselling,
+  // family counselling Ahmedabad. Every clinical variant is left alone (CLAUDE.md #9). The
+  // description is IIIC's lead with the two kinds of session (docs/09).
+  title: 'Counselling in Ahmedabad for individuals & families',
   slug: 'counselling',
+  description:
+    'One-to-one and family counselling at IIIC, Ahmedabad, for clarity about yourself, your circumstances, emotions, thought processes and decisions.',
   layout: [
     {
       blockType: 'hero',

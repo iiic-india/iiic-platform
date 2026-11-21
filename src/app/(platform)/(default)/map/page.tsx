@@ -1,10 +1,14 @@
 import type { Metadata } from 'next'
 
+import { JsonLd } from '@/components/seo/JsonLd'
 import { Todo } from '@/components/Todo'
 import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
 import { STEP_ZERO_CHOICES, STEP_ZERO_QUESTION } from '@/lib/map/stepZero'
+import { MAP_PAGE } from '@/lib/seo/appPages'
+import { buildMetadata } from '@/lib/seo/metadata'
+import { pageGraph } from '@/lib/seo/schema'
 
-export const metadata: Metadata = { title: 'Find your path' }
+export const metadata: Metadata = buildMetadata(MAP_PAGE)
 
 /**
  * Find your path: step 0 of the Map (docs/02; docs/03 F1). One question in the kit's choice
@@ -17,6 +21,7 @@ export const metadata: Metadata = { title: 'Find your path' }
 export default function FindYourPathPage() {
   return (
     <section className="iiic-page-narrow" style={{ paddingTop: 48, paddingBottom: 80 }}>
+      <JsonLd graph={pageGraph(MAP_PAGE)} />
       <div className="iiic-kicker">Find your path</div>
       <h1 style={{ margin: '14px 0 16px' }}>{STEP_ZERO_QUESTION}</h1>
       <p className="iiic-lede">

@@ -82,8 +82,13 @@ export const FOUNDERS_STORY_LABEL = 'IIIC’s illustration, not a client’s sto
 export const FOUNDERS_NARRATIVE_FIGURES = /₹(?:100|900|1000) [Cc]rore/g
 
 export const FOUNDERS: PageContent = {
-  title: 'For founders',
+  // Search terms (D-65): consultant for founders and business owners, founder consultation,
+  // SME and MSME leaders (audience words only: "MSME consultant" means loans). The description
+  // is IIIC's supporting line with the place and the offer.
+  title: 'Consultancy for founders & business owners, Ahmedabad',
   slug: 'founders',
+  description:
+    'For founders, business owners and SME/MSME leaders ready for their next chapter: consultancy from IIIC, Ahmedabad, built on Subjective Self.',
   layout: [
     {
       blockType: 'hero',

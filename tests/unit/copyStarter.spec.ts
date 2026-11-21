@@ -116,14 +116,16 @@ describe('a starter page as a draft', () => {
     expect(starterPageData(privacy)).toEqual({
       title: 'Privacy notice',
       slug: 'privacy',
+      description: privacy.description,
       layout: privacy.layout,
       legalReview: 'draft',
       _status: 'draft',
     })
     const about = STARTER_PAGES.about!
     expect(starterPageData(about)).toEqual({
-      title: 'About',
+      title: 'Indian Institute of Image Catalysts, Ahmedabad',
       slug: 'about',
+      description: about.description,
       layout: about.layout,
       facts: about.facts,
       _status: 'draft',

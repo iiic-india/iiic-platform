@@ -81,6 +81,14 @@ const NOT_BUILT_YET: Readonly<Record<string, string>> = {
   '/organisations/team-map': 'the Team Map page (I-12) and its request form (M4)',
 }
 
+/**
+ * Words a search title or description never uses (D-65): clinical words about counselling
+ * (CLAUDE.md #9), degree and recognition words (docs/08 §7), and claims no one can prove,
+ * such as "best" or "first" (docs/08 §6; src/brand/VOICE.md, words to avoid).
+ */
+const SEARCH_FORBIDDEN =
+  /\b(?:therap\w*|psychotherap\w*|psychologist\w*|psychiatr\w*|clinical\w*|diagnos\w*|treatment\w*|cure\w*|heal\w*|degree\w*|diploma\w*|accredit\w*|recogni[sz]\w*|approved|best|top|leading|first|no\.\s?1|number one|guarantee\w*|assured|world-class|transform\w*)\b/i
+
 /** Routes the app serves that are not starter pages. */
 const APP_ROUTES = new Set(['/map'])
 
@@ -162,6 +170,20 @@ describe.each(Object.entries(STARTER_PAGES))('starter page "%s"', (slug, page) =
 
   it('has a title the browser tab shows whole, with " · IIIC" (docs/12 §3)', () => {
     expect(`${page.title} · IIIC`.length).toBeLessThanOrEqual(60)
+  })
+
+  it('has a search title and description within their limits, with nothing made up (D-65)', () => {
+    const description = page.description ?? ''
+    // Counted as a reader sees them: "’" and "&" are one character each.
+    expect([...page.title].length, page.title).toBeLessThanOrEqual(53)
+    expect([...description].length, description).toBeGreaterThan(0)
+    expect([...description].length, description).toBeLessThanOrEqual(155)
+    for (const text of [page.title, description]) {
+      expect(text, text).not.toMatch(/\[\[|\]\]|TODO/)
+      expect(hasStrayBrackets(text), text).toBe(false)
+      expect(text, text).not.toMatch(SEARCH_FORBIDDEN)
+      expect(text, text).not.toMatch(/₹|\bRs\.?\s?\d|\bINR\b/)
+    }
   })
 
   it('links only to paths on this site', () => {
@@ -371,6 +393,24 @@ describe('page rules', () => {
       expect(STARTER_PAGES.framework?.facts).toContainEqual(
         expect.objectContaining({ statement, source: 'brochure' }),
       )
+    }
+  })
+})
+
+describe('the words a search title or description never uses (D-65)', () => {
+  it('catches each kind, and leaves the words IIIC does use alone', () => {
+    for (const bad of [
+      'Family therapist in Ahmedabad',
+      'Fake non-clinical sessions',
+      'A recognised diploma',
+      'The best consultant in Ahmedabad',
+      'India’s first framework',
+      'Ahmedabad’s No. 1 counsellor',
+    ]) {
+      expect(bad, bad).toMatch(SEARCH_FORBIDDEN)
+    }
+    for (const ok of ['Counselling in Ahmedabad', 'an Indian framework of psychology', 'Desktop']) {
+      expect(ok, ok).not.toMatch(SEARCH_FORBIDDEN)
     }
   })
 })

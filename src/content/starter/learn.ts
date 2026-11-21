@@ -34,8 +34,15 @@ export const PDEU_WORKSHOP =
   'Subjective Self: a two-day workshop on self-knowledge, Pandit Deendayal Energy University, 3–4 April 2023.'
 
 export const LEARN: PageContent = {
-  title: 'Learn',
+  // Search terms (D-65): Subjective Self certification course, Subjective Self course, life skills
+  // course, self-awareness course. Never degree, diploma or recognition words (docs/08 §7); the
+  // three life skills are the philosophy's (docs/09). No source says where the course is held
+  // (D-07, I-08, I-14), so the title names no city and "Ahmedabad" in the description is where
+  // IIIC is, not where the course runs.
+  title: 'Subjective Self certification course',
   slug: 'learn',
+  description:
+    'The Subjective Self certification course from IIIC, Ahmedabad: three life skills, discipline, accountability and decisiveness.',
   layout: [
     {
       blockType: 'hero',

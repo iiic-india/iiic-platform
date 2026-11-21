@@ -1,10 +1,22 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { dynamic, GET, maxDuration, POST, runtime } from '@/app/(platform)/(default)/map/go/route'
 import FindYourPathPage from '@/app/(platform)/(default)/map/page'
 import { starterAt } from '@/content/starter'
 import { doorFor, STEP_ZERO_CHOICES, WHO_FOR } from '@/lib/map/stepZero'
+
+// The page's structured data is drawn by a server component that reads the request's nonce
+// (tests/unit/seoJsonLd.spec.tsx tests it). A plain element stands in for it here, with the
+// same data.
+vi.mock('@/components/seo/JsonLd', () => ({
+  JsonLd: ({ graph }: { graph: unknown }) => (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(graph) }}
+    />
+  ),
+}))
 
 afterEach(cleanup)
 
@@ -105,5 +117,19 @@ describe('Find your path: the page', () => {
       [...container.querySelectorAll('.iiic-choice strong')].map((label) => label.textContent),
     ).toEqual(['Yourself', 'Your family', 'Your organisation'])
     expect(container.querySelector('.iiic-todo')?.getAttribute('data-todo')).toBe('I-41')
+  })
+
+  it('carries its structured data once: the page, and the way to it from the home page', () => {
+    const { container } = render(<FindYourPathPage />)
+    const scripts = container.querySelectorAll('script[type="application/ld+json"]')
+    expect(scripts).toHaveLength(1)
+    const { '@graph': graph } = JSON.parse(scripts[0]?.textContent ?? '') as {
+      '@graph': { '@type': string; url?: string; name?: string }[]
+    }
+    expect(graph.map((node) => node['@type'])).toEqual(['WebPage', 'BreadcrumbList'])
+    expect(graph[0]?.name).toBe('Find your path')
+    expect(new URL(graph[0]?.url ?? '').pathname).toBe('/map')
+    // The unapproved line is on the page, never in the data a search engine reads.
+    expect(scripts[0]?.textContent).not.toMatch(/\[\[|TODO/)
   })
 })

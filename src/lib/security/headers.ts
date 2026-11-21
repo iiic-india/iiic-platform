@@ -23,7 +23,12 @@ const NOINDEX = { key: 'X-Robots-Tag', value: 'noindex' }
 
 /**
  * Routes that are never indexed, on any deployment (docs/12 §3, Canonical and robots). The
- * booking, manage, feedback, confirm, search and account routes arrive in M2, M3 and R2.
+ * booking, manage, feedback, confirm, search and account routes arrive in M2, M3 and R2. The
+ * last four joined with the search system (D-67): where Find your path posts its answer, the
+ * Map's personal result and share image, the sign-in page, and a certificate's page, which
+ * shows a person's name. robots.txt (src/lib/seo/robots.ts; D-61) disallows /admin and /api for
+ * every crawler and keeps the training crawlers out of every route here; search crawlers may
+ * fetch the others, so that they read this header. The sitemap leaves them all out.
  */
 export const PRIVATE_ROUTES = [
   '/admin/:path*',
@@ -34,7 +39,20 @@ export const PRIVATE_ROUTES = [
   '/subscribe/:path*',
   '/account/:path*',
   '/search',
+  '/map/go',
+  '/map/result/:path*',
+  '/login/:path*',
+  '/institute/verify/:path*',
 ] as const
+
+/**
+ * The language of every page (plan A12): Bing reads this header, and <html lang> says the same.
+ * Next.js's build assets are left out; the API's JSON is too.
+ */
+export const CONTENT_LANGUAGE: HeaderRule = {
+  source: '/:path((?!api/|_next/).*)',
+  headers: [{ key: 'Content-Language', value: 'en-IN' }],
+}
 
 /**
  * The header rules for next.config.ts. A deployment may be indexed only when it is Vercel's
@@ -54,7 +72,7 @@ export function headerRules(
   const privateRoutes: HeaderRule[] = indexable
     ? PRIVATE_ROUTES.map((source) => ({ source, headers: [NOINDEX] }))
     : []
-  return [everyRoute, ...privateRoutes, STATIC_ASSETS, ...ROUTE_EXCEPTIONS]
+  return [everyRoute, ...privateRoutes, CONTENT_LANGUAGE, STATIC_ASSETS, ...ROUTE_EXCEPTIONS]
 }
 
 /**
