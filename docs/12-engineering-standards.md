@@ -18,7 +18,7 @@ Data access is through Payload's local API inside server components and server a
 
 ## 2. Performance budgets
 
-Measured on Lighthouse CI's throttled mobile profile (a mid-range Android on 4G) for the lab numbers, and in the field through Chrome UX Report data in Search Console once there is traffic. The field targets are the requirements in `01` (LCP under 2.5 s, INP under 200 ms at the 75th percentile); the lab budgets below are stricter so the field numbers hold on slower phones. Lighthouse CI runs each page three times and judges every budget on the median run (D-59).
+Measured on Lighthouse CI's throttled mobile profile (a mid-range Android on 4G) for the lab numbers, and in the field through Chrome UX Report data in Search Console once there is traffic. The field targets are the requirements in `01` (LCP under 2.5 s, INP under 200 ms at the 75th percentile); the lab budgets below are stricter so the field numbers hold on slower phones. Lighthouse CI runs each page three times and judges every budget on the median of its three values (D-59).
 
 | Budget | Public pages | Booking and account | Admin |
 | --- | --- | --- | --- |

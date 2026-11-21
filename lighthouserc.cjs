@@ -33,8 +33,10 @@ module.exports = {
       },
     },
     assert: {
-      // Every budget is judged on the median run of the three, not the best one (D-59).
-      aggregationMethod: 'median-run',
+      // Every budget is judged on the median of its own three values, not the best one (D-59).
+      // 'median-run' would judge them all on one run picked by first paint, which can be the run
+      // with the worst blocking time (/counselling once measured 30, 40 and 202 ms, judged at 202).
+      aggregationMethod: 'median',
       assertions: {
         'categories:performance': ['error', { minScore: 0.95 }],
         'categories:accessibility': ['error', { minScore: 1 }],
