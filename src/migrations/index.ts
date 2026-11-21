@@ -13,6 +13,7 @@ import * as migration_20261120_191404_page_certificate from './20261120_191404_p
 import * as migration_20261120_195622_page_contact from './20261120_195622_page_contact';
 import * as migration_20261120_200720_page_legal_review from './20261120_200720_page_legal_review';
 import * as migration_20261120_213852_page_section_anchor from './20261120_213852_page_section_anchor';
+import * as migration_20261121_094426_review_fixes from './20261121_094426_review_fixes';
 
 export const migrations = [
   {
@@ -88,6 +89,11 @@ export const migrations = [
   {
     up: migration_20261120_213852_page_section_anchor.up,
     down: migration_20261120_213852_page_section_anchor.down,
-    name: '20261120_213852_page_section_anchor'
+    name: '20261120_213852_page_section_anchor',
+  },
+  {
+    up: migration_20261121_094426_review_fixes.up,
+    down: migration_20261121_094426_review_fixes.down,
+    name: '20261121_094426_review_fixes'
   },
 ];
