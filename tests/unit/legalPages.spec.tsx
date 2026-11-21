@@ -117,7 +117,7 @@ describe('the privacy notice', () => {
     )
   })
 
-  it('says where the companies that handle data for IIIC are, as docs/08 §8 records it', () => {
+  it('says where the site’s functions run, where AiSensy and Meta are, and what the staff calendars show', () => {
     const { container } = draw(PRIVACY)
     const text = container.textContent ?? ''
     // Vercel's functions run in Mumbai; a request enters its network wherever the reader is.
@@ -250,9 +250,11 @@ describe('the accessibility page', () => {
     )
     const text = container.textContent ?? ''
     expect(text).toContain('(WCAG) 2.2 at level AA')
-    // The public pages, the 404 included, and the widths tests/e2e/site.e2e.spec.ts checks.
+    // The public pages, each register's 404 included, and the widths tests/e2e/site.e2e.spec.ts
+    // checks: those widths and no more, since a range between them is not measured.
     expect(text).toContain('Every public page on the site today has passed two checks.')
-    expect(text).toContain('from 320 to 1600 pixels wide')
+    expect(text).toContain('No sideways scrolling at 320, 768 or 1600 pixels wide.')
+    expect(text).not.toMatch(/from 320 to 1600/)
     expect(text).toContain('We reply within five working days.')
     expect(container.querySelector('.iiic-todo')).toBeNull()
   })

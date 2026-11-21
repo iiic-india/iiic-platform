@@ -33,7 +33,7 @@ Owners: Yash and Aum own what they can supply themselves; everything that comes 
 | I-02 | Email addresses on that domain (hello, bookings, privacy/grievance, security, partnerships) | R1 | Yash | Placeholder addresses in staging |
 | I-03 | The WhatsApp Business number for the platform, and whether it is also used in the WhatsApp Business app today | R1 messaging | Team | Email-only messaging in staging |
 | I-04 | Payment gateway account (KYC: PAN, ID and address proof, a business proof such as a Shops and Establishment certificate or trade licence, bank proof; GST certificate) | R1 payments | Team | Gateway test mode |
-| I-05 | GSTIN and the legal name exactly as registered; Udyam number | R1 invoices, letterhead, `/legal`, footer | Team (with the accountant) | Tax-invoice layout with placeholders; payments stay in test mode |
+| I-05 | GSTIN and the legal name exactly as registered; Udyam number | R1 invoices, letterhead, `/legal`, footer | Team (with the accountant) | Placeholder on `/legal` and in the footer; launch blocked. Tax-invoice layout with placeholders; payments stay in test mode |
 | I-06 | Bank details for invoices | R1 invoices | Team | Placeholders on invoices |
 | I-07 | Cancellation, reschedule and refund rules per service, and the published refund timeline (D-16) | R1 booking, `/refunds` | Team | Booking blocked from production |
 | I-08 | Session format per service: online, office or both | R1 booking (D-03) | Team | Office only in staging |

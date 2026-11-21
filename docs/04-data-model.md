@@ -95,7 +95,7 @@ Sensitivity: **S3** = most sensitive (counselling notes, Map answers), **S2** = 
 | `analytics_events` | name (door · step0 · booking_started · time_chosen · booking_confirmed · request_submitted · map_completed (R2) · newsletter_confirmed · search_no_results), route, register, who-for where relevant, daily-rotated session hash, at | Server-written; no foreign key to `people` by design; S0; aggregated into Reports and the weekly report (`12` §7) |
 | `search_index` | Payload's search plugin collection (title, excerpt, doc reference, priority) | Rebuilt by the plugin on publish; powers `/search` and the 404 page |
 | `consent_versions` | purpose, version, language, text, effective_from | The text a person consented to is never lost when the notice changes (`12` §11) |
-| `page_facts` (on `pages`, `posts`, `services`) | a `facts` array: statement, source (brochure · site · form · founder · description · counted), checked_at | Makes every public claim traceable (`content/README.md`) |
+| `page_facts` (on `pages`, `posts`, `services`) | a `facts` array: statement, source (brochure · site · form · founder · description · page copy IIIC supplied · counted), checked_at | Makes every public claim traceable (`content/README.md`) |
 
 ## Rules the schema enforces
 

@@ -32,16 +32,19 @@ Every route the codebase serves, on both domains, with its register, purpose, da
 | `/legal` | R1 | default | Legal information: the proprietor's legal name and trade name, address, website, GSTIN, customer care, grievance officer; from 1 January 2027 the dark-pattern compliance certificate | — | settings, pages |
 | `/privacy` · `/terms` · `/refunds` · `/grievance` · `/accessibility` | R1 | default | Privacy notice and per-flow notices, terms, cancellation, refund and payment information, grievance officer, data requests and complaints (with the published response times) | Contact the grievance officer | pages |
 | `/search` | R1 | default | Site search (pages, Journal, services, FAQs) from Payload's search plugin; also the 404 page's "Where were you headed?" | Open a result | search index |
-| `404` (`not-found`) · `500` (`error`) | R1 | from the requested path | The reflective 404 (`11` §5.1, concept per D-29) with the counselling scope line when the path was a counselling one; a plain, static 500 | Find your path | missing_pages |
+| `/[...slug]` · `/organisations/[...slug]` · `/institute/[...slug]` · `/counselling/[...slug]` | R1 | default · consultancy · education · counselling, in that order | Any address no other route serves, those under `/organisations/`, `/institute/` and `/counselling/` in that section's register: the page published in the CMS at that address, or its starter page until a page there is first published (D-51, D-57); otherwise the 404 in the same register. A route built for an address takes precedence over them | — | pages |
+| `404` (`not-found`) · `500` (`error`) | R1 | from the requested path (below the table) | The reflective 404 (`11` §5.1, concept per D-29) with the counselling scope line when the path was a counselling one; a plain, static 500 | Find your path | missing_pages |
 | `/humans.txt` · `/.well-known/security.txt` · `/manifest.webmanifest` | R1 | — | Craft and standards (`11` §5.5; `12` §5) | — | — |
 | `/admin/*` | R1 | admin theme | The back office (`05-admin-panel.md`) | — | all |
 | `/api/webhooks/*` | R1 | — | Payment and messaging provider webhooks (signed) | — | payments, message log |
 | `/api/health` | R1 | — | Liveness and database reachability for UptimeRobot; public by design (`12` §6, §7) | — | — |
 | `/api/owner-setup` | R1 | — | The owner setup link (D-41) | — | — |
-| `/api/*` (Payload) | R1 | — | Payload's REST API behind the admin, with IIIC's own endpoints: `POST /api/pages/from-starter` (D-54), `POST /api/report-test-error` (D-49) and the staff two-factor endpoints under `/api/users/` (setting up and checking the authenticator, recovery codes, recovery, an owner's reset, D-44) | — | all |
+| `/api/*` (Payload) | R1 | — | Payload's REST API behind the admin, with the endpoints added to it: IIIC's `POST /api/pages/from-starter` (D-54) and `POST /api/report-test-error` (D-49); payload-totp's staff two-factor endpoints, `POST /api/setup-totp` (setting up the authenticator), `/api/verify-totp` (checking a code) and `/api/remove-totp` (removing the authenticator, which the plugin refuses because `forceSetup` is on); and IIIC's own two-factor endpoints, `POST /api/users/recovery-codes`, `/api/users/recover-two-factor` and `/api/users/:id/reset-two-factor` (recovery codes, recovery, an owner's reset; D-44) | — | all |
 | `/sitemap.xml` · `/robots.txt` · `/opengraph-image` | R1 | — | Search and sharing (`12` §3): one sitemap per domain; generated share images from the kit's social template | — | — |
 
 `book.html` registers: session → counselling, call → consultancy, info and seat → education.
+
+A 404 takes its register from the requested path. A section's own page (`/organisations`, `/founders`, `/institute`, `/learn`, `/counselling`, while it is unpublished, D-57) and the catch-alls under `/organisations/`, `/institute/` and `/counselling/` give it the section's register; any other address gets the default register, `/learn/…`, `/founders/…` and `/book/…` included (the booking flow brings `/book/[type]` into the registers above in M3). On a counselling path (`/counselling` or `/book/session`, and any path under them) the 404 also carries the scope statement and the crisis numbers.
 
 ## Institute domain `iiic.edu.in` (Release 3)
 

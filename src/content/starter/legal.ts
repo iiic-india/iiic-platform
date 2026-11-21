@@ -171,6 +171,8 @@ export const PRIVACY: PageContent = {
           text: 'Vercel runs the site and keeps the request logs. The site’s functions run in Mumbai; the company is in the United States.',
         },
         { text: 'Supabase holds the database, in Mumbai.' },
+        // No place for the stored files until the R2 buckets' location setting is confirmed
+        // against docs/08 §8: the notice does not guess.
         { text: 'Cloudflare runs the domain’s DNS and stores uploaded files.' },
         { text: 'Resend sends email, from Tokyo.' },
         {
@@ -379,12 +381,14 @@ export const ACCESSIBILITY: PageContent = {
     {
       blockType: 'points',
       heading: 'What is checked',
-      // True while tests/e2e/site.e2e.spec.ts runs both checks on every public page, the 404
-      // included, at the widths named here.
+      // True while tests/e2e/site.e2e.spec.ts runs both checks on every public page, each
+      // register's 404 included, at exactly the widths named here. CI's database is empty, so a
+      // page published from the admin (D-54) is not among them: read this again when the first
+      // page is published.
       lead: 'Every public page on the site today has passed two checks.',
       points: [
         { text: 'An automated accessibility test, on a desktop screen and on a phone.' },
-        { text: 'No sideways scrolling on screens from 320 to 1600 pixels wide.' },
+        { text: 'No sideways scrolling at 320, 768 or 1600 pixels wide.' },
       ],
       copyStatus: 'candidate',
     },
