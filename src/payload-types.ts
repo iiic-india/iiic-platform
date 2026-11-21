@@ -69,7 +69,10 @@ export interface Config {
   collections: {
     users: User;
     pages: Page;
+    faqs: Faq;
     media: Media;
+    practitioners: Practitioner;
+    services: Service;
     'staff-recovery-codes': StaffRecoveryCode;
     'audit-log': AuditLog;
     'totp-attempts': TotpAttempt;
@@ -82,7 +85,10 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    faqs: FaqsSelect<false> | FaqsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    practitioners: PractitionersSelect<false> | PractitionersSelect<true>;
+    services: ServicesSelect<false> | ServicesSelect<true>;
     'staff-recovery-codes': StaffRecoveryCodesSelect<false> | StaffRecoveryCodesSelect<true>;
     'audit-log': AuditLogSelect<false> | AuditLogSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
@@ -201,6 +207,7 @@ export interface Page {
     | CertificateBlock
     | FounderNoteBlock
     | ContactBlock
+    | FaqBlock
     | BandBlock
   )[];
   /**
@@ -545,6 +552,35 @@ export interface ContactBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FaqBlock".
+ */
+export interface FaqBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  /**
+   * The heading over the questions, such as Questions people ask. The questions themselves are kept in Content → FAQs, under this page’s address.
+   */
+  heading: string;
+  /**
+   * A sentence or two beside the heading. Optional.
+   */
+  intro?: string | null;
+  /**
+   * A short name to link to this section by: with "story", a link to /page#story opens here. Optional.
+   */
+  anchor?: string | null;
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus?: ('approved' | 'candidate') | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'faq';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "BandBlock".
  */
 export interface BandBlock {
@@ -576,6 +612,32 @@ export interface BandBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs".
+ */
+export interface Faq {
+  id: number;
+  /**
+   * The question as people ask it (I-20).
+   */
+  question: string;
+  /**
+   * IIIC’s answer, one paragraph a line, the plainest sentence first. Every fact in it can be pointed to (docs/09).
+   */
+  answer: string;
+  /**
+   * The page it is asked about, by its address without the first slash: counselling for /counselling, organisations/team-map for the Team Map. The page shows it in its questions section.
+   */
+  page: string;
+  /**
+   * Where it stands among its page’s questions: 1 comes first. Questions with the same number keep the order they were added in.
+   */
+  order: number;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
@@ -597,6 +659,149 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "practitioners".
+ */
+export interface Practitioner {
+  id: number;
+  /**
+   * The name the site shows, as the person wants it shown (I-09).
+   */
+  publicName: string;
+  /**
+   * A photograph the person has agreed to publish (I-09, I-18).
+   */
+  photo?: (number | null) | Media;
+  /**
+   * Each exactly as it appears on the certificate, one to a row (I-09). Never a title the certificate does not give: no "Dr." without a doctorate, and no clinical title without its registration (CLAUDE.md #9).
+   */
+  credentials?:
+    | {
+        credential: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The person’s real background, as they supplied it. Counselling is described as non-clinical conversation (src/brand/VOICE.md).
+   */
+  bio?: string | null;
+  services?: (number | Service)[] | null;
+  /**
+   * The practitioner’s own staff account, which an owner links. Never shown on the site.
+   */
+  staff?: (number | null) | User;
+  /**
+   * Shown on the site while ticked. Tick it once the profile is complete and its credentials are checked against the certificates (I-09).
+   */
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services".
+ */
+export interface Service {
+  id: number;
+  /**
+   * The service’s name, as IIIC calls it (I-11).
+   */
+  name: string;
+  /**
+   * Which booking flow takes it (docs/03 F3).
+   */
+  type: 'session' | 'call' | 'info' | 'seat';
+  /**
+   * A short name for links and the booking flow, such as one-to-one-session.
+   */
+  slug: string;
+  /**
+   * The door it belongs to, which sets the look of its booking pages.
+   */
+  register: 'consultancy' | 'education' | 'counselling';
+  /**
+   * Where it takes place, as IIIC sets it for this service (D-03, I-08).
+   */
+  format: 'online' | 'office' | 'both';
+  /**
+   * What a client chooses between, such as 15, 30 or 45 minutes. Prices are never shown while they are unpublished (D-21).
+   */
+  options?:
+    | {
+        /**
+         * Optional, such as Individual or Family.
+         */
+        label?: string | null;
+        duration?: number | null;
+        /**
+         * The all-in price in paise: ₹1,500 is 150000. Shown nowhere until IIIC publishes prices (D-21, I-28).
+         */
+        price?: number | null;
+        /**
+         * Prices are all-in (docs/04); untick only if the CA settles otherwise (D-21, I-28).
+         */
+        gstInclusive?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * For GST invoices, as the CA classifies the service (I-29).
+   */
+  sacCode?: string | null;
+  /**
+   * Leave a rule empty to use the default in Settings. The cancellation and refund rule waits on IIIC’s policy (D-16, I-07).
+   */
+  bookingRules?: {
+    /**
+     * The earliest a booking can start.
+     */
+    noticeHours?: number | null;
+    /**
+     * How far ahead it can be booked.
+     */
+    horizonDays?: number | null;
+    /**
+     * Kept free after each booking.
+     */
+    bufferMinutes?: number | null;
+    /**
+     * How long a slot is held while the client pays.
+     */
+    holdMinutes?: number | null;
+    /**
+     * A client may reschedule free of charge up to this many hours before the start.
+     */
+    rescheduleWindowHours?: number | null;
+    /**
+     * Each step: a cancellation at least so many hours before the start is refunded this share of what was paid. Empty until IIIC sets the rule (D-16, I-07).
+     */
+    refunds?:
+      | {
+          hoursBefore: number;
+          refundPercent: number;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Every claim the page makes, with where it comes from (docs/content/README.md). A claim with no source does not go on the page.
+   */
+  facts?:
+    | {
+        statement: string;
+        source: 'brochure' | 'site' | 'form' | 'founder' | 'description' | 'pageCopy' | 'counted';
+        checkedAt?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Tick it when the service is ready to be offered. A service is retired by unticking it, never deleted: bookings point at it.
+   */
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -671,8 +876,20 @@ export interface PayloadLockedDocument {
         value: number | Page;
       } | null)
     | ({
+        relationTo: 'faqs';
+        value: number | Faq;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'practitioners';
+        value: number | Practitioner;
+      } | null)
+    | ({
+        relationTo: 'services';
+        value: number | Service;
       } | null)
     | ({
         relationTo: 'staff-recovery-codes';
@@ -773,6 +990,7 @@ export interface PagesSelect<T extends boolean = true> {
         certificate?: T | CertificateBlockSelect<T>;
         founderNote?: T | FounderNoteBlockSelect<T>;
         contact?: T | ContactBlockSelect<T>;
+        faq?: T | FaqBlockSelect<T>;
         band?: T | BandBlockSelect<T>;
       };
   facts?:
@@ -1002,6 +1220,19 @@ export interface ContactBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FaqBlock_select".
+ */
+export interface FaqBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  intro?: T;
+  anchor?: T;
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "BandBlock_select".
  */
 export interface BandBlockSelect<T extends boolean = true> {
@@ -1022,6 +1253,19 @@ export interface BandBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs_select".
+ */
+export interface FaqsSelect<T extends boolean = true> {
+  question?: T;
+  answer?: T;
+  page?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
@@ -1039,6 +1283,74 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "practitioners_select".
+ */
+export interface PractitionersSelect<T extends boolean = true> {
+  publicName?: T;
+  photo?: T;
+  credentials?:
+    | T
+    | {
+        credential?: T;
+        id?: T;
+      };
+  bio?: T;
+  services?: T;
+  staff?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services_select".
+ */
+export interface ServicesSelect<T extends boolean = true> {
+  name?: T;
+  type?: T;
+  slug?: T;
+  register?: T;
+  format?: T;
+  options?:
+    | T
+    | {
+        label?: T;
+        duration?: T;
+        price?: T;
+        gstInclusive?: T;
+        id?: T;
+      };
+  sacCode?: T;
+  bookingRules?:
+    | T
+    | {
+        noticeHours?: T;
+        horizonDays?: T;
+        bufferMinutes?: T;
+        holdMinutes?: T;
+        rescheduleWindowHours?: T;
+        refunds?:
+          | T
+          | {
+              hoursBefore?: T;
+              refundPercent?: T;
+              id?: T;
+            };
+      };
+  facts?:
+    | T
+    | {
+        statement?: T;
+        source?: T;
+        checkedAt?: T;
+        id?: T;
+      };
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

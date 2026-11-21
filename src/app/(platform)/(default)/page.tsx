@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { metadataOf, PageJsonLd } from '@/components/blocks/PageAt'
+import { faqsFor, metadataOf, PageJsonLd } from '@/components/blocks/PageAt'
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { getPage } from '@/lib/content/pages'
 
@@ -19,10 +19,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const page = await getPage('home')
   if (!page) notFound()
+  const faqs = await faqsFor('home', page)
   return (
     <>
-      <PageJsonLd slug="home" page={page} />
-      <RenderBlocks layout={page.layout} />
+      <PageJsonLd slug="home" page={page} faqs={faqs} />
+      <RenderBlocks layout={page.layout} faqs={faqs} />
     </>
   )
 }

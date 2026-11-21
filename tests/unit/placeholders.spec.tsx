@@ -2,6 +2,7 @@ import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import FindYourPathPage from '@/app/(platform)/(default)/map/page'
+import { hasQuestions } from '@/blocks/pageBlocks'
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { SiteFooter } from '@/components/site/SiteFooter'
 import { STARTER_PAGES } from '@/content/starter'
@@ -18,7 +19,10 @@ import {
   WHOLE_PAGE,
   type PageRef,
 } from '@/lib/content/placeholders'
-import type { PageContent } from '@/lib/content/types'
+import type { FaqItem, PageContent } from '@/lib/content/types'
+
+/** A published question, so that a page's questions section is drawn. Obviously fake. */
+const FAKE_FAQS: FaqItem[] = [{ id: '1', question: 'Fake question?', answer: 'Fake answer.' }]
 
 // next/image needs Next's loader; the footer's structure is not what is tested here.
 vi.mock('next/image', () => ({ default: () => null }))
@@ -170,8 +174,13 @@ const fakeStatement = {
 
 describe.each(Object.entries(STARTER_PAGES))('what the report reads on "%s"', (_, page) => {
   it('is exactly what the page draws: every placeholder, marker and draft label', () => {
+    // Drawn with its questions section showing, as it does once a question is published.
     const { container } = render(
-      <RenderBlocks layout={page.layout} legalReview={page.legalReview} />,
+      <RenderBlocks
+        layout={page.layout}
+        legalReview={page.legalReview}
+        faqs={hasQuestions(page.layout) ? FAKE_FAQS : []}
+      />,
     )
     expect(asChips(placeholdersIn(page))).toEqual(chips(container))
     expect(candidateSections(page)).toHaveLength(

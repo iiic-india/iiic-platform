@@ -78,7 +78,6 @@ const NOT_BUILT_YET: Readonly<Record<string, string>> = {
   '/book/call': 'the booking flow (M3)',
   '/book/session': 'the booking flow (M3)',
   '/book/info': 'the booking flow (M3)',
-  '/organisations/team-map': 'the Team Map page (I-12) and its request form (M4)',
 }
 
 /**

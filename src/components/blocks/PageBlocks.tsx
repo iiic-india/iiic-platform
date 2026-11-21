@@ -8,7 +8,7 @@ import {
 } from '@/lib/certificates/statement'
 import { LEGAL_REVIEW_AWAITS } from '@/lib/content/legalReview'
 import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
-import type { PageBlock, PageContent } from '@/lib/content/types'
+import type { FaqItem, PageBlock, PageContent } from '@/lib/content/types'
 import {
   CRISIS_HEADING,
   CRISIS_LINES,
@@ -23,6 +23,7 @@ import type {
   ComparisonBlock,
   DoorsBlock,
   FactListBlock,
+  FaqBlock,
   FounderNoteBlock,
   HeroBlock,
   PointsBlock,
@@ -441,6 +442,36 @@ function Contact() {
   )
 }
 
+/**
+ * The questions published for the page (Content → FAQs), in their order, as the kit's accordion:
+ * each opens without JavaScript, and its answer is a paragraph a line. With no question
+ * published the section is not drawn, and the page's structured data names none (D-62).
+ */
+function Faq({ block, faqs }: { block: FaqBlock; faqs: readonly FaqItem[] }) {
+  if (faqs.length === 0) return null
+  return (
+    <section className="iiic-section" id={block.anchor ?? undefined}>
+      <CandidateMark status={block.copyStatus} />
+      <SectionHead kicker={block.kicker} heading={block.heading} intro={block.intro} />
+      <div className={styles.faqs}>
+        {faqs.map((faq) => (
+          <details className="iiic-accordion" key={faq.id}>
+            <summary>{faq.question}</summary>
+            <div>
+              {faq.answer
+                .split('\n')
+                .filter((line) => line.trim() !== '')
+                .map((line, index) => (
+                  <p key={index}>{line}</p>
+                ))}
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 /** The one yellow band of a page. It spans the window, so it sits outside the page column. */
 function Band({ block, marked }: { block: BandBlock; marked: boolean }) {
   return (
@@ -468,7 +499,15 @@ function Band({ block, marked }: { block: BandBlock; marked: boolean }) {
   )
 }
 
-function Section({ block, draft }: { block: Exclude<PageBlock, BandBlock>; draft: boolean }) {
+function Section({
+  block,
+  draft,
+  faqs,
+}: {
+  block: Exclude<PageBlock, BandBlock>
+  draft: boolean
+  faqs: readonly FaqItem[]
+}) {
   switch (block.blockType) {
     case 'hero':
       return <Hero block={block} draft={draft} />
@@ -494,19 +533,24 @@ function Section({ block, draft }: { block: Exclude<PageBlock, BandBlock>; draft
       return <FounderNote block={block} />
     case 'contact':
       return <Contact />
+    case 'faq':
+      return <Faq block={block} faqs={faqs} />
   }
 }
 
 /**
  * A page's sections in order, in the page column, and its closing band across the window. A
- * legal page that is still a draft says so above its heading (D-52).
+ * legal page that is still a draft says so above its heading (D-52). The questions section
+ * shows the questions given, which PageAt reads for the page (src/lib/content/faqs.ts).
  */
 export function RenderBlocks({
   layout,
   legalReview,
+  faqs = [],
 }: {
   layout: PageContent['layout']
   legalReview?: PageContent['legalReview']
+  faqs?: readonly FaqItem[]
 }) {
   const band = layout.find((block): block is BandBlock => block.blockType === 'band')
   const sections = layout.filter(
@@ -516,7 +560,12 @@ export function RenderBlocks({
     <>
       <div className={`iiic-page ${styles.page}`}>
         {sections.map((block, index) => (
-          <Section block={block} draft={legalReview === 'draft'} key={block.id ?? index} />
+          <Section
+            block={block}
+            draft={legalReview === 'draft'}
+            faqs={faqs}
+            key={block.id ?? index}
+          />
         ))}
         {band?.copyStatus === 'candidate' ? (
           <div className={styles.band}>

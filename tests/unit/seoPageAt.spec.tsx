@@ -6,8 +6,9 @@ import { metadataAt, metadataOf, PageAt, PageJsonLd } from '@/components/blocks/
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { JsonLd } from '@/components/seo/JsonLd'
 import { STARTER_PAGES, starterAt } from '@/content/starter'
+import { getFaqs } from '@/lib/content/faqs'
 import { getPage } from '@/lib/content/pages'
-import type { PageContent } from '@/lib/content/types'
+import type { FaqItem, PageContent } from '@/lib/content/types'
 import { buildMetadata } from '@/lib/seo/metadata'
 import type { JsonLdGraph, JsonLdNode } from '@/lib/seo/schema'
 import { HOME_TITLE } from '@/lib/seo/site'
@@ -15,6 +16,7 @@ import { HOME_TITLE } from '@/lib/seo/site'
 // How a route gets a page's metadata and structured data (src/components/blocks/PageAt.tsx).
 // The CMS is faked: getPage answers with the starter pages and the fake pages below.
 vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
+vi.mock('@/lib/content/faqs', () => ({ getFaqs: vi.fn() }))
 vi.mock('next/navigation', () => ({
   notFound: () => {
     throw new Error('fake not found')
@@ -31,7 +33,27 @@ const DEEP: PageContent = {
   layout: [{ blockType: 'hero', heading: 'Fake heading', copyStatus: 'approved' }],
 }
 
-const FAKE_PAGES: Readonly<Record<string, PageContent>> = { [DEEP.slug]: DEEP }
+/** A page with a questions section. Obviously fake. */
+const ASKED: PageContent = {
+  title: 'Fake page with questions',
+  slug: 'organisations/fake-asked',
+  description: 'A fake description of a fake page.',
+  layout: [
+    { blockType: 'hero', heading: 'Fake heading', copyStatus: 'approved' },
+    { blockType: 'faq', heading: 'Fake questions', copyStatus: 'approved' },
+  ],
+}
+
+/** Questions as the CMS would publish them. Obviously fake. */
+const FAKE_FAQS: FaqItem[] = [
+  { id: '1', question: 'Fake first question?', answer: 'Fake first answer.' },
+  { id: '2', question: 'Fake second question?', answer: 'Fake second answer.' },
+]
+
+const FAKE_PAGES: Readonly<Record<string, PageContent>> = {
+  [DEEP.slug]: DEEP,
+  [ASKED.slug]: ASKED,
+}
 
 const asked = () => vi.mocked(getPage).mock.calls.map(([slug]) => slug)
 
@@ -54,6 +76,8 @@ beforeEach(() => {
   vi.mocked(getPage).mockImplementation(
     async (slug: string) => FAKE_PAGES[slug] ?? starterAt(slug) ?? null,
   )
+  vi.mocked(getFaqs).mockReset()
+  vi.mocked(getFaqs).mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -110,9 +134,54 @@ describe('PageAt', () => {
     const [data, blocks] = drawn.props.children
     expect(drawn.props.children).toHaveLength(2)
     expect(data?.type).toBe(PageJsonLd)
-    expect(data?.props).toEqual({ slug: 'privacy', page: privacy })
+    expect(data?.props).toEqual({ slug: 'privacy', page: privacy, faqs: [] })
     expect(blocks?.type).toBe(RenderBlocks)
-    expect(blocks?.props).toEqual({ layout: privacy.layout, legalReview: 'draft' })
+    expect(blocks?.props).toEqual({ layout: privacy.layout, legalReview: 'draft', faqs: [] })
+    // A page without a questions section asks for none.
+    expect(getFaqs).not.toHaveBeenCalled()
+  })
+
+  it('hands the questions published for a page to its blocks and to its structured data', async () => {
+    vi.mocked(getFaqs).mockResolvedValue(FAKE_FAQS)
+    const drawn = (await PageAt({ slug: ASKED.slug })) as ReactElement<{
+      children: ReactElement<{ faqs?: FaqItem[] }>[]
+    }>
+    const [data, blocks] = drawn.props.children
+    expect(getFaqs).toHaveBeenCalledWith(ASKED.slug)
+    expect(data?.props.faqs).toBe(FAKE_FAQS)
+    expect(blocks?.props.faqs).toBe(FAKE_FAQS)
+  })
+})
+
+describe('PageJsonLd and the questions a page shows (D-62)', () => {
+  it('names each question the page shows, with its answer, in one FAQPage of the page', async () => {
+    const element = (await PageJsonLd({
+      slug: ASKED.slug,
+      page: ASKED,
+      faqs: FAKE_FAQS,
+    })) as ReactElement<{ graph: JsonLdGraph }>
+    const faq = ofType(element.props.graph['@graph'], 'FAQPage')
+    expect(faq).toHaveLength(1)
+    expect(faq[0]).toMatchObject({
+      '@id': `${ORIGIN}/organisations/fake-asked#faq`,
+      isPartOf: { '@id': `${ORIGIN}/organisations/fake-asked#webpage` },
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'Fake first question?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Fake first answer.' },
+        },
+        {
+          '@type': 'Question',
+          name: 'Fake second question?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Fake second answer.' },
+        },
+      ],
+    })
+  })
+
+  it('has no FAQPage where the page shows no question', async () => {
+    expect(ofType(await graphOf(ASKED.slug, ASKED), 'FAQPage')).toEqual([])
   })
 })
 

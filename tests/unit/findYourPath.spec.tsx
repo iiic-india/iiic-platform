@@ -56,7 +56,7 @@ describe('Find your path: where an answer is sent', () => {
   it.each([
     ['yourself', '/counselling'],
     ['family', '/counselling'],
-    ['organisation', '/organisations'],
+    ['organisation', '/organisations/team-map'],
   ])('sends "%s" to %s', async (who, door) => {
     const response = await go(`who=${who}`)
     expect(response.status).toBe(303)

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { metadataOf, PageJsonLd } from '@/components/blocks/PageAt'
+import { faqsFor, metadataOf, PageJsonLd } from '@/components/blocks/PageAt'
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { getPage } from '@/lib/content/pages'
 import { PAGE_SLUG } from '@/lib/content/slug'
@@ -32,10 +32,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CmsPage({ params }: Props) {
   const found = await pageAt(params)
   if (!found) notFound()
+  const faqs = await faqsFor(found.slug, found.page)
   return (
     <>
-      <PageJsonLd slug={found.slug} page={found.page} />
-      <RenderBlocks layout={found.page.layout} legalReview={found.page.legalReview} />
+      <PageJsonLd slug={found.slug} page={found.page} faqs={faqs} />
+      <RenderBlocks layout={found.page.layout} legalReview={found.page.legalReview} faqs={faqs} />
     </>
   )
 }
