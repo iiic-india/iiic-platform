@@ -1,13 +1,12 @@
 import { expect, test } from '@playwright/test'
-import { getPayload } from 'payload'
-
-import config from '../../src/payload.config'
 
 // The trust layer as a visitor meets it: the footer's legal row and /legal, read from the
-// settings (docs/04 `settings`; docs/08 §3, §4), Find your path counting its answers without
-// slowing them (docs/03 F1; docs/12 §7), and people, consents and the settings kept from every
-// public surface. CI's database is empty and migrated, so the settings hold no legal information
-// and every detail is its placeholder.
+// settings (docs/04 `settings`; docs/08 §3, §4), Find your path still answering at once while it
+// counts its answers (docs/03 F1; docs/12 §7), and people, consents and the settings kept from
+// every public surface. CI's database is empty and migrated, so the settings hold no legal
+// information and every detail is its placeholder. The step-0 event itself is checked where the
+// database is at hand (tests/int/analyticsEvents.int.spec.ts, tests/unit/findYourPath.spec.tsx):
+// Playwright's loader cannot load the Payload config.
 
 const LEGAL_LINKS = ['Legal', 'Privacy', 'Terms', 'Refunds', 'Grievance officer', 'Accessibility']
 
@@ -62,40 +61,23 @@ test.describe('The legal information', () => {
 test.describe('Requests only', () => {
   test.skip(({ isMobile }) => isMobile, 'A request is the same from a phone: once is enough.')
 
-  test('Find your path still sends an answer on at once, and counts it with nothing about the visitor', async ({
+  test('Find your path still sends each answer on to its door, and sets no cookie', async ({
     request,
   }) => {
-    // A second of slack for the two clocks of one machine.
-    const since = new Date(Date.now() - 1000).toISOString()
-    const response = await request.post('/map/go', {
-      form: { who: 'family' },
-      maxRedirects: 0,
-      headers: { 'user-agent': 'Fake browser (trust.e2e)' },
-    })
-    expect(response.status()).toBe(303)
-    expect(response.headers()['location']).toBe('/counselling')
-    expect(response.headers()['set-cookie']).toBeUndefined()
-
-    // The count is written after the answer has gone.
-    const payload = await getPayload({ config })
-    const counted = async () =>
-      payload.find({
-        collection: 'analytics-events',
-        where: {
-          and: [
-            { name: { equals: 'step0' } },
-            { whoFor: { equals: 'family' } },
-            { at: { greater_than_equal: since } },
-          ],
-        },
-        depth: 0,
+    for (const [who, door] of [
+      ['yourself', '/counselling'],
+      ['family', '/counselling'],
+      ['organisation', '/organisations'],
+    ] as const) {
+      const response = await request.post('/map/go', {
+        form: { who },
+        maxRedirects: 0,
+        headers: { 'user-agent': 'Fake browser (trust.e2e)' },
       })
-    await expect
-      .poll(async () => (await counted()).totalDocs, { timeout: 10_000 })
-      .toBeGreaterThan(0)
-    const [event] = (await counted()).docs
-    expect(event).toMatchObject({ route: '/map', register: 'default' })
-    expect(JSON.stringify(event)).not.toContain('Fake browser')
+      expect(response.status(), who).toBe(303)
+      expect(response.headers()['location'], who).toBe(door)
+      expect(response.headers()['set-cookie'], who).toBeUndefined()
+    }
   })
 
   test('an answer that is not one of the three is neither counted nor sent anywhere but back', async ({
