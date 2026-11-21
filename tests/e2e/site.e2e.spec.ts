@@ -166,7 +166,7 @@ test.describe('Public shell', () => {
   }) => {
     const response = await page.goto('/learn')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveTitle('Learn · IIIC')
+    await expect(page).toHaveTitle('Subjective Self certification course · IIIC')
     await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'education')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Education That Teaches the Why.',
@@ -188,7 +188,7 @@ test.describe('Public shell', () => {
   }) => {
     const response = await page.goto('/about')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveTitle('About · IIIC')
+    await expect(page).toHaveTitle('Indian Institute of Image Catalysts, Ahmedabad · IIIC')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Indian Institute of Image Catalysts',
     )
@@ -208,7 +208,7 @@ test.describe('Public shell', () => {
   test('the founders’ page: IIIC’s narrative, labelled as an illustration', async ({ page }) => {
     const response = await page.goto('/founders')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveTitle('For founders · IIIC')
+    await expect(page).toHaveTitle('Consultancy for founders & business owners, Ahmedabad · IIIC')
     await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'consultancy')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'From ₹100 Crore to ₹1000 Crore, the Journey Begins Within',
@@ -234,7 +234,7 @@ test.describe('Public shell', () => {
   }) => {
     const response = await page.goto('/institute')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveTitle('Institute · IIIC')
+    await expect(page).toHaveTitle('Subjective Self research and university partnership · IIIC')
     await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'education')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Research, programmes and partnerships',
@@ -285,7 +285,7 @@ test.describe('Public shell', () => {
   }) => {
     const response = await page.goto('/counselling')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveTitle('Counselling · IIIC')
+    await expect(page).toHaveTitle('Counselling in Ahmedabad for individuals & families · IIIC')
     await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'counselling')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Be Heard. Be Understood. Know Yourself.',
@@ -315,7 +315,7 @@ test.describe('Public shell', () => {
   }) => {
     const response = await page.goto('/organisations')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveTitle('For organisations · IIIC')
+    await expect(page).toHaveTitle('Business & management consultancy in Ahmedabad · IIIC')
     // docs/02: the consultancy register, set on the frame around header, page and footer.
     await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'consultancy')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
@@ -343,7 +343,7 @@ test.describe('Public shell', () => {
   }) => {
     const response = await page.goto('/framework')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveTitle('Framework · IIIC')
+    await expect(page).toHaveTitle('Subjective Self, an Indian framework of psychology · IIIC')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'You Are the Subject of Your Life.',
     )

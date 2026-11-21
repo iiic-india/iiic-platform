@@ -25,8 +25,38 @@ const ROUTE_GROUPS: RouteGroup[] = [
   { name: 'a file-like path', path: '/no-such-file.png', html: true, private: false, status: 404 },
   // The tab icon is a real file, served by its own route (D-48), and the proxy covers it too.
   { name: 'the tab icon', path: '/favicon.ico', html: true, private: false, status: 200 },
+  // What search engines, link previews and AI tools read beside the pages (docs/12 §3), each
+  // served by a route of its own, which the proxy covers as well. Before launch they are
+  // noindex like every route (D-50).
+  { name: 'robots.txt', path: '/robots.txt', html: true, private: false, status: 200 },
+  { name: 'the sitemap', path: '/sitemap.xml', html: true, private: false, status: 200 },
+  // Public, yet sent with noindex on every deployment, as a private route is: the file stays out
+  // of search results, and AI tools still read it (src/app/llms.txt/route.ts).
+  { name: 'llms.txt', path: '/llms.txt', html: true, private: true, status: 200 },
+  { name: 'humans.txt', path: '/humans.txt', html: true, private: false, status: 200 },
+  {
+    name: 'the web manifest',
+    path: '/manifest.webmanifest',
+    html: true,
+    private: false,
+    status: 200,
+  },
+  { name: 'the logo', path: '/logo.png', html: true, private: false, status: 200 },
+  { name: 'a share image', path: '/og/home', html: true, private: false, status: 200 },
   { name: 'the admin', path: '/admin/login', html: true, private: true },
   { name: 'the API', path: '/api/health', html: false, private: true },
+]
+
+// Routes that are never indexed, launched or not (D-67): where Find your path posts its
+// answer, the Map's personal result, the sign-in pages and a certificate's page. None of them
+// is built yet but the first, and the header is sent all the same.
+const NEVER_INDEXED = [
+  '/map/go',
+  '/map/result/fake-id',
+  '/login',
+  '/login/verify',
+  '/institute/verify',
+  '/institute/verify/fake-token',
 ]
 
 const nonceOf = (csp: string | undefined) => csp?.match(/'nonce-([^']+)'/)?.[1]
@@ -66,6 +96,54 @@ for (const group of ROUTE_GROUPS) {
     if (group.html) expectStrictCsp(headers['content-security-policy'])
   })
 }
+
+// Checks that only make requests: once, in the desktop project.
+test.describe('The search system’s headers', () => {
+  test.skip(
+    ({ isMobile }) => isMobile,
+    'These checks only make requests: the desktop project runs them',
+  )
+
+  test('the routes that are never indexed say so themselves, on every deployment (D-67)', async ({
+    request,
+  }) => {
+    for (const path of NEVER_INDEXED) {
+      // The header of the route itself: /map/go answers with a redirect to the question.
+      const response = await request.get(path, { maxRedirects: 0 })
+      expect(response.headers()['x-robots-tag'], path).toBe('noindex')
+    }
+    // The pages beside them are indexed once the site has launched (D-50).
+    for (const path of ['/map', '/institute']) {
+      const response = await request.get(path)
+      if (INDEXABLE) expect(response.headers()['x-robots-tag'], path).toBeUndefined()
+      else expect(response.headers()['x-robots-tag'], path).toBe('noindex')
+    }
+  })
+
+  test('pages and the files beside them say their language; the API and build assets do not', async ({
+    request,
+  }) => {
+    // docs/12 §3: Content-Language says what <html lang> says.
+    for (const path of [
+      '/',
+      '/about',
+      '/organisations',
+      '/map',
+      '/no-such-page',
+      '/admin/login',
+      '/llms.txt',
+      '/robots.txt',
+      '/sitemap.xml',
+    ]) {
+      const response = await request.get(path)
+      expect(response.headers()['content-language'], path).toBe('en-IN')
+    }
+    for (const path of ['/api/health', '/_next/static/chunks/missing.js']) {
+      const response = await request.get(path)
+      expect(response.headers()['content-language'], path).toBeUndefined()
+    }
+  })
+})
 
 test('a prefetch header does not get a page past the proxy', async ({ request }) => {
   const prefetchHeaders: Record<string, string>[] = [
