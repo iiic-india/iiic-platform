@@ -16,11 +16,18 @@ let editor: User
 /** A staff user as Payload sees them after they entered their two-factor code. */
 const verified = (user: User) => ({ ...user, collection: 'users', _strategy: 'totp' }) as User
 
-/** The entries about one record, newest first. */
+/** Every account this file creates, by exact address. */
+const ACCOUNTS = ['owner', 'editor', 'leaver'].map(email)
+
+async function removeTestAccounts() {
+  await payload.delete({ collection: 'users', where: { email: { in: ACCOUNTS } } })
+}
+
+/** The entries about one staff account, newest first. */
 async function entriesFor(id: number | string) {
   const { docs } = await payload.find({
     collection: 'audit-log',
-    where: { entityId: { equals: String(id) } },
+    where: { entity: { equals: 'users' }, entityId: { equals: String(id) } },
     sort: '-at',
     pagination: false,
     overrideAccess: true,
@@ -30,7 +37,7 @@ async function entriesFor(id: number | string) {
 
 beforeAll(async () => {
   payload = await getPayload({ config })
-  await payload.delete({ collection: 'users', where: { email: { like: 'int.audit.' } } })
+  await removeTestAccounts()
   owner = await payload.create({
     collection: 'users',
     data: { name: 'Fake Owner', email: email('owner'), password: PASSWORD, roles: ['owner'] },
@@ -42,7 +49,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await payload.delete({ collection: 'users', where: { email: { like: 'int.audit.' } } })
+  await removeTestAccounts()
 })
 
 describe('the audit log', () => {
@@ -67,6 +74,8 @@ describe('the audit log', () => {
       actorId: String(owner.id),
       actorEmail: email('owner'),
       changed: 'name',
+      // Shown in IST in the admin, whatever the browser's zone (CLAUDE.md #8).
+      at_tz: 'Asia/Kolkata',
     })
     expect(JSON.stringify(entry)).not.toContain('Renamed')
   })
@@ -75,6 +84,22 @@ describe('the audit log', () => {
     const before = (await entriesFor(editor.id)).length
     await payload.update({ collection: 'users', id: editor.id, data: { sessions: [] } })
     expect(await entriesFor(editor.id)).toHaveLength(before)
+  })
+
+  it('records two-factor set up by the person, which payload-totp stores without the request', async () => {
+    // As payload-totp's /api/setup-totp writes it: no user, no request (setSecret.js:55-62).
+    await payload.update({
+      collection: 'users',
+      id: editor.id,
+      data: { totpSecret: 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP' },
+      overrideAccess: true,
+    })
+    expect((await entriesFor(editor.id))[0]).toMatchObject({
+      action: 'update',
+      actorId: String(editor.id),
+      actorEmail: email('editor'),
+      changed: 'two-factor',
+    })
   })
 
   it("names an owner's reset of two-factor, and new recovery codes, once each", async () => {
@@ -92,6 +117,64 @@ describe('the audit log', () => {
       (entry) => entry.action === 'create-recovery-codes',
     )
     expect(created).toHaveLength(1)
+  })
+
+  it('records a password reset by the emailed link, which writes past the change hooks', async () => {
+    const token = await payload.forgotPassword({
+      collection: 'users',
+      data: { email: email('editor') },
+      disableEmail: true,
+    })
+    await payload.resetPassword({
+      collection: 'users',
+      data: { token: token as string, password: 'test-only-password-audit-reset' },
+      overrideAccess: true,
+    })
+    expect((await entriesFor(editor.id))[0]).toMatchObject({
+      action: 'reset-password',
+      entity: 'users',
+      actorId: String(editor.id),
+      changed: 'password',
+    })
+  })
+
+  it("records an owner's Unlock of a locked account", async () => {
+    await payload.db.updateOne({
+      collection: 'users',
+      id: editor.id,
+      data: { loginAttempts: 5, lockUntil: new Date(Date.now() + 60_000).toISOString() },
+      returning: false,
+    })
+    await payload.unlock({
+      collection: 'users',
+      // Payload's generated type lists a password for every auth operation; unlock reads only
+      // the email.
+      data: { email: email('editor') } as { email: string; password: string },
+      overrideAccess: false,
+      req: await createLocalReq({ user: verified(owner) as never }, payload),
+    })
+    expect((await entriesFor(editor.id))[0]).toMatchObject({
+      action: 'unlock',
+      actorId: String(owner.id),
+    })
+  })
+
+  it('records a new password and a deactivation saved together once', async () => {
+    const leaver = await payload.create({
+      collection: 'users',
+      data: { name: 'Fake Leaver', email: email('leaver'), password: PASSWORD, roles: ['editor'] },
+    })
+    // Deactivating ends the sessions in a nested update with the same request (Users.ts).
+    await payload.update({
+      collection: 'users',
+      id: leaver.id,
+      data: { password: 'test-only-password-audit-new', active: false },
+      user: verified(owner),
+      overrideAccess: false,
+    })
+    const updates = (await entriesFor(leaver.id)).filter((entry) => entry.action === 'update')
+    expect(updates).toHaveLength(1)
+    expect(updates[0]).toMatchObject({ actorId: String(owner.id), changed: 'active, password' })
   })
 
   it('is read by owners only, and changed by nobody through Payload', async () => {

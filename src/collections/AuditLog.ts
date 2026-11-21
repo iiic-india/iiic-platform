@@ -5,11 +5,13 @@ import { hasRole } from '@/access/roles'
 
 /**
  * Who changed what, and when (docs/04 `audit_log`, docs/08 §9). One entry per change to a
- * collection, written in the same transaction as the change (src/plugins/auditLog.ts), and by
- * the staff sign-in endpoints for what they do. Owners read it in Settings; nobody edits or
- * deletes it, through Payload or in the database (a trigger, and the app's own role, D-43).
- * The actor is copied in, not linked, so the log never has to change. Kept 3 years (the
- * retention job comes with the other jobs, M6).
+ * collection, written in the same transaction as the change, or right after it for a password
+ * reset by link and an Unlock (src/plugins/auditLog.ts), and by the staff sign-in endpoints for
+ * what they do. Owners read it in Settings; nobody edits or deletes it, through Payload or in
+ * the database (a trigger, and the app's own role, D-43). The actor is copied in, not linked,
+ * so the log never has to change. Kept 3 years: the retention job (O5, M6) will remove expired
+ * entries through purge_expired_audit_log(), the one way the amended D-43 leaves open, which
+ * deletes nothing younger than three years.
  */
 export const AuditLog: CollectionConfig = {
   slug: 'audit-log',
@@ -37,6 +39,11 @@ export const AuditLog: CollectionConfig = {
       required: true,
       index: true,
       admin: { date: { pickerAppearance: 'dayAndTime' } },
+      // Stored in UTC, shown in Asia/Kolkata whatever the browser's zone (CLAUDE.md #8).
+      timezone: {
+        defaultTimezone: 'Asia/Kolkata',
+        supportedTimezones: [{ label: 'India Standard Time', value: 'Asia/Kolkata' }],
+      },
     },
     { name: 'actorId', type: 'text', index: true },
     { name: 'actorEmail', type: 'text' },

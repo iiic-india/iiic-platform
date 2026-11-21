@@ -1,6 +1,7 @@
 import type {
   CollectionAfterChangeHook,
   CollectionAfterDeleteHook,
+  CollectionAfterOperationHook,
   CollectionBeforeChangeHook,
   Config,
 } from 'payload'
@@ -54,17 +55,32 @@ export function changedFields(
     .map((key) => LABELS[key] ?? key)
 }
 
-/** A password is hashed before the write, so the change is noted while it is still in the data. */
-const notePassword: CollectionBeforeChangeHook = ({ data, operation, context }) => {
-  if (operation === 'update' && typeof data?.password === 'string' && data.password) {
-    context.auditPassword = true
-  }
+/**
+ * Changes to fields a read never returns, by name, keyed by the operation's own data object.
+ * Payload hands the object the last beforeChange hook (this plugin's) returns on to afterChange
+ * (payload/dist/collections/operations/utilities/update.js), and a nested update has a data
+ * object of its own, so a note never reaches another write in the same request.
+ */
+const hiddenChanges = new WeakMap<object, string[]>()
+
+/**
+ * A password is hashed before the write, and a two-factor secret is a field no read returns:
+ * both are noted while they are still in the data.
+ */
+const noteHiddenChanges: CollectionBeforeChangeHook = ({ data, operation }) => {
+  if (operation !== 'update' || !data) return data
+  const names = [
+    ...(typeof data.password === 'string' && data.password ? ['password'] : []),
+    ...('totpSecret' in data ? ['two-factor'] : []),
+  ]
+  if (names.length) hiddenChanges.set(data, names)
   return data
 }
 
 const afterChange: CollectionAfterChangeHook = async ({
   collection,
   context,
+  data,
   doc,
   operation,
   previousDoc,
@@ -73,10 +89,18 @@ const afterChange: CollectionAfterChangeHook = async ({
   const action = typeof context.auditAction === 'string' ? context.auditAction : operation
   const changed =
     operation === 'update' ? changedFields(doc, previousDoc as Record<string, unknown>) : []
-  if (context.auditPassword) changed.push('password')
+  const hidden = (data && hiddenChanges.get(data)) ?? []
+  for (const name of hidden) if (!changed.includes(name)) changed.push(name)
   // An update that only moved bookkeeping (a session list, a timestamp) is nobody's change.
   if (operation === 'update' && changed.length === 0 && action === 'update') return doc
-  await recordAudit(req, { action, entity: collection.slug, entityId: doc.id, changed })
+  // payload-totp's /api/setup-totp stores the secret without the request (setSecret.js:55-62);
+  // only the signed-in person can call it, for their own record.
+  const actor =
+    req.user ??
+    (collection.auth && hidden.includes('two-factor')
+      ? { id: doc.id, email: doc.email }
+      : undefined)
+  await recordAudit(req, { action, entity: collection.slug, entityId: doc.id, changed }, actor)
   return doc
 }
 
@@ -86,10 +110,50 @@ const afterDelete: CollectionAfterDeleteHook = async ({ collection, doc, id, req
 }
 
 /**
+ * The two auth operations that write past every change hook. Payload runs afterOperation after
+ * its own commit, so their entries are written right after the change, in a transaction of
+ * their own.
+ */
+const afterAuthOperation: CollectionAfterOperationHook = async (hook) => {
+  const { collection, req } = hook
+  if (hook.operation === 'resetPassword') {
+    // The emailed link: Payload writes past every change hook, commits, then leaves the account
+    // as req.user (resetPassword.js:150).
+    await recordAudit(req, {
+      action: 'reset-password',
+      entity: collection.slug,
+      entityId: hook.result.user.id as number | string,
+      changed: ['password'],
+    })
+  } else if (hook.operation === 'unlock' && hook.result && !hook.overrideAccess) {
+    // An owner's Unlock. An unlock run with access overridden belongs to a named action that is
+    // already logged (resetTwoFactor).
+    const email = (hook.args.data as { email?: unknown } | undefined)?.email
+    const account =
+      typeof email === 'string'
+        ? await req.payload.db.findOne<{ id: number | string }>({
+            collection: collection.slug,
+            where: { email: { equals: email.toLowerCase().trim() } },
+            req,
+          })
+        : null
+    if (account) {
+      await recordAudit(req, { action: 'unlock', entity: collection.slug, entityId: account.id })
+    }
+  }
+  return hook.result
+}
+
+/**
  * Adds an audit entry to every change of every collection except NOT_AUDITED (docs/08 §9: every
  * write is in the audit log). Listed last among the plugins, so it sees every collection,
  * those payload-totp adds included. Code that makes a change with a name of its own (an owner's
  * reset of two-factor) sets `req.context.auditAction` before it.
+ *
+ * An entry is written in the same transaction as the change it records. On a collection with
+ * sign-in, two operations write past every change hook: a password reset by the emailed link and
+ * an owner's Unlock. Their entries come from an afterOperation hook, which Payload runs after
+ * its own commit, so each is written right after the change, in a transaction of its own.
  */
 export function auditLog() {
   return (config: Config): Config => ({
@@ -101,9 +165,17 @@ export function auditLog() {
             ...collection,
             hooks: {
               ...collection.hooks,
-              beforeChange: [...(collection.hooks?.beforeChange ?? []), notePassword],
+              beforeChange: [...(collection.hooks?.beforeChange ?? []), noteHiddenChanges],
               afterChange: [...(collection.hooks?.afterChange ?? []), afterChange],
               afterDelete: [...(collection.hooks?.afterDelete ?? []), afterDelete],
+              ...(collection.auth
+                ? {
+                    afterOperation: [
+                      ...(collection.hooks?.afterOperation ?? []),
+                      afterAuthOperation,
+                    ],
+                  }
+                : {}),
             },
           },
     ),

@@ -18,14 +18,23 @@ export function clientIp(req: PayloadRequest): string | undefined {
 
 /**
  * Writes one audit entry in the request's transaction, so it stands or falls with the change it
- * records. The actor is whoever made the request; none for the system.
+ * records. The actor is whoever made the request, unless the caller names one (a write Payload
+ * makes without the request, src/plugins/auditLog.ts); none for the system.
  */
-export async function recordAudit(req: PayloadRequest, entry: AuditEntry): Promise<void> {
-  const actor = req.user as { id?: number | string; email?: string } | null | undefined
+export async function recordAudit(
+  req: PayloadRequest,
+  entry: AuditEntry,
+  actor: { id?: number | string; email?: string | null } | null | undefined = req.user as {
+    id?: number | string
+    email?: string
+  } | null,
+): Promise<void> {
   await req.payload.create({
     collection: 'audit-log',
     data: {
       at: new Date().toISOString(),
+      // Shown in Asia/Kolkata in the admin (src/collections/AuditLog.ts, CLAUDE.md #8).
+      at_tz: 'Asia/Kolkata',
       actorId: actor?.id === undefined ? undefined : String(actor.id),
       actorEmail: actor?.email,
       action: entry.action,
