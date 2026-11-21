@@ -5,6 +5,7 @@ import { getPayload } from 'payload'
 
 import { STARTER_PAGES } from '@/content/starter'
 import { PAGES_TAG } from '@/lib/content/revalidate'
+import { journalIndex } from '@/lib/journal/posts'
 import config from '@payload-config'
 
 import type { SitemapSource } from './sitemap'
@@ -50,12 +51,20 @@ const cmsPages = unstable_cache(
 )
 
 /**
- * What the sitemap and llms.txt list: the starter pages this deployment ships, and what the CMS
- * holds. Only the CMS part is cached. The cache entry outlives a deployment and its key does not
- * change when a starter page is added or removed, so the starter pages are read here, from the
- * deployment's own files, as getPage does (src/lib/content/pages.ts).
+ * What the sitemap and llms.txt list: the starter pages this deployment ships, what the CMS
+ * holds, and the Journal's published articles and the topics that hold one, with their dates
+ * (src/lib/journal/posts.ts, cached with the Journal's own tags). Only the CMS parts are cached.
+ * The cache entry outlives a deployment and its key does not change when a starter page is added
+ * or removed, so the starter pages are read here, from the deployment's own files, as getPage
+ * does (src/lib/content/pages.ts).
  */
 export async function sitemapSource(): Promise<SitemapSource> {
-  const { published, everPublished } = await cmsPages()
-  return { starterSlugs: Object.keys(STARTER_PAGES), published, everPublished }
+  const [{ published, everPublished }, journal] = await Promise.all([cmsPages(), journalIndex()])
+  return {
+    starterSlugs: Object.keys(STARTER_PAGES),
+    published,
+    everPublished,
+    posts: journal.posts,
+    topics: journal.topics.map(({ slug, name, description }) => ({ slug, name, description })),
+  }
 }

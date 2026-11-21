@@ -3,7 +3,7 @@ import { expect, type Page, test } from '@playwright/test'
 import { STARTER_PAGES } from '../../src/content/starter'
 import { pagePath } from '../../src/lib/content/slug'
 import { PRIVATE_ROUTES } from '../../src/lib/security/headers'
-import { MAP_PAGE } from '../../src/lib/seo/appPages'
+import { APP_PAGES } from '../../src/lib/seo/appPages'
 import { isNoindexPath, pageSlugOf } from '../../src/lib/seo/paths'
 import { disallowLinesFor, TRAINING_CRAWLERS } from '../../src/lib/seo/robots'
 import {
@@ -21,13 +21,15 @@ import {
 const ORIGIN = siteOrigin()
 
 // Every public page: the starter pages, which are what the site shows until a page is
-// published in the CMS (D-51), and Find your path (the list tests/e2e/site.e2e.spec.ts checks).
+// published in the CMS (D-51), Find your path and the Journal (the list
+// tests/e2e/site.e2e.spec.ts checks). CI's database holds no article, so the Journal's topics
+// and articles are not listed.
 const PAGES = [
   ...Object.entries(STARTER_PAGES).map(([slug, page]) => ({
     path: pagePath(slug),
     title: slug === 'home' ? HOME_TITLE : `${page.title}${TITLE_SUFFIX}`,
   })),
-  { path: MAP_PAGE.path, title: `${MAP_PAGE.title}${TITLE_SUFFIX}` },
+  ...APP_PAGES.map((page) => ({ path: page.path, title: `${page.title}${TITLE_SUFFIX}` })),
 ]
 
 // The user agents OpenAI and Google publish for their crawlers.

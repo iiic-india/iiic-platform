@@ -69,6 +69,8 @@ export interface Config {
   collections: {
     users: User;
     pages: Page;
+    posts: Post;
+    topics: Topic;
     media: Media;
     'staff-recovery-codes': StaffRecoveryCode;
     'audit-log': AuditLog;
@@ -82,6 +84,8 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    posts: PostsSelect<false> | PostsSelect<true>;
+    topics: TopicsSelect<false> | TopicsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'staff-recovery-codes': StaffRecoveryCodesSelect<false> | StaffRecoveryCodesSelect<true>;
     'audit-log': AuditLogSelect<false> | AuditLogSelect<true>;
@@ -575,6 +579,102 @@ export interface BandBlock {
   blockType: 'band';
 }
 /**
+ * The Journal: each article answers one question in IIIC’s words and ends with a question to sit with.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts".
+ */
+export interface Post {
+  id: number;
+  /**
+   * The question the article answers, as a reader would ask it (docs/12 §3). It is the heading of the page.
+   */
+  title: string;
+  /**
+   * One or two sentences that answer the title. The Journal's lists show it, and search results do when the article has no description of its own. Up to 155 characters.
+   */
+  excerpt: string;
+  body: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * Every article ends with one reflective question (docs/11 §3.6). Readers can copy it to take it with them.
+   */
+  question: string;
+  /**
+   * The title in the browser tab and in search results, up to 53 characters: the tab adds " · IIIC" (D-65). Needed when the title is longer; otherwise the title is used.
+   */
+  searchTitle?: string | null;
+  /**
+   * One or two sentences for search results and shared links, up to 155 characters. Without one, the excerpt is used.
+   */
+  description?: string | null;
+  /**
+   * The article lives at /journal/ and this address. Set it once: links to it stay.
+   */
+  slug: string;
+  /**
+   * The first topic is the article’s home: its breadcrumb, and the page it links to after its question.
+   */
+  topics: (number | Topic)[];
+  author: 'founder' | 'other';
+  /**
+   * As the author wants it shown.
+   */
+  authorName?: string | null;
+  /**
+   * The date the article shows. Set when it is first published, unless you give one.
+   */
+  publishedAt?: string | null;
+  publishedAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * Counted from the body when the article is saved: 200 words a minute.
+   */
+  readingTime?: number | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * The Journal’s topics: one per door, and Subjective Self. A topic shows on the site once an article in it is published.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "topics".
+ */
+export interface Topic {
+  id: number;
+  /**
+   * As the list of topics and an article's breadcrumb show it. Up to 30 characters.
+   */
+  name: string;
+  /**
+   * The topic lives at /journal/topic/ and this address.
+   */
+  slug: string;
+  /**
+   * The page an article in this topic links to after its question.
+   */
+  door: 'framework' | 'organisations' | 'learn' | 'counselling';
+  /**
+   * One or two sentences under the topic's name, for search results and shared links too. Up to 155 characters.
+   */
+  description?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
@@ -669,6 +769,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'pages';
         value: number | Page;
+      } | null)
+    | ({
+        relationTo: 'posts';
+        value: number | Post;
+      } | null)
+    | ({
+        relationTo: 'topics';
+        value: number | Topic;
       } | null)
     | ({
         relationTo: 'media';
@@ -1019,6 +1127,40 @@ export interface BandBlockSelect<T extends boolean = true> {
   copyStatus?: T;
   id?: T;
   blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts_select".
+ */
+export interface PostsSelect<T extends boolean = true> {
+  title?: T;
+  excerpt?: T;
+  body?: T;
+  question?: T;
+  searchTitle?: T;
+  description?: T;
+  slug?: T;
+  topics?: T;
+  author?: T;
+  authorName?: T;
+  publishedAt?: T;
+  publishedAt_tz?: T;
+  readingTime?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "topics_select".
+ */
+export interface TopicsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  door?: T;
+  description?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

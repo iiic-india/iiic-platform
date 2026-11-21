@@ -12,7 +12,9 @@ import sharp from 'sharp'
 import { AuditLog } from './collections/AuditLog'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
+import { Posts } from './collections/Posts'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
+import { Topics } from './collections/Topics'
 import { Users } from './collections/Users'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
@@ -94,7 +96,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Pages, Media, StaffRecoveryCodes, AuditLog],
+  collections: [Users, Pages, Posts, Topics, Media, StaffRecoveryCodes, AuditLog],
   editor: lexicalEditor(),
   email: config.RESEND_API_KEY
     ? resendAdapter({
