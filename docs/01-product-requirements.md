@@ -129,7 +129,7 @@ Cohort outcome data, Gujarati and Hindi pages (start with counselling), alumni c
 | Reliability | 99.9% monthly availability target for the public site and booking; payments confirmed only by verified gateway webhooks; every automation idempotent and retried |
 | Security | Staff accounts with two-factor authentication; role-based access with least privilege; secrets never in the repository; dependencies scanned; see `08-security-privacy-compliance.md` |
 | Privacy | Consent recorded before storage; data minimised (date of birth only where a purpose needs it); retention periods enforced by jobs; analytics never records anything said in counselling and tracks only page and booking events |
-| SEO | The search system in `12-engineering-standards.md` §3: semantic HTML, metadata and generated share images per page, sitemaps and robots per domain, structured data from the CMS (Organization, ProfessionalService, Course, Event, Article, BreadcrumbList; FAQPage optional), canonical and noindex rules, redirects |
+| SEO | The search system in `12-engineering-standards.md` §3: semantic HTML, metadata and generated share images per page, sitemaps and robots per domain, structured data from the CMS (LocalBusiness, WebSite, WebPage, Person, DefinedTerm, Service, Course, Event, Article, BreadcrumbList; FAQPage only around visible questions; D-62), canonical and noindex rules, redirects |
 | Localisation | English (India) at launch; strings externalised and `lang` set per element so Gujarati and Hindi can follow |
 | Time | All times stored in UTC and shown in Asia/Kolkata (IST) |
 | Browsers | Last two versions of Chrome, Edge, Firefox and Safari; Safari 15.4+ on iOS; Chrome on Android |
