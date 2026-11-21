@@ -14,9 +14,13 @@ import type { PageContent } from '@/lib/content/types'
  *   candidate until IIIC confirms it (I-41);
  * - "Begin Your Journey" leads into the story, and "Book a Founder Consultation" books the
  *   proposal call until IIIC says what a Founder Consultation is (I-36).
- * The rupee figures are the turnover of the company in the story, not prices (D-21). The
- * chapter kickers, the voices beside the chapters and the reviews after them join the page
- * with the experience devices and the reviews (docs/11 §3.5; I-41, I-42).
+ * The rupee figures are the turnover of the company in the story, not prices (D-21).
+ *
+ * The page reads as chapters (docs/11 §3.5): the four sections between the hero and the closing
+ * band each carry a chapter kicker above IIIC's heading. The kickers' words are a [proposal],
+ * so each is a placeholder until IIIC approves them (I-41); the story's keeps its label after
+ * it. The voices beside the chapters and the reviews after them join the page with the reviews
+ * (I-42).
  */
 
 /** IIIC's own lines on this page, exactly as the source has them. */
@@ -76,6 +80,12 @@ export const FOUNDERS_STORY_ANCHOR = 'story'
 export const FOUNDERS_STORY_LABEL = 'IIIC’s illustration, not a client’s story'
 
 /**
+ * A chapter's kicker until IIIC approves the words (docs/11 §3.5 proposes them, such as
+ * "Chapter 1 · The shed"; I-41).
+ */
+export const FOUNDERS_CHAPTER_KICKER = '[[TODO: approval of this chapter’s kicker, I-41]]'
+
+/**
  * The amounts the story names: a company's turnover, in IIIC's words. Tests allow these on
  * this page and nothing else that looks like money (D-21).
  */
@@ -102,7 +112,7 @@ export const FOUNDERS: PageContent = {
     {
       blockType: 'statement',
       anchor: FOUNDERS_STORY_ANCHOR,
-      kicker: FOUNDERS_STORY_LABEL,
+      kicker: `${FOUNDERS_CHAPTER_KICKER} · ${FOUNDERS_STORY_LABEL}`,
       heading: LINES.storyHeading,
       paragraphs: [
         { text: LINES.shed },
@@ -116,12 +126,14 @@ export const FOUNDERS: PageContent = {
     },
     {
       blockType: 'statement',
+      kicker: FOUNDERS_CHAPTER_KICKER,
       heading: LINES.shiftHeading,
       paragraphs: [{ text: LINES.shift }],
       copyStatus: 'approved',
     },
     {
       blockType: 'cards',
+      kicker: FOUNDERS_CHAPTER_KICKER,
       // From IIIC's section marker, "SIX INSIGHTS"; a candidate until IIIC confirms it.
       heading: 'Six Insights',
       cards: [
@@ -136,6 +148,7 @@ export const FOUNDERS: PageContent = {
     },
     {
       blockType: 'points',
+      kicker: FOUNDERS_CHAPTER_KICKER,
       heading: LINES.rhythmHeading,
       lead: LINES.rhythm,
       points: [
