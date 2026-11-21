@@ -99,7 +99,7 @@ Everything below exists in the tools already chosen; the work is to look, on a s
 - Write it down. A decision that is not in `decisions.md` did not happen; a doc that is out of date is a bug.
 - The operator's day is the product's quality. If Today is not enough to run the morning, fix Today before adding a feature.
 - Measure before optimising. The budgets are in `12`; the metrics in `00`; baselines come first.
-- Keep the kit. The brand kit is locked; changes are versioned and rare. Pages built on its classes stay consistent without anyone policing them.
+- Keep the kit. The brand kit changes only with a decision that names the file (D-53); changes are versioned and rare. Pages built on its classes stay consistent without anyone policing them.
 - Counselling is a different room. No experiments, no devices, no cross-selling there.
 - Ship small and real. A page with three true facts beats a page with ten claims; an empty proof slot beats a borrowed one.
 - Ask the founder for facts, not approval of prose. Facts are what the platform is short of.

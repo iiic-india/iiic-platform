@@ -9,6 +9,7 @@ Every route the codebase serves, on both domains, with its register, purpose, da
 | `/` | R1 | default | State the thesis; three doors; the Map invitation; proof strip; founder; Journal teaser | Find your path (R2: Take the Map), or a door | pages, counters, posts |
 | `/framework` | R1 | default | Subjective Self explained (the Object/Subject flip, the four pillars, origins, who it is for, what changes); the founder's work as sourced (I-32) | Find your path (R2: Take the Map) | pages |
 | `/map` | R1 step 0 · R2 full | default | "Who is this for?" then (R2) the questions | Recommended next step | map definition, map results |
+| `/map/go` | R1 | — | Where step 0's form sends its answer (`03` F1): a 303 redirect to the visitor's door, or back to `/map` for anything else; the answer travels in the request's body, never in an address; stores nothing | — | — |
 | `/map/result/[id]` | R2 | default | The person's constellation, one recommended step and two related | Book, enrol or request a Team Map | map results |
 | `/founders` | R1 | consultancy | The founders' landing page: IIIC's supplied copy ("From ₹100 Crore to ₹1000 Crore") as a scroll narrative (`11` §3.5); the page LinkedIn posts and referrals land on | Book a Founder Consultation (books the proposal call until I-36) | pages |
 | `/organisations` | R1 | consultancy | The three services, the method, the Team Map, case studies | Book a proposal call | pages, case studies |
@@ -28,13 +29,16 @@ Every route the codebase serves, on both domains, with its register, purpose, da
 | `/feedback/[token]` | R1 | from type | Rate a session; optionally submit a story with consent | Send | bookings, testimonials |
 | `/login` · `/login/verify` | R2 | default | One-time code by phone or email | Sign in | accounts |
 | `/account` (+ `/bookings`, `/map`, `/learning`, `/documents`, `/invoices`, `/privacy`) | R2 | default | My IIIC | Next recommended step | everything for that person |
-| `/legal` | R1 | default | Legal information: the proprietor's legal name and trade name, address, GSTIN if registered, customer care, grievance officer; from 1 January 2027 the dark-pattern compliance certificate | — | settings, pages |
+| `/legal` | R1 | default | Legal information: the proprietor's legal name and trade name, address, website, GSTIN, customer care, grievance officer; from 1 January 2027 the dark-pattern compliance certificate | — | settings, pages |
 | `/privacy` · `/terms` · `/refunds` · `/grievance` · `/accessibility` | R1 | default | Privacy notice and per-flow notices, terms, cancellation, refund and payment information, grievance officer, data requests and complaints (with the published response times) | Contact the grievance officer | pages |
 | `/search` | R1 | default | Site search (pages, Journal, services, FAQs) from Payload's search plugin; also the 404 page's "Where were you headed?" | Open a result | search index |
 | `404` (`not-found`) · `500` (`error`) | R1 | from the requested path | The reflective 404 (`11` §5.1, concept per D-29) with the counselling scope line when the path was a counselling one; a plain, static 500 | Find your path | missing_pages |
 | `/humans.txt` · `/.well-known/security.txt` · `/manifest.webmanifest` | R1 | — | Craft and standards (`11` §5.5; `12` §5) | — | — |
 | `/admin/*` | R1 | admin theme | The back office (`05-admin-panel.md`) | — | all |
 | `/api/webhooks/*` | R1 | — | Payment and messaging provider webhooks (signed) | — | payments, message log |
+| `/api/health` | R1 | — | Liveness and database reachability for UptimeRobot; public by design (`12` §6, §7) | — | — |
+| `/api/owner-setup` | R1 | — | The owner setup link (D-41) | — | — |
+| `/api/*` (Payload) | R1 | — | Payload's REST API behind the admin, with IIIC's own endpoints: `POST /api/pages/from-starter` (D-54), `POST /api/report-test-error` (D-49) and the staff two-factor endpoints under `/api/users/` (setting up and checking the authenticator, recovery codes, recovery, an owner's reset, D-44) | — | all |
 | `/sitemap.xml` · `/robots.txt` · `/opengraph-image` | R1 | — | Search and sharing (`12` §3): one sitemap per domain; generated share images from the kit's social template | — | — |
 
 `book.html` registers: session → counselling, call → consultancy, info and seat → education.
