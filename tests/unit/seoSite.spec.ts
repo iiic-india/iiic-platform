@@ -66,9 +66,10 @@ describe('the site’s facts', () => {
 
 describe('siteOrigin', () => {
   it('is the platform domain when no site URL is set, as on a preview', () => {
+    // An absent value falls back to the environment, which CI sets: unset it first.
+    vi.stubEnv('NEXT_PUBLIC_SITE_URL', '')
     expect(siteOrigin(undefined)).toBe('https://imagecatalysts.in')
     expect(siteOrigin('')).toBe('https://imagecatalysts.in')
-    vi.stubEnv('NEXT_PUBLIC_SITE_URL', '')
     expect(siteOrigin()).toBe('https://imagecatalysts.in')
   })
 
