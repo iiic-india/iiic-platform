@@ -2,6 +2,7 @@ import { type PostgresAdapter, sql } from '@payloadcms/db-postgres'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { REDIRECT_MESSAGES } from '@/collections/Redirects'
 import { createRedirectFromMissingPage } from '@/lib/redirects/createFromMissing'
 import { MISSING_PAGES_CAP } from '@/lib/redirects/missingPages'
 import { purgeCutoff, purgeMissingPages, recordMissingPage } from '@/lib/redirects/store'
@@ -11,7 +12,7 @@ import config from '@/payload.config'
 
 // The redirects and the 404 log against the real database (docs/04 `redirects`,
 // `missing_pages`; docs/05, Content; docs/12 §3): who may do what, the checks a redirect passes,
-// the redirect a moved page leaves behind, and what the 404 page writes. Obviously fake
+// the redirect a moved page leaves behind, and what a 404 writes. Obviously fake
 // accounts, addresses and pages, each starting with a prefix that the cleanup deletes by.
 let payload: Payload
 const email = (label: string) => `int.redirects.${label}@example.invalid`
@@ -25,14 +26,24 @@ const verified = (user: User) => ({ ...user, _strategy: 'totp' }) as User
 const FROM = '/int-redirects-'
 const SLUG = 'int-redirects-'
 const MISSING = '/int-404-'
+/**
+ * Two addresses that show a starter page (D-51): no test here leaves a page or a redirect at
+ * either, and the cleanup removes any a failed run left.
+ */
+const STARTER = { privacy: '/privacy', founders: '/founders' } as const
 
 const db = () => (payload.db as unknown as PostgresAdapter).drizzle
 
 async function removeTestData() {
+  const starters = Object.values(STARTER)
   await payload.delete({ collection: 'redirects', where: { from: { like: FROM } } })
   await payload.delete({ collection: 'redirects', where: { from: { like: MISSING } } })
+  await payload.delete({ collection: 'redirects', where: { from: { in: starters } } })
   await payload.delete({ collection: 'pages', where: { slug: { like: SLUG } } })
   await db().execute(sql`DELETE FROM "missing_pages" WHERE "path" LIKE ${`${MISSING}%`}`)
+  for (const path of starters) {
+    await db().execute(sql`DELETE FROM "missing_pages" WHERE "path" = ${path}`)
+  }
   await payload.delete({ collection: 'users', where: { email: { like: 'int.redirects.' } } })
 }
 
@@ -182,6 +193,14 @@ describe('redirects', () => {
     const refused = await redirectTo(`/${page.slug}`, '/about').catch((error: unknown) => error)
     expect(refusedFields(refused)).toEqual(['from'])
   })
+
+  it('cannot start where a starter page is still shown, when made by hand (D-57)', async () => {
+    const refused = await redirectTo(STARTER.privacy, '/about', verified(staff.editor)).catch(
+      (error: unknown) => error,
+    )
+    expect(refusedFields(refused)).toEqual(['from'])
+    expect(await redirectFrom(STARTER.privacy)).toBeUndefined()
+  })
 })
 
 describe('a published page that gets a new address', () => {
@@ -223,6 +242,35 @@ describe('a published page that gets a new address', () => {
       expect(rule.to, rule.from).toBe(`${FROM}moving`)
     }
     expect(after.map(({ from }) => from)).toContain(`${FROM}moved-again`)
+  })
+
+  it('leaves its redirect at a starter page’s address too, and only that one (D-57)', async () => {
+    // A page published where a starter page was shown, then moved: the redirect it leaves goes
+    // before the starter page, which would otherwise be shown there again.
+    const page = await payload.create({
+      collection: 'pages',
+      data: {
+        title: 'Fake page',
+        slug: STARTER.founders.slice(1),
+        layout: [hero],
+        _status: 'published',
+      },
+    })
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      data: { slug: `${SLUG}from-starter`, _status: 'published' },
+      user: verified(staff.editor),
+      overrideAccess: false,
+    })
+    const left = await redirectFrom(STARTER.founders)
+    expect(left?.to?.type).toBe('reference')
+    expect(left?.to?.reference?.value).toBe(page.id)
+
+    // Without it, the starter page is shown there again, and no redirect is made by hand.
+    await payload.delete({ collection: 'redirects', id: left!.id })
+    const refused = await redirectTo(STARTER.founders, '/about').catch((error: unknown) => error)
+    expect(refusedFields(refused)).toEqual(['from'])
   })
 
   it('removes a redirect someone made from its address while it was elsewhere', async () => {
@@ -329,7 +377,7 @@ describe('the 404 log', () => {
       }),
     ).rejects.toThrow()
 
-    // What the 404 page wrote stays as it was; only the redirect is set by staff.
+    // What the site wrote stays as it was; only the redirect is set by staff.
     const redirect = await redirectTo(`${FROM}for-log`, '/about')
     const updated = await payload.update({
       collection: 'missing-pages',
@@ -373,5 +421,24 @@ describe('the 404 log', () => {
 
     expect((await call({ to: '/framework' })).status).toBe(409)
     await payload.delete({ collection: 'redirects', id: redirect!.id })
+  })
+
+  it('makes no redirect from an address that still shows its starter page (D-57)', async () => {
+    // An entry from before the log was written only for real 404s, or a starter page added since.
+    await recordMissingPage(payload, { path: STARTER.privacy, referrerHost: null })
+    const logged = await entry(STARTER.privacy)
+    const req = await createLocalReq(
+      { user: { ...staff.editor, collection: 'users', _strategy: 'totp' } as never },
+      payload,
+    )
+    req.json = async () => ({ to: '/about' })
+    req.routeParams = { id: logged!.id }
+    const refused = await createRedirectFromMissingPage(req)
+    expect(refused.status).toBe(400)
+    expect(((await refused.json()) as { message: string }).message).toBe(
+      REDIRECT_MESSAGES.starter(STARTER.privacy),
+    )
+    expect(await redirectFrom(STARTER.privacy)).toBeUndefined()
+    expect((await entry(STARTER.privacy))?.resolved).toBeFalsy()
   })
 })

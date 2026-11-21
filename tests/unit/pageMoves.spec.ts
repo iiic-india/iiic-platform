@@ -4,7 +4,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { Pages } from '@/collections/Pages'
 import { CHAIN_MESSAGES } from '@/lib/redirects/chains'
-import { noteAddressChange, redirectOldAddress } from '@/lib/redirects/pageMoves'
+import {
+  noteAddressChange,
+  PAGE_MOVE_REDIRECT,
+  redirectOldAddress,
+} from '@/lib/redirects/pageMoves'
 
 // A published page's old address keeps working (src/lib/redirects/pageMoves.ts; docs/12 §3;
 // D-57), through the Pages hooks, against a fake Payload: the page's own row (the address the
@@ -16,6 +20,7 @@ type StoredRedirect = { id: number; from: string; to: object; type: '307' | '308
 const PAGE_ID = 7
 
 function fakeRequest(row: Row | null, redirects: StoredRedirect[], slugs: Record<number, string>) {
+  const req: { payload?: unknown; context: Record<string, unknown> } = { context: {} }
   const payload = {
     db: { findOne: vi.fn(async () => row) },
     find: vi.fn(async ({ collection }: { collection: string }) => ({
@@ -24,11 +29,16 @@ function fakeRequest(row: Row | null, redirects: StoredRedirect[], slugs: Record
           ? redirects
           : Object.entries(slugs).map(([id, slug]) => ({ id: Number(id), slug })),
     })),
-    create: vi.fn(async ({ data }: { data: object }) => ({ id: 99, ...data })),
+    // As Payload does, a write's context is merged into the request's.
+    create: vi.fn(async ({ data, context }: { data: object; context?: object }) => {
+      if (context) req.context = { ...req.context, ...context }
+      return { id: 99, ...data }
+    }),
     update: vi.fn(async () => ({})),
     delete: vi.fn(async () => ({})),
   }
-  return { payload, req: { payload } }
+  req.payload = payload
+  return { payload, req }
 }
 
 /** Runs the two hooks as Payload does around one save, sharing the operation's context. */
@@ -48,7 +58,7 @@ async function save(
     req,
   } as never)
   await redirectOldAddress({ context, doc: { id: PAGE_ID, ...data }, req } as never)
-  return { payload, context }
+  return { payload, context, req }
 }
 
 const live = (slug: string): Row => ({ id: PAGE_ID, slug, _status: 'published' })
@@ -56,14 +66,22 @@ const toPage = { type: 'reference', reference: { relationTo: 'pages', value: PAG
 
 describe('publishing a page at a new address', () => {
   it('redirects the old address to the page itself, permanently, in the same request', async () => {
-    const { payload, context } = await save(live('about'), { slug: 'team', _status: 'published' })
+    const { payload, context, req } = await save(live('about'), {
+      slug: 'team',
+      _status: 'published',
+    })
     expect(payload.create).toHaveBeenCalledTimes(1)
     expect(payload.create).toHaveBeenCalledWith({
       collection: 'redirects',
       data: { from: '/about', to: toPage, type: '308' },
+      // It names the address it redirects, so the redirect may go before a starter page there
+      // (D-57; src/collections/Redirects.ts) ...
+      context: { [PAGE_MOVE_REDIRECT]: '/about' },
       overrideAccess: true,
       req: expect.objectContaining({ payload }),
     })
+    // ... and nothing later in the request passes as a move.
+    expect(req.context).not.toHaveProperty(PAGE_MOVE_REDIRECT)
     // The page's live address is read from its own row, in the request's transaction.
     expect(payload.db.findOne).toHaveBeenCalledWith(
       expect.objectContaining({ collection: 'pages', where: { id: { equals: PAGE_ID } } }),

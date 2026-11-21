@@ -25,6 +25,13 @@ type Move = { from: string }
 
 const moveKey = (id: number | string) => `pageMove:${id}`
 
+/**
+ * The request's context key naming the address whose redirect the page-move hook is making.
+ * Only that redirect may start where a starter page is still shown (D-57): a redirect made by
+ * hand, or from the 404 log, is refused there (src/collections/Redirects.ts).
+ */
+export const PAGE_MOVE_REDIRECT = 'pageMoveRedirectFrom'
+
 /** Before a publish: notes the move when the page was live at another address. */
 export const noteAddressChange: CollectionBeforeChangeHook = async ({
   context,
@@ -75,16 +82,23 @@ export const redirectOldAddress: CollectionAfterChangeHook = async ({ context, d
     })
   }
   if (plan.create) {
-    await req.payload.create({
-      collection: 'redirects',
-      data: {
-        from: plan.create.from,
-        to: { type: 'reference', reference: { relationTo: 'pages', value: doc.id } },
-        type: '308',
-      },
-      overrideAccess: true,
-      req,
-    })
+    try {
+      await req.payload.create({
+        collection: 'redirects',
+        data: {
+          from: plan.create.from,
+          to: { type: 'reference', reference: { relationTo: 'pages', value: doc.id } },
+          type: '308',
+        },
+        // The redirect from a moved page's old address goes before a starter page there (D-57).
+        context: { [PAGE_MOVE_REDIRECT]: plan.create.from },
+        overrideAccess: true,
+        req,
+      })
+    } finally {
+      // Payload merges the context into the request's; nothing later in it may pass as a move.
+      if (req.context) delete req.context[PAGE_MOVE_REDIRECT]
+    }
   }
   return doc
 }

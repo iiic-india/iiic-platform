@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { REDIRECT_MESSAGES, redirects } from '@/collections/Redirects'
 import { CHAIN_MESSAGES } from '@/lib/redirects/chains'
+import { PAGE_MOVE_REDIRECT } from '@/lib/redirects/pageMoves'
 import { revalidateRedirects } from '@/lib/redirects/revalidate'
 
 vi.mock('@/lib/redirects/revalidate', async (importOriginal) => ({
@@ -112,9 +113,15 @@ describe('a save checked against the other redirects and the pages', () => {
   }
 
   /** The errors a refused save names, by field. */
-  async function refusal(data: object, operation: 'create' | 'update' = 'create', id?: number) {
+  async function refusal(
+    data: object,
+    operation: 'create' | 'update' = 'create',
+    id?: number,
+    context: Record<string, unknown> = {},
+  ) {
     try {
       await check({
+        context,
         data,
         operation,
         originalDoc: id === undefined ? undefined : { id, from: '/before' },
@@ -144,9 +151,9 @@ describe('a save checked against the other redirects and the pages', () => {
   })
 
   it('refuses one that leads back to its own address, by address or by its page', async () => {
-    expect(await refusal({ from: '/about', to: { type: 'custom', url: '/about#team' } })).toEqual([
-      { path: 'to.url', message: CHAIN_MESSAGES.self },
-    ])
+    expect(
+      await refusal({ from: '/fake-about', to: { type: 'custom', url: '/fake-about#team' } }),
+    ).toEqual([{ path: 'to.url', message: CHAIN_MESSAGES.self }])
     expect(
       await refusal({
         from: '/team',
@@ -156,13 +163,13 @@ describe('a save checked against the other redirects and the pages', () => {
   })
 
   it('refuses a chain, either way round', async () => {
-    holds([{ id: 1, from: '/old-about', to: { type: 'custom', url: '/about' }, type: '308' }])
+    holds([{ id: 1, from: '/old-about', to: { type: 'custom', url: '/fake-about' }, type: '308' }])
     expect(await refusal({ from: '/x', to: { type: 'custom', url: '/old-about' } })).toEqual([
-      { path: 'to.url', message: CHAIN_MESSAGES.onward('/old-about', '/about') },
+      { path: 'to.url', message: CHAIN_MESSAGES.onward('/old-about', '/fake-about') },
     ])
-    expect(await refusal({ from: '/about', to: { type: 'custom', url: '/framework' } })).toEqual([
-      { path: 'from', message: CHAIN_MESSAGES.inward('/about', '/old-about') },
-    ])
+    expect(
+      await refusal({ from: '/fake-about', to: { type: 'custom', url: '/framework' } }),
+    ).toEqual([{ path: 'from', message: CHAIN_MESSAGES.inward('/fake-about', '/old-about') }])
   })
 
   it('refuses one to a page that no longer exists', async () => {
@@ -189,6 +196,41 @@ describe('a save checked against the other redirects and the pages', () => {
     count.mockClear()
     expect(await refusal({ from: '/home', to: { type: 'custom', url: '/' } })).toBeNull()
     expect(count).not.toHaveBeenCalled()
+  })
+
+  it('refuses a new one from an address that still shows its starter page (D-57)', async () => {
+    // No page at /privacy is published, and none has ever been: its starter page is shown.
+    expect(await refusal({ from: '/privacy', to: { type: 'custom', url: '/about' } })).toEqual([
+      { path: 'from', message: REDIRECT_MESSAGES.starter('/privacy') },
+    ])
+    expect(count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'pages',
+        where: { and: [{ slug: { equals: 'privacy' } }, { firstPublishedAt: { exists: true } }] },
+      }),
+    )
+    // An address with no starter page asks only whether a page is published there.
+    count.mockClear()
+    expect(await refusal({ from: '/old', to: { type: 'custom', url: '/about' } })).toBeNull()
+    expect(count).toHaveBeenCalledTimes(1)
+  })
+
+  it('lets a redirect start where a starter page is no longer shown', async () => {
+    // A page was published at /privacy once and is unpublished now: the address is the 404.
+    count.mockImplementation(async ({ where }: { where: { and: object[] } }) => ({
+      totalDocs: JSON.stringify(where).includes('firstPublishedAt') ? 1 : 0,
+    }))
+    expect(await refusal({ from: '/privacy', to: { type: 'custom', url: '/about' } })).toBeNull()
+  })
+
+  it('lets only the moved page’s own redirect go before a starter page', async () => {
+    const moved = { [PAGE_MOVE_REDIRECT]: '/founders' }
+    const data = { from: '/founders', to: { type: 'custom', url: '/about' } }
+    expect(await refusal(data, 'create', undefined, moved)).toBeNull()
+    // The flag names one address; it lets no other through.
+    expect(await refusal({ ...data, from: '/privacy' }, 'create', undefined, moved)).toEqual([
+      { path: 'from', message: REDIRECT_MESSAGES.starter('/privacy') },
+    ])
   })
 
   it('refuses one more past the most the site reads', async () => {

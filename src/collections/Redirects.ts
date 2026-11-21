@@ -5,12 +5,15 @@ import {
   type Field,
   type TextFieldSingleValidation,
   ValidationError,
+  type Where,
 } from 'payload'
 import { text } from 'payload/shared'
 
 import { allow, POLICY } from '@/access/policy'
+import { starterAt } from '@/content/starter'
 import { PAGE_SLUG } from '@/lib/content/slug'
 import { chainProblem } from '@/lib/redirects/chains'
+import { PAGE_MOVE_REDIRECT } from '@/lib/redirects/pageMoves'
 import {
   answeredBySite,
   cleanPath,
@@ -41,6 +44,8 @@ export const REDIRECT_MESSAGES = {
   page: 'Choose the page visitors should find.',
   published: (from: string) =>
     `A page is published at ${from}, so a redirect from it would never be followed. Move or unpublish the page first.`,
+  starter: (from: string) =>
+    `The site still shows its starter page at ${from}, and a redirect from it would take that page off the site. To move it, start editing it in Pages, publish it, then change its address.`,
   full: `The site holds ${MAX_REDIRECTS.toLocaleString('en-IN')} redirects, its limit. Remove ones nobody needs before adding another.`,
 } as const
 
@@ -68,10 +73,12 @@ const targetField = (to: StoredTarget) => (to?.type === 'custom' ? 'to.url' : 't
 
 /**
  * The checks that need the other redirects and the pages: no chain or loop, no redirect from
- * an address with a published page, and no more than the site reads. Run on every save, those
+ * an address that still shows a page (published, or its starter page), and no more than the
+ * site reads. Run on every save, those
  * the site makes for a moved page included, against the redirects as this request sees them.
  */
 const checkAgainstOthers: CollectionBeforeChangeHook = async ({
+  context,
   data,
   operation,
   originalDoc,
@@ -99,19 +106,35 @@ const checkAgainstOthers: CollectionBeforeChangeHook = async ({
     }
   }
 
-  // A published page wins over a redirect from its address (src/lib/content/pages.ts), so such
-  // a redirect is refused while it is new; publishing a page removes any redirect from its
-  // address (src/lib/redirects/pageMoves.ts). The home page lives at "/", never at "/home".
+  // A redirect never takes a page off the site (D-57). A published page wins over a redirect
+  // from its address (src/lib/content/pages.ts), so such a redirect is refused while it is new;
+  // publishing a page removes any redirect from its address (src/lib/redirects/pageMoves.ts).
+  // Where a starter page is still shown (no page there has ever been published), a redirect is
+  // refused too, unless it is the one a moved page leaves at its old address, which the
+  // page-move hook names in the request's context. The home page lives at "/", never "/home".
   const fromChanged = operation === 'create' || (originalDoc as { from?: string }).from !== from
   const slug = from.slice(1)
   if (fromChanged && slug !== 'home' && PAGE_SLUG.test(slug)) {
-    const { totalDocs } = await req.payload.count({
-      collection: 'pages',
-      where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
-      overrideAccess: true,
-      req,
-    })
-    if (totalDocs > 0) errors.push({ path: 'from', message: REDIRECT_MESSAGES.published(from) })
+    const pagesAt = async (state: Where) =>
+      (
+        await req.payload.count({
+          collection: 'pages',
+          where: { and: [{ slug: { equals: slug } }, state] },
+          overrideAccess: true,
+          req,
+        })
+      ).totalDocs
+    const movedPage =
+      (context as Record<string, unknown> | undefined)?.[PAGE_MOVE_REDIRECT] === from
+    if ((await pagesAt({ _status: { equals: 'published' } })) > 0) {
+      errors.push({ path: 'from', message: REDIRECT_MESSAGES.published(from) })
+    } else if (
+      starterAt(slug) &&
+      !movedPage &&
+      (await pagesAt({ firstPublishedAt: { exists: true } })) === 0
+    ) {
+      errors.push({ path: 'from', message: REDIRECT_MESSAGES.starter(from) })
+    }
   }
 
   if (errors.length > 0) throw new ValidationError({ collection: 'redirects', errors, id, req })
