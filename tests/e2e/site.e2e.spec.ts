@@ -350,8 +350,9 @@ test.describe('Public shell', () => {
     )
     // docs/11 §3.2: the lines flip (tests/e2e/experience.e2e.spec.ts); "Show both" opens the plain
     // two-column view, five pairs, each column named and each row headed by its first line, so
-    // a screen reader reads every pair together.
-    await page.getByRole('link', { name: 'Show both' }).click()
+    // a screen reader reads every pair together. It is opened from the keyboard: after a click
+    // on a link whose target cannot take focus, Chromium treats a later focus as a pointer one.
+    await page.getByRole('link', { name: 'Show both' }).press('Enter')
     const comparison = page.getByRole('table')
     await expect(comparison.getByRole('columnheader')).toHaveText([
       'Living as the object',
@@ -365,8 +366,9 @@ test.describe('Public shell', () => {
       'I follow instructions',
       'Circumstances drive my choices',
     ])
-    // The table's scroll region takes keyboard focus and shows the kit's ring. Nothing has
-    // been clicked, so the browser treats this focus as a keyboard one (:focus-visible).
+    // The table's scroll region takes keyboard focus and shows the kit's ring. The table was
+    // opened from the keyboard, so the browser treats this focus as a keyboard one
+    // (:focus-visible).
     const region = page.getByRole('region', { name: 'Object or subject?' })
     await region.focus()
     expect(await region.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe('none')
