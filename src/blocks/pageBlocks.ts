@@ -7,6 +7,11 @@ import type { Block, Field } from 'payload'
  * the kit's placeholder chip (CLAUDE.md, non-negotiable 1).
  */
 
+/** On a legal page the page's legal review is the approval (D-52): its sections show no copy status. */
+export function showsCopyStatus(data: { legalReview?: unknown } | undefined): boolean {
+  return !data?.legalReview
+}
+
 /** Whether IIIC has approved a block's wording (I-41). Candidate copy carries a visible marker. */
 const copyStatus: Field = {
   name: 'copyStatus',
@@ -19,6 +24,8 @@ const copyStatus: Field = {
   ],
   admin: {
     description: 'Candidate copy is shown with a marker until IIIC approves it (I-41).',
+    // Admin only: the stored value stays, so the site and the report do not change.
+    condition: (data) => showsCopyStatus(data),
   },
 }
 
@@ -28,7 +35,14 @@ const kicker: Field = {
   admin: { description: 'The small line above the heading. Optional.' },
 }
 
-const heading: Field = { name: 'heading', type: 'text', required: true }
+/** A heading holds words: one of spaces only would draw an empty heading. */
+export function hasWords(value: unknown): true | string {
+  return (typeof value === 'string' && value.trim() !== '') || 'Write the heading.'
+}
+
+// A custom check replaces Payload's own text check, which accepts spaces; `required` stays for
+// the admin's marker. The heading has no length limit, so nothing else is lost.
+const heading: Field = { name: 'heading', type: 'text', required: true, validate: hasWords }
 
 const intro: Field = {
   name: 'intro',
@@ -59,15 +73,32 @@ const anchor: Field = {
   },
 }
 
-/** A path on this site. Links to other sites are added when a page needs one. */
+/**
+ * A path on this site. Links to other sites are added when a page needs one. A backslash is
+ * refused anywhere: browsers read "/\evil.example" as a link to another site.
+ */
 export function isSitePath(value: unknown): true | string {
   if (value === undefined || value === null || value === '') return true
   return (
-    (typeof value === 'string' && /^\/(?!\/)\S*$/.test(value)) ||
+    (typeof value === 'string' && /^\/(?!\/)[^\s\\]*$/.test(value)) ||
     'Use a path on this site, starting with one slash, such as /framework.'
   )
 }
 
+/** Button words need the link they open: without one the button is not drawn. */
+export function wordsNeedLink(
+  value: unknown,
+  { siblingData }: { siblingData: unknown },
+): true | string {
+  if (value === undefined || value === null || value === '') return true
+  const href = (siblingData as { href?: unknown } | undefined)?.href
+  return (
+    (typeof href === 'string' && href !== '') ||
+    'Add the link this button opens, or clear its words.'
+  )
+}
+
+// The words and the link sit side by side in the group's data: a row does not nest them.
 function action(name: string, label: string): Field {
   return {
     name,
@@ -77,7 +108,7 @@ function action(name: string, label: string): Field {
       {
         type: 'row',
         fields: [
-          { name: 'label', type: 'text' },
+          { name: 'label', type: 'text', validate: wordsNeedLink },
           { name: 'href', type: 'text', label: 'Link', validate: isSitePath },
         ],
       },
@@ -296,6 +327,7 @@ const Cards: Block = {
             {
               name: 'action',
               type: 'text',
+              validate: wordsNeedLink,
               admin: { description: 'The words on the button, when the card links.' },
             },
           ],
@@ -407,6 +439,12 @@ const Band: Block = {
         {
           name: 'sanskrit',
           type: 'text',
+          // The line is drawn inside lang="sa", so a placeholder chip there would be read as
+          // Sanskrit: the line is typed, or left empty.
+          validate: (value: unknown) =>
+            typeof value !== 'string' ||
+            !/\[\[|\]\]/.test(value) ||
+            'The Sanskrit line is typed in Devanagari, never as a placeholder: type it, or leave it empty.',
           admin: { description: 'The signature line in Devanagari, once per page.' },
         },
         { name: 'translation', type: 'text', admin: { description: 'Its English.' } },
@@ -433,27 +471,82 @@ export const PAGE_BLOCKS: Block[] = [
   Band,
 ]
 
+/*
+ * The page rules. src/collections/Pages.ts runs them, with every field's own check, when a
+ * page is published; a draft is saved without them.
+ */
+
+/** A page opens with its one hero: the hero holds the page's h1 and a draft legal page's marker (D-52). */
+export function oneOpeningHero(layout: unknown): true | string {
+  const blocks = Array.isArray(layout) ? (layout as { blockType?: string }[]) : []
+  const heroes = blocks.filter((block) => block.blockType === 'hero').length
+  if (heroes === 0) return 'A page opens with a hero: add one at the top.'
+  if (heroes > 1) return 'A page has one hero at most: remove the others.'
+  if (blocks[0]?.blockType !== 'hero') return 'The hero opens the page: move it to the top.'
+  return true
+}
+
 /** The brand kit allows one yellow band a page, and it closes the page. */
 export function oneClosingBand(layout: unknown): true | string {
   const blocks = Array.isArray(layout) ? (layout as { blockType?: string }[]) : []
   const bands = blocks.filter((block) => block.blockType === 'band')
-  if (bands.length > 1) return 'A page has one yellow band at most.'
+  if (bands.length > 1) return 'A page has one yellow band at most: remove the others.'
   if (bands.length === 1 && blocks.at(-1)?.blockType !== 'band') {
     return 'The yellow band closes the page: move it to the end.'
   }
   return true
 }
 
-/** No two sections of a page answer to the same link name, and none takes a fixed block's. */
+/** The ids the page shell gives its own elements (src/components/site/SiteFrame.tsx, SiteHeader.tsx). */
+export const SHELL_IDS = ['main', 'site-nav'] as const
+
+/** A block's name as the admin lists it, such as "Certificate statement". */
+function fixedLabel(type: string): string {
+  const label = PAGE_BLOCKS.find((block) => block.slug === type)?.labels?.singular
+  return typeof label === 'string' ? label : type
+}
+
+/**
+ * No two sections answer to the same link name, none takes the shell's or a fixed block's,
+ * and each fixed block comes once.
+ */
 export function uniqueAnchors(layout: unknown): true | string {
-  const blocks = Array.isArray(layout) ? (layout as { anchor?: unknown }[]) : []
-  const taken = new Set<string>(FIXED_ANCHORS)
+  const blocks = Array.isArray(layout)
+    ? (layout as { blockType?: unknown; anchor?: unknown }[])
+    : []
+  const taken = new Set<string>([...SHELL_IDS, ...FIXED_ANCHORS])
+  const fixed = new Set<string>()
   for (const block of blocks) {
+    const type = block.blockType
+    if (typeof type === 'string' && (FIXED_ANCHORS as readonly string[]).includes(type)) {
+      if (fixed.has(type)) {
+        return `A page has one "${fixedLabel(type)}" section at most: remove the others.`
+      }
+      fixed.add(type)
+    }
     if (typeof block.anchor !== 'string' || block.anchor === '') continue
     if (taken.has(block.anchor)) {
       return `The link name "${block.anchor}" is already taken on this page.`
     }
     taken.add(block.anchor)
+  }
+  return true
+}
+
+/**
+ * The fixed statements a page must carry by its address (docs/08 §7; src/brand/VOICE.md,
+ * "Counselling copy"): every counselling page the scope statement and the crisis numbers,
+ * and the course page the certificate statement.
+ */
+export function carriesFixedStatements(layout: unknown, slug: unknown): true | string {
+  if (typeof slug !== 'string') return true
+  const blocks = Array.isArray(layout) ? (layout as { blockType?: unknown }[]) : []
+  const has = (type: string) => blocks.some((block) => block.blockType === type)
+  if ((slug === 'counselling' || slug.startsWith('counselling/')) && !has('scope')) {
+    return `A counselling page carries the scope statement and the crisis numbers: add the "${fixedLabel('scope')}" section.`
+  }
+  if (slug === 'learn' && !has('certificate')) {
+    return `The course page carries the certificate statement: add the "${fixedLabel('certificate')}" section.`
   }
   return true
 }

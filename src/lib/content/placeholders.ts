@@ -24,6 +24,17 @@ export const FIXED_PLACEHOLDERS = {
     id: 'I-30',
     what: 'statement that IIIC is privately owned and not affiliated with any Government body',
   },
+  // The footer's legal row names the proprietor, the GSTIN and the grievance officer (docs/08
+  // §3, §4), in the words the legal pages use for the same facts.
+  footerLegalName: {
+    id: 'I-26',
+    what: 'the proprietor’s legal name, exactly as on PAN and registrations',
+  },
+  footerGstin: { id: 'I-05', what: 'the GSTIN' },
+  footerGrievanceOfficer: {
+    id: 'I-21',
+    what: 'the grievance officer’s name, designation and contact',
+  },
   contactAddress: { id: 'I-33', what: 'the address as it should print, with its PIN' },
   founderPhoto: { id: 'I-10', what: 'the founder’s photograph, as he wants it published' },
   mapLine: { id: 'I-41', what: 'approval of the line under the question' },
@@ -61,12 +72,29 @@ const FIXED_HEADINGS: Partial<Record<PageBlock['blockType'], string>> = {
   contact: CONTACT_HEADING,
 }
 
-/** Every string in a block, whatever field holds it. */
+/**
+ * Every string a block shows, whatever field holds it. The admin's block name and the row ids
+ * are left out: the page never draws them.
+ */
 function strings(value: unknown): string[] {
   if (typeof value === 'string') return [value]
   if (Array.isArray(value)) return value.flatMap(strings)
-  if (value && typeof value === 'object') return Object.values(value).flatMap(strings)
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([key, inner]) =>
+      key === 'blockName' || key === 'id' ? [] : strings(inner),
+    )
+  }
   return []
+}
+
+/** Brackets outside a well-formed placeholder: a placeholder typed another way. */
+export function hasStrayBrackets(text: string): boolean {
+  return /\[\[|\]\]/.test(text.replace(PLACEHOLDER, ''))
+}
+
+/** The strings in a page's sections that hold a mistyped placeholder. */
+export function mistypedPlaceholders(layout: unknown): string[] {
+  return strings(layout).filter((text) => hasStrayBrackets(text))
 }
 
 /** The name a section goes by: its heading, or the heading its fixed wording carries. */
@@ -108,13 +136,15 @@ export function legalItems(page: Pick<PageContent, 'layout' | 'legalReview'>): s
   ]
 }
 
+/** The footer is on every page; the report sends a click on its placeholders home. */
+const EVERY_PAGE: PageRef = { title: 'Every page', path: '/', href: '/', inAdmin: false }
+
 /** The placeholders that belong to no page's data: the footer's, and Find your path's. */
 export const CODED_PLACEHOLDERS: Report['missing'] = [
-  {
-    ...FIXED_PLACEHOLDERS.footerAffiliation,
-    section: 'Footer',
-    page: { title: 'Every page', path: '/', href: '/', inAdmin: false },
-  },
+  { ...FIXED_PLACEHOLDERS.footerAffiliation, section: 'Footer', page: EVERY_PAGE },
+  { ...FIXED_PLACEHOLDERS.footerLegalName, section: 'Footer', page: EVERY_PAGE },
+  { ...FIXED_PLACEHOLDERS.footerGstin, section: 'Footer', page: EVERY_PAGE },
+  { ...FIXED_PLACEHOLDERS.footerGrievanceOfficer, section: 'Footer', page: EVERY_PAGE },
   {
     ...FIXED_PLACEHOLDERS.mapLine,
     section: STEP_ZERO_QUESTION,
