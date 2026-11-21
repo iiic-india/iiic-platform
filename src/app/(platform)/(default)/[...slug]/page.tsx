@@ -6,6 +6,7 @@ import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { getPage } from '@/lib/content/pages'
 import { PAGE_SLUG } from '@/lib/content/slug'
 import type { PageContent } from '@/lib/content/types'
+import { legalInformationFor } from '@/lib/settings/read'
 
 type Props = { params: Promise<{ slug: string[] }> }
 
@@ -35,7 +36,11 @@ export default async function CmsPage({ params }: Props) {
   return (
     <>
       <PageJsonLd slug={found.slug} page={found.page} />
-      <RenderBlocks layout={found.page.layout} legalReview={found.page.legalReview} />
+      <RenderBlocks
+        layout={found.page.layout}
+        legalReview={found.page.legalReview}
+        legal={await legalInformationFor(found.page.layout)}
+      />
     </>
   )
 }

@@ -59,6 +59,9 @@ const request = vi.hoisted(() => {
   return { path: '' }
 })
 vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
+// The legal information comes from the settings (tests/unit/settingsLegal.spec.tsx); the routes'
+// metadata and structure do not depend on it.
+vi.mock('@/lib/settings/read', () => ({ legalInformationFor: async () => undefined }))
 vi.mock('next/headers', () => ({
   headers: async () => new Headers({ 'x-pathname': request.path }),
 }))

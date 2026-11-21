@@ -7,7 +7,7 @@ Everything the platform does on its own. Each automation is an event or a schedu
 - **Event-driven, idempotent.** Domain events (`booking.confirmed`, `payment.captured`, `lead.created`, …) enqueue jobs with an idempotency key, so a retried webhook or a double click never sends twice.
 - **Scheduled jobs** (reminders, digests, retention) are enqueued at a computed `run_at` and recomputed when the underlying booking changes (a reschedule cancels and re-plans its reminders).
 - **Retries.** Three attempts with backoff (1 min, 10 min, 1 h); then the job fails visibly on Today and in the log.
-- **Quiet hours.** No WhatsApp or SMS between 21:00 and 08:00 IST (setting); messages due in that window are sent at 08:00, except a reminder that would then arrive after the session, which is dropped.
+- **Quiet hours.** No WhatsApp or SMS between 21:00 and 08:00 IST (setting); messages due in that window are sent at 08:00, except a reminder that would then arrive after the session, which is dropped. The window is in Settings → Platform settings (M2), read with `readQuietHours` and tested with `inQuietHours` (`src/lib/settings/`).
 - **Consent.** Transactional messages (confirmations, reminders, receipts, login codes) go to anyone who booked. Anything promotional (bridges, follow-up offers, newsletters, nudges) needs the matching consent and stops the moment it is withdrawn.
 - **Counselling guardrail.** No offer, bridge or cross-sell in any message about a counselling session; feedback requests name the session and ask nothing else. Counselling confirmations and reminders carry the scope statement and the crisis numbers.
 - **No dark patterns.** Bridges and nudges use a plain "No, thanks"; no false urgency; nothing promotional to under-18s.

@@ -16,6 +16,13 @@ import {
   SCOPE_HEADING,
   SCOPE_STATEMENT,
 } from '@/lib/counselling/scope'
+import {
+  LEGAL_INFORMATION_COLUMNS,
+  LEGAL_INFORMATION_HEADING,
+  legalRows,
+  NO_LEGAL_INFORMATION,
+  type LegalInformation,
+} from '@/lib/settings/legal'
 import { CONTACT, CONTACT_HEADING, mailHref, telHref } from '@/lib/site/contact'
 import type {
   BandBlock,
@@ -441,6 +448,56 @@ function Contact() {
   )
 }
 
+/**
+ * Who runs the site (docs/08 §4; docs/12 §11): the legal information in the settings, as a
+ * table whose rows are headed by their items, so a screen reader reads every detail with its
+ * label. A detail the settings lack is its placeholder (src/lib/settings/legal.ts). On a narrow
+ * screen the table scrolls inside its region, as the comparison's does.
+ */
+function LegalInformationSection({ legal }: { legal: LegalInformation }) {
+  return (
+    <section className="iiic-section" id="legal">
+      <SectionHead heading={LEGAL_INFORMATION_HEADING} />
+      <div
+        className={`iiic-table-wrap ${styles.tableRegion}`}
+        role="region"
+        aria-label={LEGAL_INFORMATION_HEADING}
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region needs keyboard focus
+        tabIndex={0}
+      >
+        <table className="iiic-table">
+          <thead>
+            <tr>
+              <th scope="col">{LEGAL_INFORMATION_COLUMNS.item}</th>
+              <th scope="col">{LEGAL_INFORMATION_COLUMNS.detail}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {legalRows(legal).map((row) => (
+              <tr key={row.item}>
+                <th scope="row" className={styles.rowHead}>
+                  {row.item}
+                </th>
+                <td>
+                  <strong>{renderText(row.text)}</strong>
+                  {row.link ? (
+                    <>
+                      {' · '}
+                      <a className="iiic-link" href={row.link.href}>
+                        {row.link.label}
+                      </a>
+                    </>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
 /** The one yellow band of a page. It spans the window, so it sits outside the page column. */
 function Band({ block, marked }: { block: BandBlock; marked: boolean }) {
   return (
@@ -468,7 +525,15 @@ function Band({ block, marked }: { block: BandBlock; marked: boolean }) {
   )
 }
 
-function Section({ block, draft }: { block: Exclude<PageBlock, BandBlock>; draft: boolean }) {
+function Section({
+  block,
+  draft,
+  legal,
+}: {
+  block: Exclude<PageBlock, BandBlock>
+  draft: boolean
+  legal: LegalInformation
+}) {
   switch (block.blockType) {
     case 'hero':
       return <Hero block={block} draft={draft} />
@@ -494,19 +559,25 @@ function Section({ block, draft }: { block: Exclude<PageBlock, BandBlock>; draft
       return <FounderNote block={block} />
     case 'contact':
       return <Contact />
+    case 'legal':
+      return <LegalInformationSection legal={legal} />
   }
 }
 
 /**
  * A page's sections in order, in the page column, and its closing band across the window. A
- * legal page that is still a draft says so above its heading (D-52).
+ * legal page that is still a draft says so above its heading (D-52). The legal information
+ * section draws what the settings hold (the route reads it, src/lib/settings/read.ts); without
+ * it, every detail is its placeholder.
  */
 export function RenderBlocks({
   layout,
   legalReview,
+  legal = NO_LEGAL_INFORMATION,
 }: {
   layout: PageContent['layout']
   legalReview?: PageContent['legalReview']
+  legal?: LegalInformation
 }) {
   const band = layout.find((block): block is BandBlock => block.blockType === 'band')
   const sections = layout.filter(
@@ -516,7 +587,12 @@ export function RenderBlocks({
     <>
       <div className={`iiic-page ${styles.page}`}>
         {sections.map((block, index) => (
-          <Section block={block} draft={legalReview === 'draft'} key={block.id ?? index} />
+          <Section
+            block={block}
+            draft={legalReview === 'draft'}
+            legal={legal}
+            key={block.id ?? index}
+          />
         ))}
         {band?.copyStatus === 'candidate' ? (
           <div className={styles.band}>

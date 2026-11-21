@@ -15,6 +15,8 @@ import { HOME_TITLE } from '@/lib/seo/site'
 // How a route gets a page's metadata and structured data (src/components/blocks/PageAt.tsx).
 // The CMS is faked: getPage answers with the starter pages and the fake pages below.
 vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
+// The legal information comes from the settings (tests/unit/settingsLegal.spec.tsx).
+vi.mock('@/lib/settings/read', () => ({ legalInformationFor: async () => undefined }))
 vi.mock('next/navigation', () => ({
   notFound: () => {
     throw new Error('fake not found')

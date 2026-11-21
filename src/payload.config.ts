@@ -9,11 +9,16 @@ import { buildConfig, type EmailAdapter } from 'payload'
 import { payloadTotp } from 'payload-totp'
 import sharp from 'sharp'
 
+import { AnalyticsEvents } from './collections/AnalyticsEvents'
 import { AuditLog } from './collections/AuditLog'
+import { Consents } from './collections/Consents'
+import { ConsentVersions } from './collections/ConsentVersions'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
+import { People } from './collections/People'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Users } from './collections/Users'
+import { Settings } from './globals/Settings'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
 import { reportServerError, reportTestError } from './lib/monitoring/sentry'
@@ -94,7 +99,20 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Pages, Media, StaffRecoveryCodes, AuditLog],
+  collections: [
+    Users,
+    Pages,
+    Media,
+    StaffRecoveryCodes,
+    AuditLog,
+    // The trust layer (docs/04): the one record of a person, the consent ledger and its notices,
+    // and the funnel's anonymous events.
+    People,
+    Consents,
+    ConsentVersions,
+    AnalyticsEvents,
+  ],
+  globals: [Settings],
   editor: lexicalEditor(),
   email: config.RESEND_API_KEY
     ? resendAdapter({

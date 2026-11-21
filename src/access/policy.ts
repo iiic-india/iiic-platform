@@ -1,4 +1,4 @@
-import type { Access, AccessResult } from 'payload'
+import type { Access, AccessResult, Where } from 'payload'
 
 import { hasRole, isActive, type Role } from './roles'
 
@@ -47,7 +47,60 @@ export const POLICY = {
     update: {},
     delete: {},
   },
+  // The one record of a person (docs/04, S2): the office and the owners. Practitioners see their
+  // own clients once bookings link the two (M3). Deleting a person is the erasure an owner
+  // confirms (docs/05, Privacy), so only owners delete.
+  people: {
+    read: { roles: ['owner', 'operator'] },
+    create: { roles: ['owner', 'operator'] },
+    update: { roles: ['owner', 'operator'] },
+    delete: { roles: ['owner'] },
+  },
+  // Append-only (docs/04): the operator reads the log and records the replies people send
+  // (docs/06 V1, V2); nobody changes or deletes an entry, not even an owner.
+  consents: {
+    read: { roles: ['owner', 'operator'] },
+    create: { roles: ['owner', 'operator'] },
+    update: {},
+    delete: {},
+  },
+  // The consent texts are content (docs/05) whose wording decides what a person agreed to:
+  // operators read them, owners and editors write them (operators change no policy, docs/05).
+  // A text in force never changes; the collection adds that to update and delete.
+  consentVersions: {
+    read: { roles: ['owner', 'operator', 'editor'] },
+    create: { roles: ['owner', 'editor'] },
+    update: { roles: ['owner', 'editor'] },
+    delete: { roles: ['owner', 'editor'] },
+  },
+  // Written by the server only, never through the API (docs/04, docs/12 §7). Owners read the
+  // raw events until Reports aggregates them (M5).
+  analyticsEvents: {
+    read: { roles: ['owner'] },
+    create: {},
+    update: {},
+    delete: {},
+  },
+  // The settings global: owners only (docs/04). Pages read the legal information and the flags
+  // on the server, past these rules, and only those fields (src/lib/settings/read.ts).
+  settings: {
+    read: { roles: ['owner'] },
+    update: { roles: ['owner'] },
+  },
 } as const satisfies Record<string, Record<string, Rule>>
+
+/**
+ * A rule of the table, narrowed by a condition of the collection's own: whoever the rule lets
+ * through reaches only the documents that match `where`, worked out at the time of the request.
+ */
+export function allowWhere(rule: Rule, where: () => Where): Access {
+  const base = allow(rule)
+  return async (args) => {
+    const result = await base(args)
+    if (result === false) return false
+    return result === true ? where() : { and: [result, where()] }
+  }
+}
 
 /** A Payload access function for one rule of the table. */
 export function allow(rule: Rule): Access {

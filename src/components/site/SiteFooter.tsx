@@ -4,6 +4,7 @@ import Link from 'next/link'
 import logo from '@/brand/logo/iiic-logo.svg'
 import { Todo } from '@/components/Todo'
 import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
+import { footerLegal, NO_LEGAL_INFORMATION, type LegalInformation } from '@/lib/settings/legal'
 import { CONTACT, mailHref, telHref } from '@/lib/site/contact'
 
 import styles from './SiteFooter.module.css'
@@ -14,8 +15,9 @@ import styles from './SiteFooter.module.css'
  * It carries the eight main links (docs/12 §3, listed in docs/11 §5.1): the logo links
  * home, and Contact opens the contact section of /about. The contact details are the ones
  * that section shows (D-31; src/lib/site/contact.ts).
- * The legal row names the proprietor, the GSTIN and the grievance officer (docs/08 §3, §4), each
- * a placeholder until IIIC supplies it. The affiliation statement waits on the lawyer (D-20).
+ * The legal row names the proprietor, the GSTIN and the grievance officer (docs/08 §3, §4) from
+ * the settings, each a placeholder while the settings lack it (src/lib/settings/legal.ts;
+ * SiteFooterWithSettings reads them). The affiliation statement waits on the lawyer (D-20).
  */
 const COLUMNS = [
   {
@@ -55,8 +57,9 @@ const LEGAL = [
   { href: '/accessibility', label: 'Accessibility' },
 ] as const
 
-export function SiteFooter() {
+export function SiteFooter({ legal = NO_LEGAL_INFORMATION }: { legal?: LegalInformation }) {
   const year = new Date().getFullYear()
+  const supplied = footerLegal(legal)
   return (
     <footer className={styles.footer}>
       <div className="iiic-footer-grid">
@@ -85,9 +88,12 @@ export function SiteFooter() {
       <div className="iiic-footer-legal">
         <span>
           © {year} Indian Institute of Image Catalysts · Legal name:{' '}
-          <Todo {...FIXED_PLACEHOLDERS.footerLegalName} /> · GSTIN{' '}
-          <Todo {...FIXED_PLACEHOLDERS.footerGstin} /> · Grievance officer:{' '}
-          <Todo {...FIXED_PLACEHOLDERS.footerGrievanceOfficer} /> ·{' '}
+          {supplied.legalName ?? <Todo {...FIXED_PLACEHOLDERS.footerLegalName} />} ·{' '}
+          {supplied.gstStatus ?? (
+            <>GSTIN {supplied.gstin ?? <Todo {...FIXED_PLACEHOLDERS.footerGstin} />}</>
+          )}{' '}
+          · Grievance officer:{' '}
+          {supplied.grievanceOfficer ?? <Todo {...FIXED_PLACEHOLDERS.footerGrievanceOfficer} />} ·{' '}
           <Todo {...FIXED_PLACEHOLDERS.footerAffiliation} />
         </span>
         <span>
