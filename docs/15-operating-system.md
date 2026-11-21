@@ -262,22 +262,29 @@ Each system: what it does for the business, what is live on 22 November 2026, wh
 | Runs it | The founder and owners (LinkedIn); editor (drafts); operator (the posting cadence) |
 | Number it moves | Proposal calls booked from `/founders` (`14` §5); bookings and leads by source; partnership enquiries; confirmed subscribers and WhatsApp opt-ins |
 
-## 4. Intelligence and AI (a proposal)
+## 4. Intelligence and AI (a proposed concept, parked)
 
-AI here is a drafting aid inside the admin, for a small team with more writing than hours. Nothing in this section is built until IIIC takes the decisions in §8 (OS-1, OS-2, OS-3, OS-13, OS-14). Three rules hold throughout: a person approves anything that is sent or published; the assistant sees the least data the task needs; and what the non-negotiables protect never reaches it.
+AI here is a drafting aid inside the admin, for a small team with more writing than hours. **Status: parked.** IIIC's owner said on 22 November 2026 to keep it as a proposed concept for now, and that it "should not be costly at all". Nothing in this section is built until the owner asks for it and IIIC takes the decisions in §8 (OS-1, OS-2, OS-3, OS-13, OS-14). Three rules hold throughout: a person approves anything that is sent or published; the assistant sees the least data the task needs; and what the non-negotiables protect never reaches it.
+
+The owner's cost rule shapes every choice below:
+
+- Claude Haiku 5.5 (`claude-haiku-5-5`), the cheapest current Claude model, for every task; a larger model for one task only when the owner asks for it.
+- Checks that code can do for free (lengths, the words to avoid, placeholders, prices) run first; the model is called only when a person asks for more.
+- Each prompt stays under 100,000 tokens, where Haiku's price is lowest; each task's fixed instructions are cached; effort is set low and each answer has a length limit.
+- A hard monthly cap of $5 that refuses calls past it, and the whole assistant off until it is switched on.
 
 ### 4.1 What an assistant may do
 
 | Task | What it reads | What it returns | Who approves | Model | From |
 | --- | --- | --- | --- | --- | --- |
-| Draft a reply to an enquiry (consultancy, course or partnership; never counselling) | The enquiry, the organisation's name and sector, the facts in `09`, VOICE.md's rules; names, phone numbers and emails replaced by placeholders before the call | A draft in the lead's activity, marked "drafted with the assistant" | The operator edits and sends it | `claude-sonnet-5-5` | M4 |
-| Summarise a lead's timeline | The lead's activities (S1) | Five lines at the top of the lead | Read by the operator; never sent | `claude-sonnet-5-5` | M5 |
-| Draft a proposal from the print template | The phases and fees the operator entered, the lead's notes, the service descriptions in `09` | The proposal's narrative sections, in the kit's proposal template | The person who owns the lead edits it, previews the PDF and sends it (`05` Key workflows) | `claude-opus-5-5` | M4 |
-| Turn the founder's notes into a Journal draft | The founder's own notes, the searched question from the keyword map, the facts | A draft post in the CMS, with the source of every claim listed | The founder rewrites and approves; the editor publishes after `/copy-check` (OS-3) | `claude-opus-5-5` | M2, with posts |
-| Write the weekly report's narrative | The report's own totals, with no personal data | A paragraph above the figures, labelled as the assistant's | Owners read it; the figures stay the record | `claude-sonnet-5-5` | M6 |
+| Draft a reply to an enquiry (consultancy, course or partnership; never counselling) | The enquiry, the organisation's name and sector, the facts in `09`, VOICE.md's rules; names, phone numbers and emails replaced by placeholders before the call | A draft in the lead's activity, marked "drafted with the assistant" | The operator edits and sends it | `claude-haiku-5-5` | M4 |
+| Summarise a lead's timeline | The lead's activities (S1) | Five lines at the top of the lead | Read by the operator; never sent | `claude-haiku-5-5` | M5 |
+| Draft a proposal from the print template | The phases and fees the operator entered, the lead's notes, the service descriptions in `09` | The proposal's narrative sections, in the kit's proposal template | The person who owns the lead edits it, previews the PDF and sends it (`05` Key workflows) | `claude-haiku-5-5` | M4 |
+| Turn the founder's notes into a Journal draft | The founder's own notes, the searched question from the keyword map, the facts | A draft post in the CMS, with the source of every claim listed | The founder rewrites and approves; the editor publishes after `/copy-check` (OS-3) | `claude-haiku-5-5` | M2, with posts |
+| Write the weekly report's narrative | The report's own totals, with no personal data | A paragraph above the figures, labelled as the assistant's | Owners read it; the figures stay the record | `claude-haiku-5-5` | M6 |
 | Suggest FAQs from searches with no results | Queries seen in three or more sessions, with digits and email-like text removed (OS-14) | Candidate questions, grouped by door | The editor writes each answer from facts (I-20) | `claude-haiku-5-5` | M2, with `/search` |
-| Check what AI assistants say about IIIC | The keyword map's four questions, which carry no personal data | The dated answers, kept for review | A person notes what changed, in the keyword map | Several assistants through the gateway; Claude with web search | After launch (OS-13) |
-| Check copy against the writing standard, in the admin | A draft page's text (S0) | Findings in `/copy-check`'s form | The editor decides | `claude-sonnet-5-5` | M2 |
+| Check what AI assistants say about IIIC | The keyword map's four questions, which carry no personal data | The dated answers, kept for review | A person notes what changed, in the keyword map | Claude Haiku 5.5 with web search; other assistants only if the owner asks | After launch (OS-13) |
+| Check copy against the writing standard, in the admin | A draft page's text (S0) | Findings in `/copy-check`'s form, after the free checks in code | The editor decides | `claude-haiku-5-5` | M2 |
 
 Every draft is held to the rules for copy a person writes: facts only from `09` and `content/sources/`, `[[TODO: …]]` where a fact is missing, the words to avoid, and no review, number or client that IIIC did not supply.
 
@@ -311,27 +318,27 @@ The models, at Anthropic's list prices; the gateway adds no markup and no platfo
 
 | Model | Use here | Input / output, per million tokens | Notes |
 | --- | --- | --- | --- |
-| `claude-opus-5-5` | Proposals, Journal drafts | $4 / $20 | Thinking always on; its default effort is `medium`, so each task sets effort explicitly |
-| `claude-sonnet-5-5` | Replies, summaries, the weekly narrative, copy checks | $2 / $10 | Faster than Opus |
-| `claude-haiku-5-5` | Grouping search queries | $0.10 / $0.50, for prompts up to 100,000 tokens | The fastest |
+| `claude-haiku-5-5` | Every task (the owner's cost rule) | $0.10 / $0.50, for prompts up to 100,000 tokens (five times that above) | The cheapest and fastest current Claude model. It has no server-side refusal fallback, so a refusal is handled in code |
+| `claude-sonnet-5-5` | Only a task the owner moves to it | $2 / $10 | For a task where Haiku's drafts need too much editing |
+| `claude-opus-5-5` | Only a task the owner moves to it | $4 / $20 | The most capable of the three |
 
-Sources: [models overview][s-claude-models], [pricing][s-claude-pricing]. Cache reads cost 5% of the input price on Opus 5.5 and Sonnet 5.5, so caching each task's fixed instructions lowers the figures below. The Batch API, which halves prices, is not used: it keeps data for 29 days and falls outside zero data retention ([API and data retention][s-claude-retention]).
+Sources: [models overview][s-claude-models], [pricing][s-claude-pricing]. Caching each task's fixed instructions lowers the figures below. The Batch API, which halves prices, is not used: it keeps data for 29 days and falls outside zero data retention ([API and data retention][s-claude-retention]).
 
-An estimate at assumed volumes. The volumes are assumptions for budgeting, not records.
+An estimate at assumed volumes, every task on Haiku 5.5. The volumes are assumptions for budgeting, not records.
 
-| Task | Runs a month (assumed) | Tokens a run, in / out | Model | A month |
-| --- | --- | --- | --- | --- |
-| Enquiry replies | 60 | 4,000 / 1,000 | Sonnet | $1.08 |
-| Lead summaries | 60 | 3,000 / 300 | Sonnet | $0.54 |
-| Proposal drafts | 8 | 12,000 / 5,000 | Opus | $1.18 |
-| Journal drafts | 2 | 10,000 / 8,000 | Opus | $0.40 |
-| The weekly narrative | 4 | 3,000 / 800 | Sonnet | $0.06 |
-| FAQ suggestions | 1 | 5,000 / 1,500 | Haiku | under $0.01 |
-| Copy checks | 40 | 6,000 / 1,500 | Sonnet | $1.08 |
-| The check of AI answers, Claude's part | 4 questions | 15,000 / 1,000, plus two web searches at $10 per 1,000 | Sonnet | $0.24 |
-| Total | | | | about $4.60 |
+| Task | Runs a month (assumed) | Tokens a run, in / out | A month |
+| --- | --- | --- | --- |
+| Enquiry replies | 60 | 4,000 / 1,000 | $0.05 |
+| Lead summaries | 60 | 3,000 / 300 | $0.03 |
+| Proposal drafts | 8 | 12,000 / 5,000 | $0.03 |
+| Journal drafts | 2 | 10,000 / 8,000 | $0.01 |
+| The weekly narrative | 4 | 3,000 / 800 | under $0.01 |
+| FAQ suggestions | 1 | 5,000 / 1,500 | under $0.01 |
+| Copy checks | 40 | 6,000 / 1,500 | $0.05 |
+| The check of AI answers, Claude's part | 4 questions | 15,000 / 1,000, plus two web searches each at $10 per 1,000 | $0.09 |
+| Total | | | about $0.27, under $1 with thinking tokens and retries |
 
-Proposal (OS-1): a $20 monthly budget on the gateway project, billed in USD, with GST on imported services (`07`). The other assistants in the monthly check bill at their own list prices from the same credits. Per-request zero data retention costs nothing extra on a paid account (Vercel Pro, or purchased credits), and purchased credits expire a year after purchase ([gateway pricing][s-gw-pricing], [gateway FAQ][s-gw-faq]).
+Proposal (OS-1): a hard cap of $5 a month, billed in USD, with GST on imported services (`07`); past the cap the assistant refuses calls until the next month. Per-request zero data retention costs nothing extra on a paid account (Vercel Pro, or purchased credits), and purchased credits expire a year after purchase ([gateway pricing][s-gw-pricing], [gateway FAQ][s-gw-faq]).
 
 ## 5. The best tool for each job
 
@@ -468,17 +475,17 @@ Every item in `10` M2, with its state on 22 November 2026:
 | The reading devices: the bar, the flip, the sticky question, the chapters | On a branch |
 | The 404 log (missing pages) with one-click redirects, the static 500, `security.txt` | On a branch; check that redirects on slug change (`12` §3 URLs) come with it |
 | Live preview in the admin (done-when) | To build (§5.3, OS-4) |
-| Posts and topics: the Journal with topics, pagination, reading time and the question to sit with; the Journal teaser on the home page | To build |
+| Posts and topics: the Journal with topics, pagination, reading time and the question to sit with; the Journal teaser on the home page | The Journal on a branch; the home page's teaser once articles exist |
 | `@payloadcms/plugin-seo` for posts (D-68's condition) | To build, with posts |
 | Testimonials with the review fields in `04`, and the one-off import of the intake sheet with its consent evidence | To build |
 | Proof (`/proof`, `/proof/[slug]`): "In their words" with its filters, the case studies' empty state; the voices beside the text; plain review cards on counselling pages (D-58) | To build |
 | `/search` with the search index (D-34), then `SearchAction` | To build |
-| Settings: the legal information, the contact details and the flags (`prices_public` and the rest), with the footer and contact section reading from it | To build |
+| Settings: the legal information, the contact details and the flags (`prices_public` and the rest), with the footer and contact section reading from it | On a branch, with `people` and `consents` (the trust layer) |
 | FAQs, with `FAQPage` markup only around questions shown on the page (I-20) | To build |
 | Services and practitioners, with the three service pages and `/organisations/team-map` (its form comes in M4) | To build |
-| Consent versions | To build |
-| Analytics events (doors, step 0, searches with no results) and the Cloudflare beacon | To build |
-| The `iiicedu.com` redirect rules from `content/sources/old-site-iiicedu-com.md`, applied at launch | To build |
+| Consent versions | On a branch, with the trust layer |
+| Analytics events (doors, step 0, searches with no results) and the Cloudflare beacon | The events table and step 0 on a branch; the beacon at launch |
+| The `iiicedu.com` redirect rules from `content/sources/old-site-iiicedu-com.md`, applied at launch | On a branch, with the 404 log; inert until the domain points at Vercel |
 | Search Console and Bing verified on the staging domain (`12` §3) | Not recorded as done |
 | The done-when checks: 320–1600 px, axe, the acceptance in `11` §10, Lighthouse on the home, framework, founders and counselling pages, every claim traced to a fact | Run on each slice; the full set once the items above have landed |
 
@@ -549,7 +556,7 @@ The plan's metrics (`00`) and the reviews in `14` §4, as one table.
 
 Each waits for IIIC's confirmation and is not in `decisions.md`.
 
-1. **OS-1 · AI drafting aids through the gateway.** Build the drafting aids in §4 on Claude through Vercel AI Gateway, with zero data retention set on every request, the provider limited to Anthropic and a $20 monthly budget on the project, behind a settings flag that stays off until the processor register and the privacy notice name both providers and the lawyer has read them; reason: the gateway adds no markup, keeps no prompt or reply, gives zero data retention on a paid account without a separate agreement, and caps spend.
+1. **OS-1 · AI drafting aids through the gateway (parked: a proposed concept until the owner asks, 22 November 2026).** Build the drafting aids in §4 on Claude Haiku 5.5 through Vercel AI Gateway, with zero data retention set on every request, the provider limited to Anthropic, the free checks in code first and a hard $5 monthly cap, behind a settings flag that stays off until the processor register and the privacy notice name both providers and the lawyer has read them; reason: the owner's rule that it should not be costly at all, and the gateway adds no markup, keeps no prompt or reply, gives zero data retention on a paid account without a separate agreement, and caps spend.
 2. **OS-2 · What AI never touches.** The assistant never receives anything from counselling (enquiries, sessions, notes, feedback, reviews), any Map or Team Map answer, or data about anyone under 18, and nothing it drafts is sent or published until a named person approves it; reason: non-negotiables 3 and 4 and the proof rule leave no room for an exception.
 3. **OS-3 · Journal drafts from the founder's notes.** A draft built from the founder's own notes is an editing aid that he rewrites and approves before it is published, which narrows `12` §3's "AI-generated articles" line to articles an assistant writes on its own; reason: the Journal's cadence (I-19) depends on the founder's time, and the voice stays his.
 4. **OS-4 · Live preview in the admin.** Use Payload's server-side live preview, and let only draft-mode responses for signed-in staff send `frame-ancestors 'self'` while every other response keeps `'none'`, with the draft-mode cookie added to the cookie inventory and the notice; reason: M2's done-when asks for a preview, and the admin's preview frame cannot load under today's policy.
