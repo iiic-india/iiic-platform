@@ -6,12 +6,16 @@ import { withSentryConfig } from '@sentry/nextjs/config'
 import type { NextConfig } from 'next'
 
 import { headerRules, withoutColorSchemeHints } from './src/lib/security/headers'
+import { HTML_LIMITED_BOTS } from './src/lib/seo/bots'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Crawlers that read only <head> get each page in one piece, metadata in its head: Next.js's
+  // own list plus the AI crawlers D-61 welcomes (plan A2).
+  htmlLimitedBots: HTML_LIMITED_BOTS,
   images: {
     localPatterns: [{ pathname: '/api/media/file/**' }],
   },
