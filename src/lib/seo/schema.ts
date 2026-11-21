@@ -1,3 +1,10 @@
+import {
+  CONSULTANCY_AUDIENCE,
+  CONSULTANCY_NAME,
+  CONSULTANCY_SERVICES,
+  type ConsultancyOffer,
+  TEAM_MAP,
+} from '@/lib/site/consultancy'
 import { CONTACT } from '@/lib/site/contact'
 
 import { pageSlugOf } from './paths'
@@ -39,6 +46,8 @@ export type PageGraphInput = {
   description?: string | null
   /** The pages above this one, nearest last: [{ path: "/organisations", title: "…" }]. */
   trail?: { path: string; title: string }[]
+  /** The questions the page shows in its questions section, and only those (D-62). */
+  faqs?: readonly { question: string; answer: string }[]
 }
 
 export const ids = (origin: string = siteOrigin()) => ({
@@ -207,15 +216,58 @@ export function consultancyNode(origin: string = siteOrigin()): JsonLdNode {
   return {
     '@type': 'Service',
     '@id': `${canonicalUrl('/organisations', origin)}#service`,
-    name: 'Business & Management Consultancy',
+    name: CONSULTANCY_NAME,
     serviceType: 'Business and management consultancy',
     description:
       'Alongside leadership development, we build organisational systems, processes and Standard Operating Procedures (SOPs) through an HR-centric approach.',
     provider: ref(ids(origin).organization),
-    audience: {
-      '@type': 'BusinessAudience',
-      audienceType: 'Founders, business owners and SME/MSME leaders',
-    },
+    audience: { '@type': 'BusinessAudience', audienceType: CONSULTANCY_AUDIENCE },
+  }
+}
+
+/**
+ * One of the consultancy's offers on its own page (D-62): its name, the business as provider by
+ * its @id, and the consultancy's audience. What each offer is, and what a client receives,
+ * waits on IIIC (I-11, I-12), so the node describes neither, and it names no offer or price
+ * (D-21).
+ */
+export function consultancyOfferNode(
+  offer: ConsultancyOffer,
+  origin: string = siteOrigin(),
+): JsonLdNode {
+  return {
+    '@type': 'Service',
+    '@id': `${canonicalUrl(`/${offer.slug}`, origin)}#service`,
+    name: offer.name,
+    serviceType: 'Business and management consultancy',
+    provider: ref(ids(origin).organization),
+    audience: { '@type': 'BusinessAudience', audienceType: CONSULTANCY_AUDIENCE },
+  }
+}
+
+/**
+ * The questions a page shows, and only those (D-62; I-20): a FAQPage that is part of the page,
+ * with each question and its answer as the page shows them. A question or an answer that is
+ * empty or still holds a placeholder is left out (a published question holds none,
+ * src/collections/Faqs.ts); a page that shows no question has no FAQPage.
+ */
+export function faqNode(input: PageGraphInput, origin: string = siteOrigin()): JsonLdNode | null {
+  const questions = (input.faqs ?? []).flatMap(({ question, answer }) => {
+    const name = fact(question)
+    const text = fact(answer)
+    return name && text
+      ? [{ '@type': 'Question', name, acceptedAnswer: { '@type': 'Answer', text } }]
+      : []
+  })
+  if (questions.length === 0) return null
+  const url = canonicalUrl(input.path, origin)
+  return {
+    '@type': 'FAQPage',
+    '@id': `${url}#faq`,
+    url,
+    inLanguage: SITE_LANGUAGE,
+    isPartOf: ref(`${url}#webpage`),
+    mainEntity: questions,
   }
 }
 
@@ -278,8 +330,10 @@ function pageNodes(slug: string, origin: string): JsonLdNode[] {
       return counsellingNodes(origin)
     case 'learn':
       return [courseNode(origin)]
-    default:
-      return []
+    default: {
+      const offer = [...CONSULTANCY_SERVICES, TEAM_MAP].find((entry) => entry.slug === slug)
+      return offer ? [consultancyOfferNode(offer, origin)] : []
+    }
   }
 }
 
@@ -302,10 +356,12 @@ function compact<T extends JsonLdValue | undefined>(value: T): T | undefined {
 /** A page's whole graph. */
 export function pageGraph(input: PageGraphInput, origin: string = siteOrigin()): JsonLdGraph {
   const home = canonicalPath(input.path) === '/'
+  const faq = faqNode(input, origin)
   const nodes = [
     webPageNode(input, origin),
     ...(home ? [] : [breadcrumbNode(input, origin)]),
     ...pageNodes(pageSlugOf(input.path), origin),
+    ...(faq ? [faq] : []),
   ]
   return {
     '@context': 'https://schema.org',

@@ -10,8 +10,11 @@ import { payloadTotp } from 'payload-totp'
 import sharp from 'sharp'
 
 import { AuditLog } from './collections/AuditLog'
+import { Faqs } from './collections/Faqs'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
+import { Practitioners } from './collections/Practitioners'
+import { Services } from './collections/Services'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Users } from './collections/Users'
 import { TOTP_OPTIONS } from './lib/auth/totp'
@@ -94,7 +97,16 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Pages, Media, StaffRecoveryCodes, AuditLog],
+  collections: [
+    Users,
+    Pages,
+    Faqs,
+    Media,
+    Practitioners,
+    Services,
+    StaffRecoveryCodes,
+    AuditLog,
+  ],
   editor: lexicalEditor(),
   email: config.RESEND_API_KEY
     ? resendAdapter({

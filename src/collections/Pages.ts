@@ -10,6 +10,7 @@ import {
   PAGE_BLOCKS,
   uniqueAnchors,
 } from '@/blocks/pageBlocks'
+import { factsField } from '@/fields/facts'
 import { copyStarterPage } from '@/lib/content/copyStarter'
 import { mistypedPlaceholders } from '@/lib/content/placeholders'
 import { revalidatePages } from '@/lib/content/revalidate'
@@ -199,37 +200,6 @@ export const Pages: CollectionConfig = {
         return carriesFixedStatements(value, (options.data as { slug?: unknown } | undefined)?.slug)
       },
     },
-    {
-      name: 'facts',
-      type: 'array',
-      labels: { singular: 'Fact', plural: 'Facts' },
-      admin: {
-        description:
-          'Every claim the page makes, with where it comes from (docs/content/README.md). A claim with no source does not go on the page.',
-      },
-      fields: [
-        { name: 'statement', type: 'textarea', required: true },
-        {
-          type: 'row',
-          fields: [
-            {
-              name: 'source',
-              type: 'select',
-              required: true,
-              options: [
-                { label: 'Brochure', value: 'brochure' },
-                { label: 'Current site', value: 'site' },
-                { label: 'Registration form', value: 'form' },
-                { label: 'Founder', value: 'founder' },
-                { label: "IIIC's description or philosophy", value: 'description' },
-                { label: 'Page copy IIIC supplied', value: 'pageCopy' },
-                { label: 'Counted', value: 'counted' },
-              ],
-            },
-            { name: 'checkedAt', type: 'date', label: 'Checked on' },
-          ],
-        },
-      ],
-    },
+    factsField,
   ],
 }
