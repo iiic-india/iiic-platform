@@ -9,8 +9,9 @@ import type { ComparisonBlock } from '../../src/payload-types'
 // The experience devices on the narrative pages (docs/11 §3, §10), in a browser: the bar (§3.1),
 // Flip the line (§3.2), the sticky question (§3.3) and the chapters (§3.5). The server has an
 // empty database, so each page is its starter page. The parts only a browser can show are
-// here: the keys, the stylesheet's view without JavaScript and on paper, reduced motion, the
-// layout and its shifts. The client components' logic has unit tests of its own.
+// here: the keys, the stylesheet's view without JavaScript, on paper and in forced colours,
+// the pressed state's look, reduced motion, the layout and its shifts. The client components'
+// logic has unit tests of its own.
 
 const NARRATIVE = ['/', '/framework', '/founders'] as const
 
@@ -40,6 +41,30 @@ const flipLines = (page: Page) => page.locator('main ul button[aria-pressed]')
 
 /** The chapters of the founders' page. */
 const chapters = (page: Page) => page.locator('main [data-reveal]')
+
+/** The bar under a line of the flip: the line's one part that is not a side of it. */
+const barUnder = (button: Locator) => button.locator(':scope > span:not([data-face])')
+
+/**
+ * How a device's bar is drawn, by the pseudo-element that draws it: its colour, and whether it
+ * is drawn out to its full length or folded away.
+ */
+const drawnBar = (element: Locator, pseudo: '::before' | '::after') =>
+  element.evaluate((node, which) => {
+    const style = getComputedStyle(node, which)
+    return { colour: style.backgroundColor, drawn: style.transform === 'matrix(1, 0, 0, 1, 0, 0)' }
+  }, pseudo)
+
+/** A system colour as the browser resolves it at the moment, forced colours included. */
+const systemColour = (page: Page, name: string) =>
+  page.evaluate((colour) => {
+    const probe = document.createElement('span')
+    probe.style.backgroundColor = colour
+    document.body.append(probe)
+    const resolved = getComputedStyle(probe).backgroundColor
+    probe.remove()
+    return resolved
+  }, name)
 
 /**
  * Waits until React has taken over an element drawn on the server: until then a key press
@@ -146,11 +171,16 @@ test.describe('Flip the line (docs/11 §3.2)', () => {
     await flipAll.focus()
     await page.keyboard.press('Enter')
     await expect(flipAll).toHaveAttribute('aria-pressed', 'true')
+    // Pressed shows by more than the wash's tint: an inset ring doubles the kit's ink border,
+    // beside the focus ring rather than in its place (WCAG 1.4.1, 1.4.11).
+    await expect(flipAll).toHaveCSS('box-shadow', /4\.5px, .*1\.5px inset$/)
     for (const pair of PAIRS) {
       await expect(line(page, pair.subject)).toHaveAttribute('aria-pressed', 'true')
     }
     await page.keyboard.press('Enter')
     await expect(flipAll).toHaveAttribute('aria-pressed', 'false')
+    await expect(flipAll).not.toHaveCSS('box-shadow', /inset/)
+    await expect(flipAll).toHaveCSS('box-shadow', /4\.5px$/)
     for (const pair of PAIRS) {
       await expect(line(page, pair.object)).toHaveAttribute('aria-pressed', 'false')
     }
@@ -178,6 +208,8 @@ test.describe('Flip the line (docs/11 §3.2)', () => {
     await flipAll.click()
     await expect(page.locator('main ul button[aria-pressed="false"]')).toHaveCount(0)
     expect(await heights()).toEqual(before)
+    // Pressed by a pointer, "Flip all" shows the same inset ring, and no focus ring beside it.
+    await expect(flipAll).toHaveCSS('box-shadow', /^rgba?\([^)]*\) 0px 0px 0px 1\.5px inset$/)
   })
 
   test('the table also opens from its address, as a link to it does', async ({ page }) => {
@@ -347,6 +379,55 @@ test.describe('On paper', () => {
     for (const chapter of await chapters(page).all()) {
       await expect(chapter).toHaveCSS('opacity', '1')
     }
+  })
+})
+
+// Windows contrast themes drop backgrounds and shadows: the marks that say which line is
+// turned, that "Flip all" is pressed and which insight is being read take system colours.
+test.describe('In forced colours', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' })
+  })
+
+  test('a turned line keeps its bar, and a pressed Flip all shows that it is pressed', async ({
+    page,
+  }) => {
+    await page.goto('/framework')
+    const highlight = await systemColour(page, 'Highlight')
+    const first = line(page, FIRST.object)
+    await hydrated(first)
+    await first.focus()
+    await page.keyboard.press('Enter')
+    await expect
+      .poll(() => drawnBar(barUnder(line(page, FIRST.subject)), '::after'))
+      .toEqual({ colour: highlight, drawn: true })
+    expect(await drawnBar(barUnder(line(page, SECOND.object)), '::after')).toEqual({
+      colour: highlight,
+      drawn: false,
+    })
+    // Filled with the highlight, beside the focus ring and under the pointer alike.
+    const flipAll = page.getByRole('button', { name: FLIP_COPY.flipAll })
+    await flipAll.focus()
+    await page.keyboard.press('Enter')
+    await expect(flipAll).toHaveAttribute('aria-pressed', 'true')
+    await expect(flipAll).toHaveCSS('background-color', highlight)
+    await flipAll.hover()
+    await expect(flipAll).toHaveCSS('background-color', highlight)
+    await expect(flipAll).toHaveCSS('color', await systemColour(page, 'HighlightText'))
+  })
+
+  test('the insight being read keeps its bar', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'The titles beside the cards are for wide screens; phones stack the cards')
+    await page.goto('/founders')
+    const highlight = await systemColour(page, 'Highlight')
+    const titles = page.getByRole('navigation', { name: 'Six Insights' })
+    const systems = titles.getByRole('link', { name: FOUNDERS_IIIC_LINES.systemsTitle })
+    await hydrated(systems)
+    await systems.click()
+    await expect(systems).toHaveAttribute('aria-current', 'true')
+    await expect
+      .poll(() => drawnBar(systems, '::before'))
+      .toEqual({ colour: highlight, drawn: true })
   })
 })
 

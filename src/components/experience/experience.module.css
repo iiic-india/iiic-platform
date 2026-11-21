@@ -162,9 +162,17 @@
   margin-top: 24px;
 }
 
+/* "Flip all" pressed: an inset ring doubles the kit's ink border, so the state shows by more
+   than the wash's tint (WCAG 1.4.1, 1.4.11); with the keyboard's focus ring, both rings show. */
 .flipAll[aria-pressed='true'] {
-  border-color: var(--iiic-heading);
   background: var(--iiic-accent-wash);
+  box-shadow: inset 0 0 0 1.5px var(--iiic-heading);
+}
+
+.flipAll[aria-pressed='true']:focus-visible {
+  box-shadow:
+    var(--iiic-focus),
+    inset 0 0 0 1.5px var(--iiic-heading);
 }
 
 /* Under the lines, once shown; without scripts the table follows the heading directly. */
@@ -268,6 +276,24 @@
   transition:
     opacity 320ms var(--iiic-ease),
     transform 320ms var(--iiic-ease);
+}
+
+/* Forced colours (Windows contrast themes) drop backgrounds and shadows, and with them the bars
+   and the pressed ring. The bars take the system's highlight, as the kit's own marks do
+   (03-components.css), and a pressed "Flip all" is filled with it, so its state shows beside
+   the focus ring too. The doubled class outranks the kit's hover, whose tint forced colours
+   would turn back to the page's background under the highlight's text colour. */
+@media (forced-colors: active) {
+  .flipBar::after,
+  .insightLink::before {
+    background: Highlight;
+  }
+
+  .flipAll.flipAll[aria-pressed='true'] {
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

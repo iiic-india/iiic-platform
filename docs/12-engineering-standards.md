@@ -135,7 +135,7 @@ Nothing in analytics ever records what is said in counselling, a Map answer, a n
 
 - The 2.2 criteria that matter most here: target size (24 × 24 CSS px minimum; the kit's controls are larger); focus not obscured (sticky header offsets are set; nothing floats over a focused control); consistent help (the contact link is in the same place on every page); redundant entry (the booking flow never asks for the same detail twice; the manage link pre-fills); accessible authentication (one-time codes can be pasted; no cognitive puzzles; Turnstile's managed mode, with its accessible fallback).
 - Screen-reader paths recorded per release: NVDA with Chrome on Windows, VoiceOver on iOS Safari, TalkBack on Android Chrome; keyboard-only paths for every flow in `03`.
-- 400% zoom and 320 px width without loss of content; text spacing overrides respected; `forced-colors` handled by the kit.
+- 400% zoom and 320 px width without loss of content; text spacing overrides respected; `forced-colors` handled by the kit, and by the app's own stylesheets for the marks they add (the experience devices' bars and pressed states take system colours, `11` §3.2).
 - Live regions for slot availability changes and form results; `aria-pressed` on the flip buttons; headings in order on every page; landmarks once each; the skip link first.
 - Devanagari text carries `lang="sa"` (Sanskrit) or `lang="hi"`; Gujarati `lang="gu"` when it arrives.
 - Media: no autoplay; captions and transcripts for any video (R2 lessons included).
