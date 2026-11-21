@@ -31,6 +31,7 @@ Everything needed to build the IIIC platform with Claude Code: what the product 
 | 12 | `12-engineering-standards.md` | Rendering, performance budgets, the search system, caching, security hardening, backend and API, analytics and monitoring, code quality, accessibility, consent, policies, hosting checklist, scalability, release gates | M0, M1, every pull request |
 | 13 | `13-email-and-messaging.md` | Domains and DNS, addresses and owners, what is automated and what is human, templates, deliverability, WhatsApp, internal alerts, offboarding | M0, M6, M7 |
 | 14 | `14-technical-direction.md` | The CTO's brief: direction, registers, what to monitor, what to grow, the next 90 days, risks | The CTO, monthly |
+| 15 | `15-operating-system.md` | Every system IIIC runs on, beyond the website: what each does for the business, what is live, what comes next, the tool for each job checked in November 2026, the AI proposal, the roadmap by phase, the review cadence, decisions to propose | Planning a phase; the monthly review |
 | — | `content/` | `copy-architecture.md` (every page, section by section) and `sources/` (IIIC's texts, brochures, feedback, the copy system, the old site, verbatim) | M2 |
 | — | `decisions.md` | D-A to D-C and D-01 to D-68 with status | Every milestone |
 | — | `research/` | The four research reports behind `07` and `08` (messaging, architecture, compliance, payments), verbatim, with sources, October 2026 | When a choice is questioned |
