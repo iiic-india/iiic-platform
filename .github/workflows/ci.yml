@@ -110,4 +110,7 @@ jobs:
           path: |
             playwright-report/
             .lighthouseci/
+          # .lighthouseci/ starts with a dot: upload-artifact leaves hidden folders out unless told,
+          # and a failed budget is only explained by its reports.
+          include-hidden-files: true
           retention-days: 7
