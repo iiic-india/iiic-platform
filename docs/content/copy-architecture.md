@@ -109,7 +109,7 @@ The whole page is `[IIIC]` (`sources/founders-page-copy-2026-11-04.md`) in six s
 
 Voices beside sections 2, 4 and 5.
 
-Each `/organisations/[service]` page follows the same template with `[[TODO: the problem it solves, how the framework applies, what a client receives, I-11]]`.
+Each `/organisations/[service]` page follows the same template with `[[TODO: the problem it solves, how the framework applies, what a client receives, I-11]]`. As built (starter pages, `src/content/starter/consultancyOffers.ts`): hero (the vertical's name, the service's name, the section 1 lead `[IIIC]`, "Book a proposal call") · "What [service] covers" with the I-11 placeholder · the vertical, with the section 4 and 5 lines `[IIIC]` and a link back to `/organisations` · the page's FAQs, shown once IIIC publishes them (I-20) · the section 9 band. `/organisations/team-map`: hero ("The Team Map", the I-12 placeholder, "Request a Team Map" to its request section) · "Request a Team Map" with the I-12 placeholder until the form (M4) · the vertical · FAQs · the section 9 band.
 
 ### 4.5 Counselling `/counselling` · counselling register · primary action: **Book a session**
 
