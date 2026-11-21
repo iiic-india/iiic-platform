@@ -12,6 +12,13 @@
   grid-template-columns: 1fr;
 }
 
+/* A placeholder in the hero's main button sits on the yellow accent, where the chip's muted
+   text falls below 4.5:1; it takes the ink the button's own words use (about 11:1). The band's
+   button needs nothing: the yellow surface's roles already make its chip ink on white. */
+.heroSolo :global(.iiic-btn-primary) :global(.iiic-todo) {
+  color: var(--iiic-accent-ink);
+}
+
 /* The marker on copy IIIC has not approved yet (I-41). */
 .candidate {
   margin: 0 0 12px;

@@ -135,10 +135,11 @@ export const HOME: PageContent = {
     { statement: HOME_IIIC_LINES.education, source: 'description', checkedAt: '2026-11-20' },
     { statement: HOME_IIIC_LINES.framework, source: 'description', checkedAt: '2026-11-20' },
     { statement: HOME_IIIC_LINES.years, source: 'brochure', checkedAt: '2026-11-20' },
-    // The hero's claim, in the founders' page's words (the source the founders' page gives it).
+    // The hero's claim, in the founders' page's words: the page copy IIIC supplied
+    // (docs/content/sources/founders-page-copy-2026-11-04.md).
     {
       statement: "India's indigenous framework of psychology",
-      source: 'description',
+      source: 'pageCopy',
       checkedAt: '2026-11-21',
     },
   ],

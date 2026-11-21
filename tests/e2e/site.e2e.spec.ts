@@ -4,17 +4,37 @@ import { expect, test } from '@playwright/test'
 import { STARTER_PAGES } from '../../src/content/starter'
 import { pagePath } from '../../src/lib/content/slug'
 
-// Every page the site shows, the 404 included: the accessibility page says each has passed
-// these checks. The starter pages are the pages built so far (docs/02), and /map asks Find
-// your path's question. The 404 is what links to pages not built yet (Proof, Journal) reach
-// today; on a counselling path, where "Book a session" leads for now, it carries the scope
-// statement and the crisis numbers (docs/11 §5.1, item 8).
+// Every page the site shows, the 404 in each register included: the accessibility page says
+// each has passed these checks. The starter pages are the pages built so far (docs/02), and
+// /map asks Find your path's question. The 404 is what links to pages not built yet (Proof,
+// Journal, the footer's Verify a certificate) reach today; on a counselling path, where "Book a
+// session" leads for now, it carries the scope statement and the crisis numbers (docs/11
+// §5.1, item 8). Under /institute/, /organisations/ and /counselling/ it takes that section's
+// register (docs/02).
 const PAGES = [
   ...Object.keys(STARTER_PAGES).map(pagePath),
   '/map',
   '/no-such-page',
   '/book/session',
+  '/institute/verify',
+  '/organisations/no-such-page',
+  '/counselling/no-such-page',
 ]
+
+/** The widths the overflow check loads each page at: a small phone, a tablet, a wide desktop. */
+const WIDTHS = [320, 768, 1600]
+
+/** The WCAG contrast ratio of two colours as a browser computes them, such as "rgb(28, 38, 43)". */
+function contrast(...colours: string[]): number {
+  const [first = 0, second = 0] = colours.map((colour) => {
+    const [r = 0, g = 0, b = 0] = (colour.match(/[\d.]+/g) ?? []).map((part) => {
+      const channel = Number(part) / 255
+      return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+    })
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  })
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05)
+}
 
 test.describe('Public shell', () => {
   test('home shows the starter page: IIIC’s words, marked candidates, placeholders', async ({
@@ -76,9 +96,30 @@ test.describe('Public shell', () => {
     })
   }
 
+  test('a placeholder in the hero’s main button stays readable on its yellow', async ({ page }) => {
+    await page.goto('/')
+    // No starter page has one, but a page published in the admin may. The chip is drawn there
+    // as the site draws a placeholder (src/components/Todo.tsx), its colours read, and the chip
+    // removed in one step, so the page's own rendering never meets it.
+    const colours = await page
+      .locator('.iiic-hero .iiic-btn-primary')
+      .first()
+      .evaluate((button) => {
+        const chip = document.createElement('span')
+        chip.className = 'iiic-todo'
+        chip.textContent = '[[TODO: fake button words, I-41]]'
+        button.append(chip)
+        const read = [getComputedStyle(chip).color, getComputedStyle(button).backgroundColor]
+        chip.remove()
+        return read
+      })
+    // WCAG 1.4.3: small text at 4.5:1 or more.
+    expect(contrast(...colours), colours.join(' on ')).toBeGreaterThanOrEqual(4.5)
+  })
+
   for (const path of PAGES) {
-    test(`no horizontal scroll from 320 to 1600 px on ${path}`, async ({ page }) => {
-      for (const width of [320, 768, 1600]) {
+    test(`no horizontal scroll at ${WIDTHS.join(', ')} px on ${path}`, async ({ page }) => {
+      for (const width of WIDTHS) {
         await page.setViewportSize({ width, height: 900 })
         await page.goto(path)
         const overflow = await page.evaluate(
@@ -369,11 +410,12 @@ test.describe('Public shell', () => {
     await expect(page.locator('#scope')).toHaveCount(0)
   })
 
-  // docs/02: the pages under /institute/ and /organisations/ are in their section's register,
-  // and so is the 404 for an address there that has no page.
+  // docs/02: the pages under /institute/, /organisations/ and /counselling/ are in their
+  // section's register, and so is the 404 for an address there that has no page.
   for (const [path, register] of [
     ['/institute', 'education'],
     ['/organisations', 'consultancy'],
+    ['/counselling', 'counselling'],
   ] as const) {
     test(`an unknown address under ${path}/ gets the 404 in the ${register} register`, async ({
       page,
@@ -383,6 +425,17 @@ test.describe('Public shell', () => {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
       await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', register)
       await expect(page.locator('footer')).toContainText('+91 96240 46464')
+      // Only under /counselling/ does the 404 carry the scope statement and the crisis numbers.
+      const scope = page.locator('#scope')
+      if (register === 'counselling') {
+        await expect(scope).toContainText('not an emergency service')
+        await expect(scope.getByRole('link', { name: '14416' })).toHaveAttribute(
+          'href',
+          'tel:14416',
+        )
+      } else {
+        await expect(scope).toHaveCount(0)
+      }
       // The section's own page still answers.
       expect((await page.goto(path))?.status()).toBe(200)
       await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', register)

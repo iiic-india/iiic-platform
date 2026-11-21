@@ -12,6 +12,29 @@ export function showsCopyStatus(data: { legalReview?: unknown } | undefined): bo
   return !data?.legalReview
 }
 
+/** What Payload hands a field's check, as far as the page rules read it. */
+type CheckOptions = { data?: unknown; event?: unknown; siblingData?: unknown }
+
+/**
+ * Whether the page rules apply to a check (docs/04): when the page is being published, and in
+ * the admin's live checks, which show what publishing would refuse. Payload skips every check
+ * on a draft save. A save that leaves the page unpublished, such as an unpublish through the
+ * API, checks every field against the page's newest draft, and the page rules there would keep
+ * the page on the site (D-57), so they pass it.
+ */
+export function appliesPageRules({ data, event }: CheckOptions): boolean {
+  return (
+    event === 'onChange' ||
+    (data as { _status?: unknown } | null | undefined)?._status === 'published'
+  )
+}
+
+/** A page rule as a field's check: it applies as appliesPageRules says, and passes otherwise. */
+function pageRule(rule: (value: unknown, options: CheckOptions) => true | string) {
+  return (value: unknown, options: CheckOptions): true | string =>
+    appliesPageRules(options) ? rule(value, options) : true
+}
+
 /** Whether IIIC has approved a block's wording (I-41). Candidate copy carries a visible marker. */
 const copyStatus: Field = {
   name: 'copyStatus',
@@ -42,7 +65,12 @@ export function hasWords(value: unknown): true | string {
 
 // A custom check replaces Payload's own text check, which accepts spaces; `required` stays for
 // the admin's marker. The heading has no length limit, so nothing else is lost.
-const heading: Field = { name: 'heading', type: 'text', required: true, validate: hasWords }
+const heading: Field = {
+  name: 'heading',
+  type: 'text',
+  required: true,
+  validate: pageRule(hasWords),
+}
 
 const intro: Field = {
   name: 'intro',
@@ -88,7 +116,7 @@ export function isSitePath(value: unknown): true | string {
 /** Button words need the link they open: without one the button is not drawn. */
 export function wordsNeedLink(
   value: unknown,
-  { siblingData }: { siblingData: unknown },
+  { siblingData }: { siblingData?: unknown },
 ): true | string {
   if (value === undefined || value === null || value === '') return true
   const href = (siblingData as { href?: unknown } | undefined)?.href
@@ -108,7 +136,7 @@ function action(name: string, label: string): Field {
       {
         type: 'row',
         fields: [
-          { name: 'label', type: 'text', validate: wordsNeedLink },
+          { name: 'label', type: 'text', validate: pageRule(wordsNeedLink) },
           { name: 'href', type: 'text', label: 'Link', validate: isSitePath },
         ],
       },
@@ -327,7 +355,7 @@ const Cards: Block = {
             {
               name: 'action',
               type: 'text',
-              validate: wordsNeedLink,
+              validate: pageRule(wordsNeedLink),
               admin: { description: 'The words on the button, when the card links.' },
             },
           ],
@@ -441,10 +469,12 @@ const Band: Block = {
           type: 'text',
           // The line is drawn inside lang="sa", so a placeholder chip there would be read as
           // Sanskrit: the line is typed, or left empty.
-          validate: (value: unknown) =>
-            typeof value !== 'string' ||
-            !/\[\[|\]\]/.test(value) ||
-            'The Sanskrit line is typed in Devanagari, never as a placeholder: type it, or leave it empty.',
+          validate: pageRule(
+            (value) =>
+              typeof value !== 'string' ||
+              !/\[\[|\]\]/.test(value) ||
+              'The Sanskrit line is typed in Devanagari, never as a placeholder: type it, or leave it empty.',
+          ),
           admin: { description: 'The signature line in Devanagari, once per page.' },
         },
         { name: 'translation', type: 'text', admin: { description: 'Its English.' } },
@@ -473,7 +503,8 @@ export const PAGE_BLOCKS: Block[] = [
 
 /*
  * The page rules. src/collections/Pages.ts runs them, with every field's own check, when a
- * page is published; a draft is saved without them.
+ * page is published (appliesPageRules); a draft is saved without them, and an unpublish passes
+ * them.
  */
 
 /** A page opens with its one hero: the hero holds the page's h1 and a draft legal page's marker (D-52). */
@@ -534,15 +565,25 @@ export function uniqueAnchors(layout: unknown): true | string {
 }
 
 /**
+ * A path someone may follow to counselling: a page under /counselling, or the session booking.
+ * Matched without regard to case, so a mistyped capital still counts. The page rule below and
+ * the site's 404 (src/app/(platform)/(default)/not-found.tsx) both ask this, so a page and the
+ * 404 at the same address agree on carrying the scope statement and the crisis numbers.
+ */
+export function isCounsellingPath(path: string): boolean {
+  return /^\/(counselling|book\/session)(\/|$)/i.test(path)
+}
+
+/**
  * The fixed statements a page must carry by its address (docs/08 §7; src/brand/VOICE.md,
- * "Counselling copy"): every counselling page the scope statement and the crisis numbers,
- * and the course page the certificate statement.
+ * "Counselling copy"): every page on a counselling path the scope statement and the crisis
+ * numbers, and the course page the certificate statement.
  */
 export function carriesFixedStatements(layout: unknown, slug: unknown): true | string {
   if (typeof slug !== 'string') return true
   const blocks = Array.isArray(layout) ? (layout as { blockType?: unknown }[]) : []
   const has = (type: string) => blocks.some((block) => block.blockType === type)
-  if ((slug === 'counselling' || slug.startsWith('counselling/')) && !has('scope')) {
+  if (isCounsellingPath(`/${slug}`) && !has('scope')) {
     return `A counselling page carries the scope statement and the crisis numbers: add the "${fixedLabel('scope')}" section.`
   }
   if (slug === 'learn' && !has('certificate')) {

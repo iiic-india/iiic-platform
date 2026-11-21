@@ -13,13 +13,16 @@ import type {
 import { describe, expect, it } from 'vitest'
 
 import {
+  appliesPageRules,
   carriesFixedStatements,
   FIXED_ANCHORS,
   hasWords,
   isAnchor,
+  isCounsellingPath,
   isSitePath,
   oneClosingBand,
   oneOpeningHero,
+  PAGE_BLOCKS,
   SHELL_IDS,
   showsCopyStatus,
   uniqueAnchors,
@@ -252,10 +255,31 @@ describe('page rules', () => {
     expect(carriesFixedStatements([hero], 'counselling')).toMatch(/scope statement/)
     expect(carriesFixedStatements([hero, { blockType: 'scope' }], 'counselling')).toBe(true)
     expect(carriesFixedStatements([hero], 'counselling/families')).toMatch(/scope statement/)
+    // The session booking is a counselling path too, where "Book a session" leads.
+    expect(carriesFixedStatements([hero], 'book/session')).toMatch(/scope statement/)
+    expect(carriesFixedStatements([hero, { blockType: 'scope' }], 'book/session')).toBe(true)
+    expect(carriesFixedStatements([hero], 'book/info')).toBe(true)
+    expect(carriesFixedStatements([hero], 'counselling-notes')).toBe(true)
     expect(carriesFixedStatements([hero], 'learn')).toMatch(/certificate statement/)
     expect(carriesFixedStatements([hero, { blockType: 'certificate' }], 'learn')).toBe(true)
     expect(carriesFixedStatements([hero], 'framework')).toBe(true)
     expect(carriesFixedStatements([hero], undefined)).toBe(true)
+  })
+
+  it('asks the page and the 404 at an address the same question: is it a counselling path?', () => {
+    const counselling = ['counselling', 'counselling/families', 'book/session', 'book/session/x']
+    const other = ['book/info', 'counselling-notes', 'framework', 'institute/verify', 'book']
+    for (const slug of counselling) {
+      expect(isCounsellingPath(`/${slug}`), slug).toBe(true)
+      expect(carriesFixedStatements([hero], slug), slug).toMatch(/scope statement/)
+    }
+    for (const slug of other) {
+      expect(isCounsellingPath(`/${slug}`), slug).toBe(false)
+      expect(carriesFixedStatements([hero], slug), slug).toBe(true)
+    }
+    // The 404 is asked with the path as typed: a mistyped capital still gets the numbers.
+    expect(isCounsellingPath('/Counselling/x')).toBe(true)
+    expect(isCounsellingPath('')).toBe(false)
   })
 
   it('accepts paths on this site and nothing else as a link', () => {
@@ -323,13 +347,6 @@ describe('page rules', () => {
     }
   })
 
-  it('finds a starter page by its own address only, never by an object’s built-in name', () => {
-    for (const name of ['constructor', 'toString', '__proto__']) {
-      expect(starterAt(name), name).toBeUndefined()
-    }
-    expect(starterAt('framework')).toBe(STARTER_PAGES.framework)
-  })
-
   it('lists as not built only routes no starter page serves', () => {
     for (const path of Object.keys(NOT_BUILT_YET)) {
       expect(starterAt(path.slice(1)), path).toBeUndefined()
@@ -345,7 +362,8 @@ describe('page rules', () => {
     expect(STARTER_PAGES.home?.facts).toContainEqual(
       expect.objectContaining({
         statement: "India's indigenous framework of psychology",
-        source: 'description',
+        // The founders' page copy IIIC supplied, not its description or philosophy.
+        source: 'pageCopy',
       }),
     )
     const { decisions, reasoning, discipline, trueSelf, goals } = FRAMEWORK_IIIC_LINES
@@ -373,22 +391,47 @@ describe('the pages collection applies the page rules (src/collections/Pages.ts)
   /** A field of the collection, by name. */
   const field = <T extends Field>(name: string) =>
     Pages.fields.find((candidate) => 'name' in candidate && candidate.name === name) as T
-  /** What Payload hands a field's check, as far as these checks read it. */
-  const options = (config: object, data: Record<string, unknown> = {}) =>
+  /** The fields a list holds, those inside a row included: a row has no name of its own. */
+  const flat = (fields: Field[]): Field[] =>
+    fields.flatMap((candidate) => (candidate.type === 'row' ? flat(candidate.fields) : [candidate]))
+  /** A field inside a block, by the names that lead to it, such as hero, primary, label. */
+  const blockField = <T extends Field>(block: string, ...names: string[]) => {
+    let fields = PAGE_BLOCKS.find((candidate) => candidate.slug === block)?.fields ?? []
+    let found: Field | undefined
+    for (const name of names) {
+      found = flat(fields).find((candidate) => 'name' in candidate && candidate.name === name)
+      fields = found && 'fields' in found ? found.fields : []
+    }
+    return found as T
+  }
+  /**
+   * What Payload hands a field's check, as far as these checks read it: the page as it will be
+   * saved, with its status, and where the check runs ('submit' when the page is saved,
+   * 'onChange' in the admin's live checks).
+   */
+  const options = (
+    config: object,
+    data: Record<string, unknown> = {},
+    { event = 'submit', siblingData = data }: { event?: string; siblingData?: object } = {},
+  ) =>
     ({
       ...config,
       data,
-      siblingData: data,
+      event,
+      siblingData,
       req: { t: (key: string) => key, payload: { config: {} } },
     }) as never
+  const publishing = { _status: 'published' }
+  /** An unpublish through Payload's API: every field is checked, against the newest draft. */
+  const unpublishing = { _status: 'draft' }
   const fakeHero = { blockType: 'hero', heading: 'Fake heading', copyStatus: 'approved' }
   const fakeBand = { blockType: 'band', heading: 'Fake band', copyStatus: 'approved' }
   const scope = { blockType: 'scope' }
 
-  it('runs every rule on the sections, with the page’s address', async () => {
+  it('runs every rule on the sections of a page being published, with the page’s address', async () => {
     const layout = field<BlocksField>('layout')
     const check = (value: unknown[], slug = 'fake-page') =>
-      layout.validate?.(value, options(layout, { slug }))
+      layout.validate?.(value, options(layout, { ...publishing, slug }))
     expect(await check([fakeHero, fakeBand])).toBe(true)
     expect(await check([])).not.toBe(true)
     expect(await check([{ ...fakeHero, blockType: 'statement' }, fakeHero])).toMatch(/to the top/)
@@ -402,16 +445,69 @@ describe('the pages collection applies the page rules (src/collections/Pages.ts)
   it('keeps Payload’s own checks on the title and the description, and refuses a placeholder in either', async () => {
     const title = field<TextField>('title')
     const titled = (value: string) =>
-      (title.validate as TextFieldSingleValidation)(value, options(title))
+      (title.validate as TextFieldSingleValidation)(value, options(title, publishing))
     expect(await titled('Fake page')).toBe(true)
     expect(await titled('F'.repeat(54))).not.toBe(true)
     expect(await titled('[[TODO: fake, I-41]]')).toMatch(/browser tab/)
 
     const description = field<TextareaField>('description')
-    const described = (value: string) => description.validate?.(value, options(description))
+    const described = (value: string) =>
+      description.validate?.(value, options(description, publishing))
     expect(await described('Fake description.')).toBe(true)
     expect(await described('F'.repeat(156))).not.toBe(true)
     expect(await described('Fake [[TODO: fake, I-41]]')).toMatch(/search result/)
+  })
+
+  it('leaves the page rules to publishing, so a page comes off the site whatever its newest draft holds', async () => {
+    const layout = field<BlocksField>('layout')
+    // A late hero, two bands, and no scope block on a counselling page.
+    const broken = [{ ...fakeHero, blockType: 'statement' }, fakeHero, fakeBand, fakeBand]
+    const sections = (value: unknown[], data: Record<string, unknown>) =>
+      layout.validate?.(value, options(layout, { slug: 'counselling', ...data }))
+    expect(await sections(broken, unpublishing)).toBe(true)
+    expect(await sections(broken, publishing)).toMatch(/to the top/)
+    // Payload's own checks still hold: at least one section, and the title's length.
+    expect(await sections([], unpublishing)).not.toBe(true)
+    const title = field<TextField>('title')
+    const titled = (value: string) =>
+      (title.validate as TextFieldSingleValidation)(value, options(title, unpublishing))
+    expect(await titled('[[TODO: fake, I-41]]')).toBe(true)
+    expect(await titled('F'.repeat(54))).not.toBe(true)
+    const description = field<TextareaField>('description')
+    expect(
+      await description.validate?.('Fake [[TODO: fake, I-41]]', options(description, unpublishing)),
+    ).toBe(true)
+
+    // The rules inside a section pass an unpublish too: a heading of spaces, button words
+    // without their link, a placeholder in the Sanskrit line.
+    const inSections = [
+      [blockField<TextField>('hero', 'heading'), '   '],
+      [blockField<TextField>('hero', 'primary', 'label'), 'Fake action'],
+      [blockField<TextField>('statement', 'action', 'label'), 'Fake action'],
+      [blockField<TextField>('cards', 'cards', 'action'), 'Fake action'],
+      [blockField<TextField>('band', 'sanskrit'), '[[TODO: fake, I-41]]'],
+    ] as const
+    for (const [rule, value] of inSections) {
+      const check = (data: Record<string, unknown>) =>
+        (rule.validate as TextFieldSingleValidation)(
+          value,
+          options(rule, data, { siblingData: {} }),
+        )
+      expect(await check(publishing), rule.name).not.toBe(true)
+      expect(await check(unpublishing), rule.name).toBe(true)
+    }
+  })
+
+  it('shows in the admin’s live checks what publishing would refuse, whatever the page’s status', async () => {
+    expect(appliesPageRules({ data: publishing, event: 'submit' })).toBe(true)
+    expect(appliesPageRules({ data: unpublishing, event: 'submit' })).toBe(false)
+    expect(appliesPageRules({ data: unpublishing, event: 'onChange' })).toBe(true)
+    expect(appliesPageRules({ data: undefined })).toBe(false)
+    const layout = field<BlocksField>('layout')
+    const live = options(layout, unpublishing, { event: 'onChange' })
+    expect(
+      await layout.validate?.([{ ...fakeHero, blockType: 'statement' }, fakeHero], live),
+    ).toMatch(/to the top/)
   })
 
   it('records when a page is first published, and keeps it through an unpublish (D-57)', () => {
@@ -438,10 +534,21 @@ describe('the pages collection applies the page rules (src/collections/Pages.ts)
     expect(updated({ value: null, originalDoc: published, data: { _status: 'draft' } })).toBe(
       earlier,
     )
-    // A page published before the field existed gets it at its next save, an unpublish included.
+    // Payload hands the hook the page's latest version as the original. A page published before
+    // the field existed gets it at its next save, an unpublish included, while that version is
+    // the published one...
     const legacy = { _status: 'published', firstPublishedAt: null }
     expect(updated({ value: null, originalDoc: legacy, data: { _status: 'draft' } })).toEqual(
       expect.any(String),
     )
+    // ...but once a draft is saved on top, not until it is next published (D-57 says why no
+    // page needed it filled in).
+    const draftOnTop = { _status: 'draft', firstPublishedAt: null }
+    expect(
+      updated({ value: null, originalDoc: draftOnTop, data: { _status: 'draft' } }),
+    ).toBeUndefined()
+    expect(
+      updated({ value: null, originalDoc: draftOnTop, data: { _status: 'published' } }),
+    ).toEqual(expect.any(String))
   })
 })

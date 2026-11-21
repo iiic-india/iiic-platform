@@ -3,6 +3,7 @@ import { text, textarea, blocks as validateBlocks } from 'payload/shared'
 
 import { allow, POLICY } from '@/access/policy'
 import {
+  appliesPageRules,
   carriesFixedStatements,
   oneClosingBand,
   oneOpeningHero,
@@ -30,15 +31,16 @@ function withoutPlaceholder(value: unknown): true | string {
 }
 
 // A custom check replaces Payload's own, so each one runs Payload's first: `required` and
-// `maxLength` still hold.
+// `maxLength` still hold whenever Payload checks the field. The placeholder check is a page
+// rule (appliesPageRules).
 const validateTitle: TextFieldSingleValidation = async (value, options) => {
   const base = await text(value, options)
-  return base === true ? withoutPlaceholder(value) : base
+  return base === true && appliesPageRules(options) ? withoutPlaceholder(value) : base
 }
 
 const validateDescription: TextareaFieldValidation = async (value, options) => {
   const base = await textarea(value, options)
-  return base === true ? withoutPlaceholder(value) : base
+  return base === true && appliesPageRules(options) ? withoutPlaceholder(value) : base
 }
 
 export const Pages: CollectionConfig = {
@@ -111,8 +113,11 @@ export const Pages: CollectionConfig = {
     },
     {
       // Once set, the page's address shows this page while it is published and the site's 404
-      // while it is not, never the starter page again (D-57). Only the server writes it. A page
-      // published before the field existed gets it the next time it is saved.
+      // while it is not, never the starter page again (D-57). Only the server writes it. Payload
+      // hands the hook the page's latest version as the original, so a page published before
+      // the field existed gets it at its next save only while that version is the published
+      // one; once a draft is saved on top, it gets it when it is next published. D-57 records
+      // why no page needed it filled in.
       name: 'firstPublishedAt',
       type: 'date',
       label: 'First published',
@@ -173,11 +178,14 @@ export const Pages: CollectionConfig = {
       required: true,
       minRows: 1,
       blocks: PAGE_BLOCKS,
-      // The page rules (src/blocks/pageBlocks.ts), each returning early on failure. They run
-      // on publishing, on a status-only publish and on restoring a version; a draft skips them.
+      // Payload's own check, then the page rules (src/blocks/pageBlocks.ts), each returning
+      // early on failure. The rules run when the page is published (on publishing, on a
+      // status-only publish and on restoring a published version) and in the admin's live
+      // checks. A draft save skips them, and an unpublish passes them, whatever the newest
+      // draft holds (appliesPageRules).
       validate: async (value, options) => {
         const base = await validateBlocks(value, options)
-        if (base !== true) return base
+        if (base !== true || !appliesPageRules(options)) return base
         const hero = oneOpeningHero(value)
         if (hero !== true) return hero
         const band = oneClosingBand(value)
@@ -214,6 +222,7 @@ export const Pages: CollectionConfig = {
                 { label: 'Registration form', value: 'form' },
                 { label: 'Founder', value: 'founder' },
                 { label: "IIIC's description or philosophy", value: 'description' },
+                { label: 'Page copy IIIC supplied', value: 'pageCopy' },
                 { label: 'Counted', value: 'counted' },
               ],
             },

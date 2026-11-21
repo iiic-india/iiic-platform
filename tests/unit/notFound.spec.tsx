@@ -4,6 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import OrganisationsSubPage, {
   generateMetadata as organisationsMetadata,
 } from '@/app/(platform)/(consultancy)/organisations/[...slug]/page'
+import CounsellingSubPage, {
+  generateMetadata as counsellingMetadata,
+} from '@/app/(platform)/(counselling)/counselling/[...slug]/page'
 import NotFound from '@/app/(platform)/(default)/not-found'
 import InstituteSubPage, {
   generateMetadata as instituteMetadata,
@@ -74,11 +77,12 @@ describe('the 404', () => {
   })
 })
 
-// docs/02: the pages under /institute/ and /organisations/ are drawn in their section's
-// register, by routes in its route group, and so is the 404 for an address there.
+// docs/02: the pages under /institute/, /organisations/ and /counselling/ are drawn in their
+// section's register, by routes in its route group, and so is the 404 for an address there.
 const SECTIONS = [
   { section: 'institute', Page: InstituteSubPage, metadata: instituteMetadata },
   { section: 'organisations', Page: OrganisationsSubPage, metadata: organisationsMetadata },
+  { section: 'counselling', Page: CounsellingSubPage, metadata: counsellingMetadata },
 ]
 
 const params = (...slug: string[]) => ({ params: Promise.resolve({ slug }) })

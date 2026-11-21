@@ -153,5 +153,5 @@ export const FOUNDERS: PageContent = {
       copyStatus: 'approved',
     },
   ],
-  facts: [{ statement: LINES.shift, source: 'description', checkedAt: '2026-11-21' }],
+  facts: [{ statement: LINES.shift, source: 'pageCopy', checkedAt: '2026-11-21' }],
 }

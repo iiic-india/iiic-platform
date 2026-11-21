@@ -25,6 +25,7 @@ const SLUG = {
   refused: 'int-pages-refused',
   firstPublished: 'int-pages-first-published',
   bornPublished: 'int-pages-born-published',
+  unpublishDraft: 'int-pages-unpublish-draft',
   bandLast: 'int-pages-band-last',
   bandFirst: 'int-pages-band-first',
   twoBands: 'int-pages-two-bands',
@@ -93,6 +94,11 @@ async function visitorFinds(slug: string) {
   return found.totalDocs
 }
 
+/** The fields a refused save names, each with its message (Payload's ValidationError). */
+function refusedFields(error: unknown): unknown[] {
+  return (error as { data?: { errors?: unknown[] } } | null)?.data?.errors ?? []
+}
+
 beforeAll(async () => {
   payload = await getPayload({ config })
   await removeTestData()
@@ -130,11 +136,12 @@ describe('pages', () => {
 
   it('lets the staff who edit content read drafts and earlier versions once they have entered their code, and no other staff', async () => {
     const slug = SLUG.draftReaders
-    await payload.create({
+    const draft = await payload.create({
       collection: 'pages',
       data: { title: 'Fake draft', slug, layout: [hero], _status: 'draft' },
       draft: true,
     })
+    const passwordOnly = { ...editor, _strategy: 'local-jwt' } as User
     const asStaff = async (user: User) =>
       (
         await payload.find({
@@ -148,19 +155,19 @@ describe('pages', () => {
     expect(await asStaff(verified(editor))).toBe(1)
     expect(await asStaff(verified(practitioner))).toBe(0)
     // A session that has entered only the password reads what a visitor reads.
-    expect(await asStaff({ ...editor, _strategy: 'local-jwt' } as User)).toBe(0)
+    expect(await asStaff(passwordOnly)).toBe(0)
 
-    // Earlier versions hold every draft, so the same staff read them.
-    await expect(
+    // Earlier versions hold every draft, so the same staff read them, and only with the code.
+    const versionsAs = (user: User) =>
       payload.findVersions({
         collection: 'pages',
-        user: verified(practitioner),
+        where: { parent: { equals: draft.id } },
+        user,
         overrideAccess: false,
-      }),
-    ).rejects.toThrow()
-    await expect(
-      payload.findVersions({ collection: 'pages', user: verified(editor), overrideAccess: false }),
-    ).resolves.toBeTruthy()
+      })
+    await expect(versionsAs(verified(practitioner))).rejects.toThrow()
+    await expect(versionsAs(passwordOnly)).rejects.toThrow()
+    expect((await versionsAs(verified(editor))).totalDocs).toBeGreaterThan(0)
   })
 
   it('refuses a page from staff who do not edit content', async () => {
@@ -195,7 +202,7 @@ describe('pages', () => {
     })
     expect(published.firstPublishedAt).toEqual(expect.any(String))
 
-    // The admin's Unpublish: a change of status, not a draft save.
+    // An unpublish: a change of status, not a draft save.
     const unpublished = await payload.update({
       collection: 'pages',
       id: draft.id,
@@ -209,6 +216,51 @@ describe('pages', () => {
 
     const born = await publish(SLUG.bornPublished, [hero])
     expect(born.firstPublishedAt).toEqual(expect.any(String))
+  })
+
+  it('takes a page off the site whatever its newer draft holds, and still refuses to publish that draft', async () => {
+    const slug = SLUG.unpublishDraft
+    const published = await publish(slug, [hero])
+    // A draft saved on top that breaks the page rules: a placeholder in the title and the
+    // description, no hero, a heading of spaces, button words without their link, and a
+    // placeholder in the Sanskrit line. Payload's own checks (required fields, lengths) pass.
+    await payload.update({
+      collection: 'pages',
+      id: published.id,
+      data: {
+        title: '[[TODO: fake, I-41]]',
+        description: 'Fake [[TODO: fake, I-41]]',
+        layout: [
+          { ...statement, heading: '   ', action: { label: 'Fake action' } },
+          { ...band, sanskrit: '[[TODO: fake, I-41]]' },
+        ],
+      },
+      draft: true,
+    })
+    // An unpublish through the API checks every field against that draft; the page rules pass
+    // it (the admin's Unpublish button checks the status alone).
+    const unpublished = await payload.update({
+      collection: 'pages',
+      id: published.id,
+      data: { _status: 'draft' },
+    })
+    expect(unpublished._status).toBe('draft')
+    expect(unpublished.firstPublishedAt).toBe(published.firstPublishedAt)
+    expect(await visitorFinds(slug)).toBe(0)
+
+    const error = await payload
+      .update({ collection: 'pages', id: published.id, data: { _status: 'published' } })
+      .then(
+        () => null,
+        (refusal: unknown) => refusal,
+      )
+    expect(refusedFields(error)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'title', message: expect.stringMatching(/browser tab/) }),
+        expect.objectContaining({ path: 'layout', message: expect.stringMatching(/hero/) }),
+      ]),
+    )
+    expect(await visitorFinds(slug)).toBe(0)
   })
 
   it('publishes a page whose yellow band closes it, and refuses any other use of the band', async () => {
@@ -258,12 +310,23 @@ describe('pages', () => {
   })
 
   it('refuses to publish the counselling page without the scope statement, or the learn page without the certificate statement', async () => {
-    for (const slug of ['counselling', 'learn']) {
+    for (const [slug, rule] of [
+      ['counselling', /scope statement/],
+      ['learn', /certificate statement/],
+    ] as const) {
       // These are starter pages' addresses: should a page be made here, it is removed at once,
       // so the test never leaves one behind for the starter-page tests to find.
-      const made = await publish(slug, [hero]).catch(() => null)
-      if (made) await payload.delete({ collection: 'pages', id: made.id })
-      expect(made, slug).toBeNull()
+      const error = await publish(slug, [hero]).then(
+        async (made) => {
+          await payload.delete({ collection: 'pages', id: made.id })
+          return null
+        },
+        (refusal: unknown) => refusal,
+      )
+      // Refused by the rule for this address, not by any other check.
+      expect(refusedFields(error), slug).toEqual([
+        expect.objectContaining({ path: 'layout', message: expect.stringMatching(rule) }),
+      ])
       expect(await visitorFinds(slug)).toBe(0)
     }
   })

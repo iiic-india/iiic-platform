@@ -209,7 +209,7 @@ export interface Page {
   facts?:
     | {
         statement: string;
-        source: 'brochure' | 'site' | 'form' | 'founder' | 'description' | 'counted';
+        source: 'brochure' | 'site' | 'form' | 'founder' | 'description' | 'pageCopy' | 'counted';
         checkedAt?: string | null;
         id?: string | null;
       }[]
