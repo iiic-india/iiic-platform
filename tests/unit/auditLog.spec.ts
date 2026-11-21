@@ -56,18 +56,27 @@ const users = auditHooks({ slug: 'users', auth: true, fields: [] })
 const USERS = { slug: 'users', auth: {} }
 const OWNER = { id: 1, email: 'fake.owner@example.invalid' }
 const PERSON = { id: 9, email: 'fake.person@example.invalid' }
+/** The person as Payload reads them for an update: hidden fields included, the secret in the clear. */
+const STORED = { ...PERSON, totpSecret: 'FAKESTOREDSECRET' }
+/** Payload fills every field an update leaves out with its stored value, the hidden secret too. */
+const filled = <T extends object>(data: T) => ({ totpSecret: STORED.totpSecret, ...data })
 
 describe('the audit plugin', () => {
   it('records a password set with a deactivation once, not again on the write that ends the sessions', async () => {
     const req = { user: OWNER, context: {} }
-    const save = { password: 'test-only-password', active: false }
-    const endSessions = { sessions: [] }
-    await users('beforeChange')({ data: save, operation: 'update', req })
+    const save = filled({ password: 'test-only-password', active: false })
+    const endSessions = filled({ sessions: [] })
+    await users('beforeChange')({ data: save, operation: 'update', originalDoc: STORED, req })
     // Payload hashes the password and drops it from the data before the write.
     delete (save as { password?: string }).password
     // Users.ts ends the sessions in a nested update with the same request, whose audit hook
     // runs before the outer one's.
-    await users('beforeChange')({ data: endSessions, operation: 'update', req })
+    await users('beforeChange')({
+      data: endSessions,
+      operation: 'update',
+      originalDoc: STORED,
+      req,
+    })
     await users('afterChange')({
       collection: USERS,
       context: req.context,
@@ -99,7 +108,12 @@ describe('the audit plugin', () => {
   it('records two-factor set up by the person, whom payload-totp leaves off its write', async () => {
     const req = { user: null, context: {} }
     const data = { totpSecret: 'FAKEFAKEFAKEFAKE' }
-    await users('beforeChange')({ data, operation: 'update', req })
+    await users('beforeChange')({
+      data,
+      operation: 'update',
+      originalDoc: { ...PERSON, totpSecret: null },
+      req,
+    })
     await users('afterChange')({
       collection: USERS,
       context: req.context,
@@ -118,8 +132,8 @@ describe('the audit plugin', () => {
 
   it('makes nobody the actor of a write without a request that touched no secret', async () => {
     const req = { user: null, context: {} }
-    const data = { name: 'Fake Renamed' }
-    await users('beforeChange')({ data, operation: 'update', req })
+    const data = filled({ name: 'Fake Renamed' })
+    await users('beforeChange')({ data, operation: 'update', originalDoc: STORED, req })
     await users('afterChange')({
       collection: USERS,
       context: req.context,
@@ -138,10 +152,44 @@ describe('the audit plugin', () => {
     ])
   })
 
+  it('does not count the stored secret, which Payload copies into every update, as a change', async () => {
+    const req = { user: OWNER, context: {} }
+    const data = filled({ name: 'Fake Renamed' })
+    await users('beforeChange')({ data, operation: 'update', originalDoc: STORED, req })
+    await users('afterChange')({
+      collection: USERS,
+      context: req.context,
+      data,
+      doc: { ...PERSON, name: 'Fake Renamed' },
+      previousDoc: { ...PERSON, name: 'Fake' },
+      operation: 'update',
+      req,
+    })
+    expect(record.mock.calls).toEqual([
+      [req, { action: 'update', entity: 'users', entityId: PERSON.id, changed: ['name'] }, OWNER],
+    ])
+  })
+
+  it('records nothing for a write of bookkeeping alone, the stored secret in its data', async () => {
+    const req = { user: OWNER, context: {} }
+    const data = filled({ loginAttempts: 0 })
+    await users('beforeChange')({ data, operation: 'update', originalDoc: STORED, req })
+    await users('afterChange')({
+      collection: USERS,
+      context: req.context,
+      data,
+      doc: { ...PERSON, loginAttempts: 0 },
+      previousDoc: { ...PERSON, loginAttempts: 2 },
+      operation: 'update',
+      req,
+    })
+    expect(record).not.toHaveBeenCalled()
+  })
+
   it('names a named action after it, with the secret it cleared', async () => {
     const req = { user: OWNER, context: { auditAction: 'reset-two-factor' } }
     const data = { totpSecret: null, sessions: [] }
-    await users('beforeChange')({ data, operation: 'update', req })
+    await users('beforeChange')({ data, operation: 'update', originalDoc: STORED, req })
     await users('afterChange')({
       collection: USERS,
       context: req.context,

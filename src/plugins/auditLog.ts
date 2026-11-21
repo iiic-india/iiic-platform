@@ -65,13 +65,18 @@ const hiddenChanges = new WeakMap<object, string[]>()
 
 /**
  * A password is hashed before the write, and a two-factor secret is a field no read returns:
- * both are noted while they are still in the data.
+ * both are noted while they are still in the data. Payload fills every field an update leaves
+ * out with its stored value, hidden fields included (fields/hooks/beforeValidate), so the secret
+ * is in the data of every update: it has changed only when it differs from the stored one, which
+ * Payload hands this hook read in the clear, as the data holds it.
  */
-const noteHiddenChanges: CollectionBeforeChangeHook = ({ data, operation }) => {
+const noteHiddenChanges: CollectionBeforeChangeHook = ({ data, operation, originalDoc }) => {
   if (operation !== 'update' || !data) return data
+  const stored = (originalDoc as { totpSecret?: unknown } | undefined)?.totpSecret ?? null
+  const secretChanged = 'totpSecret' in data && (data.totpSecret ?? null) !== stored
   const names = [
     ...(typeof data.password === 'string' && data.password ? ['password'] : []),
-    ...('totpSecret' in data ? ['two-factor'] : []),
+    ...(secretChanged ? ['two-factor'] : []),
   ]
   if (names.length) hiddenChanges.set(data, names)
   return data
