@@ -20,11 +20,25 @@ type Reported = {
 
 // A failed database query lists the values it was given after "params:".
 const QUERY_VALUES = /\bparams:[\s\S]*$/i
-// An address as typed, or percent-encoded in a URL (%40 for @).
-const EMAIL = /[\w.+%-]+(?:@|%40)[\w-]+(?:\.[\w-]+)+/g
+// An address as typed, or percent-encoded in a URL (%40 for @). A match starts only where a run
+// of the characters an address is made of starts: tried from every character of a long run, the
+// pattern takes time in the square of the run's length. Addresses written back to back
+// (a@b.in+c@d.in) make one match, so the second is not passed over.
+const EMAIL = /(?<![\w.+%-])(?:[\w.+%-]+(?:@|%40)[\w-]+(?:\.[\w-]+)+)+/g
+// In a URL a plus is written %2B (or %2b) and a space %20. A number can follow a percent-encoded
+// character (?text=Call%20on%209876543210), where \b finds no boundary after the 0 of %20.
+const PLUS = String.raw`(?:\+|%2B)`
+const GAP = String.raw`(?:[\s-]|%20)`
+const START = String.raw`(?:(?<!\w)|(?<=%[\dA-F]{2}))`
 // E.164 numbers; Indian mobile numbers with +91, 91 or 0 in front or nothing, with or without
-// spaces or dashes (+91 98765 43210, 919876543210, 098765-43210, 9876543210).
-const PHONE = /\+\d{8,15}\b|(?:\+91[\s-]?|\b(?:91[\s-]?|0)?)[6-9]\d{4}[\s-]?\d{5}\b/g
+// spaces or dashes (+91 98765 43210, 919876543210, 098765-43210, 9876543210); typed or encoded.
+const PHONE = new RegExp(
+  [
+    String.raw`${PLUS}\d{8,15}\b`,
+    String.raw`(?:${PLUS}91${GAP}?|${START}(?:91${GAP}?|0)?)[6-9]\d{4}${GAP}?\d{5}\b`,
+  ].join('|'),
+  'gi',
+)
 // Long random strings: session tokens, reset links, keys.
 const TOKEN = /\b[A-Za-z0-9_-]{32,}\b/g
 

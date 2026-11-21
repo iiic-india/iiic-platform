@@ -41,21 +41,47 @@ describe('scrubText', () => {
 
   it('takes phone numbers out however they are written, and emails from URLs', () => {
     for (const phone of [
+      '+919876543210',
       '+91 98765 43210',
       '+91-98765-43210',
       '919876543210',
+      '91 98765 43210',
       '09876543210',
       '98765 43210',
     ]) {
       expect(scrubText(`Could not reach ${phone}`), phone).toBe('Could not reach [phone]')
+      // In a URL, + is written %2B and a space %20, before the number as well as inside it.
+      const encoded = encodeURIComponent(phone)
+      expect(scrubText(`/search?q=${encoded}`), encoded).toBe('/search?q=[phone]')
+      expect(scrubText(`?text=Call%20on%20${encoded}`), encoded).toBe('?text=Call%20on%20[phone]')
     }
+    expect(scrubText('?q=%2b919876543210&to=9876543210%2C9876543211')).toBe(
+      '?q=[phone]&to=[phone]%2C[phone]',
+    )
     expect(scrubText('/admin/collections/users?search=fake.person%40example.invalid')).toBe(
       '/admin/collections/users?search=[email]',
+    )
+    // Two addresses back to back, as a query writes a space between them.
+    expect(scrubText('?to=fake.person@example.invalid+other.person@example.invalid')).toBe(
+      '?to=[email]',
     )
     // Long numbers that are not phone numbers stay, so reports keep their timings and ids.
     expect(scrubText('Took 1795251128671 ms, id 4512464474865664')).toBe(
       'Took 1795251128671 ms, id 4512464474865664',
     )
+    expect(scrubText('/ids/1795251128671%2C4512464474865664')).toBe(
+      '/ids/1795251128671%2C4512464474865664',
+    )
+  })
+
+  it('cleans a long message in well under a second', () => {
+    // Runs of the characters an address is made of, with no @ or %40: a pattern that tries a
+    // match from each of their characters takes seconds on each of these.
+    for (const text of ['a'.repeat(50_000), '%41'.repeat(20_000), 'a+'.repeat(25_000)]) {
+      const started = performance.now()
+      scrubText(text)
+      expect(performance.now() - started, text.slice(0, 6)).toBeLessThan(250)
+    }
   })
 
   it('drops the values of a failed database query', () => {

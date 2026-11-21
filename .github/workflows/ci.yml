@@ -66,8 +66,9 @@ jobs:
         run: pnpm format:check
       - name: Only public values behind NEXT_PUBLIC_ (docs/12 §5)
         run: |
+          # Next.js inlines every name that starts NEXT_PUBLIC_, in capitals or not.
           allowed='^NEXT_PUBLIC_(SITE_URL|INSTITUTE_URL|CF_WEB_ANALYTICS_TOKEN|SENTRY_DSN)$'
-          found=$(grep -rhoE 'NEXT_PUBLIC_[A-Z0-9_]+' src next.config.ts .env.example | sort -u)
+          found=$(grep -rhoE 'NEXT_PUBLIC_[A-Za-z0-9_]+' src next.config.ts .env.example | sort -u)
           unknown=$(printf '%s\n' "$found" | grep -vE "$allowed" || true)
           if [ -n "$unknown" ]; then echo "Not on the list of public values (docs/12 §5): $unknown"; exit 1; fi
       - name: Types
