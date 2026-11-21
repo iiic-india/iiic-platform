@@ -1,14 +1,22 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { GET } from '@/app/(platform)/(default)/map/go/route'
+import { dynamic, GET, maxDuration, POST, runtime } from '@/app/(platform)/(default)/map/go/route'
 import FindYourPathPage from '@/app/(platform)/(default)/map/page'
-import { STARTER_PAGES } from '@/content/starter'
+import { starterAt } from '@/content/starter'
 import { doorFor, STEP_ZERO_CHOICES, WHO_FOR } from '@/lib/map/stepZero'
 
 afterEach(cleanup)
 
-const go = (query: string) => GET(new Request(`https://iiic.example/map/go${query}`))
+/** The answer as the step-0 form posts it: in the body, never in the address. */
+const go = (body: string, type = 'application/x-www-form-urlencoded') =>
+  POST(
+    new Request('https://iiic.example/map/go', {
+      method: 'POST',
+      headers: { 'Content-Type': type },
+      body,
+    }),
+  )
 
 describe('Find your path: the answers', () => {
   it('offers the plan’s three answers, each leading to a page that exists', () => {
@@ -20,7 +28,7 @@ describe('Find your path: the answers', () => {
     ])
     for (const choice of STEP_ZERO_CHOICES) {
       const slug = choice.href.replace(/^\//, '').replace(/#.*$/, '')
-      expect(STARTER_PAGES[slug], choice.href).toBeDefined()
+      expect(starterAt(slug), choice.href).toBeDefined()
     }
   })
 
@@ -37,19 +45,36 @@ describe('Find your path: where an answer is sent', () => {
     ['yourself', '/counselling'],
     ['family', '/counselling'],
     ['organisation', '/organisations'],
-  ])('sends "%s" to %s', (who, door) => {
-    const response = go(`?who=${who}`)
+  ])('sends "%s" to %s', async (who, door) => {
+    const response = await go(`who=${who}`)
     expect(response.status).toBe(303)
     expect(response.headers.get('Location')).toBe(door)
     expect(response.headers.get('Cache-Control')).toBe('no-store')
   })
 
-  it('sends anything else back to the question, never to an address from the request', () => {
-    for (const query of ['', '?who=', '?who=everyone', '?who=//evil.example', '?next=/admin']) {
-      const response = go(query)
-      expect(response.status).toBe(303)
-      expect(response.headers.get('Location')).toBe('/map')
+  it('sends anything else back to the question, never to an address from the request', async () => {
+    for (const body of ['', 'who=', 'who=everyone', 'who=%2F%2Fevil.example', 'next=%2Fadmin']) {
+      const response = await go(body)
+      expect(response.status, body).toBe(303)
+      expect(response.headers.get('Location'), body).toBe('/map')
     }
+    // A body that is not a form is not an answer.
+    const json = await go('{"who":"yourself"}', 'application/json')
+    expect(json.status).toBe(303)
+    expect(json.headers.get('Location')).toBe('/map')
+  })
+
+  it('never reads an answer from the address', () => {
+    const response = GET()
+    expect(response.status).toBe(303)
+    expect(response.headers.get('Location')).toBe('/map')
+    expect(response.headers.get('Cache-Control')).toBe('no-store')
+  })
+
+  it('declares its runtime and time limit (docs/12 §6)', () => {
+    expect(runtime).toBe('nodejs')
+    expect(maxDuration).toBe(10)
+    expect(dynamic).toBe('force-dynamic')
   })
 })
 
@@ -59,7 +84,8 @@ describe('Find your path: the page', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Who is this for?')
     const form = container.querySelector('form') as HTMLFormElement
     expect(form.getAttribute('action')).toBe('/map/go')
-    expect(form.getAttribute('method')).toBe('get')
+    // Posted, so the answer never appears in an address the request log keeps.
+    expect(form.getAttribute('method')).toBe('post')
     const group = screen.getByRole('group', { name: 'Who is this for?' })
     const radios = within(group).getAllByRole('radio') as HTMLInputElement[]
     expect(radios.map((radio) => [radio.name, radio.value])).toEqual([

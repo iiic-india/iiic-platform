@@ -70,7 +70,7 @@ const json = (body: Record<string, unknown>, status = 200) =>
   Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
 
 /**
- * POST /api/users/report-test-error: an owner who has entered their code sends a test error, to
+ * POST /api/report-test-error: an owner who has entered their code sends a test error, to
  * check that reports and alerts arrive (docs/12 §7). Nothing else happens.
  */
 export const reportTestError: PayloadHandler = async (req) => {

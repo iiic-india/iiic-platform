@@ -33,9 +33,9 @@ Owners: Yash and Aum own what they can supply themselves; everything that comes 
 | I-02 | Email addresses on that domain (hello, bookings, privacy/grievance, security, partnerships) | R1 | Yash | Placeholder addresses in staging |
 | I-03 | The WhatsApp Business number for the platform, and whether it is also used in the WhatsApp Business app today | R1 messaging | Team | Email-only messaging in staging |
 | I-04 | Payment gateway account (KYC: PAN, ID and address proof, a business proof such as a Shops and Establishment certificate or trade licence, bank proof; GST certificate) | R1 payments | Team | Gateway test mode |
-| I-05 | GSTIN and the legal name exactly as registered; Udyam number | R1 invoices, letterhead | Team (with the accountant) | Tax-invoice layout with placeholders; payments stay in test mode |
+| I-05 | GSTIN and the legal name exactly as registered; Udyam number | R1 invoices, letterhead, `/legal`, footer | Team (with the accountant) | Placeholder on `/legal` and in the footer; launch blocked. Tax-invoice layout with placeholders; payments stay in test mode |
 | I-06 | Bank details for invoices | R1 invoices | Team | Placeholders on invoices |
-| I-07 | Cancellation, reschedule and refund rules per service | R1 booking, `/refunds` | Team | Booking blocked from production |
+| I-07 | Cancellation, reschedule and refund rules per service, and the published refund timeline (D-16) | R1 booking, `/refunds` | Team | Booking blocked from production |
 | I-08 | Session format per service: online, office or both | R1 booking (D-03) | Team | Office only in staging |
 | I-09 | Who delivers sessions at launch, with public names, photos and credentials exactly as they appear on their certificates | R1 `/counselling`, `/about` | Team | Placeholder profiles |
 | I-10 | Founder biography and photograph as he wants them published (including the one factual line about Ankvishwa, D-26), and a short note in his own words for the home page | R1 home, `/about`, `/framework` | Team | The brochure biography (minus "guarantees"); no note |
@@ -49,12 +49,12 @@ Owners: Yash and Aum own what they can supply themselves; everything that comes 
 | I-18 | Photos of real sessions and workshops, with consent from identifiable people | R1 | Team | The mark on the yellow field; labelled frames |
 | I-19 | Three Journal articles for launch, and the publishing cadence | R1 `/journal` | Team | Empty state |
 | I-20 | FAQs per application (10–15 real questions people ask) | R1 | Team | Placeholders |
-| I-21 | Grievance officer name and contact for the privacy notice | R1 `/privacy`, `/grievance` | Team | Placeholder; launch blocked |
-| I-22 | Lawyer review of privacy notice, terms, refund policy, counselling disclaimer and consent wording | R1 launch | Team | Drafts marked "draft" |
+| I-21 | Grievance officer name and contact for the privacy notice | R1 `/privacy`, `/grievance`, `/legal`, footer | Team | Placeholder; launch blocked |
+| I-22 | Lawyer review of privacy notice, terms, refund policy, counselling disclaimer and consent wording; the National Consumer Helpline onboarding and the yearly dark-pattern certificate (both from 1 January 2027, `08` §4) | R1 launch | Team | Drafts marked "draft" |
 | I-23 | Admin users and their roles | R1 | Yash | Owner account only |
 | I-24 | A Google Workspace account on the platform domain for each practitioner (D-23), and each practitioner's working hours | R1 calendar sync, booking | Yash | Bookings visible in the admin calendar only; no free times offered |
 | I-25 | Confirmation from ERNET on whether the institute site may link to the platform | R3 | Team | One quiet link held back |
-| I-26 | The proprietor's legal name exactly as on PAN and registrations, the trade name, and what "an initiative by Ankvishwa" means legally (D-26) | R1 `/legal`, invoices, notices | Team | Placeholder; launch blocked |
+| I-26 | The proprietor's legal name exactly as on PAN and registrations, the trade name, and what "an initiative by Ankvishwa" means legally (D-26) | R1 `/legal`, footer, invoices, notices | Team | Placeholder; launch blocked |
 | I-27 | CERT-In point of contact (name, email, phone) | R1 | Team | Placeholder; launch blocked |
 | I-28 | Prices for each service, and whether they include GST, when IIIC decides to publish them (D-21) | When prices go public | Team (with the CA) | No prices anywhere; bookings without online payment (D-24) |
 | I-29 | CA's classification of counselling for GST (SAC or exemption) | Before registration | Team (with the CA) | Consultancy 998311 and training 999293 as likely codes |
@@ -87,7 +87,7 @@ Owners: Yash and Aum own what they can supply themselves; everything that comes 
 | Proof | In their words (every published review, filterable), institutional work (known), verified stories (R2), case studies, organisations list, counters with definitions | I-16, I-37, I-38, I-42 |
 | About | IIIC, founder, team, partnerships, contact (address, phone, email, hours, socials), map | I-02, I-09, I-10, I-26, I-33, I-34 |
 | Institute | Research, programmes, partnerships (PDEU 2023, known), verify (R2) | I-14, I-43 |
-| Legal | Privacy notice, terms, refund policy, grievance page, accessibility statement | I-07, I-21, I-22, I-26 |
+| Legal | Legal information, privacy notice, terms, refund policy, grievance page, accessibility statement | I-04, I-05, I-07, I-21, I-22, I-26, I-27, I-33 |
 | 404, search | The reflective question pool (approved), search index | I-41 |
 
 ## Writing

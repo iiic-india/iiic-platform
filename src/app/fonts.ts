@@ -12,17 +12,20 @@ export const manrope = localFont({
   display: 'swap',
 })
 
+/**
+ * Fraunces's upright face only, preloaded (D-60): every page sets its headings in it, and the
+ * hero's heading is the largest thing on most first views, so the face has to arrive before
+ * that heading is drawn. next/font preloads every face of a call, so the italic stays out: no
+ * web page sets Fraunces in italic (the kit uses it only for the printed certificate's
+ * programme line, which the print templates take from the kit's own CSS). A page that needs
+ * the italic brings it back here and keeps the first view within the font budget (docs/12 §2).
+ * The size-adjusted fallback keeps the swap from shifting the layout.
+ */
 export const fraunces = localFont({
-  src: [
-    { path: '../brand/fonts/fraunces-latin-opsz-normal.woff2', style: 'normal' },
-    { path: '../brand/fonts/fraunces-latin-opsz-italic.woff2', style: 'italic' },
-  ],
+  src: '../brand/fonts/fraunces-latin-opsz-normal.woff2',
   weight: '100 900',
+  style: 'normal',
   variable: '--font-fraunces',
   display: 'swap',
   adjustFontFallback: 'Times New Roman',
-  // Preloading both Fraunces files (150 KB) would break the first-view font budget
-  // (docs/12 §2), and the italic cannot be left out alone without faked italics; the
-  // size-adjusted fallback keeps the swap from shifting the layout.
-  preload: false,
 })

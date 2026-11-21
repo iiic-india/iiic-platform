@@ -79,7 +79,7 @@ Node 24 (`.nvmrc`), pnpm 10. Local Postgres: `docker compose up -d`, then `cp .e
 
 - The milestone's acceptance criteria in `docs/10-build-plan.md` are met for the slice.
 - Typecheck, lint, unit, integration and e2e tests pass; new logic has tests.
-- No horizontal scroll from 320 px to 1600 px; axe reports no serious issues; the brand rules hold; the budgets in `docs/12-engineering-standards.md` §2 hold (Lighthouse CI, `size-limit`); the headers and cookie-inventory tests pass.
+- No horizontal scroll from 320 px to 1600 px; axe reports no serious issues; the brand rules hold; the budgets in `docs/12-engineering-standards.md` §2 hold (Lighthouse CI, its resource summary included, D-45); the headers and cookie-inventory tests pass.
 - No invented content; new placeholders are listed with their input IDs; new copy passes the writing standard.
 - Docs and `docs/decisions.md` updated if behaviour or a decision changed.
 - No secrets, no personal data in fixtures or logs.

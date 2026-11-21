@@ -8,8 +8,8 @@ import type { PageContent } from '@/lib/content/types'
  *
  * Counselling copy keeps to src/brand/VOICE.md: sessions are non-clinical conversations, and
  * the scope statement with the crisis numbers is on the page (docs/08 §7). The reviews
- * (section 3) join the page with the reviews; the copy system's card "A Space to Be Heard"
- * is left out until the lawyer has seen it (copy architecture §4.5, row 5).
+ * (section 3) join the page with the reviews (D-58); the copy system's card "A Space to Be
+ * Heard" is left out until the lawyer has seen it (copy architecture §4.5, row 5).
  */
 
 /** IIIC's own lines on this page, exactly as the sources have them. */
@@ -27,14 +27,15 @@ export const COUNSELLING: PageContent = {
   layout: [
     {
       blockType: 'hero',
-      kicker: '[[TODO: the direction line, D-19]]',
+      kicker: '[[TODO: the direction line (D-19), I-30]]',
       // [CS]
       heading: 'Be Heard. Be Understood. Know Yourself.',
       lead: LINES.lead,
       primary: BOOK_A_SESSION,
-      // The pointer the copy architecture asks for, in place of a promise of confidentiality.
+      // The pointer to the scope statement, in place of a promise of confidentiality; its label
+      // stands on its own because the note is drawn after the actions.
       secondary: {
-        label: 'What that means, and what we keep private',
+        label: 'What a session is, and what we keep private',
         href: '/counselling#scope',
       },
       note: 'Sessions are non-clinical conversations.',
@@ -143,6 +144,7 @@ export const COUNSELLING: PageContent = {
   facts: [
     { statement: LINES.lead, source: 'description', checkedAt: '2026-11-21' },
     { statement: LINES.how, source: 'description', checkedAt: '2026-11-21' },
-    { statement: '1:1 sessions of 15, 30 or 45 minutes.', source: 'site', checkedAt: '2026-11-21' },
+    // IIIC's registration form (docs/09), not the current site.
+    { statement: '1:1 sessions of 15, 30 or 45 minutes.', source: 'form', checkedAt: '2026-11-21' },
   ],
 }

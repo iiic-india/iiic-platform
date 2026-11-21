@@ -71,6 +71,17 @@ export const INSTITUTE: PageContent = {
     },
     {
       blockType: 'statement',
+      // The section's name is the plan's (docs/00, institute pages).
+      heading: 'Faculty',
+      paragraphs: [
+        {
+          text: '[[TODO: the founder’s and the faculty’s credentials, exactly as on their certificates, I-43]]',
+        },
+      ],
+      copyStatus: 'candidate',
+    },
+    {
+      blockType: 'statement',
       // The section's name is the plan's.
       heading: 'Verify a certificate',
       paragraphs: [

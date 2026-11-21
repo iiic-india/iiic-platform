@@ -9,7 +9,8 @@ import { hasRole, isActive, type Role } from './roles'
  * - `roles`: the roles that may, on every document;
  * - `self`: any active staff user may, on their own record;
  * - `anyone`: no sign-in needed (public media);
- * - `published`: no sign-in needed for a published document; drafts stay with `roles`.
+ * - `published`: no sign-in needed for a published document; drafts stay with `roles`, after
+ *   the two-factor code.
  * A deactivated account is refused everything (src/access/roles.ts).
  */
 export type Rule = { roles?: readonly Role[]; self?: true; anyone?: true; published?: true }
@@ -29,10 +30,12 @@ export const POLICY = {
     update: { roles: ['owner', 'operator', 'editor'] },
     delete: { roles: ['owner', 'editor'] },
   },
-  // Anyone reads a published page; the staff who edit content read drafts too. Operators
-  // edit content, editors own it (docs/05).
+  // Anyone reads a published page; the staff who edit content read drafts too, once they have
+  // entered their two-factor code. Operators edit content, editors own it (docs/05).
   pages: {
     read: { roles: ['owner', 'operator', 'editor'], published: true },
+    // Versions hold every draft: the same staff as drafts.
+    readVersions: { roles: ['owner', 'operator', 'editor'] },
     create: { roles: ['owner', 'operator', 'editor'] },
     update: { roles: ['owner', 'operator', 'editor'] },
     delete: { roles: ['owner', 'editor'] },
@@ -50,7 +53,13 @@ export const POLICY = {
 export function allow(rule: Rule): Access {
   return ({ req: { user } }): AccessResult => {
     if (rule.anyone) return true
-    if (rule.roles?.length && hasRole(user, ...rule.roles)) return true
+    // A rule that also serves visitors runs without payload-totp's wrapper (Pages.ts), so
+    // its staff branch asks for the two-factor code itself; any other session gets the
+    // published filter.
+    const codeEntered = (user as { _strategy?: string } | null | undefined)?._strategy === 'totp'
+    if (rule.roles?.length && hasRole(user, ...rule.roles) && (!rule.published || codeEntered)) {
+      return true
+    }
     if (rule.self && user && isActive(user)) return { id: { equals: user.id } }
     if (rule.published) return { _status: { equals: 'published' } }
     return false

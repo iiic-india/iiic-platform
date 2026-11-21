@@ -1,6 +1,6 @@
 # IIIC platform
 
-The website and back office for the Indian Institute of Image Catalysts: Next.js 16 (App Router, TypeScript strict) with Payload 3.94 inside it, Postgres on Supabase (Mumbai), deployed on Vercel (`bom1`). The product and technical source of truth is `docs/` (start with `docs/README.md`); working rules for Claude Code are in `CLAUDE.md`; the brand kit is `src/brand/` and is read-only.
+The website and back office for the Indian Institute of Image Catalysts: Next.js 16 (App Router, TypeScript strict) with Payload 3.94 inside it, Postgres on Supabase (Mumbai), deployed on Vercel (`bom1`). The product and technical source of truth is `docs/` (start with `docs/README.md`); working rules for Claude Code are in `CLAUDE.md`; the brand kit is `src/brand/`, changed only with a decision in `docs/decisions.md` that names the file (D-53).
 
 ## Run it locally
 

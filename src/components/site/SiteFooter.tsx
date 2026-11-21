@@ -14,7 +14,8 @@ import styles from './SiteFooter.module.css'
  * It carries the eight main links (docs/12 §3, listed in docs/11 §5.1): the logo links
  * home, and Contact opens the contact section of /about. The contact details are the ones
  * that section shows (D-31; src/lib/site/contact.ts).
- * The affiliation statement waits on the lawyer (D-20).
+ * The legal row names the proprietor, the GSTIN and the grievance officer (docs/08 §3, §4), each
+ * a placeholder until IIIC supplies it. The affiliation statement waits on the lawyer (D-20).
  */
 const COLUMNS = [
   {
@@ -83,7 +84,10 @@ export function SiteFooter() {
       </div>
       <div className="iiic-footer-legal">
         <span>
-          © {year} Indian Institute of Image Catalysts ·{' '}
+          © {year} Indian Institute of Image Catalysts · Legal name:{' '}
+          <Todo {...FIXED_PLACEHOLDERS.footerLegalName} /> · GSTIN{' '}
+          <Todo {...FIXED_PLACEHOLDERS.footerGstin} /> · Grievance officer:{' '}
+          <Todo {...FIXED_PLACEHOLDERS.footerGrievanceOfficer} /> ·{' '}
           <Todo {...FIXED_PLACEHOLDERS.footerAffiliation} />
         </span>
         <span>

@@ -11,9 +11,11 @@ import { ACCESSIBILITY, LEGAL_PAGES } from './legal'
 import { ORGANISATIONS, ORGANISATIONS_IIIC_LINES } from './organisations'
 
 /**
- * The starter pages, by slug. A route shows its starter page until the page is published in
- * the CMS, and the CMS page from then on (D-51). They are IIIC's copy as the copy
- * architecture lays it out, not seed data: nothing here is made up.
+ * The starter pages, by slug. A route shows its starter page until a page at its address is
+ * first published in the CMS, and from then on that page only, for as long as it exists
+ * (D-51, D-57). They are IIIC's copy as the copy architecture lays it out, not seed data:
+ * nothing here is made up. Look up a slug that comes from a request with starterAt: indexing
+ * this map would also find what every object inherits, such as "constructor".
  */
 export const STARTER_PAGES: Readonly<Record<string, PageContent>> = {
   [HOME.slug]: HOME,
@@ -26,6 +28,11 @@ export const STARTER_PAGES: Readonly<Record<string, PageContent>> = {
   [INSTITUTE.slug]: INSTITUTE,
   ...Object.fromEntries(LEGAL_PAGES.map((page) => [page.slug, page])),
   [ACCESSIBILITY.slug]: ACCESSIBILITY,
+}
+
+/** The starter page at a slug. An own-property lookup, so "constructor" finds nothing. */
+export function starterAt(slug: string): PageContent | undefined {
+  return Object.hasOwn(STARTER_PAGES, slug) ? STARTER_PAGES[slug] : undefined
 }
 
 /** Every line the starter pages call IIIC's own, by page; tests hold them to the sources. */

@@ -2,7 +2,8 @@
  * What every certificate and the course page say about the certificate (docs/08 §7;
  * src/brand/VOICE.md, "Certificates and affiliation"): a certificate of completion from a
  * privately owned institute, never a degree or diploma and never a sign of recognition. The
- * wording lives here, once. It is a draft until the lawyer clears it (I-22).
+ * wording lives here, once. It is a draft until the lawyer clears it (I-22). The course is
+ * named beside the statement, not in it (docs/08 §7).
  */
 
 /** The input the wording waits on: the lawyer's review. */

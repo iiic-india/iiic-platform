@@ -169,13 +169,17 @@ export interface User {
 export interface Page {
   id: number;
   /**
-   * The name of the page, as the browser tab and this list show it.
+   * The name of the page, as the browser tab and this list show it. Up to 53 characters: the tab adds " · IIIC" (docs/12 §3).
    */
   title: string;
   /**
    * Where the page lives: "home" for the first page, "framework" for /framework.
    */
   slug: string;
+  /**
+   * Set when the page is first published. From then on its address shows this page while it is published, and "Page not found" while it is not (D-57).
+   */
+  firstPublishedAt?: string | null;
   /**
    * For the legal pages only. A draft carries a marker on the page until the lawyer has reviewed it (I-22).
    */
@@ -205,7 +209,7 @@ export interface Page {
   facts?:
     | {
         statement: string;
-        source: 'brochure' | 'site' | 'founder' | 'description' | 'counted';
+        source: 'brochure' | 'site' | 'form' | 'founder' | 'description' | 'pageCopy' | 'counted';
         checkedAt?: string | null;
         id?: string | null;
       }[]
@@ -240,7 +244,7 @@ export interface HeroBlock {
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
-  copyStatus: 'approved' | 'candidate';
+  copyStatus?: ('approved' | 'candidate') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'hero';
@@ -294,7 +298,7 @@ export interface DoorsBlock {
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
-  copyStatus: 'approved' | 'candidate';
+  copyStatus?: ('approved' | 'candidate') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'doors';
@@ -324,7 +328,7 @@ export interface StatementBlock {
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
-  copyStatus: 'approved' | 'candidate';
+  copyStatus?: ('approved' | 'candidate') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'statement';
@@ -355,7 +359,7 @@ export interface StepsBlock {
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
-  copyStatus: 'approved' | 'candidate';
+  copyStatus?: ('approved' | 'candidate') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'steps';
@@ -384,7 +388,7 @@ export interface ComparisonBlock {
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
-  copyStatus: 'approved' | 'candidate';
+  copyStatus?: ('approved' | 'candidate') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'comparison';
@@ -414,7 +418,7 @@ export interface PointsBlock {
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
-  copyStatus: 'approved' | 'candidate';
+  copyStatus?: ('approved' | 'candidate') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'points';
@@ -450,7 +454,7 @@ export interface CardsBlock {
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
-  copyStatus: 'approved' | 'candidate';
+  copyStatus?: ('approved' | 'candidate') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'cards';
@@ -480,7 +484,7 @@ export interface FactListBlock {
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
-  copyStatus: 'approved' | 'candidate';
+  copyStatus?: ('approved' | 'candidate') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'factList';
@@ -525,7 +529,7 @@ export interface FounderNoteBlock {
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
-  copyStatus: 'approved' | 'candidate';
+  copyStatus?: ('approved' | 'candidate') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'founderNote';
@@ -565,7 +569,7 @@ export interface BandBlock {
   /**
    * Candidate copy is shown with a marker until IIIC approves it (I-41).
    */
-  copyStatus: 'approved' | 'candidate';
+  copyStatus?: ('approved' | 'candidate') | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'band';
@@ -613,6 +617,7 @@ export interface StaffRecoveryCode {
 export interface AuditLog {
   id: number;
   at: string;
+  at_tz: 'Asia/Kolkata';
   actorId?: string | null;
   actorEmail?: string | null;
   action: string;
@@ -750,6 +755,7 @@ export interface UsersSelect<T extends boolean = true> {
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
+  firstPublishedAt?: T;
   legalReview?: T;
   description?: T;
   layout?:
@@ -1051,6 +1057,7 @@ export interface StaffRecoveryCodesSelect<T extends boolean = true> {
  */
 export interface AuditLogSelect<T extends boolean = true> {
   at?: T;
+  at_tz?: T;
   actorId?: T;
   actorEmail?: T;
   action?: T;

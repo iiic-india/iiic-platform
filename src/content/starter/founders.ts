@@ -147,10 +147,11 @@ export const FOUNDERS: PageContent = {
       lead: LINES.supporting,
       sanskrit: 'आत्मानं विद्धि',
       translation: 'Know thyself',
-      // Books the proposal call under IIIC's label until I-36 defines the offer (D-25).
+      // Books the proposal call under IIIC's label until I-36 defines the offer (D-25); /book/call
+      // opens with the booking flow (M3) and leads to the 404 until then.
       primary: { label: LINES.consultation, href: '/book/call' },
       copyStatus: 'approved',
     },
   ],
-  facts: [{ statement: LINES.shift, source: 'description', checkedAt: '2026-11-21' }],
+  facts: [{ statement: LINES.shift, source: 'pageCopy', checkedAt: '2026-11-21' }],
 }

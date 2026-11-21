@@ -11,12 +11,17 @@ import { PDEU_WORKSHOP } from './learn'
  * understanding the human mind" is used only if the founder settles the years on 25 (I-32),
  * so the institute's name stands in its place; the first sentence of "The Larger Vision"
  * names IIIC "First" and waits on evidence and a lawyer's view (I-31), so the section opens
- * with its second; and the brochure's biography is used without its guarantee and without its
- * sentence on AnkVishwa, which gives way to one line in the founder's own words (D-26, I-10).
- * The contact form joins the contact section with the enquiry flow.
+ * with its second, and its heading drops the subtitle, which names IIIC "First" too; and the
+ * brochure's biography is used without its guarantee and without its sentence on AnkVishwa,
+ * which gives way to one line in the founder's own words (D-26, I-10). The vision does not
+ * repeat the lines the home and framework pages carry (copy architecture §4.9).
+ * The contact form joins the contact section with the enquiry flow (D-58).
  */
 
-/** IIIC's own lines on this page, exactly as the sources have them. */
+/**
+ * IIIC's own lines on this page, word for word from the sources (the vision's heading without
+ * its subtitle, I-31).
+ */
 export const ABOUT_IIIC_LINES = {
   opening:
     'The Indian Institute of Image Catalysts (IIIC) operates across three distinct service verticals: Education, Counselling, and Business & Management Consultancy. While each vertical addresses a different domain of human engagement, all three are interconnected through a common philosophy - the Subjective Self Framework.',
