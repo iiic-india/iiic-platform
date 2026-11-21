@@ -35,8 +35,25 @@ export function startMonitoring(): void {
       stackFrameVariables: false,
     },
     beforeBreadcrumb: () => null,
-    beforeSend: (event) => scrubEvent(event),
+    beforeSend: (event, hint) => scrubEvent(withReference(event, hint)),
   })
+}
+
+/** Next.js's digest: a hash of the error, with Next.js's own error code after an "@" at times. */
+const DIGEST = /^[\w@-]{1,64}$/
+
+/**
+ * The digest Next.js gives an error it catches while rendering, which the 500 page shows as its
+ * reference (src/components/site/ServerError.tsx), as a tag, so that a reference a visitor
+ * quotes finds its report. It is a hash of the error, and says nothing about the person.
+ */
+export function withReference<Event extends { tags?: Record<string, unknown> }>(
+  event: Event,
+  hint?: { originalException?: unknown },
+): Event {
+  const digest = (hint?.originalException as { digest?: unknown } | null | undefined)?.digest
+  if (typeof digest !== 'string' || !DIGEST.test(digest)) return event
+  return { ...event, tags: { ...event.tags, digest } }
 }
 
 type Tags = Record<string, string | undefined>
