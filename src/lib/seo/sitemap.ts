@@ -13,6 +13,8 @@ export type SitemapSource = {
   published: readonly { slug: string; updatedAt?: string | null }[]
   /** Every slug that has been published at some time, whether or not it is now (D-57). */
   everPublished: readonly string[]
+  /** Every address a redirect leads from, which no starter page is shown at (D-57). */
+  redirected?: readonly string[]
 }
 
 /** Where the share images are served: the route there takes every address below it. */
@@ -25,23 +27,27 @@ export type ServedPage = { path: string; slug?: string; updatedAt?: string | nul
  * Every page the site serves today that a search engine may list, once each: the sitemap and
  * llms.txt both name exactly these. In order: the starter pages' addresses, each with the
  * page published there (and the date it last changed) or its starter page while no page there
- * has ever been published (D-51, with no date, since none is known); then the pages published
- * at any other address; then the pages the app draws itself. A page that was published and is
- * not now is a 404, so it is left out (D-57), and so is every route that is never indexed
- * (D-67). An address the app draws itself is the app's: a page published there is never shown.
- * Nor is a page published under /og/, where the share images' route answers
- * (src/app/og/[...slug]/route.tsx), so it is left out too.
+ * has ever been published and no redirect leads from there (D-51, D-57, with no date, since
+ * none is known); then the pages published at any other address; then the pages the app draws
+ * itself. A page that was published and is not now is a 404, so it is left out (D-57), and so
+ * is every route that is never indexed (D-67). An address the app draws itself is the app's: a
+ * page published there is never shown. Nor is a page published under /og/, where the share
+ * images' route answers (src/app/og/[...slug]/route.tsx), so it is left out too.
  */
 export function servedPages({
   starterSlugs,
   published,
   everPublished,
+  redirected = [],
 }: SitemapSource): ServedPage[] {
   const changed = new Map(published.map(({ slug, updatedAt }) => [slug, updatedAt ?? null]))
   const seen = new Set(everPublished)
+  const moved = new Set(redirected)
   const starters = new Set(starterSlugs)
   const fromCms = [
-    ...starterSlugs.filter((slug) => changed.has(slug) || !seen.has(slug)),
+    ...starterSlugs.filter(
+      (slug) => changed.has(slug) || (!seen.has(slug) && !moved.has(pagePath(slug))),
+    ),
     ...published.map(({ slug }) => slug).filter((slug) => !starters.has(slug)),
   ].map((slug) => ({ path: canonicalPath(pagePath(slug)), slug, updatedAt: changed.get(slug) }))
   const fromApp: ServedPage[] = APP_PAGES.map(({ path }) => ({ path }))

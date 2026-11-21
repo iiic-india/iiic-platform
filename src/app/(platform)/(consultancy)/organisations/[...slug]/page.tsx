@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 
 import { metadataAt, PageAt } from '@/components/blocks/PageAt'
 import { PAGE_SLUG } from '@/lib/content/slug'
+import { redirectOrNotFound } from '@/lib/redirects/lookup'
+import { pathOf } from '@/lib/redirects/paths'
 
 type Props = { params: Promise<{ slug: string[] }> }
 
@@ -11,7 +12,8 @@ type Props = { params: Promise<{ slug: string[] }> }
  * consultancy register its route group sets. Without this route such a page would be served
  * by the catch-all in the default register. A route built later for one of these addresses
  * (organisations/team-map with its form, or organisations/[service] from the services) takes
- * precedence over it.
+ * precedence over it. An address no page could have is answered by its redirect, if it has
+ * one, or the 404.
  */
 async function slugAt(params: Props['params']): Promise<string | null> {
   const slug = `organisations/${(await params).slug.join('/')}`
@@ -25,6 +27,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function OrganisationsSubPage({ params }: Props) {
   const slug = await slugAt(params)
-  if (!slug) notFound()
+  if (!slug) return redirectOrNotFound(pathOf('organisations', ...(await params).slug))
   return <PageAt slug={slug} />
 }

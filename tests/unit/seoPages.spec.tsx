@@ -67,6 +67,14 @@ vi.mock('next/navigation', () => ({
     throw new Error('fake not found')
   },
 }))
+// No redirect leads from any address here (src/lib/redirects/lookup.ts), and the 404 log
+// writes nothing (src/lib/redirects/log.ts).
+vi.mock('@/lib/redirects/lookup', () => ({
+  redirectOrNotFound: async () => {
+    throw new Error('fake not found')
+  },
+}))
+vi.mock('@/lib/redirects/log', () => ({ logMissingPage: async () => undefined }))
 // The layout's own needs, none of them tested here: the deployment's origin, the faces
 // next/font loads at build time, and the request the layout waits for.
 vi.mock('@/lib/env', () => ({ env: () => ({ siteUrl: 'https://fake.example' }) }))

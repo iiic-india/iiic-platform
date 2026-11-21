@@ -20,8 +20,9 @@ import {
 } from '@/lib/seo/site'
 
 // A page's metadata (src/lib/seo/metadata.ts; docs/12 §3). The CMS is not asked here: the
-// starter pages are read as the routes hand them over.
+// starter pages are read as the routes hand them over, and no redirect is read either.
 vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
+vi.mock('@/lib/redirects/lookup', () => ({ redirectOrNotFound: vi.fn() }))
 
 /** A fake origin, so that nothing here depends on the machine's own site URL. */
 const ORIGIN = 'https://fake.example'

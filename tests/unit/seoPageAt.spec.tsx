@@ -8,6 +8,7 @@ import { JsonLd } from '@/components/seo/JsonLd'
 import { STARTER_PAGES, starterAt } from '@/content/starter'
 import { getPage } from '@/lib/content/pages'
 import type { PageContent } from '@/lib/content/types'
+import { redirectOrNotFound } from '@/lib/redirects/lookup'
 import { buildMetadata } from '@/lib/seo/metadata'
 import type { JsonLdGraph, JsonLdNode } from '@/lib/seo/schema'
 import { HOME_TITLE } from '@/lib/seo/site'
@@ -15,10 +16,12 @@ import { HOME_TITLE } from '@/lib/seo/site'
 // How a route gets a page's metadata and structured data (src/components/blocks/PageAt.tsx).
 // The CMS is faked: getPage answers with the starter pages and the fake pages below.
 vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
-vi.mock('next/navigation', () => ({
-  notFound: () => {
+// No redirect leads from any address here (src/lib/redirects/lookup.ts): an address without a
+// page is the 404.
+vi.mock('@/lib/redirects/lookup', () => ({
+  redirectOrNotFound: vi.fn(async () => {
     throw new Error('fake not found')
-  },
+  }),
 }))
 
 const ORIGIN = 'https://fake.example'
@@ -100,8 +103,9 @@ describe('metadataOf', () => {
 })
 
 describe('PageAt', () => {
-  it('is the 404 where there is no page', async () => {
+  it('is the 404 where there is no page, once the redirects are asked about the address', async () => {
     await expect(PageAt({ slug: 'no-such-page' })).rejects.toThrow('fake not found')
+    expect(redirectOrNotFound).toHaveBeenLastCalledWith('/no-such-page')
   })
 
   it('draws the page’s structured data first, then its blocks', async () => {

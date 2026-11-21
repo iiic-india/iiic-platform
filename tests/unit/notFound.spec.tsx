@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import OrganisationsSubPage, {
   generateMetadata as organisationsMetadata,
@@ -12,6 +12,8 @@ import InstituteSubPage, {
   generateMetadata as instituteMetadata,
 } from '@/app/(platform)/(education)/institute/[...slug]/page'
 import { CRISIS_LINES, SCOPE_HEADING } from '@/lib/counselling/scope'
+import { logMissingPage } from '@/lib/redirects/log'
+import { redirectOrNotFound } from '@/lib/redirects/lookup'
 
 // The requested path, as src/proxy.ts sets it on every request.
 const state = vi.hoisted(() => ({ path: '' }))
@@ -24,12 +26,19 @@ vi.mock('@/components/blocks/PageAt', () => ({
   PageAt: () => null,
   metadataAt: async (slug: string) => ({ title: `Fake ${slug}` }),
 }))
-vi.mock('next/navigation', () => ({
-  notFound: () => {
+// No redirect leads from any address here, so every address without a page is the 404.
+vi.mock('@/lib/redirects/lookup', () => ({
+  redirectOrNotFound: vi.fn(async () => {
     throw new Error('not found')
-  },
+  }),
 }))
+// The 404 log writes after the response (src/lib/redirects/log.ts): here, only the call.
+vi.mock('@/lib/redirects/log', () => ({ logMissingPage: vi.fn(async () => undefined) }))
 
+beforeEach(() => {
+  vi.mocked(redirectOrNotFound).mockClear()
+  vi.mocked(logMissingPage).mockClear()
+})
 afterEach(cleanup)
 
 const draw = async (path: string) => {
@@ -75,6 +84,12 @@ describe('the 404', () => {
       cleanup()
     }
   })
+
+  it('puts the address in the 404 log, on every path (docs/11 §5.1, item 9)', async () => {
+    for (const path of ['/no-such-page', '/counselling/x']) await draw(path)
+    // What it keeps, and when it writes, is the log's own business (tests/unit/missingPages.spec.ts).
+    expect(logMissingPage).toHaveBeenCalledTimes(2)
+  })
 })
 
 // docs/02: the pages under /institute/, /organisations/ and /counselling/ are drawn in their
@@ -102,6 +117,11 @@ for (const { section, Page, metadata } of SECTIONS) {
         await expect(Page(params(slug)), slug).rejects.toThrow('not found')
         expect(await metadata(params(slug)), slug).toEqual({})
       }
+    })
+
+    it('asks for the redirect from such an address first, by its whole path', async () => {
+      await expect(Page(params('Old', 'Page.html'))).rejects.toThrow('not found')
+      expect(redirectOrNotFound).toHaveBeenCalledWith(`/${section}/Old/Page.html`)
     })
   })
 }

@@ -3,6 +3,7 @@ import Link from 'next/link'
 
 import { isCounsellingPath } from '@/blocks/pageBlocks'
 import { Scope } from '@/components/blocks/PageBlocks'
+import { logMissingPage } from '@/lib/redirects/log'
 
 /**
  * The 404 inside the site's shell. The full page (D-29, docs/11 §5.1) is built in M2; item 8
@@ -11,9 +12,12 @@ import { Scope } from '@/components/blocks/PageBlocks'
  * and the crisis numbers above the footer, since someone who followed a broken counselling
  * link may need them. The path is the one src/proxy.ts sets on every request, which
  * overwrites any value a client sends. Next adds the noindex tag to every 404 response.
+ * Item 9: the address goes into the 404 log (Content → Broken links) once the response has
+ * gone, with no query string and nothing about the visitor (src/lib/redirects/log.ts).
  */
 export default async function NotFound() {
   const path = (await headers()).get('x-pathname') ?? ''
+  await logMissingPage()
   return (
     <section className="iiic-page" style={{ paddingTop: 48, paddingBottom: 80 }}>
       <h1 style={{ margin: '0 0 16px' }}>Page not found</h1>

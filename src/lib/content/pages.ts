@@ -5,9 +5,11 @@ import { getPayload } from 'payload'
 import { cache } from 'react'
 
 import { starterAt } from '@/content/starter'
+import { redirectFor } from '@/lib/redirects/lookup'
 import config from '@payload-config'
 
 import { PAGES_TAG, pageTag } from './revalidate'
+import { pagePath } from './slug'
 import type { PageContent } from './types'
 
 /** The published page at a slug, as a visitor may read it: drafts are not returned. */
@@ -41,11 +43,13 @@ async function publishedBefore(slug: string): Promise<boolean> {
 
 /**
  * The page at a slug: the published CMS page; else its starter page, as long as no page at
- * that address has ever been published (D-51); else null, the site's 404. While a page that
- * was published is unpublished, its address shows the 404, not the starter page; deleting the
- * page brings the starter page back (D-57). The CMS data is cached and marked stale when an
- * editor publishes, unpublishes, moves or deletes a page (docs/12 §1, §4), and one request
- * reads it once however many components ask.
+ * that address has ever been published (D-51) and no redirect leads from it (D-57); else null,
+ * which the route answers with the redirect from the address if there is one, and the site's
+ * 404 otherwise (src/lib/redirects/lookup.ts). While a page that was published is unpublished,
+ * its address shows the 404, not the starter page; deleting the page brings the starter page
+ * back (D-57). The CMS data is cached and marked stale when an editor publishes, unpublishes,
+ * moves or deletes a page (docs/12 §1, §4), and one request reads it once however many
+ * components ask.
  */
 export const getPage = cache(async (slug: string): Promise<PageContent | null> => {
   const cached = unstable_cache(
@@ -57,5 +61,8 @@ export const getPage = cache(async (slug: string): Promise<PageContent | null> =
     { tags: [PAGES_TAG, pageTag(slug)] },
   )
   const state = await cached()
-  return state.page ?? (state.publishedBefore ? null : (starterAt(slug) ?? null))
+  if (state.page) return state.page
+  const starter = state.publishedBefore ? undefined : starterAt(slug)
+  if (!starter || (await redirectFor(pagePath(slug)))) return null
+  return starter
 })
