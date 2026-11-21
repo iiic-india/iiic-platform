@@ -6,12 +6,13 @@ import type { PageContent } from '@/lib/content/types'
  * from docs/content/sources/, [CS] lines are candidates (I-41), and what nobody has supplied
  * is a placeholder. The course is never called a degree or diploma, and the certificate's
  * fixed statement is on the page (docs/08 §7). The proof section and the voices beside
- * sections 3 and 6 join the page with the reviews.
+ * sections 3 and 6 join the page with the reviews (D-58).
  */
 
 /** IIIC's own lines on this page, exactly as the sources have them. */
 export const LEARN_IIIC_LINES = {
   lead: 'At IIIC, we believe education should go beyond academic knowledge, conventional learning and preparing individuals to become part of an existing system.',
+  understand: 'Through the Subjective Self framework, we help individuals understand:',
   purpose: 'Why they exist beyond simply fulfilling societal expectations.',
   identity: 'Why developing their individual identity and building their image matters.',
   significance:
@@ -59,8 +60,10 @@ export const LEARN: PageContent = {
     },
     {
       blockType: 'cards',
-      // The section's name is the copy architecture's; each card is IIIC's own sentence.
+      // The section's name is the copy architecture's; each card is IIIC's own sentence, after
+      // IIIC's own line that opens the list.
       heading: 'The five pillars',
+      intro: LINES.understand,
       cards: [
         { title: 'Purpose', text: LINES.purpose },
         { title: 'Identity', text: LINES.identity },
@@ -121,6 +124,7 @@ export const LEARN: PageContent = {
   ],
   facts: [
     { statement: LINES.lead, source: 'description', checkedAt: '2026-11-21' },
+    { statement: LINES.understand, source: 'description', checkedAt: '2026-11-21' },
     { statement: LINES.purpose, source: 'description', checkedAt: '2026-11-21' },
     { statement: LINES.identity, source: 'description', checkedAt: '2026-11-21' },
     { statement: LINES.significance, source: 'description', checkedAt: '2026-11-21' },

@@ -14,7 +14,8 @@ export const SCOPE_HEADING = 'What a session is, and what it is not'
 export const SCOPE_STATEMENT = [
   'Sessions at IIIC are non-clinical conversations based on the Subjective Self framework.',
   'They are not diagnosis or treatment, and they are not an emergency service.',
-  'What you say in a session stays private, within the limits the law sets, including where a child may be at risk.',
+  // The limit in src/brand/VOICE.md's own words ("Counselling copy"); docs/08 §7 names POCSO.
+  'What you say in a session stays private, within the limits the law sets, including mandatory reporting where a child may be at risk.',
   'Anyone under 18 needs the consent of a parent or guardian.',
 ] as const
 

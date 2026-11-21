@@ -75,6 +75,9 @@ describe('the home starter page, drawn', () => {
     for (const door of doors) {
       expect(door.querySelector('.iiic-door-glyph')?.getAttribute('aria-hidden')).toBe('true')
     }
+    // docs/11 §3.4: the outcome band is the door's footer and the whole card is the link; a
+    // button would need a verb (VOICE.md).
+    for (const door of doors) expect(door.querySelector('.iiic-btn')).toBeNull()
   })
 
   it('states the framework in IIIC’s words and lists the four steps', () => {
@@ -140,6 +143,18 @@ describe('the framework starter page, drawn', () => {
         .getAllByRole('columnheader')
         .map((cell) => cell.textContent),
     ).toEqual(['Living as the object', 'Living as the subject'])
+    // Each row is headed by its first cell, so the pair is read together (WCAG 1.3.1).
+    expect(
+      within(table)
+        .getAllByRole('rowheader')
+        .map((cell) => cell.textContent),
+    ).toEqual([
+      'Life happens to me',
+      'I react to people and events',
+      'Others decide my worth',
+      'I follow instructions',
+      'Circumstances drive my choices',
+    ])
     const rows = within(table).getAllByRole('row').slice(1)
     expect(rows).toHaveLength(5)
     expect(rows[0]?.textContent).toBe('Life happens to meI shape how I meet life')
@@ -174,6 +189,9 @@ describe('the framework starter page, drawn', () => {
       'Business & Management',
       'Counselling',
     ])
+    // docs/11 §3.4: the outcome band is the door's footer and the whole card is the link; a
+    // button would need a verb (VOICE.md).
+    for (const door of doors) expect(door.querySelector('.iiic-btn')).toBeNull()
     expect(
       screen.getByText(FRAMEWORK_IIIC_LINES.foundation).closest('.iiic-section-head'),
     ).not.toBeNull()
@@ -280,29 +298,48 @@ describe('the counselling starter page, drawn', () => {
     const { container } = draw()
     const scope = container.querySelector('#scope') as HTMLElement
     for (const sentence of SCOPE_STATEMENT) expect(scope.textContent).toContain(sentence)
+    // Confidentiality with its legal limit stated (docs/08 §7; VOICE.md, "Counselling copy").
+    expect(scope.textContent).toContain('mandatory reporting where a child may be at risk')
     expect(scope.querySelector('[data-draft]')?.getAttribute('data-draft')).toBe('I-22')
   })
 
-  it('lists the crisis numbers as links a phone can dial', () => {
+  it('lists the crisis numbers as links a phone can dial, each named with its line', () => {
     const { container } = draw()
     const scope = container.querySelector('#scope') as HTMLElement
     const links = [...scope.querySelectorAll<HTMLAnchorElement>('a[href^="tel:"]')]
     expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
-      ['14416', 'tel:14416'],
-      ['1-800-891-4416', 'tel:18008914416'],
-      ['112', 'tel:112'],
-      ['1098', 'tel:1098'],
+      ['14416, Tele-MANAS', 'tel:14416'],
+      ['1-800-891-4416, Tele-MANAS', 'tel:18008914416'],
+      ['112, Emergencies', 'tel:112'],
+      ['1098, Children', 'tel:1098'],
     ])
     expect(links).toHaveLength(CRISIS_LINES.flatMap((line) => line.numbers).length)
-    expect(scope.textContent).toContain('Tele-MANAS: 14416 or 1-800-891-4416 (free, 24×7)')
+    // What the eye reads is unchanged: the line's name is for screen readers only.
+    const seen = scope.cloneNode(true) as HTMLElement
+    for (const hidden of seen.querySelectorAll('.iiic-sr-only')) hidden.remove()
+    expect(seen.textContent).toContain('Tele-MANAS: 14416 or 1-800-891-4416 (free, 24×7)')
   })
 
   it('points from the hero to the statement instead of promising confidentiality outright', () => {
-    draw()
-    const pointer = screen.getByRole('link', { name: 'What that means, and what we keep private' })
+    const { container } = draw()
+    const pointer = screen.getByRole('link', {
+      name: 'What a session is, and what we keep private',
+    })
     expect(pointer.getAttribute('href')).toBe('/counselling#scope')
     expect(screen.getByText('Sessions are non-clinical conversations.')).toBeTruthy()
     expect(screen.getByText(COUNSELLING_IIIC_LINES.lead)).toBeTruthy()
+    // The note is drawn after the actions, so the pointer's label has to stand on its own.
+    const hero = container.querySelector('.iiic-hero') as HTMLElement
+    expect(hero.querySelector('.iiic-row')?.nextElementSibling?.textContent).toBe(
+      'Sessions are non-clinical conversations.',
+    )
+  })
+
+  it('files the session lengths under IIIC’s registration form, where docs/09 has them', () => {
+    expect(
+      COUNSELLING.facts?.find((fact) => fact.statement === '1:1 sessions of 15, 30 or 45 minutes.')
+        ?.source,
+    ).toBe('form')
   })
 
   it('never describes counselling in clinical words, outside the statement that rules them out', () => {
@@ -322,7 +359,7 @@ describe('the counselling starter page, drawn', () => {
     const waiting = [...container.querySelectorAll('.iiic-todo')].map((chip) =>
       chip.getAttribute('data-todo'),
     )
-    expect(waiting.sort()).toEqual(['D-19', 'I-08', 'I-09', 'I-20', 'I-31'])
+    expect(waiting.sort()).toEqual(['I-08', 'I-09', 'I-20', 'I-30', 'I-31'])
     expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
       candidates(COUNSELLING.layout),
     )
@@ -359,6 +396,10 @@ describe('the learn starter page, drawn', () => {
       LEARN_IIIC_LINES.logic,
       LEARN_IIIC_LINES.accountability,
     ])
+    // IIIC's own line opens the list, so "they" in each card refers to someone.
+    expect(cards[0]?.closest('section')?.querySelector('.iiic-section-head p')?.textContent).toBe(
+      LEARN_IIIC_LINES.understand,
+    )
   })
 
   it('carries the certificate’s fixed statement, marked as a draft for the lawyer', () => {
@@ -449,7 +490,7 @@ describe('the about starter page, drawn', () => {
     expect(text.match(/ankvishwa/gi)).toHaveLength(1)
   })
 
-  it('lists the institutional work exactly as IIIC’s site records it', () => {
+  it('lists the two workshops and leads to a partnership', () => {
     const { container } = draw()
     const text = container.textContent ?? ''
     expect(text).toContain(PDEU_WORKSHOP)
@@ -522,6 +563,7 @@ describe('the institute starter page, drawn', () => {
       'Programmes',
       'The certificate',
       'Partnerships',
+      'Faculty',
       'Verify a certificate',
     ])
     const certificate = container.querySelector('#certificate') as HTMLElement
@@ -557,12 +599,12 @@ describe('the institute starter page, drawn', () => {
     for (const link of contact) expect(link.getAttribute('href')).toBe('/about#contact')
   })
 
-  it('leaves the research, the programmes and verification as placeholders', () => {
+  it('leaves the research, the programmes, the credentials and verification as placeholders', () => {
     const { container } = draw()
     const waiting = [...container.querySelectorAll('.iiic-todo')].map((chip) =>
       chip.getAttribute('data-todo'),
     )
-    expect(waiting.sort()).toEqual(['D-39', 'I-14', 'I-43'])
+    expect(waiting.sort()).toEqual(['D-39', 'I-14', 'I-43', 'I-43'])
     expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
       candidates(INSTITUTE.layout),
     )

@@ -6,7 +6,9 @@ import type { PageContent } from '@/lib/content/types'
  * - [IIIC]: IIIC's own words, verbatim from docs/content/sources/ (tests hold them to the sources);
  * - [CS]: a candidate line from the copy system, shown with a marker until IIIC approves it (I-41);
  * - [proposal] lines and unsupplied facts are placeholders, never written here.
- * "In their words" and the Journal teaser join the page with the reviews and the Journal.
+ * Section 3's two Object/Subject pairs come with the flip (docs/11 §3.2, §4); until then the
+ * section links to all five on /framework. "In their words", the voices beside the sections and
+ * the Journal teaser join the page with the reviews and the Journal.
  */
 
 /** IIIC's own lines on this page, exactly as the sources have them. */
@@ -49,7 +51,6 @@ export const HOME: PageContent = {
           question: 'I want to understand myself.',
           line: HOME_IIIC_LINES.counselling,
           outcomes: 'Perspective · Acceptance · Growth',
-          action: 'Counselling',
         },
         {
           glyph: 'O',
@@ -59,7 +60,6 @@ export const HOME: PageContent = {
           question: 'I want to lead with clarity and grow my business.',
           line: HOME_IIIC_LINES.consultancy,
           outcomes: 'Leadership · Systems · Culture',
-          action: 'For organisations',
         },
         {
           glyph: 'L',
@@ -69,7 +69,6 @@ export const HOME: PageContent = {
           question: 'I want to build my image and presence from within.',
           line: HOME_IIIC_LINES.education,
           outcomes: 'Discipline · Accountability · Decisiveness',
-          action: 'Learn',
         },
       ],
       copyStatus: 'candidate',
@@ -136,5 +135,11 @@ export const HOME: PageContent = {
     { statement: HOME_IIIC_LINES.education, source: 'description', checkedAt: '2026-11-20' },
     { statement: HOME_IIIC_LINES.framework, source: 'description', checkedAt: '2026-11-20' },
     { statement: HOME_IIIC_LINES.years, source: 'brochure', checkedAt: '2026-11-20' },
+    // The hero's claim, in the founders' page's words (the source the founders' page gives it).
+    {
+      statement: "India's indigenous framework of psychology",
+      source: 'description',
+      checkedAt: '2026-11-21',
+    },
   ],
 }

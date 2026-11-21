@@ -2,6 +2,7 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { SiteFooter } from '@/components/site/SiteFooter'
+import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
 
 // next/image needs Next's loader; an element with the image's role and name is enough to
 // test the footer's structure.
@@ -42,9 +43,37 @@ describe('SiteFooter', () => {
     ]) {
       expect(hrefs).toContain(href)
     }
-    for (const href of ['/legal', '/privacy', '/terms', '/refunds', '/grievance']) {
+    for (const href of [
+      '/legal',
+      '/privacy',
+      '/terms',
+      '/refunds',
+      '/grievance',
+      '/accessibility',
+    ]) {
       expect(hrefs).toContain(href)
     }
+  })
+
+  it('names the proprietor, the GSTIN and the grievance officer in the legal row (docs/08 §3, §4)', () => {
+    render(<SiteFooter />)
+    const legal = footer().querySelector('.iiic-footer-legal') as HTMLElement
+    // The legal name (I-26), the GSTIN (I-05), the grievance officer (I-21) and the affiliation
+    // statement (I-30), each a placeholder until it is supplied.
+    expect(
+      [...legal.querySelectorAll('.iiic-todo')].map((chip) => chip.getAttribute('data-todo')),
+    ).toEqual(['I-26', 'I-05', 'I-21', 'I-30'])
+    const chip = ({ what, id }: { what: string; id: string }) => `[[TODO: ${what}, ${id}]]`
+    expect(legal.firstElementChild?.textContent?.replace(/^© \d{4} /, '')).toBe(
+      [
+        'Indian Institute of Image Catalysts',
+        // The label /legal uses, so the proprietor's name never reads as a contact.
+        `Legal name: ${chip(FIXED_PLACEHOLDERS.footerLegalName)}`,
+        `GSTIN ${chip(FIXED_PLACEHOLDERS.footerGstin)}`,
+        `Grievance officer: ${chip(FIXED_PLACEHOLDERS.footerGrievanceOfficer)}`,
+        chip(FIXED_PLACEHOLDERS.footerAffiliation),
+      ].join(' · '),
+    )
   })
 
   it('gives the brochure address without a PIN, the phone and the email in an address (D-31)', () => {

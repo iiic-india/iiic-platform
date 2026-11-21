@@ -31,6 +31,8 @@ export const ORGANISATIONS_IIIC_LINES = {
 } as const
 
 const LINES = ORGANISATIONS_IIIC_LINES
+// /book/call opens with the booking flow (M3) and /organisations/team-map with the Team Map page;
+// until then both lead to the 404 (NOT_BUILT_YET in tests/unit/starterPages.spec.ts).
 const BOOK_A_CALL = { label: 'Book a proposal call', href: '/book/call' }
 /** What each service page will say, once IIIC supplies it (I-11). */
 const SERVICE_COPY =
