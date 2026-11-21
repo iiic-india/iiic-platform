@@ -44,8 +44,12 @@ export const PUBLIC_WORKSHOP =
   'Subjective Self: a public workshop, Cafe Venture Studio, Commerce Six Roads, Ahmedabad, 8–9 July 2023.'
 
 export const ABOUT: PageContent = {
-  title: 'About',
+  // Search terms (D-65): IIIC Ahmedabad, IIIC full form, Indian Institute of Image Catalysts,
+  // Gaurang Mistry image consultant (his title in the brochure; never "Dr.").
+  title: 'Indian Institute of Image Catalysts, Ahmedabad',
   slug: 'about',
+  description:
+    'IIIC is the Indian Institute of Image Catalysts, Ahmedabad, founded by image consultant Gaurang Mistry: consultancy, a certification course, counselling.',
   layout: [
     {
       blockType: 'hero',

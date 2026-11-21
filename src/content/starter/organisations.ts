@@ -39,8 +39,14 @@ const SERVICE_COPY =
   '[[TODO: the problem it solves, how the framework applies, what a client receives, I-11]]'
 
 export const ORGANISATIONS: PageContent = {
-  title: 'For organisations',
+  // Search terms (D-65): management consultant Ahmedabad, business consultant Ahmedabad,
+  // business and management consultancy, leadership development, standard operating procedures
+  // for SMEs (spelled out: "SOP" alone means a statement of purpose). Never "HR consultant",
+  // which means recruitment.
+  title: 'Business & management consultancy in Ahmedabad',
   slug: 'organisations',
+  description:
+    'IIIC, Ahmedabad: leadership development for founders and business owners, and systems, processes and standard operating procedures (SOPs) for SMEs.',
   layout: [
     {
       blockType: 'hero',

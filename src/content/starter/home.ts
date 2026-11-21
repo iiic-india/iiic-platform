@@ -24,8 +24,13 @@ export const HOME_IIIC_LINES = {
 const FIND_YOUR_PATH = { label: 'Find your path', href: '/map' }
 
 export const HOME: PageContent = {
+  // The page's name in the admin only: the home page's tab title is the site's fixed one, set in
+  // the platform layout (docs/12 §3). Search terms (D-65): Indian Institute of Image Catalysts,
+  // IIIC Ahmedabad, image catalysts Ahmedabad, IIIC Subjective Self.
   title: 'Home',
   slug: 'home',
+  description:
+    'Indian Institute of Image Catalysts (IIIC), Ahmedabad: business & management consultancy, a certification course and counselling, built on Subjective Self.',
   layout: [
     {
       blockType: 'hero',

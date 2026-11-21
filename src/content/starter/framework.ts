@@ -38,8 +38,14 @@ export const FRAMEWORK_IIIC_LINES = {
 const LINES = FRAMEWORK_IIIC_LINES
 
 export const FRAMEWORK: PageContent = {
-  title: 'Framework',
+  // Search terms (D-65): Subjective Self, Subjective Self framework, Indian psychology,
+  // self-awareness. "An Indian framework" is the founders' page's "India's indigenous framework of
+  // psychology", never "first". The description keeps the definition's "rather than merely"
+  // (iiic-description-2026-11-04.md).
+  title: 'Subjective Self, an Indian framework of psychology',
   slug: 'framework',
+  description:
+    'Subjective Self (IIIC, Ahmedabad): a psychological framework for looking at yourself as a subject rather than merely as an object of your circumstances.',
   layout: [
     {
       blockType: 'hero',

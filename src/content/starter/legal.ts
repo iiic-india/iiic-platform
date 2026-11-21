@@ -31,6 +31,10 @@ const REACH = `${CONTACT.email} or ${CONTACT.phone}, ${CONTACT.hours}`
 export const LEGAL: PageContent = {
   title: 'Legal information',
   slug: 'legal',
+  // The legal pages keep plain titles and are not optimised (D-65); each description is the
+  // page's own lead with the institute's full name.
+  description:
+    'Who runs this site for the Indian Institute of Image Catalysts (IIIC), Ahmedabad, and how to reach them.',
   legalReview: 'draft',
   layout: [
     {
@@ -79,6 +83,8 @@ export const LEGAL: PageContent = {
 export const PRIVACY: PageContent = {
   title: 'Privacy notice',
   slug: 'privacy',
+  description:
+    'What the Indian Institute of Image Catalysts (IIIC) collects through this site, why, and what you can ask IIIC to do with it.',
   legalReview: 'draft',
   layout: [
     {
@@ -217,6 +223,8 @@ export const PRIVACY: PageContent = {
 export const TERMS: PageContent = {
   title: 'Terms of use',
   slug: 'terms',
+  description:
+    'The terms for using this site and the services of the Indian Institute of Image Catalysts (IIIC), Ahmedabad.',
   legalReview: 'draft',
   layout: [
     {
@@ -262,6 +270,8 @@ export const TERMS: PageContent = {
 export const REFUNDS: PageContent = {
   title: 'Cancellations and refunds',
   slug: 'refunds',
+  description:
+    'The rules for cancelling, rescheduling and refunds at the Indian Institute of Image Catalysts (IIIC), Ahmedabad.',
   legalReview: 'draft',
   layout: [
     {
@@ -311,6 +321,8 @@ export const REFUNDS: PageContent = {
 export const GRIEVANCES: PageContent = {
   title: 'Grievance officer',
   slug: 'grievance',
+  description:
+    'How to complain to the Indian Institute of Image Catalysts (IIIC), how to ask about your data, and how soon IIIC answers.',
   legalReview: 'draft',
   layout: [
     {
@@ -369,6 +381,8 @@ export const GRIEVANCES: PageContent = {
 export const ACCESSIBILITY: PageContent = {
   title: 'Accessibility',
   slug: 'accessibility',
+  description:
+    'How the Indian Institute of Image Catalysts (IIIC) builds this site to meet WCAG 2.2 at level AA, what is checked, and how to report a problem.',
   layout: [
     {
       blockType: 'hero',

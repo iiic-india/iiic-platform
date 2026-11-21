@@ -24,8 +24,13 @@ const LINES = INSTITUTE_IIIC_LINES
 const CONTACT = { label: 'Contact', href: '/about#contact' }
 
 export const INSTITUTE: PageContent = {
-  title: 'Institute',
+  // Search terms (D-65): Subjective Self research, Subjective Self workshop (the 2023 workshop,
+  // as a past fact). Workshops and programmes for colleges wait on I-11, so the title names what
+  // the page holds, not an offer. The one partnership named is the one that happened (docs/09).
+  title: 'Subjective Self research and university partnership',
   slug: 'institute',
+  description:
+    'IIIC, Ahmedabad: research, programmes and partnerships, including a two-day Subjective Self workshop at Pandit Deendayal Energy University in April 2023.',
   layout: [
     {
       blockType: 'hero',
