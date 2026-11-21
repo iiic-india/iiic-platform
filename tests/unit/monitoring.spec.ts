@@ -39,6 +39,25 @@ describe('scrubText', () => {
     expect(scrubText(`Bad link /admin/reset/${TOKEN}`)).toBe('Bad link /admin/reset/[token]')
   })
 
+  it('takes phone numbers out however they are written, and emails from URLs', () => {
+    for (const phone of [
+      '+91 98765 43210',
+      '+91-98765-43210',
+      '919876543210',
+      '09876543210',
+      '98765 43210',
+    ]) {
+      expect(scrubText(`Could not reach ${phone}`), phone).toBe('Could not reach [phone]')
+    }
+    expect(scrubText('/admin/collections/users?search=fake.person%40example.invalid')).toBe(
+      '/admin/collections/users?search=[email]',
+    )
+    // Long numbers that are not phone numbers stay, so reports keep their timings and ids.
+    expect(scrubText('Took 1795251128671 ms, id 4512464474865664')).toBe(
+      'Took 1795251128671 ms, id 4512464474865664',
+    )
+  })
+
   it('drops the values of a failed database query', () => {
     expect(
       scrubText('Failed query: select * from "users" where "email" = $1\nparams: a@b.invalid,7'),
@@ -71,10 +90,20 @@ describe('scrubEvent', () => {
         ],
       },
       tags: { role: 'owner', collection: 'users' },
+      transaction: `GET /admin/reset/${TOKEN}`,
+      contexts: {
+        nextjs: { request_path: `/admin/reset/${TOKEN}`, router_path: '/admin/[[...segments]]' },
+        trace: { trace_id: '0123456789abcdef0123456789abcdef', span_id: '0123456789abcdef' },
+      },
     }
     const scrubbed = scrubEvent(event)
     expect(scrubbed).toEqual({
       request: { method: 'POST', url: '/admin/reset/[token]' },
+      transaction: 'GET /admin/reset/[token]',
+      contexts: {
+        nextjs: { request_path: '/admin/reset/[token]', router_path: '/admin/[[...segments]]' },
+        trace: { trace_id: '0123456789abcdef0123456789abcdef', span_id: '0123456789abcdef' },
+      },
       message: 'Could not email [email]',
       exception: {
         values: [
@@ -88,6 +117,7 @@ describe('scrubEvent', () => {
       tags: { role: 'owner', collection: 'users' },
     })
     expect(JSON.stringify(scrubbed)).not.toMatch(/secret|example\.invalid|203\.0\.113/)
+    expect(JSON.stringify(scrubbed)).not.toContain(TOKEN)
   })
 })
 

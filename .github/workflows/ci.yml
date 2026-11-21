@@ -1,6 +1,9 @@
 # Checks on every pull request and on main (docs/10 M1, docs/12 §8).
 # The header and cookie-inventory tests run with the end-to-end tests; Lighthouse CI holds the
 # budgets of docs/12 §2, pnpm audit the dependencies and gitleaks the history (docs/12 §5).
+# Only public values may carry the NEXT_PUBLIC_ prefix, which lets Next.js put them in the
+# browser's bundle (docs/12 §5): SITE_URL, INSTITUTE_URL, CF_WEB_ANALYTICS_TOKEN and SENTRY_DSN.
+# A new public variable joins that list in the pull request that adds it.
 name: CI
 
 on:
@@ -61,6 +64,12 @@ jobs:
         run: pnpm audit --audit-level high
       - name: Formatting
         run: pnpm format:check
+      - name: Only public values behind NEXT_PUBLIC_ (docs/12 §5)
+        run: |
+          allowed='^NEXT_PUBLIC_(SITE_URL|INSTITUTE_URL|CF_WEB_ANALYTICS_TOKEN|SENTRY_DSN)$'
+          found=$(grep -rhoE 'NEXT_PUBLIC_[A-Z0-9_]+' src next.config.ts .env.example | sort -u)
+          unknown=$(printf '%s\n' "$found" | grep -vE "$allowed" || true)
+          if [ -n "$unknown" ]; then echo "Not on the list of public values (docs/12 §5): $unknown"; exit 1; fi
       - name: Types
         run: pnpm typecheck
       - name: Lint

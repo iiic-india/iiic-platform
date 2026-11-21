@@ -16,11 +16,15 @@ const STATIC_HEADERS = {
   'x-frame-options': 'DENY',
 }
 
-const ROUTE_GROUPS = [
+type RouteGroup = { name: string; path: string; html: boolean; private: boolean; status?: number }
+
+const ROUTE_GROUPS: RouteGroup[] = [
   { name: 'a public page', path: '/', html: true, private: false },
-  { name: 'the 404 page', path: '/no-such-page', html: true, private: false },
-  // No public/ folder: a path that looks like a file renders the 404 page, with the CSP.
-  { name: 'a file-like path', path: '/favicon.ico', html: true, private: false },
+  { name: 'the 404 page', path: '/no-such-page', html: true, private: false, status: 404 },
+  // No public/ folder: a missing path that looks like a file renders the 404 page, with the CSP.
+  { name: 'a file-like path', path: '/no-such-file.png', html: true, private: false, status: 404 },
+  // The tab icon is a real file, served by its own route (D-48), and the proxy covers it too.
+  { name: 'the tab icon', path: '/favicon.ico', html: true, private: false, status: 200 },
   { name: 'the admin', path: '/admin/login', html: true, private: true },
   { name: 'the API', path: '/api/health', html: false, private: true },
 ]
@@ -47,7 +51,9 @@ function expectStrictCsp(csp: string | undefined) {
 
 for (const group of ROUTE_GROUPS) {
   test(`${group.name} sends the security headers`, async ({ request }) => {
-    const headers = (await request.get(group.path)).headers()
+    const response = await request.get(group.path)
+    if (group.status !== undefined) expect(response.status(), group.path).toBe(group.status)
+    const headers = response.headers()
     for (const [name, value] of Object.entries(STATIC_HEADERS)) {
       expect(headers[name], name).toBe(value)
     }

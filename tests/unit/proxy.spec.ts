@@ -10,6 +10,10 @@ beforeAll(async () => {
   process.env.PAYLOAD_SECRET = 'test-only-payload-secret-00000000000000'
   process.env.DATABASE_URL = 'postgres://postgres:postgres@localhost:5432/iiic_test'
   process.env.INSTITUTE_HOSTS = 'iiic.edu.in'
+  process.env.R2_ACCOUNT_ID = 'test-only-account'
+  process.env.R2_ACCESS_KEY_ID = 'test-only-key-id'
+  process.env.R2_SECRET_ACCESS_KEY = 'test-only-secret'
+  process.env.R2_PUBLIC_BASE_URL = 'https://media.example/'
   ;({ proxy } = await import('@/proxy'))
 })
 
@@ -33,6 +37,13 @@ describe('proxy', () => {
       ),
     )
     expect(new Set(nonces).size).toBe(5)
+  })
+
+  it('lets images come from the media bucket', () => {
+    const csp = proxy(new NextRequest('https://iiic.example/')).headers.get(
+      'content-security-policy',
+    )
+    expect(csp).toContain("img-src 'self' data: blob: https://media.example;")
   })
 
   it('upgrades insecure requests only over https', () => {

@@ -37,6 +37,26 @@ describe('buildCsp', () => {
     expect(policy.get('frame-ancestors')).toEqual(["'none'"])
   })
 
+  it('lets images load from the media bucket too, and nothing else widens (D-46)', () => {
+    const withMedia = buildCsp({
+      nonce: 'n',
+      development: false,
+      https: true,
+      imageOrigins: ['https://media.example'],
+    })
+    expect(directives(withMedia).get('img-src')).toEqual([
+      "'self'",
+      'data:',
+      'blob:',
+      'https://media.example',
+    ])
+    expect(directives(withMedia).get('default-src')).toEqual(["'self'"])
+    const without = directives(buildCsp({ nonce: 'n', development: false, https: true }))
+    for (const [name, values] of directives(withMedia)) {
+      if (name !== 'img-src') expect(values, name).toEqual(without.get(name))
+    }
+  })
+
   it('allows inline styles, which cannot run code (the admin injects them at runtime)', () => {
     expect(directives(build).get('style-src')).toEqual(["'self'", "'unsafe-inline'"])
   })

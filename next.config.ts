@@ -55,5 +55,9 @@ export default withSentryConfig(config, {
   authToken: process.env.SENTRY_AUTH_TOKEN,
   silent: true,
   telemetry: false,
+  // No managed tunnel: Vercel builds would otherwise get an app/sentry-tunnel route, and no
+  // browser SDK uses it (D-49). The option is deprecated; an upgrade that drops it must keep the
+  // tunnel off another way, because without the option the SDK adds the route.
+  tunnelRoute: false,
   sourcemaps: { disable: true },
 })
