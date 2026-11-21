@@ -85,7 +85,7 @@ Host routing for `iiic.edu.in`, institute pages, verification on the institute d
 | Integration | Vitest with a test database and Payload's local API | Access rules per role, hooks (audit, consent), jobs, webhook processing with recorded payloads |
 | End to end | Playwright | Every flow in `03-user-flows.md` that R1 ships, on desktop and a 375 px viewport |
 | Accessibility | axe-core inside Playwright, plus a manual keyboard and screen-reader pass per release | WCAG 2.2 AA |
-| Performance | Lighthouse CI on key pages, bundle sizes from its resource summary (D-45) | The budgets in `12` §2, each judged on the median of three runs (lab: LCP ≤ 2.0 s public, Total Blocking Time ≤ 150 ms as INP's stand-in, CLS ≤ 0.05, server response ≤ 600 ms; JavaScript ≤ 150 KB gzipped and first-view images ≤ 400 KB on public pages; D-59) |
+| Performance | Lighthouse CI on key pages, bundle sizes from its resource summary (D-45) | The budgets in `12` §2, each judged on the median of three runs (lab: LCP ≤ 2.0 s public, Total Blocking Time ≤ 200 ms as INP's stand-in, CLS ≤ 0.05, server response ≤ 600 ms; JavaScript ≤ 150 KB gzipped and first-view images ≤ 400 KB on public pages; D-59) |
 | Visual | Screenshots of key pages compared per pull request | Brand fidelity |
 | Security | Tests for auth on every custom view and endpoint, webhook signature rejection, rate limits; dependency audit in CI | ASVS level 2 areas |
 

@@ -45,8 +45,8 @@ module.exports = {
         'largest-contentful-paint': ['error', { maxNumericValue: 2000 }],
         'cumulative-layout-shift': ['error', { maxNumericValue: 0.05 }],
         // A page load has no interaction, so INP has no lab value; Total Blocking Time stands in
-        // for it (D-59).
-        'total-blocking-time': ['error', { maxNumericValue: 150 }],
+        // for it, at Lighthouse's own line for a good TBT on its mobile profile (D-59).
+        'total-blocking-time': ['error', { maxNumericValue: 200 }],
         // The server's part of the 600 ms TTFB budget (D-42, D-59); the network from India is
         // measured on the live site.
         'server-response-time': ['error', { maxNumericValue: 600 }],
