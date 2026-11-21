@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { POLICY } from '@/access/policy'
 import { hasRole, isActive } from '@/access/roles'
-import { STARTER_PAGES } from '@/content/starter'
+import { STARTER_PAGES, starterAt } from '@/content/starter'
 
 import type { PageContent } from './types'
 
@@ -30,11 +30,6 @@ export const COPY_STARTER_MESSAGES = {
 /** The request body: the address of one starter page. */
 const CopyRequest = z.object({ slug: z.string().min(1).max(200) })
 
-/** The starter page at a slug. An own-property lookup, so "constructor" finds nothing. */
-function starterAt(slug: string): PageContent | undefined {
-  return Object.hasOwn(STARTER_PAGES, slug) ? STARTER_PAGES[slug] : undefined
-}
-
 /** A starter page as the data of a new draft: every field the page has, and nothing else. */
 export function starterPageData(page: PageContent) {
   return {
@@ -50,7 +45,8 @@ export function starterPageData(page: PageContent) {
 
 /**
  * The starter pages that have no page here yet, draft or published, in the starters' own
- * order. Read past the access rules: it lists addresses only, for staff who may create pages.
+ * order; deleting a page puts its starter page back on the list (D-57). Read past the access
+ * rules: it lists addresses only, for staff who may create pages.
  */
 export async function starterPagesWaiting(payload: Payload): Promise<PageContent[]> {
   const starters = Object.values(STARTER_PAGES)

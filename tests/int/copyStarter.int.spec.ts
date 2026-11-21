@@ -82,7 +82,7 @@ describe('copying the starter pages into the admin', () => {
     expect(await starterPagesWaiting(payload)).toHaveLength(starters.length)
   })
 
-  it('copies every starter page in as a draft the page rules accept', async () => {
+  it('copies every starter page in as a draft', async () => {
     for (const starter of starters) {
       const response = await copyStarterPage(await request(editor, { slug: starter.slug }))
       expect(response.status, starter.slug).toBe(201)
@@ -123,4 +123,21 @@ describe('copying the starter pages into the admin', () => {
     })
     expect(found.totalDocs).toBe(1)
   })
+
+  // A draft skips the page rules (required fields, links, the closing band, link names); they
+  // run when a page is published. So each copied starter page is published here once, and a
+  // starter page that breaks a rule fails here rather than when an editor publishes it.
+  it('publishes every copied page under the page rules', async () => {
+    expect(made).toHaveLength(starters.length)
+    for (const id of made) {
+      const page = await payload.update({
+        collection: 'pages',
+        id,
+        data: { _status: 'published' },
+        overrideAccess: true,
+      })
+      expect(page._status, page.slug).toBe('published')
+      expect(await visitorFinds(page.slug), page.slug).toBe(1)
+    }
+  }, 120_000)
 })

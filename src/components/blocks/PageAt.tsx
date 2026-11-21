@@ -6,8 +6,9 @@ import { getPage } from '@/lib/content/pages'
 import { RenderBlocks } from './PageBlocks'
 
 /**
- * The page at a slug, drawn: the CMS page once it is published, the starter page until then
- * (D-51), and the site's 404 if there is neither.
+ * The page at a slug, drawn: the CMS page while it is published, the starter page until a page
+ * at that address is first published (D-51), and the site's 404 otherwise, as while a page
+ * that was published is unpublished (D-57).
  */
 export async function PageAt({ slug }: { slug: string }) {
   const page = await getPage(slug)

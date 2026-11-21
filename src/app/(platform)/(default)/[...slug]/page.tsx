@@ -9,9 +9,10 @@ import type { PageContent } from '@/lib/content/types'
 type Props = { params: Promise<{ slug: string[] }> }
 
 /**
- * Every path no other route claims. A published page with that address is shown; anything
- * else gets the site's own 404 inside the shell (not-found.tsx beside this folder). An address
- * no page could have is refused before the database is asked, and "home" lives at "/" only.
+ * Every path no other route claims. The page at that address is shown (getPage: the published
+ * page, else its starter page, D-51, D-57); anything else gets the site's own 404 inside the
+ * shell (not-found.tsx beside this folder). An address no page could have is refused before
+ * the database is asked, and "home" lives at "/" only.
  */
 async function pageAt(params: Props['params']): Promise<PageContent | null> {
   const slug = (await params).slug.join('/')
