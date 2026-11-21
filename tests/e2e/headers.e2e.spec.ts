@@ -186,7 +186,9 @@ test("Next.js's prerendered error pages are never served without the nonce", asy
     '/404',
     '/500',
     '/%5Fnot-found',
+    // The pages router holds the static 500 (src/pages/500.tsx); its own pages stay unserved.
     '/_app',
+    '/_document',
     '/_error',
   ]) {
     const response = await request.get(path)

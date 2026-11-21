@@ -10,6 +10,7 @@ import GlobalError from '@/app/global-error'
 import { SERVER_ERROR_TITLE, ServerError } from '@/components/site/ServerError'
 import { CRISIS_LINES, SCOPE_HEADING } from '@/lib/counselling/scope'
 import { CONTACT } from '@/lib/site/contact'
+import StaticServerError, { config as staticConfig } from '@/pages/500'
 
 vi.mock('@/app/fonts', () => ({
   fraunces: { variable: 'fake-fraunces' },
@@ -101,5 +102,18 @@ describe('the global error boundary', () => {
     expect(html).toContain('Something went wrong on our side.')
     expect(html).not.toContain('reference')
     expect(html).not.toContain('<script')
+  })
+})
+
+describe('the static 500 (src/pages/500.tsx)', () => {
+  it('is the 500 in the same words, without a reference, and ships no script', () => {
+    const html = renderToStaticMarkup(<StaticServerError />)
+    expect(html).toContain('<main id="main">')
+    expect(html).toContain('Something went wrong on our side.')
+    expect(html).toContain(`write to <a class="iiic-link" href="mailto:${CONTACT.email}">`)
+    expect(html).not.toContain('reference')
+    expect(html).not.toContain('<script')
+    // Next.js leaves its runtime and the page's data out of the built file.
+    expect(staticConfig.unstable_runtimeJS).toBe(false)
   })
 })
