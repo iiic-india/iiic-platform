@@ -92,6 +92,13 @@ tr:last-child > .rowHead.rowHead {
   border-bottom: 0;
 }
 
+/* A rupee figure in running text, such as the founders' "₹100 crore", is set in the display
+   face, as the kit sets its stat values; it never moves (docs/11 §3.5). */
+.figure {
+  font-family: var(--iiic-font-display);
+  font-variant-numeric: lining-nums;
+}
+
 /* The comparison's scroll region takes keyboard focus; it shows the kit's ring, with a
    transparent outline so the ring survives forced-colours mode. */
 .tableRegion:focus-visible {

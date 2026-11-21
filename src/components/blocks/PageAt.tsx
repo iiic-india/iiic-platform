@@ -22,7 +22,7 @@ export async function PageAt({ slug }: { slug: string }) {
   return (
     <>
       <PageJsonLd slug={slug} page={page} />
-      <RenderBlocks layout={page.layout} legalReview={page.legalReview} />
+      <RenderBlocks layout={page.layout} legalReview={page.legalReview} slug={slug} />
     </>
   )
 }

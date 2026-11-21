@@ -4,9 +4,10 @@ import type { PageContent } from '@/lib/content/types'
  * The framework page as docs/content/copy-architecture.md §4.2 lays it out, for the time
  * before the page exists in the CMS (D-51). Labels as in home.ts: [IIIC] lines are word for
  * word from docs/content/sources/, [CS] lines are candidates (I-41), and what nobody has
- * supplied is a placeholder. The comparison is the plain two-column view; the flip
- * (docs/11 §3.2) and the voices beside sections 2, 3 and 7 come with the experience devices
- * and the reviews.
+ * supplied is a placeholder. On this page the comparison is drawn as Flip the line (docs/11
+ * §3.2), with its plain two-column view behind "Show both", and "What changes" keeps its
+ * question in view on wide screens (§3.3); the voices beside sections 2, 3 and 7 come with the
+ * reviews.
  */
 
 /** IIIC's own lines on this page, exactly as the sources have them. */

@@ -22,7 +22,7 @@ export default async function HomePage() {
   return (
     <>
       <PageJsonLd slug="home" page={page} />
-      <RenderBlocks layout={page.layout} />
+      <RenderBlocks layout={page.layout} slug="home" />
     </>
   )
 }

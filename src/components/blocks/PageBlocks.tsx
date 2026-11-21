@@ -1,5 +1,9 @@
 import Link from 'next/link'
 
+import experience from '@/components/experience/experience.module.css'
+import { FlipLines } from '@/components/experience/FlipLines'
+import { InsightNav } from '@/components/experience/InsightNav'
+import { RevealChapters } from '@/components/experience/RevealChapters'
 import { Todo } from '@/components/Todo'
 import {
   CERTIFICATE_AWAITS,
@@ -16,6 +20,7 @@ import {
   SCOPE_HEADING,
   SCOPE_STATEMENT,
 } from '@/lib/counselling/scope'
+import { type Devices, devicesAt } from '@/lib/experience/narrative'
 import { CONTACT, CONTACT_HEADING, mailHref, telHref } from '@/lib/site/contact'
 import type {
   BandBlock,
@@ -35,7 +40,9 @@ import { renderText } from './text'
 
 /**
  * The page blocks, drawn with the kit's markup (src/brand/templates/web/landing.html;
- * gallery.html, "Patterns"). Server components: none of them needs the browser.
+ * gallery.html, "Patterns"). Server components: none of them needs the browser. On the
+ * narrative pages a few are drawn as the experience devices (docs/11 §3; devicesAt), whose
+ * moving parts are small client components in src/components/experience/.
  */
 
 /** Marks a block whose wording IIIC has not approved yet (I-41). It goes when the copy is approved. */
@@ -90,16 +97,21 @@ function SectionHead({
   kicker,
   heading,
   intro,
+  headingId,
 }: {
   kicker?: string | null
   heading: string
   intro?: string | null
+  /** An id for the heading, when something on the page is named by it. */
+  headingId?: string
 }) {
   return (
     <div className="iiic-section-head">
       <div>
         {kicker ? <div className="iiic-kicker">{renderText(kicker)}</div> : null}
-        <h2 className="iiic-marked">{renderText(heading)}</h2>
+        <h2 className="iiic-marked" id={headingId}>
+          {renderText(heading)}
+        </h2>
       </div>
       {intro ? <p>{renderText(intro)}</p> : null}
     </div>
@@ -196,63 +208,111 @@ function Steps({ block }: { block: StepsBlock }) {
 }
 
 /**
- * Two ways of living, line against line, as a plain table: the view the flip of docs/11 §3.2
- * falls back to without JavaScript and in print. Each row is headed by its first cell, so a
- * screen reader reads the pair together.
+ * Two ways of living, line against line, as a plain table. Each row is headed by its first
+ * cell, so a screen reader reads the pair together. On a narrow screen the table scrolls
+ * inside its region, never the page; the region takes focus so that a keyboard can scroll it
+ * too (WCAG 2.1.1), with the kit's focus ring.
  */
-function Comparison({ block }: { block: ComparisonBlock }) {
+function ComparisonTable({ block }: { block: ComparisonBlock }) {
+  return (
+    <div
+      className={`iiic-table-wrap ${styles.tableRegion}`}
+      role="region"
+      aria-label={block.heading}
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region needs keyboard focus
+      tabIndex={0}
+    >
+      <table className="iiic-table">
+        <thead>
+          <tr>
+            <th scope="col">{renderText(block.leftLabel)}</th>
+            <th scope="col">{renderText(block.rightLabel)}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {block.pairs.map((pair, index) => (
+            <tr key={pair.id ?? index}>
+              <th scope="row" className={styles.rowHead}>
+                {renderText(pair.left)}
+              </th>
+              <td>
+                <strong>{renderText(pair.right)}</strong>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+/**
+ * A comparison. On a narrative page it is Flip the line (docs/11 §3.2): the first column's
+ * lines as buttons that turn to the second's, with the table behind "Show both", which is also
+ * the view without JavaScript and in print. Elsewhere, as on the legal information page, it is
+ * the table alone.
+ */
+function Comparison({
+  block,
+  flip,
+  index,
+}: {
+  block: ComparisonBlock
+  flip: boolean
+  index: number
+}) {
   return (
     <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} />
-      {/* On a narrow screen the table scrolls inside this region, never the page; the region
-          takes focus so that a keyboard can scroll it too (WCAG 2.1.1), with the kit's focus
-          ring. */}
-      <div
-        className={`iiic-table-wrap ${styles.tableRegion}`}
-        role="region"
-        aria-label={block.heading}
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region needs keyboard focus
-        tabIndex={0}
-      >
-        <table className="iiic-table">
-          <thead>
-            <tr>
-              <th scope="col">{renderText(block.leftLabel)}</th>
-              <th scope="col">{renderText(block.rightLabel)}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {block.pairs.map((pair, index) => (
-              <tr key={pair.id ?? index}>
-                <th scope="row" className={styles.rowHead}>
-                  {renderText(pair.left)}
-                </th>
-                <td>
-                  <strong>{renderText(pair.right)}</strong>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {flip ? (
+        <FlipLines
+          id={`flip_${index}`}
+          lines={block.pairs.map((pair) => ({
+            object: renderText(pair.left),
+            subject: renderText(pair.right),
+          }))}
+        >
+          <ComparisonTable block={block} />
+        </FlipLines>
+      ) : (
+        <ComparisonTable block={block} />
+      )}
     </section>
   )
 }
 
-function Points({ block }: { block: PointsBlock }) {
+/**
+ * A list of points under its question. With the sticky question (docs/11 §3.3) the question
+ * stays in view beside its answers on wide screens; either way the question is read first,
+ * then its answers.
+ */
+function Points({ block, sticky }: { block: PointsBlock; sticky: boolean }) {
+  const head = <SectionHead kicker={block.kicker} heading={block.heading} />
+  const answers = (
+    <div className="iiic-prose">
+      {block.lead ? <p className="iiic-lede">{renderText(block.lead)}</p> : null}
+      <ul>
+        {block.points.map((point, index) => (
+          <li key={point.id ?? index}>{renderText(point.text)}</li>
+        ))}
+      </ul>
+    </div>
+  )
   return (
     <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
-      <SectionHead kicker={block.kicker} heading={block.heading} />
-      <div className="iiic-prose">
-        {block.lead ? <p className="iiic-lede">{renderText(block.lead)}</p> : null}
-        <ul>
-          {block.points.map((point, index) => (
-            <li key={point.id ?? index}>{renderText(point.text)}</li>
-          ))}
-        </ul>
-      </div>
+      {sticky ? (
+        <div className={experience.questionGrid}>
+          <div className={experience.question}>{head}</div>
+          {answers}
+        </div>
+      ) : (
+        <>
+          {head}
+          {answers}
+        </>
+      )}
     </section>
   )
 }
@@ -262,6 +322,46 @@ function cardSpan(count: number): string {
   if (count === 1) return 'iiic-span-12'
   if (count === 2) return 'iiic-span-6'
   return count === 4 ? 'iiic-span-3' : 'iiic-span-4'
+}
+
+/**
+ * Cards set out as chapters do on the founders' page (docs/11 §3.3, §3.5): on wide screens the
+ * section's question and the cards' titles stay in view on the left, the bar marking the card
+ * in view, and the cards pass on the right; on phones the cards stand one under another. The
+ * titles on the left are links to their cards; the cards keep their own headings, so the page
+ * reads the same without JavaScript and to a screen reader.
+ */
+function Insights({ block, index }: { block: CardsBlock; index: number }) {
+  const headingId = `insights_${index}`
+  const ids = block.cards.map((_, card) => `insight_${index}_${card + 1}`)
+  return (
+    <section className="iiic-section" id={block.anchor ?? undefined}>
+      <CandidateMark status={block.copyStatus} />
+      <div className={experience.questionGrid}>
+        <div className={experience.question}>
+          <SectionHead
+            kicker={block.kicker}
+            heading={block.heading}
+            intro={block.intro}
+            headingId={headingId}
+          />
+          <InsightNav
+            labelledBy={headingId}
+            ids={ids}
+            titles={block.cards.map((card) => renderText(card.title))}
+          />
+        </div>
+        <div className={experience.insightCards}>
+          {block.cards.map((card, at) => (
+            <article className="iiic-card" id={ids[at]} key={card.id ?? at}>
+              <h3>{renderText(card.title)}</h3>
+              {card.text ? <p>{renderText(card.text)}</p> : null}
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
 }
 
 function Cards({ block }: { block: CardsBlock }) {
@@ -468,7 +568,18 @@ function Band({ block, marked }: { block: BandBlock; marked: boolean }) {
   )
 }
 
-function Section({ block, draft }: { block: Exclude<PageBlock, BandBlock>; draft: boolean }) {
+function Section({
+  block,
+  draft,
+  devices,
+  index,
+}: {
+  block: Exclude<PageBlock, BandBlock>
+  draft: boolean
+  devices: Devices
+  /** The block's place on its page, which names what a device needs to name. */
+  index: number
+}) {
   switch (block.blockType) {
     case 'hero':
       return <Hero block={block} draft={draft} />
@@ -479,11 +590,16 @@ function Section({ block, draft }: { block: Exclude<PageBlock, BandBlock>; draft
     case 'steps':
       return <Steps block={block} />
     case 'comparison':
-      return <Comparison block={block} />
+      return <Comparison block={block} flip={devices.flip === true} index={index} />
     case 'points':
-      return <Points block={block} />
+      return <Points block={block} sticky={devices.stickyQuestion === true} />
     case 'cards':
-      return <Cards block={block} />
+      // Cards that link somewhere are doors to other pages, not insights to read in turn.
+      return devices.chapters && !block.cards.some((card) => card.href) ? (
+        <Insights block={block} index={index} />
+      ) : (
+        <Cards block={block} />
+      )
     case 'factList':
       return <FactList block={block} />
     case 'scope':
@@ -499,15 +615,20 @@ function Section({ block, draft }: { block: Exclude<PageBlock, BandBlock>; draft
 
 /**
  * A page's sections in order, in the page column, and its closing band across the window. A
- * legal page that is still a draft says so above its heading (D-52).
+ * legal page that is still a draft says so above its heading (D-52). The page's slug says
+ * whether it is a narrative page and which devices it carries (docs/11 §3): on the founders'
+ * page every section between the hero and the band is a chapter that reveals once.
  */
 export function RenderBlocks({
   layout,
   legalReview,
+  slug,
 }: {
   layout: PageContent['layout']
   legalReview?: PageContent['legalReview']
+  slug?: string
 }) {
+  const devices = devicesAt(slug)
   const band = layout.find((block): block is BandBlock => block.blockType === 'band')
   const sections = layout.filter(
     (block): block is Exclude<PageBlock, BandBlock> => block.blockType !== 'band',
@@ -515,9 +636,25 @@ export function RenderBlocks({
   return (
     <>
       <div className={`iiic-page ${styles.page}`}>
-        {sections.map((block, index) => (
-          <Section block={block} draft={legalReview === 'draft'} key={block.id ?? index} />
-        ))}
+        {sections.map((block, index) => {
+          const section = (
+            <Section
+              block={block}
+              draft={legalReview === 'draft'}
+              devices={devices}
+              index={index}
+              key={block.id ?? index}
+            />
+          )
+          return devices.chapters && block.blockType !== 'hero' ? (
+            <div className={experience.chapter} data-reveal="" key={block.id ?? index}>
+              {section}
+            </div>
+          ) : (
+            section
+          )
+        })}
+        {devices.chapters ? <RevealChapters /> : null}
         {band?.copyStatus === 'candidate' ? (
           <div className={styles.band}>
             <CandidateMark status={band.copyStatus} />

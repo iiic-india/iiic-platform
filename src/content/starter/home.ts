@@ -6,9 +6,10 @@ import type { PageContent } from '@/lib/content/types'
  * - [IIIC]: IIIC's own words, verbatim from docs/content/sources/ (tests hold them to the sources);
  * - [CS]: a candidate line from the copy system, shown with a marker until IIIC approves it (I-41);
  * - [proposal] lines and unsupplied facts are placeholders, never written here.
- * Section 3's two Object/Subject pairs come with the flip (docs/11 §3.2, §4); until then the
- * section links to all five on /framework. "In their words", the voices beside the sections and
- * the Journal teaser join the page with the reviews and the Journal.
+ * Section 3's two Object/Subject pairs wait on IIIC choosing which two (docs/11 §3.2, §4; I-41):
+ * the page flips a comparison as soon as it carries one (src/lib/experience/narrative.ts), and
+ * until then the section links to all five on /framework. "In their words", the voices beside
+ * the sections and the Journal teaser join the page with the reviews and the Journal.
  */
 
 /** IIIC's own lines on this page, exactly as the sources have them. */

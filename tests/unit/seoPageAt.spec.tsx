@@ -112,7 +112,12 @@ describe('PageAt', () => {
     expect(data?.type).toBe(PageJsonLd)
     expect(data?.props).toEqual({ slug: 'privacy', page: privacy })
     expect(blocks?.type).toBe(RenderBlocks)
-    expect(blocks?.props).toEqual({ layout: privacy.layout, legalReview: 'draft' })
+    // The slug says whether the page carries the experience devices (docs/11 §3).
+    expect(blocks?.props).toEqual({
+      layout: privacy.layout,
+      legalReview: 'draft',
+      slug: 'privacy',
+    })
   })
 })
 

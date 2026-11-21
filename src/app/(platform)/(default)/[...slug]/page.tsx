@@ -35,7 +35,11 @@ export default async function CmsPage({ params }: Props) {
   return (
     <>
       <PageJsonLd slug={found.slug} page={found.page} />
-      <RenderBlocks layout={found.page.layout} legalReview={found.page.legalReview} />
+      <RenderBlocks
+        layout={found.page.layout}
+        legalReview={found.page.legalReview}
+        slug={found.slug}
+      />
     </>
   )
 }
