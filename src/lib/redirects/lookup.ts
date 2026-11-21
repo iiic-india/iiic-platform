@@ -8,6 +8,7 @@ import { cache } from 'react'
 import { PAGES_TAG } from '@/lib/content/revalidate'
 import config from '@payload-config'
 
+import { logMissingPage } from './log'
 import type { RedirectStatus } from './paths'
 import { REDIRECTS_TAG } from './revalidate'
 import { finalTarget, readRedirects } from './table'
@@ -57,9 +58,12 @@ export async function followRedirect(path: string | null): Promise<void> {
 /**
  * What a route answers for an address it has no page for (docs/02): the redirect from it, when
  * there is one, before the 404. A redirect from a page's old address also goes before a starter
- * page there (D-57; src/lib/content/pages.ts).
+ * page there (D-57; src/lib/content/pages.ts). Only here, where the answer is a 404, does the
+ * address go into the 404 log (docs/11 §5.1, item 9; src/lib/redirects/log.ts): the 404 page
+ * itself is rendered on every page view, so it cannot be what writes.
  */
 export async function redirectOrNotFound(path: string | null): Promise<never> {
   await followRedirect(path)
+  await logMissingPage()
   notFound()
 }

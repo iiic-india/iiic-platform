@@ -9,7 +9,7 @@ import {
   WriteBudget,
 } from '@/lib/redirects/missingPages'
 
-// What the 404 page writes to the log, and what it never keeps (src/lib/redirects/missingPages.ts;
+// What a 404 writes to the log, and what it never keeps (src/lib/redirects/missingPages.ts;
 // docs/04 `missing_pages`; docs/11 §5.1, item 9): an address and the referring site's host, no
 // query string, nothing about the visitor, and no more writes than the log can take.
 

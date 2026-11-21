@@ -8,8 +8,9 @@ import { logMissingPage } from '@/lib/redirects/log'
 import { WRITES_PER_MINUTE } from '@/lib/redirects/missingPages'
 import { recordMissingPage } from '@/lib/redirects/store'
 
-// When the 404 page writes to the log (src/lib/redirects/log.ts): after the response, never on
-// a preview, never for a prefetch, and no more often than the budget allows.
+// When a 404 writes to the log (src/lib/redirects/log.ts; the route calls it as it answers with
+// the 404, tests/unit/redirectLookup.spec.ts): after the response, never on a preview, never for
+// a prefetch, and no more often than the budget allows.
 
 const { request, payload } = vi.hoisted(() => ({
   request: { headers: new Headers() },
@@ -25,7 +26,7 @@ vi.mock('@/lib/env', () => ({ env: vi.fn(() => ({})) }))
 vi.mock('@/lib/monitoring/sentry', () => ({ reportError: vi.fn(async () => true) }))
 vi.mock('@/lib/redirects/store', () => ({ recordMissingPage: vi.fn(async () => undefined) }))
 
-/** Runs what the 404 handed to after(), as Next.js does once the response has gone. */
+/** Runs what the log handed to after(), as Next.js does once the response has gone. */
 async function runAfter() {
   for (const [task] of vi.mocked(after).mock.calls) await (task as () => Promise<void>)()
 }

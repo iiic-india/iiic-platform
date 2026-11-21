@@ -64,6 +64,26 @@ test.describe('The 404 log and security.txt', () => {
     await db.delete({ collection: 'missing-pages', where: { path: { equals: path } } })
   })
 
+  test('a page that is served is never logged, however often it is viewed', async ({ request }) => {
+    // Next.js renders the 404 page's component along with every page, so only the route that
+    // answers with the 404 may write the log (src/lib/redirects/lookup.ts).
+    const served = ['/', '/about', '/framework', '/counselling', '/privacy']
+    for (const path of served) {
+      for (let view = 0; view < 2; view += 1) {
+        expect((await request.get(path)).status(), path).toBe(200)
+      }
+    }
+    // A missing address after them: once its entry is written, so would theirs have been.
+    const missing = `/e2e-after-views-${letters()}`
+    expect((await request.get(missing)).status()).toBe(404)
+    const db = await cms()
+    const entries = async (paths: string[]) =>
+      (await db.count({ collection: 'missing-pages', where: { path: { in: paths } } })).totalDocs
+    await expect.poll(() => entries([missing]), { timeout: 15_000 }).toBe(1)
+    expect(await entries(served)).toBe(0)
+    await db.delete({ collection: 'missing-pages', where: { path: { equals: missing } } })
+  })
+
   test('security.txt says where to report a problem, and does not expire', async ({ request }) => {
     const response = await request.get('/.well-known/security.txt')
     expect(response.status()).toBe(200)
@@ -110,8 +130,12 @@ test.describe('A redirect made in the admin', () => {
     page,
   }) => {
     await login(page, owner)
-    // Through the admin's own API, so the server marks its cached redirects stale.
+    // Through the admin's own API, so the server marks its cached redirects stale. Payload reads
+    // the session cookie only from a request that names its origin (its csrf list), as a
+    // browser's does; Playwright's request sends no Origin of its own.
+    const sameOrigin = { Origin: new URL(page.url()).origin }
     const created = await page.request.post('/api/redirects', {
+      headers: sameOrigin,
       data: { from, to: { type: 'custom', url: '/about' }, type: '308' },
     })
     expect(created.status()).toBe(201)
@@ -125,7 +149,8 @@ test.describe('A redirect made in the admin', () => {
     await page.goto(from)
     await expect(page).toHaveURL(/\/about$/)
 
-    expect((await page.request.delete(`/api/redirects/${doc.id}`)).status()).toBe(200)
+    const removed = await page.request.delete(`/api/redirects/${doc.id}`, { headers: sameOrigin })
+    expect(removed.status()).toBe(200)
     expect((await page.request.get(from, { maxRedirects: 0 })).status()).toBe(404)
   })
 })

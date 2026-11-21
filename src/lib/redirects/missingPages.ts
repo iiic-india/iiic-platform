@@ -3,8 +3,8 @@ import { isNoindexPath } from '@/lib/seo/paths'
 import { requestPath } from './paths'
 
 /**
- * What the 404 page writes to the log (docs/04 `missing_pages`; docs/11 §5.1, item 9), and
- * what it leaves out. The log is for fixing broken links, so it keeps an address and the host of
+ * What a 404 writes to the log (docs/04 `missing_pages`; docs/11 §5.1, item 9), and what it
+ * leaves out. The log is for fixing broken links, so it keeps an address and the host of
  * the site that linked to it, never a query string, a page of the referring site or anything
  * about the visitor. Writing must cost the 404 nothing and must not let anyone fill the table:
  * the write happens after the response, at most once per request, at most WRITES_PER_MINUTE

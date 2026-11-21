@@ -32,7 +32,7 @@ vi.mock('@/lib/redirects/lookup', () => ({
     throw new Error('not found')
   }),
 }))
-// The 404 log writes after the response (src/lib/redirects/log.ts): here, only the call.
+// The 404 log (src/lib/redirects/log.ts): here, only whether anything calls it.
 vi.mock('@/lib/redirects/log', () => ({ logMissingPage: vi.fn(async () => undefined) }))
 
 beforeEach(() => {
@@ -85,10 +85,12 @@ describe('the 404', () => {
     }
   })
 
-  it('puts the address in the 404 log, on every path (docs/11 §5.1, item 9)', async () => {
-    for (const path of ['/no-such-page', '/counselling/x']) await draw(path)
-    // What it keeps, and when it writes, is the log's own business (tests/unit/missingPages.spec.ts).
-    expect(logMissingPage).toHaveBeenCalledTimes(2)
+  it('writes nothing to the 404 log: Next.js draws it on every page view, served or not', async () => {
+    // Next.js hands this component to each layout as the page to show should one be missing,
+    // and renders it then, on a page that is served too. The route that answers with the 404
+    // writes the log (src/lib/redirects/lookup.ts; tests/unit/redirectLookup.spec.ts).
+    for (const path of ['/no-such-page', '/counselling/x', '/about', '/']) await draw(path)
+    expect(logMissingPage).not.toHaveBeenCalled()
   })
 })
 

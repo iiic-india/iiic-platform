@@ -9,7 +9,7 @@ import { purgeCutoff, purgeMissingPages } from '@/lib/redirects/store'
  * Removes every entry nobody has asked for in 180 days, resolved or not; a redirect made from one
  * stays. Idempotent: run twice, the second run finds nothing to remove. One audit entry records a
  * run that removed something (docs/08 §9), not one per entry: the entries are the log of visits,
- * which the 404 page writes without one (src/lib/redirects/store.ts).
+ * which the site writes without one as it answers with the 404 (src/lib/redirects/store.ts).
  *
  * Nothing runs it on its own yet: Payload's autoRun is never used on Vercel (CLAUDE.md), and the
  * cron runner that queues O5 nightly arrives with the other automations in M6 (docs/07, Jobs).

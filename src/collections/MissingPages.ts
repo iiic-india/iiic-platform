@@ -6,9 +6,9 @@ import { createRedirectFromMissingPage } from '@/lib/redirects/createFromMissing
 /**
  * The 404 log (docs/04 `missing_pages`; docs/11 §5.1, item 9; Content → Broken links in
  * docs/05): each address a visitor asked for that the site has no page at, with the host of the
- * site that linked to it, when it was first and last asked for, and how often. Only the 404 page
- * adds to it, on the server, with no query string and nothing about the visitor
- * (src/lib/redirects/log.ts); an entry nobody has asked for in 180 days is removed by the
+ * site that linked to it, when it was first and last asked for, and how often. Only the site adds
+ * to it, on the server, when a route answers an address with the 404, with no query string and
+ * nothing about the visitor (src/lib/redirects/log.ts); an entry nobody has asked for in 180 days is removed by the
  * retention job (O5, src/jobs/purgeMissingPages.ts). "Create redirect" sends the address on to
  * a page and marks the entry resolved.
  */
