@@ -30,7 +30,7 @@ export function Article({ post }: { post: PostDetail }) {
   return (
     <>
       <JsonLd graph={articleGraphOf(post)} />
-      {/* READING BAR (docs/11 §3.1): <ReadingBar /> from src/components/experience/ReadingBar.tsx goes on this line, when its branch lands. */}
+      {/* READING BAR (docs/11 §3.1): <ReadingBar /> from src/components/experience/ReadingBar.tsx goes on this line when its branch lands, except where topic?.door === 'counselling' (no devices on counselling pages). */}
       <article className={`iiic-page-narrow ${styles.article}`}>
         <nav aria-label="Breadcrumb">
           <ol className="iiic-breadcrumb">
