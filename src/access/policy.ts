@@ -1,6 +1,6 @@
 import type { Access, AccessResult } from 'payload'
 
-import { hasRole, isActive, type Role } from './roles'
+import { hasRole, isActive, type MaybeStaff, type Role } from './roles'
 
 /**
  * Who may do what in the admin, collection by collection: docs/05 ("Who uses it") and
@@ -40,6 +40,24 @@ export const POLICY = {
     update: { roles: ['owner', 'operator', 'editor'] },
     delete: { roles: ['owner', 'editor'] },
   },
+  // Redirects are content: the staff who edit pages make and change them, and owners and
+  // editors remove them (docs/05, Content). Visitors never read them through the API; the
+  // site reads them on the server to answer an old address (src/lib/redirects/lookup.ts).
+  redirects: {
+    read: { roles: ['owner', 'operator', 'editor'] },
+    create: { roles: ['owner', 'operator', 'editor'] },
+    update: { roles: ['owner', 'operator', 'editor'] },
+    delete: { roles: ['owner', 'editor'] },
+  },
+  // The 404 log (docs/05, Content → Broken links): only the server adds entries, as visitors
+  // reach addresses the site does not have; the same staff read them, mark one resolved with a
+  // redirect, and owners and editors clear the noise.
+  missingPages: {
+    read: { roles: ['owner', 'operator', 'editor'] },
+    create: {},
+    update: { roles: ['owner', 'operator', 'editor'] },
+    delete: { roles: ['owner', 'editor'] },
+  },
   // Owners read it; entries are written only by the server, never changed (D-43).
   auditLog: {
     read: { roles: ['owner'] },
@@ -48,6 +66,16 @@ export const POLICY = {
     delete: {},
   },
 } as const satisfies Record<string, Record<string, Rule>>
+
+/**
+ * Running, queueing and cancelling jobs through the API (Payload's `/api/payload-jobs/run`):
+ * an owner who has entered their two-factor code, and nobody else, until the cron runner brings
+ * its own secret (M6). Payload's default would let any signed-in account run them.
+ */
+export function ownerWithCode({ req: { user } }: { req: { user?: unknown } }): boolean {
+  const strategy = (user as { _strategy?: string } | null | undefined)?._strategy
+  return strategy === 'totp' && hasRole(user as MaybeStaff, 'owner')
+}
 
 /** A Payload access function for one rule of the table. */
 export function allow(rule: Rule): Access {

@@ -1,6 +1,8 @@
 import { ResetTwoFactor as ResetTwoFactor_e94e3f5aaf5e593a401f32ca6bf3a47c } from '../../../components/admin/ResetTwoFactor'
 import { TOTPField as TOTPField_4eaf6cb33cfb75be01716613e3c9a512 } from 'payload-totp/rsc'
 import { StarterPages as StarterPages_afde4e3c4dfe0fc6948513e90ac74a06 } from '../../../components/admin/StarterPages'
+import { CreateRedirect as CreateRedirect_40a388ea1dcd1cd3648583964e701d74 } from '../../../components/admin/CreateRedirect'
+import { ResolvedCell as ResolvedCell_eb99c300bb86ada485225c83d9fcc34f } from '../../../components/admin/ResolvedCell'
 import { PlaceholdersNavLink as PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2 } from '../../../components/admin/PlaceholdersNavLink'
 import { RecoveryCodes as RecoveryCodes_43c30919611f069a63a0aff35f9170f5 } from '../../../components/admin/RecoveryCodes'
 import { TOTPProvider as TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512 } from 'payload-totp/rsc'
@@ -15,6 +17,8 @@ export const importMap = {
   "/components/admin/ResetTwoFactor#ResetTwoFactor": ResetTwoFactor_e94e3f5aaf5e593a401f32ca6bf3a47c,
   "payload-totp/rsc#TOTPField": TOTPField_4eaf6cb33cfb75be01716613e3c9a512,
   "/components/admin/StarterPages#StarterPages": StarterPages_afde4e3c4dfe0fc6948513e90ac74a06,
+  "/components/admin/CreateRedirect#CreateRedirect": CreateRedirect_40a388ea1dcd1cd3648583964e701d74,
+  "/components/admin/ResolvedCell#ResolvedCell": ResolvedCell_eb99c300bb86ada485225c83d9fcc34f,
   "/components/admin/PlaceholdersNavLink#PlaceholdersNavLink": PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2,
   "/components/admin/RecoveryCodes#RecoveryCodes": RecoveryCodes_43c30919611f069a63a0aff35f9170f5,
   "payload-totp/rsc#TOTPProvider": TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512,
