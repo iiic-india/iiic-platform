@@ -339,7 +339,7 @@ Proposal (OS-1): a $20 monthly budget on the gateway project, billed in USD, wit
 
 | Job | `07`'s choice | What 22 November 2026 shows | Verdict |
 | --- | --- | --- | --- |
-| App | Next.js, App Router | 16.4.6 is the current release and the pin; Payload 3.94.1 asks for Next.js 16.4.5 or later ([npm][s-npm-next]) | Confirm |
+| App | Next.js, App Router | 16.4.6 is the current release and the pin; `@payloadcms/next` 3.94.1 asks for Next.js 16.4.5 or later ([npm][s-npm-next]) | Confirm |
 | Admin, content, data | Payload 3.94.x | 3.94.1 was published on 20 November 2026; v4 stood at 4.0.0-beta.11 the same day, not generally available ([npm][s-npm-payload]) | Confirm; take 3.94.1 on the next upgrade branch with every `@payloadcms/*` package at the same version; v4 only after it is generally available and patched (`07` Known gaps) |
 | Hosting | Vercel Pro, `bom1` | $20 a month platform fee with $20 of usage credit and one deploying seat; further deploying seats $20 a month each; viewer seats free; the default spend alert is at $200 a billing cycle ([Vercel Pro][s-vercel-pro]) | Confirm (D-04); give viewer seats to anyone who only reads |
 | Database | Supabase Pro, Mumbai | From $25 a month with $10 of compute credit (one Micro instance); daily backups kept 7 days; point-in-time recovery $100 a month per 7 days of retention ([Supabase][s-supabase]) | Confirm; leave point-in-time recovery off for now (OS-9) |
