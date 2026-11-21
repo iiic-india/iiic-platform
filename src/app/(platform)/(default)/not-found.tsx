@@ -1,10 +1,24 @@
+import { headers } from 'next/headers'
 import Link from 'next/link'
 
+import { Scope } from '@/components/blocks/PageBlocks'
+
 /**
- * The 404 inside the site's shell. The full page (D-29, docs/11 §5.1) is built in M2;
- * Next adds the noindex tag to every 404 response.
+ * A path someone may follow to counselling: a page under /counselling, or the session booking.
+ * Paths are matched without regard to case, so a mistyped capital still gets the numbers.
  */
-export default function NotFound() {
+const COUNSELLING_PATH = /^\/(counselling|book\/session)(\/|$)/i
+
+/**
+ * The 404 inside the site's shell. The full page (D-29, docs/11 §5.1) is built in M2; item 8
+ * is built now: on a path that begins with /counselling or /book/session, the page carries the
+ * counselling scope statement and the crisis numbers above the footer, since someone who
+ * followed a broken counselling link may need them. The path is the one src/proxy.ts sets on
+ * every request, which overwrites any value a client sends. Next adds the noindex tag to every
+ * 404 response.
+ */
+export default async function NotFound() {
+  const path = (await headers()).get('x-pathname') ?? ''
   return (
     <section className="iiic-page" style={{ paddingTop: 48, paddingBottom: 80 }}>
       <h1 style={{ margin: '0 0 16px' }}>Page not found</h1>
@@ -13,6 +27,7 @@ export default function NotFound() {
           Go to the home page
         </Link>
       </p>
+      {COUNSELLING_PATH.test(path) ? <Scope /> : null}
     </section>
   )
 }

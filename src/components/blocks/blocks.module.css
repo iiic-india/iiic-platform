@@ -67,3 +67,28 @@
 .stepsLead {
   margin: 0 0 28px;
 }
+
+/* A comparison row is headed by its first cell, so a screen reader reads each value with its
+   label (WCAG 1.3.1). The kit styles every th as a column header; this one keeps the look of
+   the kit's body cells. The doubled class outranks the kit's .iiic-table th. */
+.rowHead.rowHead {
+  padding: 14px 10px;
+  border-bottom: 1px solid var(--iiic-rule);
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+tr:last-child > .rowHead.rowHead {
+  border-bottom: 0;
+}
+
+/* The comparison's scroll region takes keyboard focus; it shows the kit's ring, with a
+   transparent outline so the ring survives forced-colours mode. */
+.tableRegion:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--iiic-focus);
+}

@@ -39,7 +39,7 @@ import { renderText } from './text'
  */
 
 /** Marks a block whose wording IIIC has not approved yet (I-41). It goes when the copy is approved. */
-function CandidateMark({ status }: { status: 'approved' | 'candidate' }) {
+function CandidateMark({ status }: { status?: 'approved' | 'candidate' | null }) {
   if (status !== 'candidate') return null
   return (
     <div className={styles.candidate}>
@@ -81,7 +81,7 @@ function ActionLink({
       className={`iiic-btn iiic-btn-${variant}${large ? ' iiic-btn-lg' : ''}`}
       href={action.href}
     >
-      {action.label}
+      {renderText(action.label)}
     </Link>
   )
 }
@@ -145,7 +145,7 @@ function Doors({ block }: { block: DoorsBlock }) {
             {door.line ? <p>{renderText(door.line)}</p> : null}
             {door.outcomes ? <p className="iiic-type-small">{renderText(door.outcomes)}</p> : null}
             {door.action ? (
-              <span className="iiic-btn iiic-btn-secondary">{door.action}</span>
+              <span className="iiic-btn iiic-btn-secondary">{renderText(door.action)}</span>
             ) : null}
           </Link>
         ))}
@@ -206,9 +206,15 @@ function Comparison({ block }: { block: ComparisonBlock }) {
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} />
       {/* On a narrow screen the table scrolls inside this region, never the page; the region
-          takes focus so that a keyboard can scroll it too (WCAG 2.1.1). */}
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region needs keyboard focus */}
-      <div className="iiic-table-wrap" role="region" aria-label={block.heading} tabIndex={0}>
+          takes focus so that a keyboard can scroll it too (WCAG 2.1.1), with the kit's focus
+          ring. */}
+      <div
+        className={`iiic-table-wrap ${styles.tableRegion}`}
+        role="region"
+        aria-label={block.heading}
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region needs keyboard focus
+        tabIndex={0}
+      >
         <table className="iiic-table">
           <thead>
             <tr>
@@ -219,7 +225,9 @@ function Comparison({ block }: { block: ComparisonBlock }) {
           <tbody>
             {block.pairs.map((pair, index) => (
               <tr key={pair.id ?? index}>
-                <td>{renderText(pair.left)}</td>
+                <th scope="row" className={styles.rowHead}>
+                  {renderText(pair.left)}
+                </th>
                 <td>
                   <strong>{renderText(pair.right)}</strong>
                 </td>
@@ -269,7 +277,7 @@ function Cards({ block }: { block: CardsBlock }) {
               <h3>{renderText(card.title)}</h3>
               {card.text ? <p>{renderText(card.text)}</p> : null}
               {card.href && card.action ? (
-                <span className="iiic-btn iiic-btn-secondary">{card.action}</span>
+                <span className="iiic-btn iiic-btn-secondary">{renderText(card.action)}</span>
               ) : null}
             </>
           )
@@ -307,10 +315,12 @@ function FactList({ block }: { block: FactListBlock }) {
 
 /**
  * The counselling scope statement and the crisis numbers (docs/08 §7), in the one wording
- * every counselling surface shares. The hero links here by its id. Until the lawyer fixes the
- * wording it is marked as a draft (I-22).
+ * every counselling surface shares: the counselling page, whose hero links here by its id, and
+ * the 404 on a counselling path (docs/11 §5.1, item 8). Until the lawyer fixes the wording it
+ * is marked as a draft (I-22). Each number's link also names its line for a screen reader, so
+ * that a list of the page's links still says which number is which.
  */
-function Scope() {
+export function Scope() {
   return (
     <section className="iiic-section" id="scope">
       <DraftMark what="Draft wording" awaits={SCOPE_AWAITS} />
@@ -329,6 +339,7 @@ function Scope() {
                   {index > 0 ? ' or ' : null}
                   <a className="iiic-link" href={telHref(number)}>
                     {number}
+                    <span className="iiic-sr-only">, {line.label}</span>
                   </a>
                 </span>
               ))}
@@ -390,7 +401,7 @@ function FounderNote({ block }: { block: FounderNoteBlock }) {
 /**
  * IIIC's contact details (D-31), the same as the footer's. The footer's Contact link and the
  * About page's main action open this section by its id. The address prints without a PIN
- * until IIIC confirms it (I-33); the map follows the confirmed address.
+ * until IIIC confirms it (I-33); the map follows the confirmed address (D-58).
  */
 function Contact() {
   return (
@@ -441,9 +452,11 @@ function Band({ block, marked }: { block: BandBlock; marked: boolean }) {
           {block.lead ? <p>{renderText(block.lead)}</p> : null}
           {block.sanskrit || block.translation ? (
             <p>
+              {/* The Sanskrit is drawn as typed: a placeholder chip inside lang="sa" would mark
+                  English as Sanskrit, so the field takes no placeholder (src/blocks/pageBlocks.ts). */}
               {block.sanskrit ? <span lang="sa">{block.sanskrit}</span> : null}
               {block.sanskrit && block.translation ? ' · ' : null}
-              {block.translation}
+              {renderText(block.translation)}
             </p>
           ) : null}
         </div>

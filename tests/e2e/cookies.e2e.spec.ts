@@ -4,14 +4,32 @@ import { expect, test } from '@playwright/test'
 // until the inventory and the privacy notice's cookie section list it. Signing in to the admin
 // is covered in admin.e2e.spec.ts, which owns the test account.
 
-test('public pages, the 404 and the admin sign-in page set no cookie', async ({
+test('a page in every route group, Find your path, the 404 and the admin sign-in page set no cookie', async ({
   page,
   context,
 }) => {
-  for (const path of ['/', '/no-such-page', '/admin/login']) {
+  // A page in each route group (default, consultancy, counselling, education), a legal page,
+  // Find your path's question and an address that tries to carry its answer, the 404 and the
+  // admin's sign-in page.
+  for (const path of [
+    '/',
+    '/privacy',
+    '/map',
+    '/map/go?who=yourself',
+    '/organisations',
+    '/counselling',
+    '/learn',
+    '/no-such-page',
+    '/admin/login',
+  ]) {
     await page.goto(path)
     await page.waitForLoadState('networkidle')
   }
+  // The answer itself is posted (the privacy notice: Find your path stores nothing about you).
+  // The page's request context shares the browser's cookies, so a cookie set here is caught.
+  const answer = await page.request.post('/map/go', { form: { who: 'yourself' }, maxRedirects: 0 })
+  expect(answer.status()).toBe(303)
+  expect(answer.headers()['set-cookie']).toBeUndefined()
   expect(await context.cookies()).toEqual([])
 })
 
