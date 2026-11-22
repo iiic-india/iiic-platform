@@ -177,7 +177,7 @@ export function invoiceHtml(template: string, doc: InvoiceDocument): Result<stri
   if (failed && !failed.ok) return failed
 
   const half = formatHalfRate(doc.rateBasisPoints)
-  const heads = interState
+  const heads: Record<string, string> = interState
     ? {
         igst_rate: formatRate(doc.rateBasisPoints),
         igst: formatRupees(doc.totals.igstPaise),

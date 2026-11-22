@@ -171,6 +171,8 @@ export interface Config {
       'B11-reconcile': TaskB11Reconcile;
       'B2-B7-sync-calendar-event': TaskB2B7SyncCalendarEvent;
       'B14-refresh-busy-times': TaskB14RefreshBusyTimes;
+      'B3-issue-invoice': TaskB3IssueInvoice;
+      'B7-issue-credit-note': TaskB7IssueCreditNote;
       inline: {
         input: unknown;
         output: unknown;
@@ -1971,7 +1973,9 @@ export interface PayloadJob {
           | 'B2-poll-pending-orders'
           | 'B11-reconcile'
           | 'B2-B7-sync-calendar-event'
-          | 'B14-refresh-busy-times';
+          | 'B14-refresh-busy-times'
+          | 'B3-issue-invoice'
+          | 'B7-issue-credit-note';
         taskID: string;
         input?:
           | {
@@ -2013,6 +2017,8 @@ export interface PayloadJob {
         | 'B11-reconcile'
         | 'B2-B7-sync-calendar-event'
         | 'B14-refresh-busy-times'
+        | 'B3-issue-invoice'
+        | 'B7-issue-credit-note'
       )
     | null;
   queue?: string | null;
@@ -3593,6 +3599,32 @@ export interface TaskB14RefreshBusyTimes {
     refreshed: number;
     failed: number;
     renewed: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB3-issue-invoice".
+ */
+export interface TaskB3IssueInvoice {
+  input: {
+    paymentId: number;
+  };
+  output: {
+    outcome: string;
+    pdf?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB7-issue-credit-note".
+ */
+export interface TaskB7IssueCreditNote {
+  input: {
+    refundId: number;
+  };
+  output: {
+    outcome: string;
+    pdf?: string | null;
   };
 }
 /**
