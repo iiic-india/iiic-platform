@@ -4,6 +4,7 @@ import { beaconSources } from '@/lib/analytics/beacon'
 import { env } from '@/lib/env'
 import { instituteRewrite, parseHosts } from '@/lib/hosts'
 import { framedByAdmin } from '@/lib/preview/frame'
+import { checkoutSources } from '@/lib/security/checkout'
 import { buildCsp, createNonce } from '@/lib/security/csp'
 
 /**
@@ -60,14 +61,22 @@ export async function proxy(request: NextRequest) {
   const { nextUrl } = request
   const admin = isAdminPath(nextUrl.pathname)
   const framed = !admin && (await framedByAdmin(request.cookies, env().PAYLOAD_SECRET))
+  const beacon = beaconSources(nextUrl.pathname)
+  // Razorpay's checkout, on the payment step only (src/lib/security/checkout.ts).
+  const checkout = checkoutSources(nextUrl.pathname, env().PAYMENT_GATEWAY)
   const csp = buildCsp({
     nonce: createNonce(),
     development: process.env.NODE_ENV === 'development',
     https: nextUrl.protocol === 'https:',
-    imageOrigins: env().mediaOrigin ? [env().mediaOrigin as string] : [],
-    ...beaconSources(nextUrl.pathname),
+    imageOrigins: [
+      ...(env().mediaOrigin ? [env().mediaOrigin as string] : []),
+      ...checkout.imageOrigins,
+    ],
+    scriptOrigins: [...beacon.scriptOrigins, ...checkout.scriptOrigins],
+    connectOrigins: [...beacon.connectOrigins, ...checkout.connectOrigins],
     frameAncestors: framed ? "'self'" : "'none'",
     frameSources: admin ? "'self'" : "'none'",
+    frameOrigins: checkout.frameOrigins,
   })
   const headers = new Headers(request.headers)
   headers.set('Content-Security-Policy', csp)

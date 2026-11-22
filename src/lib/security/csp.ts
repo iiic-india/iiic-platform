@@ -33,6 +33,8 @@ export type CspOptions = {
   frameAncestors?: "'self'" | "'none'"
   /** What this page may frame: nothing, except the admin, whose live preview frames the site. */
   frameSources?: "'self'" | "'none'"
+  /** Other origins this page may frame: the gateway's checkout, on the payment step only. */
+  frameOrigins?: readonly string[]
 }
 
 export function buildCsp({
@@ -44,7 +46,12 @@ export function buildCsp({
   connectOrigins = [],
   frameAncestors = "'none'",
   frameSources = "'none'",
+  frameOrigins = [],
 }: CspOptions): string {
+  const frames =
+    frameSources === "'none'" && frameOrigins.length
+      ? [...frameOrigins]
+      : [frameSources, ...frameOrigins]
   const directives: [string, ...string[]][] = [
     ['default-src', "'self'"],
     [
@@ -59,7 +66,7 @@ export function buildCsp({
     ['img-src', "'self'", 'data:', 'blob:', ...imageOrigins],
     ['font-src', "'self'"],
     ['connect-src', "'self'", ...connectOrigins],
-    ['frame-src', frameSources],
+    ['frame-src', ...(frames as [string, ...string[]])],
     ['object-src', "'none'"],
     ['base-uri', "'self'"],
     ['form-action', "'self'"],
