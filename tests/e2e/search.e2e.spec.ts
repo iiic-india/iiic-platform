@@ -1,8 +1,8 @@
 import { expect, type Page, test } from '@playwright/test'
 
-import { MAIN_LINKS } from '../../src/components/site/MainLinks'
 import { NOT_FOUND_COPY } from '../../src/lib/notFound/copy'
 import { SEARCH_COPY } from '../../src/lib/search/copy'
+import { MAIN_LINKS } from '../../src/lib/site/mainLinks'
 
 // Site search and the 404 in a browser (docs/11 §5.1, §5.3; D-29, D-34). CI serves an empty,
 // migrated database, so the pages are the starter pages, which search finds by the same rule as

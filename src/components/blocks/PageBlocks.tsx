@@ -18,6 +18,7 @@ import type { FaqItem, PageBlock, PageContent } from '@/lib/content/types'
 import { type Devices, devicesAt } from '@/lib/experience/narrative'
 import { articlePath, JOURNAL_PATH } from '@/lib/journal/addresses'
 import type { PostSummary } from '@/lib/journal/posts'
+import { JOURNAL_TEASER_HEADING } from '@/lib/journal/teaser'
 import { isCounsellingPage } from '@/lib/proof/reviews'
 import { NO_VOICES, type PageVoices } from '@/lib/proof/voices'
 import {
@@ -431,11 +432,9 @@ function Cards({ block }: { block: CardsBlock }) {
   )
 }
 
-/**
- * The heading of the home page's Journal section (docs/content/copy-architecture.md §4.1, row
- * 8): a candidate line, changed from the copy system's (I-41), without "every day" (I-19).
- */
-export const JOURNAL_TEASER_HEADING = 'A little clarity'
+// The heading of the home page's Journal section is in src/lib/journal/teaser.ts; it is passed
+// on from here for the files that already read it with the blocks.
+export { JOURNAL_TEASER_HEADING }
 
 /** The link from that section to the whole Journal, in the words its topic list uses. */
 export const JOURNAL_TEASER_LINK = 'All articles'

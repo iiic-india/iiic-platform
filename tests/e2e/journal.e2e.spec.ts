@@ -7,10 +7,10 @@ import {
   type Page,
 } from '@playwright/test'
 
-import { JOURNAL_TEASER_HEADING } from '../../src/components/blocks/PageBlocks'
 import { COPIED, LABEL } from '../../src/components/experience/TakeItWithYou'
 import { PREVIEW_COPY } from '../../src/components/site/previewCopy'
 import { CRISIS_HEADING, SCOPE_HEADING } from '../../src/lib/counselling/scope'
+import { JOURNAL_TEASER_HEADING } from '../../src/lib/journal/teaser'
 import { JOURNAL_PAGE } from '../../src/lib/seo/appPages'
 import { canonicalUrl, siteOrigin, TITLE_SUFFIX } from '../../src/lib/seo/site'
 import { login, signIn } from '../helpers/login'
