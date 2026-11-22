@@ -16,6 +16,9 @@ const PAGES = [
   ...Object.keys(STARTER_PAGES).map(pagePath),
   '/map',
   '/journal',
+  '/search',
+  '/search?q=framework',
+  '/search?q=zzqqxxnothing',
   '/journal/no-such-article',
   '/no-such-page',
   '/book/session',
@@ -427,7 +430,7 @@ test.describe('Public shell', () => {
       const response = await page.goto(path)
       expect(response?.status()).toBe(404)
       await expect(page.locator('html')).toHaveAttribute('lang', 'en-IN')
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
+      await expect(page.getByText('404 · Page not found', { exact: true })).toBeVisible()
       await expect(page.locator('footer')).toContainText('+91 96240 46464')
       // Only a counselling path carries the scope statement.
       await expect(page.locator('#scope')).toHaveCount(0)
@@ -440,14 +443,14 @@ test.describe('Public shell', () => {
     // docs/11 §5.1, item 8: "Book a session" leads here until the booking flow is built.
     const response = await page.goto('/book/session')
     expect(response?.status()).toBe(404)
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
+    await expect(page.getByText('404 · Page not found', { exact: true })).toBeVisible()
     const scope = page.locator('#scope')
     await expect(scope).toContainText('not an emergency service')
     await expect(scope.getByRole('link', { name: '14416' })).toHaveAttribute('href', 'tel:14416')
     await expect(scope.getByRole('link', { name: '1098' })).toHaveAttribute('href', 'tel:1098')
     // The info session is booked in the education register: not a counselling path.
     expect((await page.goto('/book/info'))?.status()).toBe(404)
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
+    await expect(page.getByText('404 · Page not found', { exact: true })).toBeVisible()
     await expect(page.locator('#scope')).toHaveCount(0)
   })
 
@@ -463,7 +466,7 @@ test.describe('Public shell', () => {
     }) => {
       const response = await page.goto(`${path}/no-such-page`)
       expect(response?.status()).toBe(404)
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
+      await expect(page.getByText('404 · Page not found', { exact: true })).toBeVisible()
       await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', register)
       await expect(page.locator('footer')).toContainText('+91 96240 46464')
       // Only under /counselling/ does the 404 carry the scope statement and the crisis numbers.

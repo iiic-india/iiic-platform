@@ -65,7 +65,7 @@ test.describe('The Journal while no article is published', () => {
     }) => {
       const response = await page.goto(path)
       expect(response?.status()).toBe(404)
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
+      await expect(page.getByText('404 · Page not found', { exact: true })).toBeVisible()
       await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'education')
       await expect(page.locator('link[rel="canonical"]')).toHaveCount(0)
       await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(0)
