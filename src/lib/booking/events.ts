@@ -36,5 +36,5 @@ export type DomainEvent =
 
 export type DomainEventName = DomainEvent['name']
 
-/** Queues the event's listeners inside the request's transaction (docs/16 §8). */
+/** Queues the event's listeners inside the request's transaction (docs/16 §9). */
 export type EmitDomainEvent = (req: PayloadRequest, event: DomainEvent) => Promise<void>

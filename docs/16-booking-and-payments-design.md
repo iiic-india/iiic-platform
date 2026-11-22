@@ -1,0 +1,174 @@
+# 16 · Booking and payments: the design (M3)
+
+The design M3 is built to: the data, the states, the money rules, the double-booking guard, the module boundaries and who builds what. Written 22 November 2026 on branch `m3/foundation`, which holds the schema, its two migrations, the contracts in `src/lib/booking`, `src/lib/payments` and `src/lib/calendar`, the fakes and the first tests. The target is M3's "Done when" (`10`): end-to-end tests in test mode for a paid booking, a free booking, a payment failure, hold expiry, a reschedule, a cancellation with refund, and two people paying for one slot (exactly one confirmed, the other refunded); an invoice PDF that matches the print template. Sources: `03` F3–F4, `04`, `05` (Calendar, Bookings, Money), `06` (B1–B14), `07`, `08` §3–§5, §7, §9, D-02, D-03, D-09, D-13, D-16, D-21–D-24. Where this document and those differ, they win, and this one is corrected.
+
+## 1. Rules this design keeps
+
+- A payment is confirmed only by a verified webhook or a server-side check of the order with the gateway, each processed once by its id; the browser's return from checkout confirms nothing (CLAUDE.md #5).
+- Money is integer paise everywhere: collections, functions, the gateway. Totals and tax are computed on the server from the price in force; no price, rate, threshold, duration, policy or SAC code is written in code (CLAUDE.md #1). Those are IIIC's and live in the admin; seed and test values say "fake".
+- No price appears on a page, an email, an invite or a template while `prices_public` is off (D-21); the one exception is the amount on a payment link staff send, which the client sees before paying (D-24).
+- Counselling is private: a booking holds when and what, never what is said; domain events carry ids only; nothing about a session reaches analytics, logs, a practitioner's calendar beyond a first name, or a message offer (CLAUDE.md #3).
+- Consent is recorded before the data it covers, in the same transaction; every consent is its own unticked box (CLAUDE.md #4, #9). Times are stored in UTC and shown in India time; phones in E.164 (#8). Every route and custom view checks the user and role first (#6).
+
+## 2. The collections
+
+Every collection has its access in `src/access/policy.ts` (tests: `tests/unit/bookingPolicy.spec.ts`) and every write in the audit log, except `busy-blocks` (copies of another calendar's times, refreshed every 15 minutes, holding no one's details). Staff need their two-factor code for everything; only `events` is read by visitors. "Server" means written only by server code with access overridden, after its own checks; no role writes it through the API or the admin.
+
+| Collection | Holds | Relations and indexes | Read · write |
+| --- | --- | --- | --- |
+| `bookings` | reference (unique, `IIIC-S-24117`), type (session · call · info), status, paymentStatus, the option booked (row id, label, minutes copied in), whoFor, ageBand, format, startsAt, endsAt, holdExpiresAt, timeRequest (preferred days as `YYYY-MM-DD`, preferred times, note), meetingUrl, calendarEventId, price (totalPaise, taxPaise, gstRateBasisPoints, sacCode), rescheduledFrom, confirmedAt, cancellation (at, reason), company (a call's company, role, team size, sector, until M4's organisations), consents given in the flow, source and UTM, manageTokenHash and checkoutKey (unique, hidden from every read) | service, practitioner, event, person (the client), bookedBy (a guardian), rescheduledFrom; indexes on practitioner+startsAt, status+holdExpiresAt; the exclusion constraint (§4) | owner, operator; a practitioner their own (read, update) · created by the flow (server) or the office; never deleted. `price` is read by owner, operator, finance and written by the server only; reference, hold end, Meet link and event id are server-written |
+| `events` | A fixed-time session (info session now; cohort sessions and workshops later): title, kind, service, practitioner, startsAt, endsAt, format, capacity, joinLink, active | startsAt indexed | anyone reads an active one, never its joinLink (owner, operator, practitioner) · owner, operator; owners delete |
+| `availability-rules` | One weekday's working spans (`HH:MM`–`HH:MM`, India time, up to six), validFrom, validTo (days as `YYYY-MM-DD`) | practitioner+weekday | owner, operator; a practitioner their own (read, update, delete); adding stays with the office until the own-profile check exists (§12) |
+| `availability-exceptions` | A day closed or at other hours, with a reason for the office | unique practitioner+day | as working hours |
+| `calendar-connections` | practitioner (unique), provider `google`, calendarId, status (paused · connected · failing; paused until an owner checks it), lastSyncedAt, lastError (a code), watch (channelId unique, resourceId, expiresAt), channelTokenHash and feedTokenHash (hidden) | — | owner, operator, the practitioner · owners connect and change it; sync fields server-written |
+| `busy-blocks` | practitioner, startsAt, endsAt, source `google`: nothing else | practitioner+startsAt | owner, operator, the practitioner · server |
+| `price-history` | service, the option's row id and label, minutes, pricePaise, gstInclusive, gstRateBasisPoints, validFrom, validTo (open = in force) | unique service+option+validFrom | owner, operator, finance · server, when an owner saves a changed price |
+| `payments` | One gateway order (checkout) or payment link: kind, gateway, status, amountPaise (≥ 100, Razorpay's minimum), currency INR, refundedPaise, receipt (unique; our idempotency key sent as the order's receipt), gatewayOrderId, gatewayPaymentLinkId, gatewayPaymentId (each unique), method, failureCode, capturedAt, linkSentAt, expiresAt | booking | owner, operator, finance · server |
+| `gateway-events` | Each event once: gateway, eventId, type, source (webhook · poll · reconciliation), the gateway's ids, amountPaise, receivedAt, outcome (processed · ignored · flagged), note (a code). Never the payload | unique gateway+eventId; payment, refund | owner, finance · server |
+| `refunds` | payment, booking, status, amountPaise, reason (cancelled by client · by IIIC · slot taken · other) and note, payerInstruction, requestedBy (empty when the platform asked), approvedBy, decidedAt, gatewayRefundId (unique), processedAt, failureCode, idempotencyKey (unique) | payment, booking | owner, operator, finance · owner and operator request; who approves is checked by the collection (§5); never deleted |
+| `invoices` | The mirror of a Zoho Books document: kind (tax invoice · receipt voucher · refund voucher · credit note), status (pending · issued · failed · void), number, zohoId (unique), buyer snapshot (name, GSTIN, state code, address), lines (description, SAC, quantity, rate, taxable, CGST, SGST, IGST, total), totals, issuedAt, pdfKey (private bucket), failureCode, idempotencyKey (unique: `payment:<id>:taxInvoice`) | booking, payment, refund, against (the invoice a credit note answers) | owner, finance · server |
+
+Changed: `services` gains `gstRateBasisPoints` (with the prices: owner writes; owner, operator, finance read); `settings` gains Money → `refundApprovalThresholdPaise`, empty by default. Days are stored as `YYYY-MM-DD` text, not instants, so a day off is the same day wherever the admin is opened and a unique index can hold two entries apart. No change to `people` yet: practitioners seeing their own clients is builder A's (§12).
+
+## 3. The states
+
+Lists and allowed moves live in `src/lib/booking/states.ts` and `src/lib/payments/states.ts`; the collections and the constraint are built from them, and tests hold them together. Who may make a move is the builders'.
+
+**Booking.** Created as `requested` (a time request), `held` (a hold) or `confirmed` (no payment at booking, or the office books it). `held` → `pendingPayment` (checkout opened) → `confirmed` (capture). `held` or `pendingPayment` → `expired` (the hold ran out) or `cancelledByClient` (they left). `expired` → `confirmed` only when a late payment arrives and the slot is still free; otherwise the payment is refunded. `requested` → `confirmed` (the office sets the agreed time, which the constraint checks) or cancelled by either side. `confirmed` → `completed` · `noShow` · `cancelledByClient` · `cancelledByIiic` · `rescheduled` (a reschedule creates a new booking pointing back with `rescheduledFrom`). The last five are final. `expired` is new: docs/04's list has no word for a lapsed hold (proposed, §10).
+
+**Hold.** Not a table of its own: a booking in `held` or `pendingPayment` with `holdExpiresAt` = now + hold minutes (the service's, else Settings'; default 10, docs/03). It ends converted (`confirmed`), expired or abandoned. Expiry is applied lazily, in the transaction that places a new hold (any overlapping hold past its time is moved to `expired` first), and by the B4 sweep; a timer is shown only for this real hold and never resets (`08` §5).
+
+**Time request.** A booking in `requested` with no time; it blocks nothing. The office agrees a time with the person and confirms it (B2 fires, the constraint checks the time). R1 has no "offered, waiting for the client's yes" step (proposed, §10).
+
+**Booking payment status.** `notRequired` (free) · `unpaid` · `linkSent` · `paid` · `partRefunded` · `refunded`, moved by the payments module only.
+
+**Payment.** `created` → `authorized` → `captured`; `created` → `captured` (automatic capture); `created` or `authorized` → `failed`, and a failed order may still be paid by a second attempt; `created` → `expired` · `cancelled` (links). `captured` → `partRefunded` → `refunded`. A captured payment never goes back.
+
+**Refund.** `requested` → `approved` (within the threshold, or the platform's own B10 refund) or `awaitingApproval` → `approved` | `declined` (an owner). `approved` → `processing` (sent to the gateway) → `processed` | `failed`; a failed one is sent again by hand.
+
+**Invoice.** `pending` → `issued` | `failed` (retried by its job) ; `issued` → `void` when cancelled in Zoho Books.
+
+## 4. The double-booking guard
+
+docs/04 asks for an exclusion constraint on practitioner and time range for held, pending-payment, confirmed and requested bookings. It is created by `src/migrations/20261122_150505_bookings_no_overlap.ts`:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_ends_after_start"
+  CHECK ("starts_at" IS NULL OR "ends_at" IS NULL OR "ends_at" > "starts_at");
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_no_overlap"
+  EXCLUDE USING gist ("practitioner_id" WITH =, tstzrange("starts_at", "ends_at", '[)') WITH &&)
+  WHERE ("practitioner_id" IS NOT NULL AND "starts_at" IS NOT NULL AND "ends_at" IS NOT NULL
+         AND "status" IN ('requested', 'held', 'pendingPayment', 'confirmed'));
+```
+
+**How it is made and kept.** Payload generates tables and indexes, not exclusion constraints, and generated migrations are never edited. So the scaffold is one generated migration (`m3_foundation`), and the constraint is a second, blank one made with `pnpm migrate:create bookings_no_overlap --force-accept-warning` and written by hand, as the audit log's trigger was (D-43). It is never edited; a change is a new migration. Drizzle's snapshots do not know the constraint, so later generated migrations leave it alone; one that drops or retypes a column it uses fails loudly in Postgres rather than losing it. Guards: a unit test holds the migration's state list to `SLOT_BLOCKING_STATUSES`; an integration test checks the constraint exists and refuses an overlap (`tests/int/bookingsConstraint.int.spec.ts`). This mechanism is proposed in §10 for IIIC to confirm.
+
+**What it means.** Ranges are half-open, so 10:00–10:30 and 10:30–11:00 coexist; the buffer after a session is the slot engine's rule, not the database's. A time request without a time, and a fixed-time session's booking (no practitioner), are outside it; an info session's capacity is checked with a row lock on its event. A refused insert or update raises SQLSTATE `23P01`, which the booking module turns into `{ code: 'slot-taken' }`; the transaction is rolled back. Busy blocks from Google are not in the constraint: the engine subtracts them, and a clash with a later calendar entry is the practitioner's to move.
+
+## 5. Money and payments
+
+**Prices.** A service's options hold the all-in price in paise and the GST flag (M2); the service holds its SAC code and its GST rate in basis points (I-29). When an owner saves a changed price, the server closes the open `price-history` row and opens a new one (builder B). At step 3 the server copies the price in force into the booking (`price.totalPaise`, `taxPaise`, rate, SAC); that total is what step 1 showed and never grows (`08` §5). A session whose price is not set books without payment, as while prices are hidden.
+
+**Tax.** An all-in total splits as taxable = total × 10000 / (10000 + rate), rounded half up to the paise, tax = total − taxable (contract `SplitInclusive`); CGST and SGST halve the tax within Gujarat (the odd paise to CGST) and IGST applies between states, the supplier's state read from the GSTIN in Settings (contract `SplitGstHeads`). Both rounding rules are the CA's to confirm (§10).
+
+**What an invoice and a receipt record.** IIIC is GST-registered (D-13), so Zoho Books issues a tax invoice (or a receipt voucher), and a credit note or refund voucher on a refund; which one, and when, is the CA's (I-29). Each is mirrored in `invoices` with the buyer as named at issue, each line with SAC, rate, taxable value and tax heads, the totals in paise as the platform computed them (which must equal Zoho's; a mismatch fails the job), Zoho's id and number, and the PDF's key in the private bucket. Invoices are anonymised, never deleted, when a person is erased (`04`).
+
+**Checkout (pay at booking).** Entering step 4 places the hold; opening checkout creates one Razorpay order per booking (receipt = the payment's unique key; a second click finds it), with automatic capture, and moves the booking to `pendingPayment`. The browser gets the order id and the public key id only. On return, the confirmation page asks the server to check the order with the gateway once (server-side verification); otherwise it waits for the webhook.
+
+**The webhook** (`/api/webhooks/razorpay`, builder B): read the raw body (size-limited), verify `X-Razorpay-Signature` with the SDK's `validateWebhookSignature` and the webhook secret, read `X-Razorpay-Event-Id`, parse only the needed fields with Zod (`VerifiedGatewayEvent`). Then, in one transaction: look up (gateway, eventId); if it is there, this is a **replay**: answer 200 and do nothing. Otherwise insert the event and act on it. A concurrent duplicate meets the unique index (`23505`) and is answered 200 as a replay, since the first one committed. If acting fails, the transaction rolls back (the event row with it) and the route answers 500, so Razorpay retries (for 24 hours). Acting is itself idempotent: a capture on a payment already captured is `ignored`; an amount or currency that differs from the payment's is `flagged` and confirms nothing. Events taken: `payment.captured`, `payment.failed`, `order.paid`, `refund.processed`, `refund.failed`, `payment_link.paid`, `payment_link.expired`, `payment_link.cancelled`. Logs hold the event type and outcome, never the body.
+
+**Capture → confirmation, and the race.** A capture calls `ConfirmBooking` (cause `paymentCaptured`). If the constraint refuses it (the hold had expired and someone else took the slot), the payment module requests a full refund in the platform's name (reason `slotTaken`, key `slotTaken:<paymentId>`, approved at once, B10), flags the event and emits `booking.slotLost` so M6 offers the nearest free times. Two captures racing for one slot: exactly one transaction commits `confirmed`, the other gets `23P01` and is refunded.
+
+**Polling and reconciliation** (M3 owns both). `B2-poll-pending-orders` asks the gateway about orders still `created` or `failed` after a few minutes and processes any capture as an event of source `poll` (event id `poll:<paymentId>:captured`, so it is acted on once). `B11-reconcile` compares a day's captured payments and refunds with the platform's (captures with no payment, payments with no booking, refunds made in the dashboard) and stores each mismatch as a flagged `reconciliation` event for Today. Both are tasks; M6's cron runner schedules them (daily 23:00 for B11); until then an owner runs them through the jobs API.
+
+**Payment links (D-24, B13).** Staff send one from a confirmed booking with a price; never for a free service. The gateway's own SMS and email are off (`notify: false`); the platform's message carries the link (M6). `payment_link.paid` marks the payment captured and the booking `paid`.
+
+**Refunds.** The office requests one (from a cancellation, with the amount the service's rule gives shown first, or by hand); it is approved at once when the amount is at or below `refundApprovalThresholdPaise`, else it waits for an owner; with no threshold set, every refund waits. Approval sends it to the gateway, always to the original method, with the refund's key as its receipt; `refund.processed` moves it, adds to the payment's `refundedPaise` (never past the amount: `over-refund`), and emits `refund.processed` (the client's message and the credit note follow). A cancellation by IIIC refunds in full (D-16's symmetry).
+
+## 6. The slot engine and the booking module
+
+Pure functions, no database, in `src/lib/booking/` (types in `types.ts`):
+
+- `GenerateSlots(query: SlotQuery) → SlotDay[]`. Input: `now`, `durationMinutes`, rules (notice hours, horizon days, buffer minutes), the practitioner's `WeeklyHours[]` (weekday, spans, validFrom, validTo), `DayException[]`, and `taken: Interval[]` (busy blocks and slot-blocking bookings). Starts run from each span's start every `duration + buffer`; a start is offered when [start, start + duration + buffer) fits the span, starts at or after now + notice, falls on or before the horizon's last day, and meets nothing taken. Output: `{ day: 'YYYY-MM-DD', starts: Date[] }` per day in India, earliest first, empty days left out. Wall-clock times become instants with `@date-fns/tz` (`TZDate` in Asia/Kolkata); no hand-made offsets.
+- `ResolveRules(service, defaults) → BookingRules | rule-missing`: the service's rule, else Settings'; a rule neither sets stops the flow from offering times.
+- `CanClientReschedule({ now, startsAt, rescheduleWindowHours, status })` and `RefundForCancellation({ now, startsAt, paidPaise, steps, by })`: with no window or no steps set (D-16 open), the client is sent to IIIC instead (F4) and nothing is refunded automatically.
+- Contracts that touch the database (`operations.ts`): `PlaceHold`, `ConfirmBooking` (the one way into `confirmed`), `ExpireHolds`, `RequestTime`, `RescheduleBooking`, `CancelBooking`, each returning a typed `Result` (`src/lib/result.ts`).
+
+Left to builder A, named here: the reference (`IIIC-` + S, C or I + `-` + five random digits from `crypto.randomInt`, unique index, retried on collision; an identifier, never enough to read a booking); the manage token (32 random bytes, base64url, sent once; its SHA-256 kept in `manageTokenHash`; valid until the booking ends; a reschedule issues a new one); the confirmation page shows details only to the browser that booked (a short-lived httpOnly cookie bound to the checkout key), anyone else sees that a booking exists and that the details are in their email.
+
+## 7. Calendars
+
+`CalendarProvider` (`src/lib/calendar/provider.ts`): `freeBusy`, `createEvent`, `updateEvent`, `deleteEvent`, `watch`, `stopWatch`, each returning a `Result`. Google's implementation uses `@googleapis/calendar` with a Workspace service account and domain-wide delegation limited to the Calendar scope (no per-practitioner tokens are stored; proposed, §10). Busy times come from the **free/busy** endpoint, which returns start and end only, so no event's title or guests are ever read (D-22, B14). `RefreshBusyBlocks` replaces a practitioner's blocks for [now, now + the longest horizon] in one transaction, on each change notification (`/api/webhooks/google-calendar`, checked against the channel token's hash) and every 15 minutes; watch channels are renewed before `expiresAt`. `SyncBookingEvent` writes a confirmed booking as an event without guests: time, service, the client's first name, the reference, and a Meet link (online) or the office address; it moves or deletes it on a reschedule or cancellation, and runs as a retried job after the booking commits, so a calendar failure never undoes a booking. The client's invite is the platform's `.ics` built with `ics` (`BuildInvite`: stable UID `<reference>@<host>`, SEQUENCE raised on each change, METHOD:CANCEL on cancellation); each practitioner also gets a private feed of their bookings (`BuildFeed`, `/api/calendar/feed/[token]`, token hash on the connection). `FakeCalendar` keeps busy times and written events in memory, and counts written events as busy, as Google does. Until a practitioner has hours and a connected calendar (I-24), no free time is offered for them; bookings still show in the admin.
+
+## 8. The two switches
+
+| `prices_public` | `pay_at_booking` | What the flow does |
+| --- | --- | --- |
+| off | off (forced: it cannot be on, D-24) | No price anywhere: pages, step 1, emails, invites, templates, the admin's public previews. Step 4 is skipped. A session confirms at once with `unpaid` if its option has a price, `notRequired` if free; staff may send a payment link (D-24). Calls and info sessions are free. |
+| on | off | Step 1 shows the all-in total with its GST breakup. The booking confirms at once, `unpaid`; payment by link. |
+| on | on | Step 1 shows the total; step 4 holds the slot and takes payment; `confirmed` only on capture. A free option skips step 4. |
+
+Every check reads the flags on the server (`getFlags`, `pricesArePublic`, `src/lib/settings/`); `toFlags` already refuses `payAtBooking` without `pricesPublic`.
+
+## 9. Events for M6
+
+`emit(req, event)` (`src/lib/booking/events.ts`) queues a Payload job per subscribed task in the same transaction, with the key `<event>:<id>`; the subscriptions are M6's, and until then an event queues nothing. Events carry ids only: `booking.held` (B1), `booking.holdExpired` (B4), `booking.requested` (B12), `booking.confirmed` with its cause (B2, B3a, B5, B6, P2), `booking.rescheduled` (B7), `booking.cancelled` (B7), `booking.completed` (B8), `booking.noShow` (B9), `booking.slotLost` (B10), `payment.captured` (B3), `payment.failed`, `payment.linkSent` (B13), `refund.awaitingApproval` (Today), `refund.processed` (B7, the credit note), `reconciliation.mismatch` (B11), `calendar.changed` (B14). M3 itself runs the calendar write, the poll and B11; every message is M6's.
+
+## 10. Open decisions and missing inputs, and what the build assumes
+
+Nothing waits on these: IIIC's values live in the admin, empty or behind the flags, and each assumption is the safe reading.
+
+| Item | Assumed until answered |
+| --- | --- |
+| Proposed: the exclusion constraint lives in a hand-written migration after the generated one (§4) | Built so |
+| Proposed: a lapsed hold becomes `expired`, a status docs/04 lacks (§3) | Built so |
+| Proposed: busy times from Google's free/busy endpoint and a service account with domain-wide delegation, so no event body and no token is stored (§7) | Built so; per-practitioner OAuth only if IIIC asks (`.env.example`) |
+| Proposed: a time request is confirmed by the office once a time is agreed, with no "offered" state (§3) | Built so |
+| Proposed: end-to-end tests run on the fake gateway in CI; Razorpay test mode is checked by hand on a preview per release (§11) | Built so |
+| Proposed: the client's invoice PDF is rendered from `src/brand/templates/print/invoice.html` with Zoho's number and the mirrored totals; Zoho Books stays the record | Built so; Zoho's own PDF kept in Zoho |
+| Proposed: refund shares round half up to the paise; taxable value rounds half up and tax is the remainder; CGST takes the odd paise | Built so, for the CA to confirm |
+| Proposed: the counselling booking's SPDI written consent is recorded under the `bookingCommunications` purpose with the booking notice until the lawyer words it (I-22) | Built so; a purpose of its own needs a change to `consents` |
+| D-16, I-07: reschedule window and refund rule per service | Empty: clients are sent to contact IIIC; no automatic refund except IIIC's own cancellations and B10 |
+| Refund approval threshold (docs/05) | Empty: every refund waits for an owner |
+| I-28: prices, and whether they include GST; I-29: SAC codes and GST rates | `prices_public` off; prices and rates empty; sessions book `unpaid` |
+| I-05, I-06, I-26: GSTIN, bank details, legal name | Invoices stay `pending`; payments in test mode |
+| I-04, I-24: the Razorpay account; Workspace calendars and working hours | Fake gateway in tests; no free times offered, bookings by request |
+| I-13: info session dates and length | No active fixed-time session; `info` booking off |
+| I-31: family-session length | Not an option until set |
+| I-33: the office address for "at the office" | The legal address in Settings, a placeholder while empty |
+| Under-18 bookings (`08` §3, guardian verification) | The guardian books in their own name (whoFor `family`, ageBand `under18`); no child's details stored until guardian verification exists |
+| Previews and production share one database (operations memory) | M3's payments must not run on a preview until the preview has its own database (`07`); the fake gateway is refused on every Vercel deployment |
+
+## 11. Fakes, environment and the test plan
+
+`FakeGateway` (`src/lib/payments/fakeGateway.ts`) and `FakeCalendar` (`src/lib/calendar/fakeCalendar.ts`) implement the interfaces in memory; the fake gateway signs webhooks as Razorpay does (HMAC-SHA256 of the raw body), so the route's real signature check runs in tests. `PAYMENT_GATEWAY=fake` selects it locally and in CI; `src/lib/env.ts` refuses it on any Vercel deployment, refuses a live Razorpay key anywhere but production, and takes Razorpay's three keys together or not at all. Unit tests are pure; integration tests need Postgres and run in CI; end-to-end tests run on the built app with the fake gateway, desktop and 375 px, with axe.
+
+| "Done when" item | Proves it |
+| --- | --- |
+| Paid booking | e2e: flags on, choose → time → details (unticked consents) → pay (the fake posts a signed `payment.captured` to the webhook) → confirmed page with reference; the booking `confirmed`/`paid`, one gateway event; the same webhook again changes nothing. Unit: `SplitInclusive`, `GenerateSlots`. Int: `ProcessGatewayEvent` replay and concurrent duplicate |
+| Free booking | e2e: a call, no step 4, `confirmed`/`notRequired`; a session with prices hidden confirms `unpaid` with no price on the page or in the invite |
+| Payment failure | e2e: the fake fails the payment; the booking stays `pendingPayment` with the same hold, a retry succeeds. Int: `failed` → `captured`; gateway down keeps the hold |
+| Hold expiry | Int: `ExpireHolds` and the lazy expiry free the slot; a payment after expiry confirms when the slot is free. e2e: an expired hold's time is offered again |
+| Reschedule | e2e: `/b/[token]` → new time → new booking linked, old `rescheduled`, fake calendar event moved, invite SEQUENCE raised. Unit: `CanClientReschedule`. Int: one transaction under the constraint |
+| Cancellation with refund | e2e: cancel within a (fake) refund step → refund approved under a (fake) threshold → gateway refund → `refund.processed` → payment `refunded`. Unit: `RefundForCancellation`. Int: approval above the threshold needs an owner; over-refund refused |
+| Two people pay for one slot | Int (written): the constraint lets exactly one of two concurrent confirmations commit, and refuses a late confirmation once the slot is taken. Int: two captures through `ProcessGatewayEvent` → one `confirmed`, one refunded (`slotTaken`), `booking.slotLost` emitted. e2e: A's hold expires, B pays, A's late payment is refunded |
+| Invoice PDF matches the print template | Int/e2e: a fake invoice mirror rendered through `invoice.html` → PDF; its text holds every merge value and no `{{`; a screenshot matches the stored baseline |
+
+Also, from the access rules: every new route and job rejects anonymous and wrong-role requests; a practitioner reads only their own bookings (written); webhook signature rejection; no price in any response while `prices_public` is off.
+
+## 12. Who builds what
+
+The foundation (this branch) is frozen for the builders: the collections' fields, `src/access/policy.ts`, `src/lib/env.ts`, the state lists, the contracts, `src/lib/result.ts`, the migrations, `package.json` and the lockfile. A builder who needs a schema or policy change asks the lead, who sequences one migration at merge; two builders never edit one file. Each adds tests beside their files (`tests/unit/<area>*.spec.ts`, `tests/int/<area>*.int.spec.ts`).
+
+**Wave 1 (three builders, in parallel).**
+
+- **A · Booking engine:** `src/lib/booking/**` except `states.ts`, `types.ts`, `operations.ts`, `events.ts` (implementations go in new files: `slots.ts`, `policies.ts`, `holds.ts`, `timeRequests.ts`, `confirm.ts`, `changes.ts`, `reference.ts`, `tokens.ts`, `emit.ts`); hooks in `src/collections/Bookings.ts`, `Events.ts`, `AvailabilityRules.ts`, `AvailabilityExceptions.ts` (the own-profile check that opens adding hours to practitioners); `src/jobs/booking.ts` (B4); the practitioners-see-their-clients rule (`People.ts`, with its policy change, A's alone).
+- **B · Payments:** `src/lib/payments/**` except `states.ts`, `gateway.ts`, `operations.ts`, `fakeGateway.ts` (new: `tax.ts` for the money contracts, `razorpay.ts`, `gatewayFor.ts`, `checkout.ts`, `webhook.ts`, `refunds.ts`, `poll.ts`, `reconcile.ts`); `src/app/api/webhooks/razorpay/route.ts`; hooks in `Payments.ts`, `Refunds.ts`, `GatewayEvents.ts`, `PriceHistory.ts` and the price-history hook in `Services.ts`; `src/jobs/payments.ts`.
+- **C · Calendar:** `src/lib/calendar/**` except `provider.ts`, `fakeCalendar.ts` (new: `google.ts`, `busy.ts`, `sync.ts`, `ics.ts`, `feed.ts`); `src/app/api/webhooks/google-calendar/route.ts`, `src/app/api/calendar/feed/[token]/route.ts`; hooks in `CalendarConnections.ts`, `BusyBlocks.ts`; `src/jobs/calendar.ts`.
+
+**Wave 2 (the flows, after wave 1 merges).**
+
+- **D · The five steps:** `src/app/(platform)/book/[type]/`, `/book/confirmed/[ref]`, `/b/[token]`, `src/components/booking/`, the booking notice and consents, the scope statement and crisis numbers on counselling steps, analytics events (none once the age band says under 18), focus and radio-group accessibility, and the e2e specs above.
+- **E · Admin money and calendar:** booking actions (cancel with the policy's refund shown first, reschedule, send a payment link, confirm a time request), refund approval for owners, the working-hours editor's preview of bookable times; each custom view or endpoint checks the user and role first.
+- **F · Documents:** `src/lib/pdf/` (Playwright with `@sparticuz/chromium`, D-09) rendering `invoice.html` and `proposal.html` from typed merge fields (proposals' collection is M4's), the Zoho Books client (India data centre, Zod at the boundary), B3's invoice and the credit note on a refund, and the invoice-PDF proof.

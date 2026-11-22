@@ -216,7 +216,7 @@ export const POLICY = {
   },
   // Working hours and their exceptions (docs/05, Calendar): the office keeps everyone's, a
   // practitioner changes their own. Adding one stays with the office until the collection checks
-  // that a practitioner adds hours to their own profile only (docs/16 §9).
+  // that a practitioner adds hours to their own profile only (docs/16 §12).
   availabilityRules: {
     read: { roles: ['owner', 'operator'], ownPractitioner: true },
     create: { roles: ['owner', 'operator'] },

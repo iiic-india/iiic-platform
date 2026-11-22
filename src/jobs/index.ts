@@ -2,6 +2,9 @@ import type { JobsConfig } from 'payload'
 
 import { ownerWithCode } from '@/access/policy'
 
+import { bookingTasks } from './booking'
+import { calendarTasks } from './calendar'
+import { paymentTasks } from './payments'
 import { purgeMissingPagesTask } from './purgeMissingPages'
 
 /**
@@ -11,6 +14,7 @@ import { purgeMissingPagesTask } from './purgeMissingPages'
  * API; Payload's default would let any signed-in account.
  */
 export const jobs: JobsConfig = {
-  tasks: [purgeMissingPagesTask],
+  // M3's builders each add tasks to a file of their own (docs/16 §12).
+  tasks: [purgeMissingPagesTask, ...bookingTasks, ...paymentTasks, ...calendarTasks],
   access: { run: ownerWithCode, queue: ownerWithCode, cancel: ownerWithCode },
 }
