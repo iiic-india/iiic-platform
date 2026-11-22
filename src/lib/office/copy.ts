@@ -48,7 +48,8 @@ export const OFFICE_ERRORS: Record<string, string> = {
   'free-service': 'This booking has no price, so there is nothing to pay.',
   'prices-hidden': 'Payment at booking is off.',
   'over-refund': 'That is more than the payment can still give back.',
-  'not-configured': 'Payments are not set up on this site yet: the Razorpay keys are missing (I-04).',
+  'not-configured':
+    'Payments are not set up on this site yet: the Razorpay keys are missing (I-04).',
   unavailable: 'The payment gateway did not answer. Try again in a few minutes.',
   refused: 'The payment gateway refused this.',
   EXPIRY_TOO_SOON: 'A payment link must stay open for at least 16 minutes. Choose a later end.',

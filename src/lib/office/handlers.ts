@@ -164,7 +164,10 @@ export const decideRefundHandler = endpoint(
 export const resendRefundHandler = endpoint(
   'office',
   (actions, req, id) => actions.resendRefund(req, id),
-  (refund) => ({ message: OFFICE_COPY.refundSent, refund: { id: refund.id, status: refund.status } }),
+  (refund) => ({
+    message: OFFICE_COPY.refundSent,
+    refund: { id: refund.id, status: refund.status },
+  }),
 )
 
 export const bookableTimesHandler = endpoint(

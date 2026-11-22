@@ -10,8 +10,8 @@ import { officeActions } from '@/lib/office/wiring'
 import { REFUND_STATUSES } from '@/lib/payments/states'
 import type { Booking, Practitioner, Refund } from '@/payload-types'
 
-import { OfficeActionForm } from './OfficeActionForm'
 import styles from './Office.module.css'
+import { OfficeActionForm } from './OfficeActionForm'
 import { OFFICE_VIEW_COPY as COPY } from './officeViewCopy'
 import { DATETIME_STEP_SECONDS, formatDay, labelOf, requireStaffWithCode } from './shared'
 
@@ -36,7 +36,12 @@ function Facts({ booking }: { booking: Booking }) {
   )
 }
 
-function TimeField({ name, label, hint, required }: {
+function TimeField({
+  name,
+  label,
+  hint,
+  required,
+}: {
   name: string
   label: string
   hint: string
@@ -64,7 +69,13 @@ function TimeField({ name, label, hint, required }: {
   )
 }
 
-function ConfirmTime({ booking, practitioners }: { booking: Booking; practitioners: Practitioner[] }) {
+function ConfirmTime({
+  booking,
+  practitioners,
+}: {
+  booking: Booking
+  practitioners: Practitioner[]
+}) {
   const request = booking.timeRequest
   const current = idOf(booking.practitioner as number | { id: number } | null)
   return (
@@ -141,7 +152,12 @@ function PaymentLink({ booking }: { booking: Booking }) {
         path={`/bookings/${booking.id}/payment-link`}
         submitLabel={again ? COPY.linkSubmitAgain : COPY.linkSubmit}
       >
-        <TimeField hint={COPY.linkEndsHint} label={COPY.linkEnds} name="expiresAt" required={false} />
+        <TimeField
+          hint={COPY.linkEndsHint}
+          label={COPY.linkEnds}
+          name="expiresAt"
+          required={false}
+        />
       </OfficeActionForm>
     </section>
   )
@@ -235,7 +251,9 @@ function Refunds({ refunds, admin }: { refunds: Refund[]; admin: string }) {
                 <td>{formatPaise(refund.amountPaise)}</td>
                 <td>{labelOf(REFUND_STATUSES, refund.status)}</td>
                 <td>
-                  <Link href={`${admin}/collections/refunds/${refund.id}/decision`}>{COPY.open}</Link>
+                  <Link href={`${admin}/collections/refunds/${refund.id}/decision`}>
+                    {COPY.open}
+                  </Link>
                 </td>
               </tr>
             ))}

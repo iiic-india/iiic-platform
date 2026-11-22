@@ -13,7 +13,14 @@ import {
   resendRefundHandler,
   statusFor,
 } from '@/lib/office/handlers'
-import { CancelBody, ConfirmTimeBody, parseInput, PaymentLinkBody, PreviewQuery, When } from '@/lib/office/inputs'
+import {
+  CancelBody,
+  ConfirmTimeBody,
+  parseInput,
+  PaymentLinkBody,
+  PreviewQuery,
+  When,
+} from '@/lib/office/inputs'
 import { cancellationRefundKey, splitRefund } from '@/lib/office/refundPlan'
 import { refusalFor } from '@/lib/office/who'
 
@@ -179,9 +186,15 @@ describe('what the endpoints accept', () => {
 
   it('treats an empty optional field as no answer', () => {
     expect(parseInput(PaymentLinkBody, { expiresAt: '' })).toEqual({ ok: true, value: {} })
-    const confirm = parseInput(ConfirmTimeBody, { startsAt: '2099-04-06T10:00', practitionerId: '' })
+    const confirm = parseInput(ConfirmTimeBody, {
+      startsAt: '2099-04-06T10:00',
+      practitionerId: '',
+    })
     expect(confirm.ok && confirm.value.practitionerId).toBeUndefined()
-    const chosen = parseInput(ConfirmTimeBody, { startsAt: '2099-04-06T10:00', practitionerId: '3' })
+    const chosen = parseInput(ConfirmTimeBody, {
+      startsAt: '2099-04-06T10:00',
+      practitionerId: '3',
+    })
     expect(chosen.ok && chosen.value.practitionerId).toBe(3)
   })
 

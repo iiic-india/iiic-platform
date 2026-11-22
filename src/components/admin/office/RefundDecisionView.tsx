@@ -6,8 +6,8 @@ import { formatPaise, formatWhen } from '@/lib/office/copy'
 import { isOfficeUser, may } from '@/lib/office/who'
 import { REFUND_REASONS, REFUND_STATUSES } from '@/lib/payments/states'
 
-import { OfficeActionForm } from './OfficeActionForm'
 import styles from './Office.module.css'
+import { OfficeActionForm } from './OfficeActionForm'
 import { OFFICE_VIEW_COPY as COPY } from './officeViewCopy'
 import { labelOf, requireStaffWithCode } from './shared'
 

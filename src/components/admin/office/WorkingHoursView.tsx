@@ -31,7 +31,11 @@ async function optionsOf(req: PayloadRequest, practitioner: Practitioner) {
   const { docs } = await req.payload.find({
     collection: 'services',
     where: {
-      and: [{ id: { in: ids } }, { active: { equals: true } }, { type: { in: ['session', 'call'] } }],
+      and: [
+        { id: { in: ids } },
+        { active: { equals: true } },
+        { type: { in: ['session', 'call'] } },
+      ],
     },
     depth: 0,
     pagination: false,
@@ -302,10 +306,7 @@ export async function WorkingHoursView({
                         </select>
                       </div>
                       <div className={styles.actions}>
-                        <button
-                          className="btn btn--style-primary btn--size-medium"
-                          type="submit"
-                        >
+                        <button className="btn btn--style-primary btn--size-medium" type="submit">
                           {COPY.previewSubmit}
                         </button>
                       </div>

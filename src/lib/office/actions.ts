@@ -438,7 +438,13 @@ export async function whoseHours(
       return err({ code: 'invalid-input', fields: ['practitionerId'] })
     }
     const profile = await req.payload
-      .findByID({ collection: 'practitioners', id: practitionerId, depth: 0, overrideAccess: true, req })
+      .findByID({
+        collection: 'practitioners',
+        id: practitionerId,
+        depth: 0,
+        overrideAccess: true,
+        req,
+      })
       .catch(() => null)
     return profile ? ok(profile) : err({ code: 'not-found' })
   }

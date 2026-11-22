@@ -65,7 +65,8 @@ export const OFFICE_VIEW_COPY = {
   threshold:
     'A refund above the approval limit in Settings, or any refund while no limit is set, waits for an owner.',
   reason: 'Reason',
-  reasonHint: 'Kept on the booking for the office. Write what happened, not what was said in a session.',
+  reasonHint:
+    'Kept on the booking for the office. Write what happened, not what was said in a session.',
   cancelSubmit: 'Cancel the booking',
 
   refundsTitle: 'Refunds on this booking',
@@ -83,7 +84,8 @@ export const OFFICE_VIEW_COPY = {
   approve: 'Approve the refund',
   decline: 'Decline the refund',
   decideSubmit: 'Record the decision',
-  waitsForOwner: 'This refund waits for an owner, who approves or declines it here with their code.',
+  waitsForOwner:
+    'This refund waits for an owner, who approves or declines it here with their code.',
   failedNote: (code: string | null | undefined) =>
     `The gateway refused this refund${code ? ` (${code})` : ''}. Send it again once the reason is cleared.`,
   resendSubmit: 'Send the refund again',
