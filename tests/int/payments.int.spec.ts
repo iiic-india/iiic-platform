@@ -558,6 +558,7 @@ describe('refunds the office asks for (docs/05, Money)', () => {
       } as Refund,
       req: await outside(staff.operator),
       overrideAccess: false,
+      depth: 0,
     })
     expect(asked).toMatchObject({ status: 'awaitingApproval', requestedBy: staff.operator.id })
     await expect(
@@ -575,6 +576,7 @@ describe('refunds the office asks for (docs/05, Money)', () => {
       data: { status: 'approved' },
       req: await outside(staff.owner),
       overrideAccess: false,
+      depth: 0,
     })
     expect(approved).toMatchObject({ status: 'approved', approvedBy: staff.owner.id })
   })
