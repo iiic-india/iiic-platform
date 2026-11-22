@@ -166,6 +166,7 @@ export interface Config {
   jobs: {
     tasks: {
       'O5-purge-missing-pages': TaskO5PurgeMissingPages;
+      'B4-expire-holds': TaskB4ExpireHolds;
       inline: {
         input: unknown;
         output: unknown;
@@ -1959,7 +1960,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'O5-purge-missing-pages';
+        taskSlug: 'inline' | 'O5-purge-missing-pages' | 'B4-expire-holds';
         taskID: string;
         input?:
           | {
@@ -1992,7 +1993,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'O5-purge-missing-pages') | null;
+  taskSlug?: ('inline' | 'O5-purge-missing-pages' | 'B4-expire-holds') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -3508,6 +3509,16 @@ export interface TaskO5PurgeMissingPages {
   input?: unknown;
   output: {
     removed: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB4-expire-holds".
+ */
+export interface TaskB4ExpireHolds {
+  input?: unknown;
+  output: {
+    expired: number;
   };
 }
 /**
