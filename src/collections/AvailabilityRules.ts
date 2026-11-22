@@ -4,6 +4,7 @@ import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { istDayField } from '@/fields/istDay'
 import { WEEKDAYS, workingSpans } from '@/fields/workingSpans'
+import { ownProfileOnly } from '@/lib/booking/availabilityHooks'
 
 /** The last day comes on or after the first (days as YYYY-MM-DD compare as text). */
 const notBeforeFrom: TextFieldSingleValidation = (value, { siblingData }) => {
@@ -33,6 +34,8 @@ export const AvailabilityRules: CollectionConfig = {
     update: allow(POLICY.availabilityRules.update),
     delete: allow(POLICY.availabilityRules.delete),
   },
+  // A practitioner keeps to their own profile (src/lib/booking/availabilityHooks.ts).
+  hooks: { beforeChange: [ownProfileOnly] },
   indexes: [{ fields: ['practitioner', 'weekday'] }],
   fields: [
     {

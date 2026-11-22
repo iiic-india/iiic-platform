@@ -45,7 +45,7 @@ import { hashManageToken, isManageToken, manageLinkOpen, newManageToken } from '
  *   request, and moves or cancels any booking.
  * No answer carries a price, a person's details, a note or a token hash (D-21, CLAUDE.md #3). A
  * manage token is returned once, when it is issued, for the confirmation to carry.
- * Rate limits and Turnstile on the public calls are the route's (docs/08 §6).
+ * Rate limits and Turnstile on the public calls are the route's (docs/08 §9).
  */
 
 export type ApiError =

@@ -4,6 +4,7 @@ import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { istDayField } from '@/fields/istDay'
 import { workingSpans } from '@/fields/workingSpans'
+import { ownProfileOnly } from '@/lib/booking/availabilityHooks'
 
 /**
  * A day that differs from a practitioner's working hours (docs/04 `availability_exceptions`;
@@ -25,6 +26,8 @@ export const AvailabilityExceptions: CollectionConfig = {
     delete: allow(POLICY.availabilityExceptions.delete),
   },
   defaultSort: '-day',
+  // A practitioner keeps to their own profile (src/lib/booking/availabilityHooks.ts).
+  hooks: { beforeChange: [ownProfileOnly] },
   indexes: [{ fields: ['practitioner', 'day'], unique: true }],
   fields: [
     {
