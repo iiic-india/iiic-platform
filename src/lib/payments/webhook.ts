@@ -23,11 +23,10 @@ import {
 import { completeRefund, makeRequestRefund } from './refunds'
 import {
   claimGatewayEvent,
-  EXCLUSION_VIOLATION,
-  inSavepoint,
+  inLiveTransaction,
   inTransaction,
   lockRow,
-  sqlStateOf,
+  slotTakenByAnother,
 } from './store'
 import type { ParsedGatewayEvent } from './webhookEvent'
 
@@ -40,11 +39,13 @@ import type { ParsedGatewayEvent } from './webhookEvent'
  * ignored, and an amount or a currency that differs from the payment's is flagged and confirms
  * nothing.
  *
- * A capture confirms the booking through the booking module's ConfirmBooking, under a savepoint:
- * when the database refuses it because someone else took the slot after this hold lapsed, the
- * savepoint is rolled back, the platform asks for a full refund in its own name (B10), the event
- * is flagged `slot-taken` and `booking.slotLost` is emitted. The refund is sent to the gateway
- * after this transaction commits (`refundsToSend`), never inside it.
+ * A capture confirms the booking through the booking module's ConfirmBooking. When the hold had
+ * lapsed and someone else holds the time now, the platform asks for a full refund in its own
+ * name instead (B10), the event is flagged `slot-taken` and `booking.slotLost` is emitted. The
+ * time is asked about first, in this transaction: a write the exclusion constraint refuses makes
+ * Payload roll the whole transaction back, so the constraint is left to settle only a true race,
+ * whose loser is retried and finds the time taken. The refund is sent to the gateway after this
+ * transaction commits (`refundsToSend`), never inside it.
  *
  * Logs hold the event's type and outcome, never its body.
  */
@@ -109,17 +110,19 @@ export function makeProcessGatewayEvent(deps: PaymentsDeps) {
       // Paid for a booking that was cancelled, completed or moved: the office decides.
       return { outcome: 'flagged', note: `booking-${booking.status}`, refundsToSend: [] }
     }
-    let confirmed: Result<Booking, BookingError>
-    try {
-      confirmed = await inSavepoint(
-        req,
-        'confirm',
-        () => deps.confirmBooking(req, { bookingId: booking.id, cause: 'paymentCaptured' }),
-        (result) => result.ok,
+    // A lapsed hold's time may have gone to someone else: asked first, in this transaction, so
+    // the database is not made to refuse a write (which would end the whole transaction).
+    const confirmed: Result<Booking, BookingError> =
+      booking.status === 'expired' && (await slotTakenByAnother(req, booking))
+        ? err({ code: 'slot-taken' })
+        : await deps.confirmBooking(req, { bookingId: booking.id, cause: 'paymentCaptured' })
+    if (!(await inLiveTransaction(req))) {
+      // Someone took the time between the question and the write, and the constraint refused it;
+      // Payload has rolled the transaction back. Thrown, so the event is retried, and the retry
+      // finds the time taken above.
+      throw new Error(
+        'The booking’s confirmation ended the transaction; the event will be retried.',
       )
-    } catch (error) {
-      if (sqlStateOf(error) !== EXCLUSION_VIOLATION) throw error
-      confirmed = err({ code: 'slot-taken' })
     }
     if (confirmed.ok) return { outcome: 'processed', note: null, refundsToSend: [] }
     if (confirmed.error.code !== 'slot-taken') {

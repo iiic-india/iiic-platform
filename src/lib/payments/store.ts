@@ -9,15 +9,16 @@ import {
 } from 'payload'
 
 import { recordAudit } from '@/lib/audit/record'
+import { SLOT_BLOCKING_STATUSES } from '@/lib/booking/states'
 
 import type { ParsedGatewayEvent } from './webhookEvent'
 
 /**
  * The payments module's own database steps (docs/16 §5), where Payload's API has no word for
- * them: a transaction the caller may or may not already hold, a savepoint around the booking's
- * confirmation (whose exclusion constraint aborts a transaction it refuses), row locks that keep
- * two writers to one payment in line, and the once-only claim of a gateway event against its
- * unique (gateway, event_id) index. Everything runs on the request's own transaction connection,
+ * them: a transaction the caller may or may not already hold (and whether Payload has ended it),
+ * the question whether a lapsed hold's time is taken, row locks that keep two writers to one
+ * payment in line, and the once-only claim of a gateway event against its unique (gateway,
+ * event_id) index, which never makes the database refuse a write. Everything runs on the request's own transaction connection,
  * as @payloadcms/drizzle's getTransaction finds it. No query here carries a payload or a name.
  * The collections' hooks reach it, so it stays free of `server-only` (src/lib/env.ts says why).
  */
@@ -65,47 +66,43 @@ export function freshRequest(
   return createLocalReq({ user: user ?? undefined }, payload)
 }
 
-/** Postgres's SQLSTATE behind an error, however deep Payload and Drizzle wrapped it. */
-export function sqlStateOf(error: unknown): string | undefined {
-  let current: unknown = error
-  for (let depth = 0; depth < 6 && current; depth += 1) {
-    const code = (current as { code?: unknown }).code
-    if (typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)) return code
-    current = (current as { cause?: unknown }).cause
-  }
-  return undefined
+/**
+ * Whether the request's transaction is still open. Payload rolls back and forgets the request's
+ * whole transaction when any operation inside it throws, even one that did not open it (its
+ * killTransaction), so a refusal caught by a callee can leave the caller with none: writing on
+ * would then commit piece by piece. A caller that sees this throws instead.
+ */
+export async function inLiveTransaction(req: PayloadRequest): Promise<boolean> {
+  const transactionID = await req.transactionID
+  if (transactionID === undefined || transactionID === null) return false
+  return Boolean(req.payload.db.sessions?.[transactionID])
 }
 
-/** SQLSTATE for a write the exclusion constraint refused (docs/16 §4). */
-export const EXCLUSION_VIOLATION = '23P01'
-
-const SAVEPOINTS = { confirm: 'payments_confirm_booking' } as const
-
 /**
- * Runs `work` under a savepoint inside the caller's transaction and keeps it only when `keep`
- * says so: a refusal (the slot was taken) is rolled back to the savepoint, so the transaction
- * stays usable for the refund that follows. A throw is rolled back to the savepoint too, then
- * passed on.
+ * Whether another booking now keeps a booking's time taken (docs/16 §4): one of the states the
+ * exclusion constraint covers, for the same practitioner, over an overlapping half-open range.
+ * Asked before a lapsed hold is confirmed, so the constraint need refuse only a true race.
  */
-export async function inSavepoint<T>(
+export async function slotTakenByAnother(
   req: PayloadRequest,
-  name: keyof typeof SAVEPOINTS,
-  work: () => Promise<T>,
-  keep: (value: T) => boolean,
-): Promise<T> {
-  const point = sql.raw(SAVEPOINTS[name])
-  await execute(req, sql`SAVEPOINT ${point}`)
-  try {
-    const value = await work()
-    await execute(
-      req,
-      keep(value) ? sql`RELEASE SAVEPOINT ${point}` : sql`ROLLBACK TO SAVEPOINT ${point}`,
-    )
-    return value
-  } catch (error) {
-    await execute(req, sql`ROLLBACK TO SAVEPOINT ${point}`)
-    throw error
-  }
+  booking: { id: number; practitioner?: unknown; startsAt?: string | null; endsAt?: string | null },
+): Promise<boolean> {
+  const practitioner =
+    typeof booking.practitioner === 'object' && booking.practitioner !== null
+      ? (booking.practitioner as { id: number }).id
+      : booking.practitioner
+  if (typeof practitioner !== 'number' || !booking.startsAt || !booking.endsAt) return false
+  const rows = await execute(
+    req,
+    sql`SELECT 1 FROM "bookings"
+        WHERE "practitioner_id" = ${practitioner} AND "id" <> ${booking.id}
+          AND "starts_at" IS NOT NULL AND "ends_at" IS NOT NULL
+          AND "status"::text = ANY(${[...SLOT_BLOCKING_STATUSES]}::text[])
+          AND tstzrange("starts_at", "ends_at", '[)')
+              && tstzrange(${booking.startsAt}::timestamptz, ${booking.endsAt}::timestamptz, '[)')
+        LIMIT 1`,
+  )
+  return rows.length > 0
 }
 
 const LOCKS = {
