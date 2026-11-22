@@ -82,6 +82,7 @@ export interface Config {
     consents: Consent;
     'consent-versions': ConsentVersion;
     'analytics-events': AnalyticsEvent;
+    'search-index': SearchIndex;
     redirects: Redirect;
     'totp-attempts': TotpAttempt;
     'payload-kv': PayloadKv;
@@ -114,6 +115,7 @@ export interface Config {
     consents: ConsentsSelect<false> | ConsentsSelect<true>;
     'consent-versions': ConsentVersionsSelect<false> | ConsentVersionsSelect<true>;
     'analytics-events': AnalyticsEventsSelect<false> | AnalyticsEventsSelect<true>;
+    'search-index': SearchIndexSelect<false> | SearchIndexSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -1234,6 +1236,51 @@ export interface AnalyticsEvent {
   at_tz: 'Asia/Kolkata';
 }
 /**
+ * What /search finds: an entry for each published page, offered service, published article and published question, kept up to date as they are published, changed and unpublished. "Reindex" builds a kind again from what is published.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "search-index".
+ */
+export interface SearchIndex {
+  id: number;
+  title?: string | null;
+  /**
+   * Higher comes first among its kind on /search. Pages start at 40, services at 30, articles at 20 and questions at 10.
+   */
+  priority?: number | null;
+  doc:
+    | {
+        relationTo: 'pages';
+        value: number | Page;
+      }
+    | {
+        relationTo: 'services';
+        value: number | Service;
+      }
+    | {
+        relationTo: 'posts';
+        value: number | Post;
+      }
+    | {
+        relationTo: 'faqs';
+        value: number | Faq;
+      };
+  /**
+   * Where the result leads on the site.
+   */
+  url?: string | null;
+  /**
+   * Shown under the title when no sentence of the text matches.
+   */
+  excerpt?: string | null;
+  /**
+   * The words a search is matched against, as visitors read them on the site.
+   */
+  content?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "totp-attempts".
  */
@@ -1409,6 +1456,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'consent-versions';
         value: number | ConsentVersion;
+      } | null)
+    | ({
+        relationTo: 'search-index';
+        value: number | SearchIndex;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -2043,6 +2094,20 @@ export interface AnalyticsEventsSelect<T extends boolean = true> {
   sessionHash?: T;
   at?: T;
   at_tz?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "search-index_select".
+ */
+export interface SearchIndexSelect<T extends boolean = true> {
+  title?: T;
+  priority?: T;
+  doc?: T;
+  url?: T;
+  excerpt?: T;
+  content?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

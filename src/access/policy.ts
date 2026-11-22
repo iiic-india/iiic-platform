@@ -116,6 +116,17 @@ export const POLICY = {
     update: { roles: ['owner', 'editor'] },
     delete: { roles: ['owner', 'editor'] },
   },
+  // The search index (docs/04 `search_index`; src/plugins/searchIndex.ts): a copy of what is
+  // published, so anyone reads it, as /search does. Only the server adds entries, as documents
+  // are published, changed and unpublished. The staff who edit content may change an entry's
+  // priority; owners and editors, who remove content (docs/05), may also rebuild the index with
+  // the admin's "Reindex", which needs both.
+  searchIndex: {
+    read: { anyone: true },
+    create: {},
+    update: { roles: ['owner', 'operator', 'editor'] },
+    delete: { roles: ['owner', 'editor'] },
+  },
   // Written by the server only, never through the API (docs/04, docs/12 §7). Owners read the
   // raw events until Reports aggregates them (M5).
   analyticsEvents: {

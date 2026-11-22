@@ -162,7 +162,7 @@ test.describe('Each public page, as a search engine reads it', () => {
     for (const path of ['/no-such-page', '/organisations/no-such-page']) {
       const response = await page.goto(path)
       expect(response?.status(), path).toBe(404)
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
+      await expect(page.getByText('404 · Page not found', { exact: true })).toBeVisible()
       await expect(page.locator('link[rel="canonical"]')).toHaveCount(0)
       await expect(page.locator('meta[property="og:url"]')).toHaveCount(0)
       await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(0)

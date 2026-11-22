@@ -111,10 +111,13 @@ export function organizationNode(origin: string = siteOrigin()): JsonLdNode {
   }
 }
 
-/** The site, on the home page only: with og:site_name and the home title, the site's name. */
+/**
+ * The site, on the home page only: with og:site_name and the home title, the site's name, and
+ * its search (D-62; docs/12 §3), now that /search exists: for understanding only, since Google
+ * retired the sitelinks search box in 2024. The address is the one the search form sends.
+ */
 export function websiteNode(origin: string = siteOrigin()): JsonLdNode {
   const id = ids(origin)
-  // No SearchAction until /search exists (plan A15).
   return {
     '@type': 'WebSite',
     '@id': id.website,
@@ -123,6 +126,14 @@ export function websiteNode(origin: string = siteOrigin()): JsonLdNode {
     url: `${origin}/`,
     inLanguage: SITE_LANGUAGE,
     publisher: ref(id.organization),
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${origin}/search?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
   }
 }
 

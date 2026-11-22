@@ -5,6 +5,7 @@ import mark from '@/brand/logo/iiic-mark.svg'
 import { ReadingBar } from '@/components/experience/ReadingBar'
 
 import { NavToggle } from './NavToggle'
+import styles from './SiteHeader.module.css'
 
 /** Release 1 navigation (docs/02-routes-and-pages.md). "Log in" arrives in Release 2. */
 export const NAV_LINKS = [
@@ -39,6 +40,12 @@ export function SiteHeader() {
             {link.label}
           </Link>
         ))}
+        {/* The header's search on wide screens (docs/11 §5.3): a link to /search, which holds
+            the field, so the header costs no script and no room it lacks. Below 1200 px the
+            header has no room for it, and the menu stays as it was. */}
+        <Link className={styles.search} href="/search" prefetch={false}>
+          Search
+        </Link>
         <Link className="iiic-btn iiic-btn-primary" href="/map">
           Find your path
         </Link>

@@ -470,7 +470,7 @@ Every item in `10` M2, with its state on 22 November 2026:
 | Media with alt text required | Live |
 | The placeholders report (D-56) | Live |
 | Public pages: home, framework, founders, organisations, counselling, learn, institute, about, the legal drafts, `/accessibility`, Find your path | Live |
-| The search system in `12` §3 (D-61 to D-68) | Live, except `/search` |
+| The search system in `12` §3 (D-61 to D-68) | Live; `/search` and `SearchAction` on a branch (below) |
 | `humans.txt` and the manifest | Live |
 | The reading devices: the bar, the flip, the sticky question, the chapters; the reveals (`11` §4: the cards and steps) | On a branch, except the reveals of the cards and steps (to build) |
 | The 404 log (missing pages) with one-click redirects, the static 500, `security.txt` | On a branch; check that redirects on slug change (`12` §3 URLs) come with it |
@@ -479,12 +479,13 @@ Every item in `10` M2, with its state on 22 November 2026:
 | `@payloadcms/plugin-seo` for posts (D-68's condition) | To build, with posts |
 | Testimonials with the review fields in `04`, and the one-off import of the intake sheet with its consent evidence | To build |
 | Proof (`/proof`, `/proof/[slug]`): "In their words" with its filters, the case studies' empty state; the voices beside the text; plain review cards on counselling pages (D-58) | To build |
-| `/search` with the search index (D-34), then `SearchAction` | To build |
+| `/search` with the search index (D-34), then `SearchAction` | On a branch (`m2/search-and-404`): the index on `@payloadcms/plugin-search`, `/search` with its no-results count, the header's link from 1200 px and `SearchAction` on the home page; the `search_index` migration comes when the branches are combined |
+| The 404 (D-29): the question by door, the line with the bar, search and the main links; the plain version on counselling paths | On a branch (`m2/search-and-404`); its headline, line and questions wait on IIIC's approval (I-41) |
 | Settings: the legal information, the contact details and the flags (`prices_public` and the rest), with the footer and contact section reading from it | In progress, with `people` and `consents` (the trust layer) |
 | FAQs, with `FAQPage` markup only around questions shown on the page (I-20) | To build |
 | Services and practitioners, with the three service pages and `/organisations/team-map` (its form comes in M4) | To build |
 | Consent versions | In progress, with the trust layer |
-| Analytics events (doors, step 0, searches with no results) and the Cloudflare beacon | The events table and step 0 in progress; the beacon in M2, with its CSP origin (§3.12) |
+| Analytics events (doors, step 0, searches with no results) and the Cloudflare beacon | The events table and step 0 in progress; searches with no results on a branch, with `/search`; the beacon in M2, with its CSP origin (§3.12) |
 | The `iiicedu.com` redirect rules from `content/sources/old-site-iiicedu-com.md`, applied at launch | On a branch, with the 404 log; inert until the domain points at Vercel |
 | Search Console and Bing verified on the staging domain (`12` §3) | Not recorded as done |
 | The done-when checks: 320–1600 px, axe, the acceptance in `11` §10, Lighthouse on the home, framework, founders and counselling pages, every claim traced to a fact | Run on each slice; the full set once the items above have landed |

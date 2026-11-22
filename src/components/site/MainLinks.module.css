@@ -1,0 +1,15 @@
+/* The eight main links as one wrapping row: no colour of their own, the kit's link does the rest
+   (CLAUDE.md, non-negotiable 2). Each link keeps a target of at least 24 px (docs/12 §9). */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.links a {
+  display: inline-block;
+  padding: 4px 0;
+}
