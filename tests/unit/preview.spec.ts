@@ -170,3 +170,21 @@ describe('GET /api/preview/exit', () => {
     }
   })
 })
+
+describe('signing out', () => {
+  it('leaves preview too, and does nothing outside a request', async () => {
+    const { leavePreviewAfterLogout } = await import('@/lib/preview/leave')
+    await leavePreviewAfterLogout({} as never)
+    expect(disable).toHaveBeenCalledOnce()
+    disable.mockImplementationOnce(() => {
+      throw new Error('outside a request')
+    })
+    await expect(leavePreviewAfterLogout({} as never)).resolves.toBeUndefined()
+  })
+
+  it('is one of the users collection’s hooks', async () => {
+    const { Users } = await import('@/collections/Users')
+    const { leavePreviewAfterLogout } = await import('@/lib/preview/leave')
+    expect(Users.hooks?.afterLogout).toContain(leavePreviewAfterLogout)
+  })
+})
