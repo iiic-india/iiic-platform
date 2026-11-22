@@ -16,6 +16,7 @@ import * as migration_20261120_213852_page_section_anchor from './20261120_21385
 import * as migration_20261121_094426_review_fixes from './20261121_094426_review_fixes';
 import * as migration_20261121_105711_facts_source_page_copy from './20261121_105711_facts_source_page_copy';
 import * as migration_20261121_185417_redirects_and_missing_pages from './20261121_185417_redirects_and_missing_pages';
+import * as migration_20261122_082807_trust_layer from './20261122_082807_trust_layer';
 
 export const migrations = [
   {
@@ -106,6 +107,11 @@ export const migrations = [
   {
     up: migration_20261121_185417_redirects_and_missing_pages.up,
     down: migration_20261121_185417_redirects_and_missing_pages.down,
-    name: '20261121_185417_redirects_and_missing_pages'
+    name: '20261121_185417_redirects_and_missing_pages',
+  },
+  {
+    up: migration_20261122_082807_trust_layer.up,
+    down: migration_20261122_082807_trust_layer.down,
+    name: '20261122_082807_trust_layer'
   },
 ];
