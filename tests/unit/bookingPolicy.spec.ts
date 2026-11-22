@@ -67,7 +67,8 @@ const SERVER_ONLY = {
 
 const PRACTITIONER_OWN = {
   read: row({ owner: 'all', staff: 'none', operator: 'all', practitioner: 'own' }),
-  create: row({ owner: 'all', staff: 'none', operator: 'all' }),
+  // A practitioner's new entry is held to their own profile by the collection's hook.
+  create: row({ owner: 'all', staff: 'none', operator: 'all', practitioner: 'all' }),
   update: row({ owner: 'all', staff: 'none', operator: 'all', practitioner: 'own' }),
   delete: row({ owner: 'all', staff: 'none', operator: 'all', practitioner: 'own' }),
 }

@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { addHours } from 'date-fns'
 import { commitTransaction, initTransaction, killTransaction, type PayloadRequest } from 'payload'
 
+import { emit } from '@/lib/booking/emit'
 import type { Interval } from '@/lib/booking/types'
 import { err, ok, type Result } from '@/lib/result'
 import { readLegalInformation } from '@/lib/settings/source'
@@ -351,6 +352,8 @@ async function replaceBlocks(
         req,
       })
     }
+    // B14's domain event, with the change and only when the busy times moved (docs/16 §9).
+    if (stale.length || wanted.size) await emit(req, { name: 'calendar.changed', practitionerId })
     if (owned) await commitTransaction(req)
   } catch (error) {
     if (owned) await killTransaction(req)

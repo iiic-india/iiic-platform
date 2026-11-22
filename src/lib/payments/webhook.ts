@@ -42,9 +42,9 @@ import type { ParsedGatewayEvent } from './webhookEvent'
  * A capture confirms the booking through the booking module's ConfirmBooking. When the hold had
  * lapsed and someone else holds the time now, the platform asks for a full refund in its own
  * name instead (B10), the event is flagged `slot-taken` and `booking.slotLost` is emitted. The
- * time is asked about first, in this transaction: a write the exclusion constraint refuses makes
- * Payload roll the whole transaction back, so the constraint is left to settle only a true race,
- * whose loser is retried and finds the time taken. The refund is sent to the gateway after this
+ * time is asked about first, in this transaction, and the constraint settles only a true race:
+ * ConfirmBooking's write runs in a savepoint, so the loser gets `slot-taken` with this
+ * transaction still open and is refunded in it. The refund is sent to the gateway after this
  * transaction commits (`refundsToSend`), never inside it.
  *
  * Logs hold the event's type and outcome, never its body.
@@ -117,9 +117,10 @@ export function makeProcessGatewayEvent(deps: PaymentsDeps) {
         ? err({ code: 'slot-taken' })
         : await deps.confirmBooking(req, { bookingId: booking.id, cause: 'paymentCaptured' })
     if (!(await inLiveTransaction(req))) {
-      // Someone took the time between the question and the write, and the constraint refused it;
-      // Payload has rolled the transaction back. Thrown, so the event is retried, and the retry
-      // finds the time taken above.
+      // A safety net: ConfirmBooking writes inside a savepoint, so the constraint's refusal of a
+      // true race answers `slot-taken` with this transaction still open. Should a write ever end
+      // the transaction, the event is thrown back to be retried, and the retry finds the time
+      // taken above.
       throw new Error(
         'The booking’s confirmation ended the transaction; the event will be retried.',
       )

@@ -2,8 +2,8 @@ import { sql } from '@payloadcms/db-postgres'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { confirmBooking } from '@/lib/booking/confirm'
 import type { DomainEvent } from '@/lib/booking/events'
-import type { ConfirmBooking } from '@/lib/booking/operations'
 import type { PaymentsDeps } from '@/lib/payments/deps'
 import { FakeGateway } from '@/lib/payments/fakeGateway'
 import { makePayments } from '@/lib/payments/service'
@@ -27,9 +27,9 @@ vi.mock('server-only', () => ({}))
 // once under the unique (gateway, event_id) index, a replay and a concurrent duplicate changing
 // nothing, a processing failure rolling the claim back, the late payment for a taken slot
 // refunded (B10), the refund threshold and the owner's approval, the price history, the poll and
-// B11. The gateway is the fake, which signs as Razorpay does; the booking module is a stand-in
-// that confirms as ConfirmBooking does (builder A's is joined at merge). Everything is obviously
-// fake and removed at the end; settings are put back as they were.
+// B11. The gateway is the fake, which signs as Razorpay does; bookings are confirmed by the
+// booking module's own ConfirmBooking, under its savepoint guard. Everything is obviously fake and
+// removed at the end, the calendar jobs its confirmations queue included; settings are put back.
 
 let payload: Payload
 const TAG = 'int.payments'
@@ -43,19 +43,6 @@ let savedSettings: Pick<PlatformSettings, 'flags' | 'money'>
 
 const gateway = new FakeGateway('fake-webhook-secret-for-int-tests-only')
 const emitted: DomainEvent[] = []
-
-// As ConfirmBooking does for a paid hold: the one way into `confirmed`, under the constraint.
-const confirmBooking: ConfirmBooking = async (req, { bookingId }) =>
-  ok(
-    await req.payload.update({
-      collection: 'bookings',
-      id: bookingId,
-      data: { status: 'confirmed' },
-      overrideAccess: true,
-      depth: 0,
-      req,
-    }),
-  )
 
 const deps: PaymentsDeps = {
   gateway: () => ok(gateway),
@@ -82,6 +69,11 @@ async function removeTestData() {
     depth: 0,
   })
   const bookingIds = bookings.map((booking) => booking.id)
+  for (const id of bookingIds) {
+    await payload.db.drizzle.execute(
+      sql`DELETE FROM "payload_jobs" WHERE "input"->>'bookingId' = ${String(id)}`,
+    )
+  }
   await payload.delete({ collection: 'gateway-events', where: { eventId: { like: 'fake' } } })
   if (bookingIds.length) {
     await payload.delete({ collection: 'refunds', where: { booking: { in: bookingIds } } })
@@ -417,6 +409,45 @@ describe('two people paying for one time (B10)', () => {
     })
     const parsed = parseRazorpayEvent(sentEvent.rawBody, sentEvent.eventId)
     expect(parsed.ok && (await process(parsed.value)).outcome).toBe('ignored')
+  })
+  it('lets the constraint settle a true race: two lapsed holds for one time, both paid at once', async () => {
+    const first = await checkoutFor(460)
+    await payload.update({
+      collection: 'bookings',
+      id: first.booking.id,
+      data: { status: 'expired' },
+    })
+    const second = await checkoutFor(460)
+    await payload.update({
+      collection: 'bookings',
+      id: second.booking.id,
+      data: { status: 'expired' },
+    })
+    const results = await Promise.all([process(paid(first.orderId)), process(paid(second.orderId))])
+    expect(results.map((result) => result.outcome).sort()).toEqual(['flagged', 'processed'])
+
+    const statuses = await Promise.all(
+      [first, second].map(async ({ booking }) => (await reread('bookings', booking.id)).status),
+    )
+    expect(statuses.filter((status) => status === 'confirmed')).toHaveLength(1)
+    const loser = statuses[0] === 'confirmed' ? second : first
+    const loserPayment = await paymentOf(loser.booking.id)
+    expect(loserPayment.status).toBe('captured')
+    const { docs } = await payload.find({
+      collection: 'refunds',
+      where: { payment: { equals: loserPayment.id } },
+      depth: 0,
+    })
+    expect(docs).toHaveLength(1)
+    expect(docs[0]).toMatchObject({
+      status: 'approved',
+      reason: 'slotTaken',
+      amountPaise: 50_000,
+      idempotencyKey: `slotTaken:${loserPayment.id}`,
+    })
+    const sent = await payments.sendRefund(payload, (docs[0] as Refund).id)
+    expect(sent.ok && sent.value.status).toBe('processed')
+    expect((await reread('payments', loserPayment.id)).status).toBe('refunded')
   })
 })
 

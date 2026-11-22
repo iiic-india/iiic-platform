@@ -215,17 +215,17 @@ export const POLICY = {
     delete: {},
   },
   // Working hours and their exceptions (docs/05, Calendar): the office keeps everyone's, a
-  // practitioner changes their own. Adding one stays with the office until the collection checks
-  // that a practitioner adds hours to their own profile only (docs/16 §12).
+  // practitioner adds and changes their own. A practitioner's new entry is held to their own
+  // profile by the collection's hook (src/lib/booking/availabilityHooks.ts, docs/16 §12).
   availabilityRules: {
     read: { roles: ['owner', 'operator'], ownPractitioner: true },
-    create: { roles: ['owner', 'operator'] },
+    create: { roles: ['owner', 'operator', 'practitioner'] },
     update: { roles: ['owner', 'operator'], ownPractitioner: true },
     delete: { roles: ['owner', 'operator'], ownPractitioner: true },
   },
   availabilityExceptions: {
     read: { roles: ['owner', 'operator'], ownPractitioner: true },
-    create: { roles: ['owner', 'operator'] },
+    create: { roles: ['owner', 'operator', 'practitioner'] },
     update: { roles: ['owner', 'operator'], ownPractitioner: true },
     delete: { roles: ['owner', 'operator'], ownPractitioner: true },
   },
