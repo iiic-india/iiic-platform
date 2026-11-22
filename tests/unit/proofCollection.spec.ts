@@ -79,7 +79,7 @@ const APPROVED = {
     result: 'passes',
     tests: Object.fromEntries(SCREENING_TESTS.map(({ name }) => [name, true])),
   },
-  placements: [],
+  placements: [] as { page: string; section: string }[],
 }
 
 beforeEach(() => {

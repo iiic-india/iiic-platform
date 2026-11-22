@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { faqsFor, metadataOf, PageJsonLd } from '@/components/blocks/PageAt'
+import { faqsFor, metadataOf, PageJsonLd, voicesFor } from '@/components/blocks/PageAt'
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { getPage } from '@/lib/content/pages'
 import { PAGE_SLUG } from '@/lib/content/slug'
@@ -46,6 +46,7 @@ export default async function CmsPage({ params }: Props) {
         slug={found.slug}
         legal={await legalInformationFor(found.page.layout)}
         faqs={faqs}
+        voices={await voicesFor(found.slug)}
       />
     </>
   )
