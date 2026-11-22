@@ -40,7 +40,8 @@ test.describe('/search', () => {
   test('says plainly when nothing matches, and offers the main pages', async ({ page }) => {
     const response = await page.goto('/search?q=zzqqxxnothing')
     expect(response?.status()).toBe(200)
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText(
+    // Inside the page: the footer's column titles are second-level headings too.
+    await expect(page.locator('#main').getByRole('heading', { level: 2 })).toHaveText(
       `${SEARCH_COPY.nothing} “zzqqxxnothing”`,
     )
     const links = page.getByRole('navigation', { name: SEARCH_COPY.doors }).getByRole('link')
@@ -81,19 +82,10 @@ test.describe('/search without JavaScript', () => {
     await expect(page.getByRole('region', { name: 'Pages' })).toBeVisible()
   })
 
-  test('the 404’s “Where were you headed?” searches too', async ({ page }) => {
-    await page.goto('/no-such-page')
-    await page.getByRole('searchbox', { name: NOT_FOUND_COPY.whereHeaded }).fill('zzqqxxnothing')
-    await page.getByRole('searchbox', { name: NOT_FOUND_COPY.whereHeaded }).press('Enter')
-    await expect(page).toHaveURL(/\/search\?q=zzqqxxnothing$/)
-    await expect(page.getByRole('heading', { level: 2 })).toContainText('zzqqxxnothing')
-  })
-
-  test('the 404’s line still takes words', async ({ page }) => {
-    await page.goto('/no-such-page')
-    await lineField(page).fill('Fake words written without a script')
-    await expect(lineField(page)).toHaveValue('Fake words written without a script')
-  })
+  // The 404 is not tried here. Next.js answers a 404 raised while a page renders per request
+  // (D-42) with an empty document that the page's script fills, so without JavaScript the 404
+  // draws nothing, as it did before this page existed (docs/11 §5.1). Its search and its line
+  // are tested with the script on, below.
 })
 
 test.describe('the 404', () => {
@@ -134,6 +126,22 @@ test.describe('the 404', () => {
     await expect(page.locator('#scope')).toContainText('not an emergency service')
   })
 
+  test('its “Where were you headed?” searches the site', async ({ page }) => {
+    await page.goto('/no-such-page')
+    await page.getByRole('searchbox', { name: NOT_FOUND_COPY.whereHeaded }).fill('zzqqxxnothing')
+    await page.getByRole('searchbox', { name: NOT_FOUND_COPY.whereHeaded }).press('Enter')
+    await expect(page).toHaveURL(/\/search\?q=zzqqxxnothing$/)
+    await expect(page.locator('#main').getByRole('heading', { level: 2 })).toContainText(
+      'zzqqxxnothing',
+    )
+  })
+
+  test('its line takes words', async ({ page }) => {
+    await page.goto('/no-such-page')
+    await lineField(page).fill('Fake words')
+    await expect(lineField(page)).toHaveValue('Fake words')
+  })
+
   test('takes the keyboard from the line to the actions, the search and the links', async ({
     page,
     isMobile,
@@ -145,7 +153,10 @@ test.describe('the 404', () => {
     await lineField(page).focus()
     await page.keyboard.type('A fake line')
     await page.keyboard.press('Tab')
-    await expect(page.getByRole('link', { name: NOT_FOUND_COPY.findYourPath })).toBeFocused()
+    // The page's own action: the header and the footer carry a link of the same name.
+    await expect(
+      page.locator('#main').getByRole('link', { name: NOT_FOUND_COPY.findYourPath }),
+    ).toBeFocused()
     await page.keyboard.press('Tab')
     // "Take the line with you", where the browser offers a clipboard.
     const take = page.getByRole('button', { name: NOT_FOUND_COPY.takeTheLine })
