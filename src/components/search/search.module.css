@@ -1,0 +1,75 @@
+/* Site search (docs/11 §5.3): the field, and the results grouped by kind. The kit's classes do
+   the work; these add spacing and the result list, with no colour of their own beyond the kit's
+   roles (CLAUDE.md, non-negotiable 2). */
+
+.page {
+  padding-top: 48px;
+  padding-bottom: 80px;
+}
+
+.page h1 {
+  margin: 0 0 24px;
+}
+
+.form {
+  margin: 0 0 32px;
+}
+
+/* The field and its button side by side; on a narrow phone the button goes under the field. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.field {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.summary {
+  margin: 0 0 8px;
+  color: var(--iiic-text-muted);
+}
+
+.group {
+  margin-top: 40px;
+}
+
+.groupHeading {
+  margin: 0 0 16px;
+}
+
+.results {
+  display: grid;
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-size: var(--iiic-text-h3);
+  overflow-wrap: anywhere;
+}
+
+.snippet {
+  margin: 0;
+  max-width: var(--iiic-measure);
+}
+
+.address {
+  margin: 4px 0 0;
+  color: var(--iiic-text-muted);
+  font-size: var(--iiic-text-sm);
+  overflow-wrap: anywhere;
+}
+
+.nothing {
+  margin: 40px 0 12px;
+}
+
+.note {
+  margin: 0 0 24px;
+}

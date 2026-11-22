@@ -104,11 +104,13 @@ const KNOWN_TYPES = [
   'Course',
   'DefinedTerm',
   'DefinedTermSet',
+  'EntryPoint',
   'ListItem',
   'LocalBusiness',
   'OpeningHoursSpecification',
   'Person',
   'PostalAddress',
+  'SearchAction',
   'Service',
   'WebPage',
   'WebSite',
@@ -413,7 +415,7 @@ describe('the business (D-62, D-63)', () => {
 })
 
 describe('the site and the founder (D-63, D-64)', () => {
-  it('names the site in full on the home page, with no search action until /search exists', () => {
+  it('names the site in full on the home page, with its search at /search', () => {
     expect(one(graphOf('/'), 'WebSite')).toEqual({
       '@type': 'WebSite',
       '@id': `${ORIGIN}/#website`,
@@ -422,6 +424,12 @@ describe('the site and the founder (D-63, D-64)', () => {
       url: `${ORIGIN}/`,
       inLanguage: 'en-IN',
       publisher: { '@id': `${ORIGIN}/#organization` },
+      // The address the site's search form sends (src/components/search/SearchForm.tsx).
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: { '@type': 'EntryPoint', urlTemplate: `${ORIGIN}/search?q={search_term_string}` },
+        'query-input': 'required name=search_term_string',
+      },
     })
     expect(one(graphOf('/'), 'WebPage').about).toEqual({ '@id': `${ORIGIN}/#organization` })
   })

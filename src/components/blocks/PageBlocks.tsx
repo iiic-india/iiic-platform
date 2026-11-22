@@ -54,7 +54,7 @@ import { renderText } from './text'
  */
 
 /** Marks a block whose wording IIIC has not approved yet (I-41). It goes when the copy is approved. */
-function CandidateMark({ status }: { status?: 'approved' | 'candidate' | null }) {
+export function CandidateMark({ status }: { status?: 'approved' | 'candidate' | null }) {
   if (status !== 'candidate') return null
   return (
     <div className={styles.candidate}>
