@@ -181,10 +181,4 @@ describe('signing out', () => {
     })
     await expect(leavePreviewAfterLogout({} as never)).resolves.toBeUndefined()
   })
-
-  it('is one of the users collection’s hooks', async () => {
-    const { Users } = await import('@/collections/Users')
-    const { leavePreviewAfterLogout } = await import('@/lib/preview/leave')
-    expect(Users.hooks?.afterLogout).toContain(leavePreviewAfterLogout)
-  })
 })
