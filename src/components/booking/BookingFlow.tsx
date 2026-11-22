@@ -9,7 +9,7 @@ import { dayLong, whenOf } from '@/lib/bookingFlow/format'
 import { consentsOffered, suggestEmail, type FlowType } from '@/lib/bookingFlow/options'
 import { formatRate, formatRupees, reviewFor } from '@/lib/bookingFlow/review'
 
-import { FLOW_COPY, STEP_NAMES } from './copy'
+import { errorMessage, FLOW_COPY, STEP_NAMES } from './copy'
 import { ErrorSummary } from './ErrorSummary'
 import { Stepper } from './Stepper'
 import { TimePicker, type SlotDays } from './TimePicker'
@@ -281,10 +281,10 @@ export function BookingFlow({
         setErrors(answer.error.fields)
       } else {
         setErrors([])
-        setProblem(FLOW_COPY.errors[answer.error.code] ?? FLOW_COPY.errors.failed)
+        setProblem(errorMessage(answer.error.code))
       }
     } catch {
-      setProblem(FLOW_COPY.errors.failed)
+      setProblem(errorMessage('failed'))
     }
     setSending(false)
   }
@@ -297,9 +297,7 @@ export function BookingFlow({
       : (service?.format ?? null)
   const chooseReady = isInfo
     ? Boolean(event && !event.full)
-    : Boolean(
-        service && option && practitionerId && (service.format !== 'both' || format !== null),
-      )
+    : Boolean(service && option && practitionerId && (service.format !== 'both' || format !== null))
 
   if (nothing) {
     return (

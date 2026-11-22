@@ -136,9 +136,16 @@ export function parseDetails(
         field: issue.path.join('.') || 'type',
         message: issue.message,
       }))
-  const given = raw as
-    { ageBand?: unknown; guardian?: unknown; consents?: Record<string, unknown> } | null
-  if (given?.ageBand === 'under18' && !isTick(given.guardian) && (raw as { type?: unknown }).type === 'session') {
+  const given = raw as {
+    ageBand?: unknown
+    guardian?: unknown
+    consents?: Record<string, unknown>
+  } | null
+  if (
+    given?.ageBand === 'under18' &&
+    !isTick(given.guardian) &&
+    (raw as { type?: unknown }).type === 'session'
+  ) {
     errors.push({ field: 'guardian', message: DETAIL_MESSAGES.guardian })
   }
   if (!isTick(given?.consents?.bookingCommunications)) {

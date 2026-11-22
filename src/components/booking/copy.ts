@@ -139,6 +139,13 @@ export const FLOW_COPY = {
   } as Record<string, string>,
 } as const
 
+const FAILED = 'Something went wrong on our side. Nothing was changed. Please try again.'
+
+/** What the person reads for an error code the server answered with. */
+export function errorMessage(code: string): string {
+  return FLOW_COPY.errors[code] ?? FAILED
+}
+
 export const PAY_COPY = {
   heading: 'Pay for your session',
   held: (time: string) => `Your time is held for ${time}.`,
@@ -181,7 +188,8 @@ export const CONFIRMED_COPY = {
   with: 'With',
   online: 'Online. The link comes in your confirmation.',
   office: 'At the office. The address comes in your confirmation.',
-  addToCalendar: 'Your confirmation email carries the calendar invitation.',
+  addToCalendar: 'Add to your calendar (.ics)',
+  unknown: 'This address does not open a booking. Check the link in your confirmation message.',
   manage: 'Change or cancel this booking',
   manageHelp: 'Keep this link private: anyone with it can change your booking.',
   notYours:
