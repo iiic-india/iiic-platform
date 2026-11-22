@@ -64,6 +64,8 @@ vi.mock('@/lib/content/pages', () => {
   const getPage = vi.fn()
   return { getPage, getPageToShow: (slug: string) => getPage(slug) }
 })
+// No article is published: the home page shows no Journal section (tests/unit/journalTeaser.spec.tsx).
+vi.mock('@/lib/journal/posts', () => ({ latestPosts: vi.fn(async () => []) }))
 // The legal information comes from the settings (tests/unit/settingsLegal.spec.tsx); the routes'
 // metadata and structure do not depend on it.
 vi.mock('@/lib/settings/read', () => ({ legalInformationFor: async () => undefined }))

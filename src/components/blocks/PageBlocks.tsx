@@ -4,6 +4,7 @@ import experience from '@/components/experience/experience.module.css'
 import { FlipLines } from '@/components/experience/FlipLines'
 import { InsightNav } from '@/components/experience/InsightNav'
 import { RevealChapters } from '@/components/experience/RevealChapters'
+import { ArticleMeta } from '@/components/journal/ArticleMeta'
 import { Todo } from '@/components/Todo'
 import {
   CERTIFICATE_AWAITS,
@@ -21,6 +22,8 @@ import {
   SCOPE_STATEMENT,
 } from '@/lib/counselling/scope'
 import { type Devices, devicesAt } from '@/lib/experience/narrative'
+import { articlePath, JOURNAL_PATH } from '@/lib/journal/addresses'
+import type { PostSummary } from '@/lib/journal/posts'
 import {
   LEGAL_INFORMATION_COLUMNS,
   LEGAL_INFORMATION_HEADING,
@@ -147,14 +150,27 @@ function Hero({ block, draft }: { block: HeroBlock; draft: boolean }) {
   )
 }
 
-function Doors({ block }: { block: DoorsBlock }) {
+/**
+ * What an item that reveals once carries (docs/11 §4, §7): the reveal's attribute, empty as
+ * drawn, so that nothing is held back until the script runs (RevealChapters.tsx).
+ */
+function revealing(reveal: boolean): { 'data-reveal'?: '' } {
+  return reveal ? { 'data-reveal': '' } : {}
+}
+
+function Doors({ block, reveal }: { block: DoorsBlock; reveal: boolean }) {
   return (
     <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} intro={block.intro} />
       <div className="iiic-doors">
         {block.doors.map((door) => (
-          <Link className="iiic-card iiic-card-door" href={door.href} key={door.id ?? door.href}>
+          <Link
+            className={`iiic-card iiic-card-door${reveal ? ` ${experience.revealItem}` : ''}`}
+            href={door.href}
+            key={door.id ?? door.href}
+            {...revealing(reveal)}
+          >
             {door.glyph ? (
               <div className="iiic-door-glyph" aria-hidden="true">
                 {door.glyph}
@@ -195,7 +211,7 @@ function Statement({ block }: { block: StatementBlock }) {
   )
 }
 
-function Steps({ block }: { block: StepsBlock }) {
+function Steps({ block, reveal }: { block: StepsBlock; reveal: boolean }) {
   return (
     <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
@@ -205,7 +221,11 @@ function Steps({ block }: { block: StepsBlock }) {
       ) : null}
       <ol className="iiic-steps">
         {block.steps.map((step, index) => (
-          <li key={step.id ?? index}>
+          <li
+            className={reveal ? experience.revealItem : undefined}
+            key={step.id ?? index}
+            {...revealing(reveal)}
+          >
             <strong>{renderText(step.title)}</strong>
             {step.text ? <p>{renderText(step.text)}</p> : null}
           </li>
@@ -399,6 +419,47 @@ function Cards({ block }: { block: CardsBlock }) {
             </article>
           )
         })}
+      </div>
+    </section>
+  )
+}
+
+/**
+ * The heading of the home page's Journal section (docs/content/copy-architecture.md §4.1, row
+ * 8): a candidate line, changed from the copy system's (I-41), without "every day" (I-19).
+ */
+export const JOURNAL_TEASER_HEADING = 'A little clarity'
+
+/** The link from that section to the whole Journal, in the words its topic list uses. */
+export const JOURNAL_TEASER_LINK = 'All articles'
+
+/**
+ * The newest published articles, on the home page before its closing band (docs/11 §4, row 8:
+ * nothing moves). Drawn only while at least one article is published; each card is a door to
+ * its article, with its first topic, its excerpt, its date and its reading time.
+ */
+function JournalTeaser({ posts }: { posts: readonly PostSummary[] }) {
+  const span = cardSpan(posts.length)
+  return (
+    <section className="iiic-section" aria-labelledby="journal-teaser">
+      <CandidateMark status="candidate" />
+      <SectionHead heading={JOURNAL_TEASER_HEADING} headingId="journal-teaser" />
+      <div className="iiic-grid">
+        {posts.map((post) => (
+          <article className={`iiic-card ${span}`} key={post.id}>
+            {post.topics[0] ? <div className="iiic-kicker">{post.topics[0].name}</div> : null}
+            <h3>
+              <Link href={articlePath(post.slug)}>{post.title}</Link>
+            </h3>
+            <p>{post.excerpt}</p>
+            <ArticleMeta publishedAt={post.publishedAt} readingTime={post.readingTime} />
+          </article>
+        ))}
+      </div>
+      <div className={`iiic-row ${styles.actions}`}>
+        <Link className="iiic-btn iiic-btn-secondary" href={JOURNAL_PATH}>
+          {JOURNAL_TEASER_LINK}
+        </Link>
       </div>
     </section>
   )
@@ -676,11 +737,11 @@ function Section({
     case 'hero':
       return <Hero block={block} draft={draft} />
     case 'doors':
-      return <Doors block={block} />
+      return <Doors block={block} reveal={devices.reveals === true} />
     case 'statement':
       return <Statement block={block} />
     case 'steps':
-      return <Steps block={block} />
+      return <Steps block={block} reveal={devices.reveals === true} />
     case 'comparison':
       return <Comparison block={block} flip={devices.flip === true} index={index} />
     case 'points':
@@ -724,12 +785,15 @@ export function RenderBlocks({
   slug,
   legal = NO_LEGAL_INFORMATION,
   faqs = [],
+  journal = [],
 }: {
   layout: PageContent['layout']
   legalReview?: PageContent['legalReview']
   slug?: string
   legal?: LegalInformation
   faqs?: readonly FaqItem[]
+  /** The newest published articles, which the home page shows before its band (docs/11 §4). */
+  journal?: readonly PostSummary[]
 }) {
   const devices = devicesAt(slug)
   const band = layout.find((block): block is BandBlock => block.blockType === 'band')
@@ -759,7 +823,8 @@ export function RenderBlocks({
             section
           )
         })}
-        {devices.chapters ? <RevealChapters /> : null}
+        {journal.length > 0 ? <JournalTeaser posts={journal} /> : null}
+        {devices.chapters || devices.reveals ? <RevealChapters /> : null}
         {band?.copyStatus === 'candidate' ? (
           <div className={styles.band}>
             <CandidateMark status={band.copyStatus} />
