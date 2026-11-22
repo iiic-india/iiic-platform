@@ -142,3 +142,57 @@ Legal information (proprietor's legal name, trade name, address, GSTIN or regist
 - Session timeout after 12 hours; re-authentication for exports, role changes and erasure.
 
 The implementation approach (which admin framework, which screens are generated and which are custom) is decided in `07-stack-and-integrations.md`.
+
+## The component stack (proposed)
+
+Proposed on 22 November 2026, after IIIC's owner asked for the console to be built from "the best components available". It becomes a decision when IIIC confirms it in `decisions.md`. The comparison, the sources, what was rejected and what could not be checked are in `research/admin-ui-kit-2026-11.md`. Versions are the latest on that date, pinned exactly. Every library is MIT, ISC or Apache-2.0; nothing is paid for.
+
+| Job | Library | Why |
+| --- | --- | --- |
+| Shell, record editing, toasts | Payload's own UI 3.94.0: template, drawers, confirm modal, `toast` | It is already loaded, and it already passes the admin's CSP and axe tests. |
+| Styling | Tailwind CSS 4.3.5, in the admin only: prefix `tw`, no Preflight | The components below are written in its classes; the prefix keeps them off Payload's own classes and variables. |
+| Primitives | shadcn/ui components on Base UI 1.9.0, copied into `src/components/admin/ui` | Keyboard and focus behaviour comes from a maintained library; IIIC owns the markup and restyles it to the kit. |
+| Charts | Recharts 3.11.0 through shadcn's Chart wrapper | SVG coloured by the kit's variables, keyboard access on by default, still under reduced motion. |
+| Tables | TanStack Table 9.3.1 with Dice UI's data table; state in the URL through nuqs 2.10.3 | A real `<table>`, paged on the server; a filtered list is a link that can be saved. |
+| Pipeline board | Dice UI Kanban on dnd-kit core 6.3.1 and sortable 10.0.0 | Pointer, touch and keyboard dragging with announcements, on the copy of dnd-kit that Payload already ships. |
+| Calendar | FullCalendar 7.1.5, its MIT features, through its shadcn registry | Week and day grids, drag, resize and Asia/Kolkata are free; it stays light and takes the console's colours. |
+| Global search | cmdk 1.1.1 through shadcn's Command | The palette shadcn itself ships; results come from a server function that checks the role. |
+| Dates and times | react-day-picker 10.0.2; open slots from the slot engine; the browser's time field | One primitives family, and a phone shows its own time wheel. |
+| Overlays | Base UI dialog, alert dialog, popover, menu, tooltip, drawer | One focus and layering model; the drawer is the phone sheet. |
+| Timeline, stat tiles, empty states | Dice UI Timeline; shadcn Card, Item, Empty | An ordered list and plain cards: a figure is text first. |
+| Motion | CSS transitions on the kit's `--iiic-motion` | Nothing to download, and the kit already sets it to 0 ms under reduced motion. |
+
+Bklit UI, the owner's example, is not in the stack: it has no versions to pin, in effect one maintainer, and no keyboard access to a chart's points. It stays as the visual reference for chart tooltips and loading states, and is re-checked in May 2027.
+
+**Setup, in order**
+
+1. Record the decision. Tailwind is new to the project and stays out of the public site.
+2. Add `tailwindcss`, `@tailwindcss/postcss` and `postcss`, pinned, with a `postcss.config.mjs` that names only the Tailwind plugin.
+3. Write `src/app/(payload)/console.css`: the layer order first (`payload-default, payload, theme, base, components, utilities`), then Tailwind's theme and utilities with `prefix(tw)`, classes scanned only in `src/components/admin`, no Preflight. Import the kit's `01-tokens.css` and `02-semantic.css` only. Set sizes in px from the kit's tokens: Payload's root font size is 13 px (12 px at 1024 px and below), which would shrink Tailwind's `rem` sizes.
+4. Run `shadcn init` on Base UI with the `tw` prefix and `aliases.ui` set to `@/components/admin/ui`. Map its variables to the kit's roles (surface, text, accent, rule, danger, focus). Delete the `.dark` block and the base-layer rules for `*` and `body`.
+5. Build the console shell that every view renders: the user, two-factor and role check first, as `PlaceholdersView` does; then Payload's template, the console wrapper with the kit's fonts, Base UI's `CSPProvider` with the request's nonce, and a container for popups.
+6. Add the guards (the rules below), then build the proof: the Pipeline board in M4. It exercises the styling, a copied registry component, a drag with a keyboard path, an instant update that goes back if the server refuses, a Payload drawer for the lead, and a phone layout. Today follows in M5.
+
+**Rules**
+
+- A table of the same figures beside every chart, with a caption.
+- A keyboard path for every drag: "Move to stage" on a card, the Reschedule dialog on a booking. It is also the path for one finger and for a phone.
+- Motion only where something changes place, about 150 ms, none under reduced motion, none on session-note views. Figures do not count up.
+- Light only: no `.dark` block, no `dark:` class, the calendar never set to dark. Yellow sits on white, paper or its tints; a copied part with a dark fill is restyled.
+- Nothing of this reaches a public page: these packages are imported only under `src/components/admin` and `src/app/(payload)`, held by a lint rule and the Lighthouse resource summary.
+- Exact version pins. Copied registry code is recorded with its source and date, and reviewed as our own.
+- Every view and every server function checks the user and the role first. Search never reads session notes or Map answers.
+- The first view arrives with its data; lists page on the server. An instant update is shown only for what can be put back: never for money, erasure or publishing proof.
+- Empty states say what will appear and why; a failed load says so and is never drawn as zero.
+- Each screen has a phone layout of its own: one column, stacked rows for tables, 44 px targets, nothing that needs hover.
+
+**Risks to test first** (a one-day spike before M4)
+
+1. A production build on a Vercel preview: Tailwind's layers win over Payload's, and Payload's own screens are unchanged (its `.table`, `--color-blue-500`, `--font-mono`).
+2. The public pages' CSS and budgets are unchanged once the PostCSS config exists.
+3. The shadcn CLI writes `tw:` classes for its own, Dice UI's and FullCalendar's items, and the class-merging helper is set to the same prefix.
+4. Base UI popups sit above Payload's nav, and neither a popup nor a Payload drawer is opened from inside the other. No CSP violation on any view.
+5. A screen-reader pass on the board, one chart and the calendar, and a phone pass with one thumb.
+6. JavaScript per console screen is measured and written in the pull request; none was measured in the research.
+
+Still open for IIIC: chart and service colours (the kit has one accent, and yellow on white is 1.35:1), and whether the calendar needs a column per practitioner, which is a paid FullCalendar view.
