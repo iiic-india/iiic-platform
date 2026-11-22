@@ -1,6 +1,6 @@
 'use client'
 
-import { Scope } from '@/components/blocks/PageBlocks'
+import { Scope } from '@/components/blocks/Scope'
 import { ServerError } from '@/components/site/ServerError'
 
 /**

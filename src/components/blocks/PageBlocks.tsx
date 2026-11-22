@@ -13,13 +13,6 @@ import {
 import { LEGAL_REVIEW_AWAITS } from '@/lib/content/legalReview'
 import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
 import type { FaqItem, PageBlock, PageContent } from '@/lib/content/types'
-import {
-  CRISIS_HEADING,
-  CRISIS_LINES,
-  SCOPE_AWAITS,
-  SCOPE_HEADING,
-  SCOPE_STATEMENT,
-} from '@/lib/counselling/scope'
 import { type Devices, devicesAt } from '@/lib/experience/narrative'
 import {
   LEGAL_INFORMATION_COLUMNS,
@@ -44,6 +37,7 @@ import type {
 } from '@/payload-types'
 
 import styles from './blocks.module.css'
+import { Scope } from './Scope'
 import { renderText } from './text'
 
 /**
@@ -422,45 +416,6 @@ function FactList({ block }: { block: FactListBlock }) {
 }
 
 /**
- * The counselling scope statement and the crisis numbers (docs/08 §7), in the one wording
- * every counselling surface shares: the counselling page, whose hero links here by its id, and
- * the 404 on a counselling path (docs/11 §5.1, item 8). Until the lawyer fixes the wording it
- * is marked as a draft (I-22). Each number's link also names its line for a screen reader, so
- * that a list of the page's links still says which number is which.
- */
-export function Scope() {
-  return (
-    <section className="iiic-section" id="scope">
-      <DraftMark what="Draft wording" awaits={SCOPE_AWAITS} />
-      <SectionHead heading={SCOPE_HEADING} />
-      <div className="iiic-prose">
-        {SCOPE_STATEMENT.map((sentence) => (
-          <p key={sentence}>{sentence}</p>
-        ))}
-        <h3>{CRISIS_HEADING}</h3>
-        <ul>
-          {CRISIS_LINES.map((line) => (
-            <li key={line.label}>
-              {line.label}:{' '}
-              {line.numbers.map((number, index) => (
-                <span key={number}>
-                  {index > 0 ? ' or ' : null}
-                  <a className="iiic-link" href={telHref(number)}>
-                    {number}
-                    <span className="iiic-sr-only">, {line.label}</span>
-                  </a>
-                </span>
-              ))}
-              {line.note ? ` (${line.note})` : null}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  )
-}
-
-/**
  * What the certificate is and is not (docs/08 §7), in the one wording every certificate and
  * the course page share. Until the lawyer clears the wording it is marked as a draft (I-22).
  */
@@ -770,3 +725,5 @@ export function RenderBlocks({
     </>
   )
 }
+
+export { Scope }
