@@ -1,4 +1,5 @@
 import type { PageContent } from '@/lib/content/types'
+import { CONSULTANCY_SERVICES, TEAM_MAP } from '@/lib/site/consultancy'
 
 import { FOUNDERS_IIIC_LINES, FOUNDERS_STORY_ANCHOR, FOUNDERS_STORY_LABEL } from './founders'
 
@@ -31,12 +32,24 @@ export const ORGANISATIONS_IIIC_LINES = {
 } as const
 
 const LINES = ORGANISATIONS_IIIC_LINES
-// /book/call opens with the booking flow (M3) and /organisations/team-map with the Team Map page;
-// until then both lead to the 404 (NOT_BUILT_YET in tests/unit/starterPages.spec.ts).
-const BOOK_A_CALL = { label: 'Book a proposal call', href: '/book/call' }
+// /book/call opens with the booking flow (M3); until then it leads to the 404 (NOT_BUILT_YET in
+// tests/unit/starterPages.spec.ts).
+export const BOOK_A_CALL = { label: 'Book a proposal call', href: '/book/call' }
 /** What each service page will say, once IIIC supplies it (I-11). */
-const SERVICE_COPY =
+export const SERVICE_COPY =
   '[[TODO: the problem it solves, how the framework applies, what a client receives, I-11]]'
+/** The outcome band, from IIIC's diagram, which the consultancy's pages close on. */
+export const CONSULTANCY_BAND = {
+  blockType: 'band',
+  kicker: 'Leadership · Systems · Culture',
+  // [CS]
+  heading: 'Know the Founder. Then Grow the Empire.',
+  lead: LINES.sustainable,
+  sanskrit: 'आत्मानं विद्धि',
+  translation: 'Know thyself',
+  primary: BOOK_A_CALL,
+  copyStatus: 'candidate',
+} as const satisfies PageContent['layout'][number]
 
 export const ORGANISATIONS: PageContent = {
   // Search terms (D-65): management consultant Ahmedabad, business consultant Ahmedabad,
@@ -102,10 +115,13 @@ export const ORGANISATIONS: PageContent = {
         { title: 'People', text: LINES.people },
         { title: 'Processes', text: LINES.processes },
         { title: 'Culture', text: LINES.culture },
-        // The plan's three services, until IIIC settles the list (I-11).
-        { title: 'Organisation planning', text: SERVICE_COPY },
-        { title: 'Marketing and sales', text: SERVICE_COPY },
-        { title: 'Brand positioning', text: SERVICE_COPY },
+        // The plan's three services, until IIIC settles the list (I-11), each opening its page.
+        ...CONSULTANCY_SERVICES.map((service) => ({
+          title: service.name,
+          text: SERVICE_COPY,
+          href: `/${service.slug}`,
+          action: 'See the service',
+        })),
       ],
       copyStatus: 'candidate',
     },
@@ -116,7 +132,7 @@ export const ORGANISATIONS: PageContent = {
       paragraphs: [
         { text: '[[TODO: what happens, how long it takes, what the client gets, I-12]]' },
       ],
-      action: { label: 'Request a Team Map', href: '/organisations/team-map' },
+      action: { label: 'Request a Team Map', href: `/${TEAM_MAP.slug}` },
       copyStatus: 'candidate',
     },
     {
@@ -130,18 +146,7 @@ export const ORGANISATIONS: PageContent = {
       ],
       copyStatus: 'candidate',
     },
-    {
-      blockType: 'band',
-      // The outcome band, from IIIC's diagram.
-      kicker: 'Leadership · Systems · Culture',
-      // [CS]
-      heading: 'Know the Founder. Then Grow the Empire.',
-      lead: LINES.sustainable,
-      sanskrit: 'आत्मानं विद्धि',
-      translation: 'Know thyself',
-      primary: BOOK_A_CALL,
-      copyStatus: 'candidate',
-    },
+    CONSULTANCY_BAND,
   ],
   facts: [
     { statement: LINES.lead, source: 'description', checkedAt: '2026-11-20' },

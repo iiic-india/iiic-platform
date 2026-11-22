@@ -13,11 +13,14 @@ import { AnalyticsEvents } from './collections/AnalyticsEvents'
 import { AuditLog } from './collections/AuditLog'
 import { Consents } from './collections/Consents'
 import { ConsentVersions } from './collections/ConsentVersions'
+import { Faqs } from './collections/Faqs'
 import { Media } from './collections/Media'
 import { MissingPages } from './collections/MissingPages'
 import { Pages } from './collections/Pages'
 import { People } from './collections/People'
+import { Practitioners } from './collections/Practitioners'
 import { redirects } from './collections/Redirects'
+import { Services } from './collections/Services'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Users } from './collections/Users'
 import { Settings } from './globals/Settings'
@@ -106,8 +109,11 @@ export default buildConfig({
   collections: [
     Users,
     Pages,
+    Faqs,
     MissingPages,
     Media,
+    Practitioners,
+    Services,
     StaffRecoveryCodes,
     AuditLog,
     // The trust layer (docs/04): the one record of a person, the consent ledger and its notices,

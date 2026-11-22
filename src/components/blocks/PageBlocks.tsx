@@ -12,7 +12,7 @@ import {
 } from '@/lib/certificates/statement'
 import { LEGAL_REVIEW_AWAITS } from '@/lib/content/legalReview'
 import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
-import type { PageBlock, PageContent } from '@/lib/content/types'
+import type { FaqItem, PageBlock, PageContent } from '@/lib/content/types'
 import {
   CRISIS_HEADING,
   CRISIS_LINES,
@@ -35,6 +35,7 @@ import type {
   ComparisonBlock,
   DoorsBlock,
   FactListBlock,
+  FaqBlock,
   FounderNoteBlock,
   HeroBlock,
   PointsBlock,
@@ -598,6 +599,36 @@ function LegalInformationSection({ legal }: { legal: LegalInformation }) {
   )
 }
 
+/**
+ * The questions published for the page (Content → FAQs), in their order, as the kit's accordion:
+ * each opens without JavaScript, and its answer is a paragraph a line. With no question
+ * published the section is not drawn, and the page's structured data names none (D-62).
+ */
+function Faq({ block, faqs }: { block: FaqBlock; faqs: readonly FaqItem[] }) {
+  if (faqs.length === 0) return null
+  return (
+    <section className="iiic-section" id={block.anchor ?? undefined}>
+      <CandidateMark status={block.copyStatus} />
+      <SectionHead kicker={block.kicker} heading={block.heading} intro={block.intro} />
+      <div className={styles.faqs}>
+        {faqs.map((faq) => (
+          <details className="iiic-accordion" key={faq.id}>
+            <summary>{faq.question}</summary>
+            <div>
+              {faq.answer
+                .split('\n')
+                .filter((line) => line.trim() !== '')
+                .map((line, index) => (
+                  <p key={index}>{line}</p>
+                ))}
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 /** The one yellow band of a page. It spans the window, so it sits outside the page column. */
 function Band({ block, marked }: { block: BandBlock; marked: boolean }) {
   return (
@@ -631,6 +662,7 @@ function Section({
   devices,
   index,
   legal,
+  faqs,
 }: {
   block: Exclude<PageBlock, BandBlock>
   draft: boolean
@@ -638,6 +670,7 @@ function Section({
   /** The block's place on its page, which names what a device needs to name. */
   index: number
   legal: LegalInformation
+  faqs: readonly FaqItem[]
 }) {
   switch (block.blockType) {
     case 'hero':
@@ -671,6 +704,8 @@ function Section({
       return <Contact />
     case 'legal':
       return <LegalInformationSection legal={legal} />
+    case 'faq':
+      return <Faq block={block} faqs={faqs} />
   }
 }
 
@@ -680,18 +715,21 @@ function Section({
  * whether it is a narrative page and which devices it carries (docs/11 §3): on the founders'
  * page every section between the hero and the band is a chapter that reveals once. The legal
  * information section draws what the settings hold (the route reads it,
- * src/lib/settings/read.ts); without it, every detail is its placeholder.
+ * src/lib/settings/read.ts); without it, every detail is its placeholder. The questions section
+ * shows the questions given, which PageAt reads for the page (src/lib/content/faqs.ts).
  */
 export function RenderBlocks({
   layout,
   legalReview,
   slug,
   legal = NO_LEGAL_INFORMATION,
+  faqs = [],
 }: {
   layout: PageContent['layout']
   legalReview?: PageContent['legalReview']
   slug?: string
   legal?: LegalInformation
+  faqs?: readonly FaqItem[]
 }) {
   const devices = devicesAt(slug)
   const band = layout.find((block): block is BandBlock => block.blockType === 'band')
@@ -709,6 +747,7 @@ export function RenderBlocks({
               devices={devices}
               index={index}
               legal={legal}
+              faqs={faqs}
               key={block.id ?? index}
             />
           )

@@ -63,6 +63,8 @@ vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
 // The legal information comes from the settings (tests/unit/settingsLegal.spec.tsx); the routes'
 // metadata and structure do not depend on it.
 vi.mock('@/lib/settings/read', () => ({ legalInformationFor: async () => undefined }))
+// No question is published: the questions sections draw nothing.
+vi.mock('@/lib/content/faqs', () => ({ getFaqs: vi.fn(async () => []) }))
 vi.mock('next/headers', () => ({
   headers: async () => new Headers({ 'x-pathname': request.path }),
 }))
@@ -115,9 +117,11 @@ type Children = { children: ReactElement<Record<string, unknown>>[] }
 function expectDataThenBlocks(drawn: ReactElement, slug: string, page: PageContent) {
   const [data, blocks] = (drawn as ReactElement<Children>).props.children
   expect(data?.type).toBe(PageJsonLd)
-  expect(data?.props).toEqual({ slug, page })
+  // No question is published in this file's fake CMS, so a page shows none (D-62).
+  expect(data?.props).toEqual({ slug, page, faqs: [] })
   expect(blocks?.type).toBe(RenderBlocks)
   expect(blocks?.props.layout).toBe(page.layout)
+  expect(blocks?.props.faqs).toEqual([])
 }
 
 /** The pages the door routes draw through PageAt, each at its own slug. */

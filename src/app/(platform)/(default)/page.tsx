@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { metadataOf, PageJsonLd } from '@/components/blocks/PageAt'
+import { faqsFor, metadataOf, PageJsonLd } from '@/components/blocks/PageAt'
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { getPage } from '@/lib/content/pages'
 import { logMissingPage } from '@/lib/redirects/log'
@@ -26,13 +26,15 @@ export default async function HomePage() {
     await logMissingPage()
     notFound()
   }
+  const faqs = await faqsFor('home', page)
   return (
     <>
-      <PageJsonLd slug="home" page={page} />
+      <PageJsonLd slug="home" page={page} faqs={faqs} />
       <RenderBlocks
         layout={page.layout}
         slug="home"
         legal={await legalInformationFor(page.layout)}
+        faqs={faqs}
       />
     </>
   )

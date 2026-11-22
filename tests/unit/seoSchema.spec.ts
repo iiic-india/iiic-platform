@@ -531,7 +531,19 @@ describe('the nodes one page carries', () => {
   })
 
   it('every other page carries only itself and its breadcrumb', () => {
-    const withOwnNodes = ['/', '/about', '/framework', '/organisations', '/counselling', '/learn']
+    const withOwnNodes = [
+      '/',
+      '/about',
+      '/framework',
+      '/organisations',
+      // Each of the consultancy's offers, as a Service (tests/unit/consultancyPages.spec.tsx).
+      '/organisations/organisation-planning',
+      '/organisations/marketing-and-sales',
+      '/organisations/brand-positioning',
+      '/organisations/team-map',
+      '/counselling',
+      '/learn',
+    ]
     for (const page of PAGES) {
       if (withOwnNodes.includes(page.path)) continue
       expect(own(page.path), page.path).toHaveLength(0)
