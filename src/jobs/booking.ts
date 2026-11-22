@@ -26,4 +26,4 @@ export const expireHoldsTask: TaskConfig<{ input: object; output: { expired: num
   },
 }
 
-export const bookingTasks: TaskConfig[] = [expireHoldsTask as TaskConfig]
+export const bookingTasks = [expireHoldsTask]
