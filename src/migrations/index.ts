@@ -17,6 +17,7 @@ import * as migration_20261121_094426_review_fixes from './20261121_094426_revie
 import * as migration_20261121_105711_facts_source_page_copy from './20261121_105711_facts_source_page_copy';
 import * as migration_20261121_185417_redirects_and_missing_pages from './20261121_185417_redirects_and_missing_pages';
 import * as migration_20261122_082807_trust_layer from './20261122_082807_trust_layer';
+import * as migration_20261122_083110_services_practitioners_faqs from './20261122_083110_services_practitioners_faqs';
 
 export const migrations = [
   {
@@ -112,6 +113,11 @@ export const migrations = [
   {
     up: migration_20261122_082807_trust_layer.up,
     down: migration_20261122_082807_trust_layer.down,
-    name: '20261122_082807_trust_layer'
+    name: '20261122_082807_trust_layer',
+  },
+  {
+    up: migration_20261122_083110_services_practitioners_faqs.up,
+    down: migration_20261122_083110_services_practitioners_faqs.down,
+    name: '20261122_083110_services_practitioners_faqs'
   },
 ];
