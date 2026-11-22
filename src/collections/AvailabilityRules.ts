@@ -5,6 +5,7 @@ import { hasRole } from '@/access/roles'
 import { istDayField } from '@/fields/istDay'
 import { WEEKDAYS, workingSpans } from '@/fields/workingSpans'
 import { ownProfileOnly } from '@/lib/booking/availabilityHooks'
+import { bookableTimesHandler } from '@/lib/office/handlers'
 
 /** The last day comes on or after the first (days as YYYY-MM-DD compare as text). */
 const notBeforeFrom: TextFieldSingleValidation = (value, { siblingData }) => {
@@ -36,6 +37,9 @@ export const AvailabilityRules: CollectionConfig = {
   },
   // A practitioner keeps to their own profile (src/lib/booking/availabilityHooks.ts).
   hooks: { beforeChange: [ownProfileOnly] },
+  // The preview of bookable times (docs/05, Calendar; src/lib/office/handlers.ts): the office
+  // for anyone, a practitioner for their own profile, after the two-factor code.
+  endpoints: [{ path: '/bookable-times', method: 'get', handler: bookableTimesHandler }],
   indexes: [{ fields: ['practitioner', 'weekday'] }],
   fields: [
     {
