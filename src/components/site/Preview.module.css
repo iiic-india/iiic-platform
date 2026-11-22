@@ -1,0 +1,13 @@
+/* The preview notice (LivePreview.tsx): the kit's caution alert, on the page's paper, above the
+   header, for staff only. It takes no room from the page below it beyond its own line. */
+.notice {
+  margin: 0;
+  border-radius: 0;
+  border-right: 0;
+  border-left: 0;
+  border-top: 0;
+}
+
+.notice a {
+  font-weight: var(--iiic-weight-semibold);
+}

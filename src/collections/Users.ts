@@ -14,6 +14,7 @@ import { RESET_EMAIL_SUBJECT, resetEmailHtml } from '@/lib/auth/resetEmail'
 import { resetTwoFactor } from '@/lib/auth/resetTwoFactor'
 import { env } from '@/lib/env'
 import { mayCreateFirstOwner } from '@/lib/ownerSetup'
+import { leavePreviewAfterLogout } from '@/lib/preview/leave'
 
 /**
  * The first account ever created is the owner who sets everyone else up. On a production
@@ -175,6 +176,8 @@ export const Users: CollectionConfig = {
     beforeChange: [firstAccountIsOwner, keepAnActiveOwner],
     afterChange: [endSessionsOnDeactivation],
     beforeDelete: [deleteRecoveryCodes],
+    // Signing out leaves the live preview too (src/lib/preview/leave.ts).
+    afterLogout: [leavePreviewAfterLogout],
   },
   endpoints: [
     { path: '/recovery-codes', method: 'post', handler: createRecoveryCodes },

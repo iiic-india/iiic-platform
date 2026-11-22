@@ -63,7 +63,7 @@ describe('the narrative pages', () => {
     }
     expect(devicesAt('framework')).toEqual({ flip: true, stickyQuestion: true })
     expect(devicesAt('founders')).toEqual({ chapters: true })
-    expect(devicesAt('home')).toEqual({ flip: true })
+    expect(devicesAt('home')).toEqual({ flip: true, reveals: true })
     for (const slug of ['counselling', 'legal', 'constructor', undefined]) {
       expect(devicesAt(slug), String(slug)).toEqual({})
     }
@@ -83,9 +83,63 @@ describe('the narrative pages', () => {
     expect(FakeIntersectionObserver.all).toEqual([])
   })
 
-  it('draw nothing to flip or reveal on the home page while it has no comparison', () => {
+  it('draw nothing to flip on the home page while it has no comparison', () => {
     const { container } = render(<RenderBlocks layout={HOME.layout} slug="home" />)
-    expect(container.querySelector('[aria-pressed], [data-reveal]')).toBeNull()
+    expect(container.querySelector('[aria-pressed]')).toBeNull()
+  })
+})
+
+describe('the home page’s reveals (docs/11 §4, §7)', () => {
+  const REVEAL_ITEM = styles.revealItem ?? ''
+  const draw = (slug = 'home') =>
+    render(
+      <main>
+        <RenderBlocks layout={HOME.layout} slug={slug} />
+      </main>,
+    )
+
+  it('marks each door’s card and each step to reveal once, all drawn visible', () => {
+    const { container } = draw()
+    const items = [...container.querySelectorAll<HTMLElement>('[data-reveal]')]
+    const cards = [...container.querySelectorAll('.iiic-doors > .iiic-card')]
+    const steps = [...container.querySelectorAll('.iiic-steps > li')]
+    expect(cards.length).toBeGreaterThan(0)
+    expect(steps.length).toBeGreaterThan(0)
+    expect(items).toEqual([...cards, ...steps])
+    for (const item of items) {
+      expect(item.getAttribute('data-reveal')).toBe('')
+      expect(item.classList.contains(REVEAL_ITEM)).toBe(true)
+    }
+    // Nothing else moves: the hero, the facts, the founder's word and the band stay as they are.
+    expect(container.querySelector('.iiic-hero [data-reveal], .iiic-band[data-reveal]')).toBeNull()
+  })
+
+  it('holds back only what is wholly below the window, and shows it once in view', () => {
+    const { container } = draw()
+    const [observer] = FakeIntersectionObserver.all
+    expect(observer).toBeDefined()
+    const [first, below] = [...container.querySelectorAll<HTMLElement>('.iiic-steps > li')]
+    if (!first || !below || !observer) throw new Error('The home page has steps')
+    observer.report([
+      { target: first, inView: false, top: 100 },
+      { target: below, inView: false, top: 2000 },
+    ])
+    expect(first.getAttribute('data-reveal')).toBe('')
+    expect(below.getAttribute('data-reveal')).toBe('waiting')
+    observer.report([{ target: below, inView: true, top: 600 }])
+    expect(below.getAttribute('data-reveal')).toBe('in')
+  })
+
+  it('holds back nothing under reduced motion', () => {
+    prefersReducedMotion(true)
+    draw()
+    expect(FakeIntersectionObserver.all).toEqual([])
+  })
+
+  it('reveals nothing on another page with the same blocks', () => {
+    const { container } = draw('organisations')
+    expect(container.querySelector('[data-reveal]')).toBeNull()
+    expect(FakeIntersectionObserver.all).toEqual([])
   })
 })
 

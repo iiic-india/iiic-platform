@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Scope } from '@/components/blocks/PageBlocks'
 import { TakeItWithYou } from '@/components/experience/TakeItWithYou'
 import { JsonLd } from '@/components/seo/JsonLd'
+import { READING_BAR_ATTRIBUTE } from '@/lib/experience/narrative'
 import { JOURNAL_CRUMB, JOURNAL_PATH, listPath } from '@/lib/journal/addresses'
 import { doorOf, leadsToCounselling } from '@/lib/journal/doors'
 import type { PostDetail } from '@/lib/journal/posts'
@@ -23,7 +24,8 @@ export const QUESTION_HEADING = 'A question to sit with'
  * can copy, then a link to its first topic's door. An article any of whose topics leads to
  * counselling is a counselling surface (leadsToCounselling): it carries the scope statement and
  * the crisis numbers (CLAUDE.md #9) and no experience device, so its question has no copy
- * button and stays on the page to read (docs/11 §2 item 6, §6).
+ * button and stays on the page to read, and the header draws no bar (docs/11 §2 item 6, §3.1,
+ * §6). Every other article asks the header for the bar.
  */
 export function Article({ post }: { post: PostDetail }) {
   const topic = post.topics[0]
@@ -32,7 +34,12 @@ export function Article({ post }: { post: PostDetail }) {
   return (
     <>
       <JsonLd graph={articleGraphOf(post)} />
-      <article className={`iiic-page-narrow ${styles.article}`}>
+      <article
+        className={`iiic-page-narrow ${styles.article}`}
+        // The header's bar tracks the reader here, unless the article leads to counselling
+        // (src/lib/experience/narrative.ts, READING_BAR_ATTRIBUTE).
+        {...(counselling ? {} : { [READING_BAR_ATTRIBUTE]: '' })}
+      >
         <nav aria-label="Breadcrumb">
           <ol className="iiic-breadcrumb">
             <li>

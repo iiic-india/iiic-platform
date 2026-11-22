@@ -50,6 +50,16 @@ const ROUTE_GROUPS: RouteGroup[] = [
   },
   { name: 'the logo', path: '/logo.png', html: true, private: false, status: 200 },
   { name: 'a share image', path: '/og/home', html: true, private: false, status: 200 },
+  // The Journal's feed: public, sent with noindex on every deployment, as llms.txt is.
+  { name: 'the Journal feed', path: '/journal/feed.xml', html: true, private: true, status: 200 },
+  // The preview link answers a visitor with a 404 (OS-4).
+  {
+    name: 'a visitor’s preview link',
+    path: '/api/preview?collection=pages&slug=framework',
+    html: false,
+    private: true,
+    status: 404,
+  },
   { name: 'the admin', path: '/admin/login', html: true, private: true },
   { name: 'the API', path: '/api/health', html: false, private: true },
 ]

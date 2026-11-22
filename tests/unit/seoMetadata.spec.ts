@@ -21,7 +21,11 @@ import {
 
 // A page's metadata (src/lib/seo/metadata.ts; docs/12 §3). The CMS is not asked here: the
 // starter pages are read as the routes hand them over, and no redirect is read either.
-vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
+// In a test no one previews, so a route draws what getPage finds (src/lib/content/pages.ts).
+vi.mock('@/lib/content/pages', () => {
+  const getPage = vi.fn()
+  return { getPage, getPageToShow: (slug: string) => getPage(slug) }
+})
 vi.mock('@/lib/redirects/lookup', () => ({ redirectOrNotFound: vi.fn() }))
 // The legal information comes from the settings (tests/unit/settingsLegal.spec.tsx).
 vi.mock('@/lib/settings/read', () => ({ legalInformationFor: async () => undefined }))

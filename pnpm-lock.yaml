@@ -17,6 +17,9 @@ importers:
       '@payloadcms/email-resend':
         specifier: 3.94.0
         version: 3.94.0(payload@3.94.0(graphql@16.15.0)(typescript@5.9.3))
+      '@payloadcms/live-preview-react':
+        specifier: 3.94.0
+        version: 3.94.0(react-dom@19.2.9(react@19.2.9))(react@19.2.9)
       '@payloadcms/next':
         specifier: 3.94.0
         version: 3.94.0(@types/react@19.2.14)(graphql@16.15.0)(monaco-editor@0.57.0)(next@16.4.6(@babel/core@7.29.13)(@opentelemetry/api@1.10.0)(@playwright/test@1.63.0)(@types/node@24.19.2)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(sass@1.77.4))(payload@3.94.0(graphql@16.15.0)(typescript@5.9.3))(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(typescript@5.9.3)
@@ -44,9 +47,15 @@ importers:
       dotenv:
         specifier: 16.4.7
         version: 16.4.7
+      feed:
+        specifier: 6.0.0
+        version: 6.0.0
       graphql:
         specifier: 16.15.0
         version: 16.15.0
+      jose:
+        specifier: 5.10.0
+        version: 5.10.0
       libphonenumber-js:
         specifier: 1.13.15
         version: 1.13.15
@@ -1650,6 +1659,15 @@ packages:
     peerDependencies:
       graphql: ^16.8.1
       payload: 3.94.0
+
+  '@payloadcms/live-preview-react@3.94.0':
+    resolution: {integrity: sha512-USOe8l09Hsg/VfhTv624q7dgxxvdmplzut5kG+pwlKIlQ0OsVFN3CSjklaXw1/2Cf+vz0sGvD+NPZJW8/LbcYQ==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ~19.0.9 || ~19.1.10 || ~19.2.9 || ^19.3.1
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ~19.0.9 || ~19.1.10 || ~19.2.9 || ^19.3.1
+
+  '@payloadcms/live-preview@3.94.0':
+    resolution: {integrity: sha512-3BLusNlvVgq2+H2xzJmkhWWYKRy61ucvbwpkNPhisTVQxz2Twl8X0iwVV4Dz0oeqMcycfAgGj/lVbgH2Y6qi0g==}
 
   '@payloadcms/next@3.94.0':
     resolution: {integrity: sha512-2A2Mw2cLYoI6KbjgxdID4DrgcDvBCbnZQXJxsEwYFiorX63ofe5YBuoryTO6H/K6vZQryvuOinLsLmDygLaMAw==}
@@ -3372,6 +3390,10 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  feed@6.0.0:
+    resolution: {integrity: sha512-rvFOF1POce0ijAKy3tZN5T8PuprgIit/VbMyXJWcoYwcMOTSIJ7NqZb8DTLPJr77yiEO27kidm/fw0kcSIV+ww==}
+    engines: {node: '>=20', pnpm: '>=10'}
 
   fflate@0.8.3:
     resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
@@ -5660,6 +5682,10 @@ packages:
     resolution: {integrity: sha512-GCPAHLvrIH13+c0SuacwvRYj2SxJXQ4kaVTT5xgL3kPrz56XxkF21IGhjSE1+W0aw7gpBWRGXLCPnPby6lSpmQ==}
     engines: {node: '>=12'}
 
+  xml-js@1.6.11:
+    resolution: {integrity: sha512-7rVi2KMfwfWFl+GpPg6m80IVMWXLRjO+PxTq7V2CDhoGak0wzYzFgUY2m4XJ47OGdXd8eLE8EmwfAmdjw7lC1g==}
+    hasBin: true
+
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
     engines: {node: '>=18'}
@@ -7212,6 +7238,14 @@ snapshots:
       tsx: 4.23.15
     transitivePeerDependencies:
       - typescript
+
+  '@payloadcms/live-preview-react@3.94.0(react-dom@19.2.9(react@19.2.9))(react@19.2.9)':
+    dependencies:
+      '@payloadcms/live-preview': 3.94.0
+      react: 19.2.9
+      react-dom: 19.2.9(react@19.2.9)
+
+  '@payloadcms/live-preview@3.94.0': {}
 
   '@payloadcms/next@3.94.0(@types/react@19.2.14)(graphql@16.15.0)(monaco-editor@0.57.0)(next@16.4.6(@babel/core@7.29.13)(@opentelemetry/api@1.10.0)(@playwright/test@1.63.0)(@types/node@24.19.2)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(sass@1.77.4))(payload@3.94.0(graphql@16.15.0)(typescript@5.9.3))(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(typescript@5.9.3)':
     dependencies:
@@ -9187,6 +9221,10 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
       picomatch: 4.0.7
+
+  feed@6.0.0:
+    dependencies:
+      xml-js: 1.6.11
 
   fflate@0.8.3: {}
 
@@ -11854,6 +11892,10 @@ snapshots:
       powershell-utils: 0.2.1
 
   xdg-basedir@5.1.0: {}
+
+  xml-js@1.6.11:
+    dependencies:
+      sax: 1.6.1
 
   xml-name-validator@5.0.0: {}
 

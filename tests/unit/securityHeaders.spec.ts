@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   CONTENT_LANGUAGE,
+  FRAMING_OUTSIDE_PROXY,
   type HeaderRule,
   headerRules,
   PRIVATE_ROUTES,
@@ -189,6 +190,36 @@ describe('headerRules', () => {
         { key: 'Content-Security-Policy', value: "default-src 'none'; frame-ancestors 'none'" },
       ],
     })
+  })
+
+  it('sends X-Frame-Options only where the proxy does not, so no page gets two values (OS-4)', () => {
+    for (const [vercelEnv, searchIndexing] of DEPLOYMENTS) {
+      const rules = headerRules(vercelEnv, searchIndexing)
+      for (const rule of FRAMING_OUTSIDE_PROXY) expect(rules).toContainEqual(rule)
+      // The proxy sets it on every path it runs on (src/proxy.ts): pages, files beside them,
+      // the admin, and /api itself.
+      for (const path of [
+        '/',
+        '/framework',
+        '/journal/fake-article',
+        '/admin',
+        '/admin/login',
+        '/llms.txt',
+        '/og/home',
+        '/api',
+      ]) {
+        expect(headersFor(path, rules)['X-Frame-Options'], path).toBeUndefined()
+      }
+      for (const path of [
+        '/api/health',
+        '/api/preview',
+        '/api/pages/1',
+        '/_next/static/chunks/a.js',
+        '/_next/image',
+      ]) {
+        expect(headersFor(path, rules)['X-Frame-Options'], path).toBe('DENY')
+      }
+    }
   })
 
   it('puts the stricter single-route rules last, so they replace the general ones', () => {

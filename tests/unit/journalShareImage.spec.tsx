@@ -24,11 +24,16 @@ vi.mock('server-only', () => ({}))
 vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('payload', () => ({ getPayload: async () => ({ find: vi.fn(), count: vi.fn() }) }))
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn(), unstable_cache: (fn: () => unknown) => fn }))
-vi.mock('@/lib/journal/posts', () => ({
-  getTopics: vi.fn(),
-  listPosts: vi.fn(),
-  getPost: vi.fn(),
-}))
+// In a test no one previews, so an article's route draws what getPost finds.
+vi.mock('@/lib/journal/posts', () => {
+  const getPost = vi.fn()
+  return {
+    getTopics: vi.fn(),
+    listPosts: vi.fn(),
+    getPost,
+    getPostToShow: (slug: string) => getPost(slug),
+  }
+})
 
 const fetchSpy = vi
   .spyOn(globalThis, 'fetch')

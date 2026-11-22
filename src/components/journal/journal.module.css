@@ -169,3 +169,16 @@
 .listHolder {
   list-style: none;
 }
+
+/* An image inside an article's body (ArticleBody.tsx): the column's width, its own proportions,
+   the kit's radius. Its width and height are in the markup, so it moves nothing as it loads. */
+.figure {
+  margin: 32px 0;
+}
+
+.figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--iiic-radius);
+}

@@ -35,11 +35,16 @@ import { FOUNDER } from '@/lib/seo/site'
 // Journal's data is faked (src/lib/journal/posts.ts is tested on its own); the structured data
 // is drawn as plain JSON so that the pages render in one pass. Every article, topic and name is
 // obviously fake; the founder is the one recorded fact (D-64).
-vi.mock('@/lib/journal/posts', () => ({
-  getTopics: vi.fn(),
-  listPosts: vi.fn(),
-  getPost: vi.fn(),
-}))
+// In a test no one previews, so an article's route draws what getPost finds.
+vi.mock('@/lib/journal/posts', () => {
+  const getPost = vi.fn()
+  return {
+    getTopics: vi.fn(),
+    listPosts: vi.fn(),
+    getPost,
+    getPostToShow: (slug: string) => getPost(slug),
+  }
+})
 vi.mock('@/components/seo/JsonLd', async () => {
   const { createElement } = await import('react')
   return {

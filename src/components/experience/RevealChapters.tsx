@@ -6,7 +6,8 @@ import { useEffect } from 'react'
 const REVEAL = 'data-reveal'
 
 /**
- * Chapters reveal once as they come into view (docs/11 §3.5, §7): one IntersectionObserver, no
+ * Chapters reveal once as they come into view (docs/11 §3.5, §7), and so do the home page's
+ * doors' cards and steps (§4), each item marked the same way: one IntersectionObserver, no
  * library. Only a chapter wholly below the window when the script runs is held back, so a
  * reader never sees a chapter vanish, and a page without JavaScript shows every chapter as it
  * is. A chapter is shown as soon as its top passes the window's lowest tenth (a chapter can be
