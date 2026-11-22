@@ -3,6 +3,7 @@ import type { CollectionConfig, Field } from 'payload'
 import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { paiseField } from '@/fields/numbers'
+import { paymentRules } from '@/lib/payments/hooks'
 import { GATEWAYS, PAYMENT_KINDS, PAYMENT_STATUSES } from '@/lib/payments/states'
 import { IST_FIELD } from '@/lib/time/ist'
 
@@ -46,6 +47,9 @@ export const Payments: CollectionConfig = {
   },
   defaultSort: '-createdAt',
   disableBulkEdit: true,
+  // Only the moves in PAYMENT_MOVES; the amount, receipt and gateway ids never change once
+  // written (src/lib/payments/hooks.ts).
+  hooks: { beforeChange: [paymentRules] },
   fields: [
     {
       type: 'row',

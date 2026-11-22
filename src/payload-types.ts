@@ -166,6 +166,8 @@ export interface Config {
   jobs: {
     tasks: {
       'O5-purge-missing-pages': TaskO5PurgeMissingPages;
+      'B2-poll-pending-orders': TaskB2PollPendingOrders;
+      'B11-reconcile': TaskB11Reconcile;
       inline: {
         input: unknown;
         output: unknown;
@@ -1959,7 +1961,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'O5-purge-missing-pages';
+        taskSlug: 'inline' | 'O5-purge-missing-pages' | 'B2-poll-pending-orders' | 'B11-reconcile';
         taskID: string;
         input?:
           | {
@@ -1992,7 +1994,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'O5-purge-missing-pages') | null;
+  taskSlug?: ('inline' | 'O5-purge-missing-pages' | 'B2-poll-pending-orders' | 'B11-reconcile') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -3508,6 +3510,32 @@ export interface TaskO5PurgeMissingPages {
   input?: unknown;
   output: {
     removed: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB2-poll-pending-orders".
+ */
+export interface TaskB2PollPendingOrders {
+  input?: unknown;
+  output: {
+    checked: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB11-reconcile".
+ */
+export interface TaskB11Reconcile {
+  input: {
+    /**
+     * A day in India as YYYY-MM-DD; empty for the last 26 hours.
+     */
+    day?: string | null;
+  };
+  output: {
+    checked: number;
+    flagged: number;
   };
 }
 /**

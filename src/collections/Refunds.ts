@@ -3,6 +3,7 @@ import type { CollectionConfig, Field } from 'payload'
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { paiseField } from '@/fields/numbers'
+import { refundRequestDefaults, refundRules } from '@/lib/payments/hooks'
 import { REFUND_REASONS, REFUND_STATUSES } from '@/lib/payments/states'
 import { IST_FIELD } from '@/lib/time/ist'
 
@@ -45,6 +46,10 @@ export const Refunds: CollectionConfig = {
   },
   defaultSort: '-createdAt',
   disableBulkEdit: true,
+  // The office's request is checked against what the payment can still give back and the
+  // threshold in Settings; above it, only an owner with their code approves; every writer keeps
+  // to REFUND_MOVES (src/lib/payments/hooks.ts, docs/16 §5).
+  hooks: { beforeValidate: [refundRequestDefaults], beforeChange: [refundRules] },
   fields: [
     {
       type: 'row',

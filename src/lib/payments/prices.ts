@@ -1,4 +1,4 @@
-import type { CollectionAfterChangeHook, PayloadRequest } from 'payload'
+import type { CollectionAfterChangeHook, CollectionBeforeDeleteHook, PayloadRequest } from 'payload'
 
 import { err, type Result } from '@/lib/result'
 import type { PriceHistory, Service } from '@/payload-types'
@@ -116,6 +116,20 @@ export const recordPriceHistoryAfterChange: CollectionAfterChangeHook<Service> =
 }) => {
   await recordPriceHistory(req, doc, new Date())
   return doc
+}
+
+/**
+ * A service is never deleted through the API (src/access/policy.ts: it is retired by unticking
+ * it). When the server deletes one all the same (a test's clean-up), its price history goes with
+ * it, since a price row without its service means nothing and the database would refuse it.
+ */
+export const removePriceHistoryBeforeDelete: CollectionBeforeDeleteHook = async ({ id, req }) => {
+  await req.payload.delete({
+    collection: 'price-history',
+    where: { service: { equals: id } },
+    req,
+    ...SERVER,
+  })
 }
 
 /** The price row in force for one option at one instant: from on or before it, until after it. */
