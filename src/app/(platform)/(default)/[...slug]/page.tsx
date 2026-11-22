@@ -7,6 +7,7 @@ import { PAGE_SLUG } from '@/lib/content/slug'
 import type { PageContent } from '@/lib/content/types'
 import { redirectOrNotFound } from '@/lib/redirects/lookup'
 import { pathOf } from '@/lib/redirects/paths'
+import { legalInformationFor } from '@/lib/settings/read'
 
 type Props = { params: Promise<{ slug: string[] }> }
 
@@ -42,6 +43,7 @@ export default async function CmsPage({ params }: Props) {
         layout={found.page.layout}
         legalReview={found.page.legalReview}
         slug={found.slug}
+        legal={await legalInformationFor(found.page.layout)}
       />
     </>
   )

@@ -5,6 +5,7 @@ import { metadataOf, PageJsonLd } from '@/components/blocks/PageAt'
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { getPage } from '@/lib/content/pages'
 import { logMissingPage } from '@/lib/redirects/log'
+import { legalInformationFor } from '@/lib/settings/read'
 
 /**
  * The home page: the page "home" from the CMS once it is published there, and the starter
@@ -28,7 +29,11 @@ export default async function HomePage() {
   return (
     <>
       <PageJsonLd slug="home" page={page} />
-      <RenderBlocks layout={page.layout} slug="home" />
+      <RenderBlocks
+        layout={page.layout}
+        slug="home"
+        legal={await legalInformationFor(page.layout)}
+      />
     </>
   )
 }

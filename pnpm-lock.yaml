@@ -44,6 +44,9 @@ importers:
       graphql:
         specifier: 16.15.0
         version: 16.15.0
+      libphonenumber-js:
+        specifier: 1.13.15
+        version: 1.13.15
       next:
         specifier: 16.4.6
         version: 16.4.6(@babel/core@7.29.13)(@opentelemetry/api@1.10.0)(@playwright/test@1.63.0)(@types/node@24.19.2)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(sass@1.77.4)
@@ -4002,6 +4005,9 @@ packages:
     resolution: {integrity: sha512-/a2eRImR8sZbmMVKe2we1/KukDQkuPyPf8yol6epvCu2PH6hurjcRI3mdGFFAi0uGoRJGyns99JquZgxwW1tQg==}
     engines: {node: '>=16'}
     hasBin: true
+
+  libphonenumber-js@1.13.15:
+    resolution: {integrity: sha512-AHdhEQeDFEJ4GKDAQ9AwxChy+v2kUILUB3TGQRpkXMkWePjXTU/WQEzWVQoIx/Gz8fE73Wr5SEuZCy2vk8jrMQ==}
 
   lighthouse-logger@1.2.0:
     resolution: {integrity: sha512-wzUvdIeJZhRsG6gpZfmSCfysaxNEr43i+QT+Hie94wvHDKFLi4n7C2GqZ4sTC+PH5b5iktmXJvU87rWvhP3lHw==}
@@ -9844,6 +9850,8 @@ snapshots:
   lib0@0.2.120:
     dependencies:
       isomorphic.js: 0.2.5
+
+  libphonenumber-js@1.13.15: {}
 
   lighthouse-logger@1.2.0:
     dependencies:

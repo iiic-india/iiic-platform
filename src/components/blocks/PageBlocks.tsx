@@ -21,6 +21,13 @@ import {
   SCOPE_STATEMENT,
 } from '@/lib/counselling/scope'
 import { type Devices, devicesAt } from '@/lib/experience/narrative'
+import {
+  LEGAL_INFORMATION_COLUMNS,
+  LEGAL_INFORMATION_HEADING,
+  legalRows,
+  NO_LEGAL_INFORMATION,
+  type LegalInformation,
+} from '@/lib/settings/legal'
 import { CONTACT, CONTACT_HEADING, mailHref, telHref } from '@/lib/site/contact'
 import type {
   BandBlock,
@@ -541,6 +548,56 @@ function Contact() {
   )
 }
 
+/**
+ * Who runs the site (docs/08 §4; docs/12 §11): the legal information in the settings, as a
+ * table whose rows are headed by their items, so a screen reader reads every detail with its
+ * label. A detail the settings lack is its placeholder (src/lib/settings/legal.ts). On a narrow
+ * screen the table scrolls inside its region, as the comparison's does.
+ */
+function LegalInformationSection({ legal }: { legal: LegalInformation }) {
+  return (
+    <section className="iiic-section" id="legal">
+      <SectionHead heading={LEGAL_INFORMATION_HEADING} />
+      <div
+        className={`iiic-table-wrap ${styles.tableRegion}`}
+        role="region"
+        aria-label={LEGAL_INFORMATION_HEADING}
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region needs keyboard focus
+        tabIndex={0}
+      >
+        <table className="iiic-table">
+          <thead>
+            <tr>
+              <th scope="col">{LEGAL_INFORMATION_COLUMNS.item}</th>
+              <th scope="col">{LEGAL_INFORMATION_COLUMNS.detail}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {legalRows(legal).map((row) => (
+              <tr key={row.item}>
+                <th scope="row" className={styles.rowHead}>
+                  {row.item}
+                </th>
+                <td>
+                  <strong>{renderText(row.text)}</strong>
+                  {row.link ? (
+                    <>
+                      {' · '}
+                      <a className="iiic-link" href={row.link.href}>
+                        {row.link.label}
+                      </a>
+                    </>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
 /** The one yellow band of a page. It spans the window, so it sits outside the page column. */
 function Band({ block, marked }: { block: BandBlock; marked: boolean }) {
   return (
@@ -573,12 +630,14 @@ function Section({
   draft,
   devices,
   index,
+  legal,
 }: {
   block: Exclude<PageBlock, BandBlock>
   draft: boolean
   devices: Devices
   /** The block's place on its page, which names what a device needs to name. */
   index: number
+  legal: LegalInformation
 }) {
   switch (block.blockType) {
     case 'hero':
@@ -610,6 +669,8 @@ function Section({
       return <FounderNote block={block} />
     case 'contact':
       return <Contact />
+    case 'legal':
+      return <LegalInformationSection legal={legal} />
   }
 }
 
@@ -617,16 +678,20 @@ function Section({
  * A page's sections in order, in the page column, and its closing band across the window. A
  * legal page that is still a draft says so above its heading (D-52). The page's slug says
  * whether it is a narrative page and which devices it carries (docs/11 §3): on the founders'
- * page every section between the hero and the band is a chapter that reveals once.
+ * page every section between the hero and the band is a chapter that reveals once. The legal
+ * information section draws what the settings hold (the route reads it,
+ * src/lib/settings/read.ts); without it, every detail is its placeholder.
  */
 export function RenderBlocks({
   layout,
   legalReview,
   slug,
+  legal = NO_LEGAL_INFORMATION,
 }: {
   layout: PageContent['layout']
   legalReview?: PageContent['legalReview']
   slug?: string
+  legal?: LegalInformation
 }) {
   const devices = devicesAt(slug)
   const band = layout.find((block): block is BandBlock => block.blockType === 'band')
@@ -643,6 +708,7 @@ export function RenderBlocks({
               draft={legalReview === 'draft'}
               devices={devices}
               index={index}
+              legal={legal}
               key={block.id ?? index}
             />
           )

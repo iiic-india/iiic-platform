@@ -1,6 +1,14 @@
 import { CERTIFICATE_HEADING } from '@/lib/certificates/statement'
 import { SCOPE_HEADING } from '@/lib/counselling/scope'
 import { STEP_ZERO_QUESTION } from '@/lib/map/stepZero'
+import {
+  footerLegal,
+  LEGAL_INFORMATION_HEADING,
+  LEGAL_PLACEHOLDERS,
+  legalRows,
+  NO_LEGAL_INFORMATION,
+  type LegalInformation,
+} from '@/lib/settings/legal'
 import { CONTACT_HEADING } from '@/lib/site/contact'
 
 import type { PageBlock, PageContent } from './types'
@@ -25,17 +33,12 @@ export const FIXED_PLACEHOLDERS = {
     what: 'statement that IIIC is privately owned and not affiliated with any Government body',
   },
   // The footer's legal row names the proprietor, the GSTIN and the grievance officer (docs/08
-  // §3, §4), in the words the legal pages use for the same facts.
-  footerLegalName: {
-    id: 'I-26',
-    what: 'the proprietor’s legal name, exactly as on PAN and registrations',
-  },
-  footerGstin: { id: 'I-05', what: 'the GSTIN' },
-  footerGrievanceOfficer: {
-    id: 'I-21',
-    what: 'the grievance officer’s name, designation and contact',
-  },
-  contactAddress: { id: 'I-33', what: 'the address as it should print, with its PIN' },
+  // §3, §4), in the words the legal pages use for the same facts. Each is drawn only while the
+  // settings lack it (src/lib/settings/legal.ts).
+  footerLegalName: LEGAL_PLACEHOLDERS.legalName,
+  footerGstin: LEGAL_PLACEHOLDERS.gstin,
+  footerGrievanceOfficer: LEGAL_PLACEHOLDERS.grievanceOfficer,
+  contactAddress: LEGAL_PLACEHOLDERS.address,
   founderPhoto: { id: 'I-10', what: 'the founder’s photograph, as he wants it published' },
   mapLine: { id: 'I-41', what: 'approval of the line under the question' },
 } as const
@@ -70,6 +73,7 @@ const FIXED_HEADINGS: Partial<Record<PageBlock['blockType'], string>> = {
   scope: SCOPE_HEADING,
   certificate: CERTIFICATE_HEADING,
   contact: CONTACT_HEADING,
+  legal: LEGAL_INFORMATION_HEADING,
 }
 
 /**
@@ -103,18 +107,36 @@ export function sectionName(block: PageBlock): string {
   return FIXED_HEADINGS[block.blockType] ?? block.blockType
 }
 
-/** Every placeholder a page shows: the typed ones, and the ones its blocks draw themselves. */
-export function placeholdersIn(page: Pick<PageContent, 'layout'>): Placeholder[] {
+/** The placeholders typed into some text, each with the section it is in. */
+function typedIn(texts: string[], section: string): Placeholder[] {
+  return texts.flatMap((text) =>
+    [...text.matchAll(PLACEHOLDER)].map((match) => ({
+      id: match[2] ?? '',
+      what: match[1] ?? '',
+      section,
+    })),
+  )
+}
+
+/**
+ * Every placeholder a page shows: the typed ones, and the ones its blocks draw themselves. The
+ * legal information section draws a placeholder for each detail the settings lack, so the page
+ * is read with the legal information the site has (none, unless the caller gives it).
+ */
+export function placeholdersIn(
+  page: Pick<PageContent, 'layout'>,
+  legal: LegalInformation = NO_LEGAL_INFORMATION,
+): Placeholder[] {
   return page.layout.flatMap((block) => {
     const section = sectionName(block)
-    const drawn = DRAWN_BY_BLOCK[block.blockType]
-    const typed = strings(block).flatMap((text) =>
-      [...text.matchAll(PLACEHOLDER)].map((match) => ({
-        id: match[2] ?? '',
-        what: match[1] ?? '',
+    if (block.blockType === 'legal') {
+      return typedIn(
+        legalRows(legal).map((row) => row.text),
         section,
-      })),
-    )
+      )
+    }
+    const drawn = DRAWN_BY_BLOCK[block.blockType]
+    const typed = typedIn(strings(block), section)
     return drawn ? [{ ...drawn, section }, ...typed] : typed
   })
 }
@@ -139,18 +161,34 @@ export function legalItems(page: Pick<PageContent, 'layout' | 'legalReview'>): s
 /** The footer is on every page; the report sends a click on its placeholders home. */
 const EVERY_PAGE: PageRef = { title: 'Every page', path: '/', href: '/', inAdmin: false }
 
-/** The placeholders that belong to no page's data: the footer's, and Find your path's. */
-export const CODED_PLACEHOLDERS: Report['missing'] = [
-  { ...FIXED_PLACEHOLDERS.footerAffiliation, section: 'Footer', page: EVERY_PAGE },
-  { ...FIXED_PLACEHOLDERS.footerLegalName, section: 'Footer', page: EVERY_PAGE },
-  { ...FIXED_PLACEHOLDERS.footerGstin, section: 'Footer', page: EVERY_PAGE },
-  { ...FIXED_PLACEHOLDERS.footerGrievanceOfficer, section: 'Footer', page: EVERY_PAGE },
-  {
-    ...FIXED_PLACEHOLDERS.mapLine,
-    section: STEP_ZERO_QUESTION,
-    page: { title: 'Find your path', path: '/map', href: '/map', inAdmin: false },
-  },
-]
+/**
+ * The placeholders that belong to no page's data: the footer's, and Find your path's. The
+ * footer draws its legal details' placeholders only while the settings lack them.
+ */
+export function codedPlaceholders(
+  legal: LegalInformation = NO_LEGAL_INFORMATION,
+): Report['missing'] {
+  const footer = footerLegal(legal)
+  const inFooter = (placeholder: { id: string; what: string }) => ({
+    ...placeholder,
+    section: 'Footer',
+    page: EVERY_PAGE,
+  })
+  return [
+    inFooter(FIXED_PLACEHOLDERS.footerAffiliation),
+    ...(footer.legalName ? [] : [inFooter(FIXED_PLACEHOLDERS.footerLegalName)]),
+    ...(footer.gstin || footer.gstStatus ? [] : [inFooter(FIXED_PLACEHOLDERS.footerGstin)]),
+    ...(footer.grievanceOfficer ? [] : [inFooter(FIXED_PLACEHOLDERS.footerGrievanceOfficer)]),
+    {
+      ...FIXED_PLACEHOLDERS.mapLine,
+      section: STEP_ZERO_QUESTION,
+      page: { title: 'Find your path', path: '/map', href: '/map', inAdmin: false },
+    },
+  ]
+}
+
+/** The code's own placeholders while the settings hold no legal information. */
+export const CODED_PLACEHOLDERS: Report['missing'] = codedPlaceholders()
 
 /** Inputs (I-) before decisions (D-), each in the order of its number. */
 function byInput(a: { id: string }, b: { id: string }): number {
@@ -158,11 +196,18 @@ function byInput(a: { id: string }, b: { id: string }): number {
   return rank(a.id) - rank(b.id)
 }
 
-/** The report over a set of pages, with the placeholders the code itself draws. */
-export function buildReport(sources: ReportSource[], coded = CODED_PLACEHOLDERS): Report {
+/**
+ * The report over a set of pages, with the placeholders the code itself draws, read with the
+ * legal information the settings hold (none, unless the caller gives it).
+ */
+export function buildReport(
+  sources: ReportSource[],
+  coded = CODED_PLACEHOLDERS,
+  legal: LegalInformation = NO_LEGAL_INFORMATION,
+): Report {
   const missing = [
     ...sources.flatMap(({ page, content }) =>
-      placeholdersIn(content).map((placeholder) => ({ ...placeholder, page })),
+      placeholdersIn(content, legal).map((placeholder) => ({ ...placeholder, page })),
     ),
     ...coded,
   ]

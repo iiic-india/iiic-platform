@@ -78,8 +78,8 @@ const intro: Field = {
   admin: { description: 'A sentence or two beside the heading. Optional.' },
 }
 
-/** The ids the fixed blocks carry (scope, certificate, contact): no section may take one. */
-export const FIXED_ANCHORS = ['scope', 'certificate', 'contact'] as const
+/** The ids the fixed blocks carry (scope, certificate, contact, legal): no section may take one. */
+export const FIXED_ANCHORS = ['scope', 'certificate', 'contact', 'legal'] as const
 
 /** A short name a link opens a section by: small letters, numbers and hyphens. */
 export function isAnchor(value: unknown): true | string {
@@ -431,6 +431,20 @@ const Contact: Block = {
   fields: [],
 }
 
+/**
+ * Who runs the site (docs/08 §4; docs/12 §11, `/legal`): the legal name and trade name, the
+ * address, the GSTIN, customer care, the grievance officer, the CERT-In point of contact and the
+ * dark-pattern audit. The block has no fields: the details are the owner's, in the settings
+ * (src/globals/Settings.ts), and each shows its placeholder while it is empty, wherever the
+ * block is placed (src/lib/settings/legal.ts).
+ */
+const Legal: Block = {
+  slug: 'legal',
+  interfaceName: 'LegalBlock',
+  labels: { singular: 'Legal information', plural: 'Legal information' },
+  fields: [],
+}
+
 const FounderNote: Block = {
   slug: 'founderNote',
   interfaceName: 'FounderNoteBlock',
@@ -498,6 +512,7 @@ export const PAGE_BLOCKS: Block[] = [
   Certificate,
   FounderNote,
   Contact,
+  Legal,
   Band,
 ]
 

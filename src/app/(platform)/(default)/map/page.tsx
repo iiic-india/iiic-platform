@@ -12,11 +12,11 @@ export const metadata: Metadata = buildMetadata(MAP_PAGE)
 
 /**
  * Find your path: step 0 of the Map (docs/02; docs/03 F1). One question in the kit's choice
- * cards; the answer is posted to /map/go, which sends the visitor to their door. It is posted
- * so that it never appears in an address, because the request log keeps addresses and the
- * privacy notice says this question stores nothing. It is a plain form, so it works without
- * JavaScript, and no answer is chosen for the visitor. The line under the question is a
- * proposal until IIIC approves it (copy architecture §4.10, I-41).
+ * cards; the answer is posted to /map/go, which counts it anonymously and sends the visitor to
+ * their door. It is posted so that it never appears in an address, because the request log
+ * keeps addresses. It is a plain form, so it works without JavaScript, and no answer is chosen
+ * for the visitor. The line under the question is a proposal until IIIC approves it (copy
+ * architecture §4.10, I-41).
  */
 export default function FindYourPathPage() {
   return (

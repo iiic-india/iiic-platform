@@ -150,6 +150,7 @@ const EVERY_FIELD: PageContent['layout'] = [
     copyStatus: 'approved',
   },
   { blockType: 'contact' },
+  { blockType: 'legal' },
   {
     blockType: 'band',
     kicker: todo('band kicker'),
@@ -193,10 +194,11 @@ describe('every text field a block draws', () => {
   it('draws a placeholder as the chip, and the report lists exactly those', () => {
     const { container } = render(<RenderBlocks layout={EVERY_FIELD} />)
     expect(chips(container)).toEqual(asChips(placeholdersIn({ layout: EVERY_FIELD })))
-    // Each typed placeholder, and the two the blocks draw themselves: the founder's photograph
-    // and the contact address. None is left out of both, and none is drawn as plain text.
-    expect(chips(container)).toHaveLength(typed.length + 2)
-    expect(container.textContent?.match(/\[\[TODO:/g)).toHaveLength(typed.length + 2)
+    // Each typed placeholder, the two the blocks draw themselves (the founder's photograph and
+    // the contact address), and the legal information's seven while the settings hold none of
+    // it. None is left out of both, and none is drawn as plain text.
+    expect(chips(container)).toHaveLength(typed.length + 2 + 7)
+    expect(container.textContent?.match(/\[\[TODO:/g)).toHaveLength(typed.length + 2 + 7)
   })
 
   it('reports nothing from the admin’s block name, which the page never draws', () => {

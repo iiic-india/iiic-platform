@@ -115,13 +115,16 @@ describe('the privacy notice', () => {
     expect(text).not.toContain('up to 180 days')
   })
 
-  it('records no analytics events about anyone under 18, in docs/08 §3’s words', () => {
+  it('says what the children rule covers, in docs/08 §3’s terms, and where step 0 stands', () => {
     const { container } = draw(PRIVACY)
-    // Anonymous page counts are not events about a person, so the sentence stays true when
-    // Cloudflare's cookieless counts start (docs/12 §7).
-    expect(container.textContent).toContain(
-      'IIIC sends no marketing to anyone under 18 and records no analytics events about them.',
+    const text = container.textContent ?? ''
+    expect(text).toContain('IIIC sends no marketing to anyone under 18.')
+    expect(text).toContain(
+      'Once a booking or the Map tells IIIC that a person is under 18, the site records no analytics events about them.',
     )
+    // Step 0 asks no age and records an event for every answer (docs/12 §7, §10).
+    expect(text).toContain('“Find your path” does not ask your age')
+    expect(text).not.toContain('and records no analytics events about them')
   })
 
   it('says where the site’s functions run, where AiSensy and Meta are, and what the staff calendars show', () => {

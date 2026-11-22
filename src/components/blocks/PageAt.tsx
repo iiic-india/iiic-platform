@@ -8,6 +8,7 @@ import { redirectOrNotFound } from '@/lib/redirects/lookup'
 import { buildMetadata } from '@/lib/seo/metadata'
 import { pageGraph } from '@/lib/seo/schema'
 import { HOME_TITLE } from '@/lib/seo/site'
+import { legalInformationFor } from '@/lib/settings/read'
 
 import { RenderBlocks } from './PageBlocks'
 
@@ -23,7 +24,12 @@ export async function PageAt({ slug }: { slug: string }) {
   return (
     <>
       <PageJsonLd slug={slug} page={page} />
-      <RenderBlocks layout={page.layout} legalReview={page.legalReview} slug={slug} />
+      <RenderBlocks
+        layout={page.layout}
+        legalReview={page.legalReview}
+        slug={slug}
+        legal={await legalInformationFor(page.layout)}
+      />
     </>
   )
 }

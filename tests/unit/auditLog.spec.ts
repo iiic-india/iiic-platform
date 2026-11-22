@@ -2,6 +2,7 @@
 import type { CollectionConfig, Config } from 'payload'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { Settings } from '@/globals/Settings'
 import { recordAudit } from '@/lib/audit/record'
 import { auditLog, changedFields } from '@/plugins/auditLog'
 
@@ -36,6 +37,45 @@ describe('changedFields', () => {
 
   it('has nothing to compare on a creation', () => {
     expect(changedFields({ id: 1, name: 'Fake' }, undefined)).toEqual([])
+  })
+
+  it('names a field inside a named group by both names, however the admin lays them out', () => {
+    // Settings keeps its groups inside tabs and rows (src/globals/Settings.ts).
+    const fields = Settings.fields
+    const before = {
+      legal: { gstin: null, grievanceOfficer: { name: 'Fake A', email: null } },
+      flags: { pricesPublic: false, payAtBooking: false },
+      processors: [],
+    }
+    const after = {
+      legal: {
+        gstin: '24AAAAA0000A1Z5',
+        grievanceOfficer: { name: 'Fake A', email: 'f@x.invalid' },
+      },
+      flags: { pricesPublic: true, payAtBooking: false },
+      processors: [{ id: 'fake', name: 'Fake processor' }],
+    }
+    expect(changedFields(after, before, { fields })).toEqual([
+      'legal.gstin',
+      'legal.grievanceOfficer.email',
+      'flags.pricesPublic',
+      'processors',
+    ])
+  })
+
+  it('counts a field a global nobody has saved lacks as empty, when asked to', () => {
+    const fields = Settings.fields
+    const before = { flags: { pricesPublic: false }, globalType: 'settings' }
+    const after = {
+      legal: { legalName: 'Fake Proprietor Name', tradeName: null },
+      flags: { pricesPublic: false },
+      globalType: 'settings',
+      updatedAt: 'b',
+    }
+    expect(changedFields(after, before, { fields })).toEqual([])
+    expect(changedFields(after, before, { fields, missingIsEmpty: true })).toEqual([
+      'legal.legalName',
+    ])
   })
 })
 
@@ -272,6 +312,72 @@ describe('the audit plugin', () => {
       ],
     } as unknown as Config).collections
     expect(collections?.map((each) => each.hooks?.afterOperation?.length ?? 0)).toEqual([1, 0])
+  })
+
+  it('records the new collections’ writes, and leaves the analytics events alone', () => {
+    const collections = auditLog()({
+      collections: ['people', 'consents', 'consent-versions', 'analytics-events'].map((slug) => ({
+        slug,
+        fields: [],
+      })),
+    } as unknown as Config).collections
+    // Analytics events hold nobody's data and are written for every visitor's step (S0).
+    expect(collections?.map((each) => each.hooks?.afterChange?.length ?? 0)).toEqual([1, 1, 1, 0])
+  })
+})
+
+describe('the audit plugin on a global', () => {
+  const [settings, jobs] =
+    auditLog()({
+      globals: [Settings, { slug: 'payload-jobs-stats', fields: [] }],
+    } as unknown as Config).globals ?? []
+  const hook = settings?.hooks?.afterChange?.at(-1) as Hook
+
+  it('adds its hook after the global’s own, and leaves Payload’s own global alone', () => {
+    expect(settings?.hooks?.afterChange).toHaveLength(
+      (Settings.hooks?.afterChange?.length ?? 0) + 1,
+    )
+    expect(jobs?.hooks?.afterChange ?? []).toHaveLength(0)
+  })
+
+  it('records who changed which settings, by name and never by value', async () => {
+    const req = { user: OWNER, context: {} }
+    await hook({
+      context: {},
+      doc: { flags: { pricesPublic: true }, legal: { gstin: '24AAAAA0000A1Z5' } },
+      previousDoc: { flags: { pricesPublic: false }, legal: { gstin: null } },
+      global: Settings,
+      req,
+    })
+    expect(record.mock.calls).toEqual([
+      [
+        req,
+        { action: 'update', entity: 'settings', changed: ['flags.pricesPublic', 'legal.gstin'] },
+      ],
+    ])
+    expect(JSON.stringify(record.mock.calls)).not.toContain('24AAAAA0000A1Z5')
+  })
+
+  it('records the first save of a global nobody had saved, field by field', async () => {
+    const req = { user: OWNER, context: {} }
+    await hook({
+      context: {},
+      doc: { legal: { legalName: 'Fake Proprietor Name' }, quietHours: { start: '21:00' } },
+      previousDoc: { quietHours: { start: '21:00' } },
+      global: Settings,
+      req,
+    })
+    expect(record.mock.calls[0]?.[1]).toEqual({
+      action: 'update',
+      entity: 'settings',
+      changed: ['legal.legalName'],
+    })
+  })
+
+  it('records nothing for a save that changed nothing', async () => {
+    const doc = { flags: { pricesPublic: false } }
+    await hook({ context: {}, doc, previousDoc: doc, global: Settings, req: { user: OWNER } })
+    expect(record).not.toHaveBeenCalled()
   })
 })
 
