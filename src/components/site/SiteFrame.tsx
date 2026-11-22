@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { SiteFooter } from './SiteFooter'
+import { SiteFooterWithSettings } from './SiteFooterWithSettings'
 import { SiteHeader } from './SiteHeader'
 
 export type Register = 'consultancy' | 'education' | 'counselling'
@@ -21,7 +21,7 @@ export function SiteFrame({ register, children }: { register?: Register; childre
       <main id="main" tabIndex={-1}>
         {children}
       </main>
-      <SiteFooter />
+      <SiteFooterWithSettings />
     </div>
   )
 }

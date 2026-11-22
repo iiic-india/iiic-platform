@@ -244,8 +244,14 @@ describe('the organisations starter page, drawn', () => {
     for (const card of cards.slice(3)) {
       expect(card.querySelector('.iiic-todo')?.getAttribute('data-todo')).toBe('I-11')
     }
-    // A card without a link is an article, not a link to nowhere.
-    expect(cards.every((card) => card.tagName === 'ARTICLE')).toBe(true)
+    // A card without a link is an article, not a link to nowhere; each service's card opens
+    // the service's own page (copy architecture §4.4, section 5).
+    expect(cards.slice(0, 3).every((card) => card.tagName === 'ARTICLE')).toBe(true)
+    expect(cards.slice(3).map((card) => card.getAttribute('href'))).toEqual([
+      '/organisations/organisation-planning',
+      '/organisations/marketing-and-sales',
+      '/organisations/brand-positioning',
+    ])
   })
 
   it('asks for the proposal call in the hero and again in the band, in IIIC’s closing words', () => {

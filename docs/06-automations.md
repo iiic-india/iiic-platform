@@ -7,7 +7,7 @@ Everything the platform does on its own. Each automation is an event or a schedu
 - **Event-driven, idempotent.** Domain events (`booking.confirmed`, `payment.captured`, `lead.created`, …) enqueue jobs with an idempotency key, so a retried webhook or a double click never sends twice.
 - **Scheduled jobs** (reminders, digests, retention) are enqueued at a computed `run_at` and recomputed when the underlying booking changes (a reschedule cancels and re-plans its reminders).
 - **Retries.** Three attempts with backoff (1 min, 10 min, 1 h); then the job fails visibly on Today and in the log.
-- **Quiet hours.** No WhatsApp or SMS between 21:00 and 08:00 IST (setting); messages due in that window are sent at 08:00, except a reminder that would then arrive after the session, which is dropped.
+- **Quiet hours.** No WhatsApp or SMS between 21:00 and 08:00 IST (setting); messages due in that window are sent at 08:00, except a reminder that would then arrive after the session, which is dropped. The window is in Settings → Platform settings (M2), read with `readQuietHours` and tested with `inQuietHours` (`src/lib/settings/`).
 - **Consent.** Transactional messages (confirmations, reminders, receipts, login codes) go to anyone who booked. Anything promotional (bridges, follow-up offers, newsletters, nudges) needs the matching consent and stops the moment it is withdrawn.
 - **Counselling guardrail.** No offer, bridge or cross-sell in any message about a counselling session; feedback requests name the session and ask nothing else. Counselling confirmations and reminders carry the scope statement and the crisis numbers.
 - **No dark patterns.** Bridges and nudges use a plain "No, thanks"; no false urgency; nothing promotional to under-18s.
@@ -67,7 +67,7 @@ Channels: E = email · W = WhatsApp · A = admin (Today, digest) · C = calendar
 | O2 | Weekly report | Monday 09:00 | The plan's metrics with week-on-week change | E (owners) |
 | O3 | Message or webhook failure | At once | Show on Today; email an owner if three fail within an hour | A, E |
 | O4 | Data request received | At once and at 50% / 80% of the deadline | Acknowledge to the person; remind the assignee | E, A |
-| O5 | Retention | Nightly | Delete expired holds, codes and tokens; anonymise records past retention; purge logs past their period | — |
+| O5 | Retention | Nightly | Delete expired holds, codes and tokens; anonymise records past retention; purge logs past their period. Built so far: the 404 log's entries not asked for in 180 days (task `O5-purge-missing-pages`, one audit entry per run that removes something); nothing runs it until the cron runner (M6) | — |
 | O6 | Backup check | Daily | Confirm the latest database backup exists and restores (weekly test restore) | A |
 | O7 | Consumer complaint or privacy grievance received | At once, then at 24 h and before each deadline | Automatic acknowledgement with a copy of the complaint as recorded; reminders to the assignee before the 48-hour and one-month marks | E, A |
 | O8 | Incident opened in the breach register | At once, 4 h, 6 h, 48 h, 72 h | Timers for the CERT-In report (6 h) and the Board's detailed report (72 h); owners alerted | A, E |

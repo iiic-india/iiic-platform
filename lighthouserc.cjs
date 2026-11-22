@@ -12,10 +12,15 @@ module.exports = {
         'http://localhost:3000/',
         'http://localhost:3000/framework',
         'http://localhost:3000/organisations',
+        'http://localhost:3000/organisations/organisation-planning',
+        'http://localhost:3000/organisations/marketing-and-sales',
+        'http://localhost:3000/organisations/brand-positioning',
+        'http://localhost:3000/organisations/team-map',
         'http://localhost:3000/founders',
         'http://localhost:3000/counselling',
         'http://localhost:3000/learn',
         'http://localhost:3000/map',
+        'http://localhost:3000/journal',
         'http://localhost:3000/about',
         'http://localhost:3000/institute',
         'http://localhost:3000/legal',
@@ -51,8 +56,9 @@ module.exports = {
         // The server's part of the 600 ms TTFB budget (D-42, D-59); the network from India is
         // measured on the live site.
         'server-response-time': ['error', { maxNumericValue: 600 }],
-        // Transfer sizes, so compressed: JavaScript, CSS and fonts per page.
-        'resource-summary:script:size': ['error', { maxNumericValue: 150 * KB }],
+        // Transfer sizes, so compressed: JavaScript, CSS and fonts per page. React and Next.js's
+        // own runtime is about 125 KB of the JavaScript on every page (D-79).
+        'resource-summary:script:size': ['error', { maxNumericValue: 170 * KB }],
         'resource-summary:stylesheet:size': ['error', { maxNumericValue: 40 * KB }],
         'resource-summary:font:size': ['error', { maxNumericValue: 120 * KB }],
         // Images on a first view, together within the 400 KB no single image may pass

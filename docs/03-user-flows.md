@@ -9,8 +9,8 @@ Each flow lists its steps, the states it can be in, and the edge cases the build
    - Yourself → `/counselling` with the session options, plus related: the course info session.
    - Your family → `/counselling#family`, plus related: the Journal on family.
    - Your organisation → `/organisations/team-map`, plus related: book a proposal call.
-   - Until those places exist, Release 1 sends "Your family" to `/counselling` (its family part waits on I-31) and "Your organisation" to `/organisations`, which introduces the Team Map (`/organisations/team-map` comes with the pipeline, M4); the related items are not shown yet. The answers and their doors are in `src/lib/map/stepZero.ts`; the form posts the answer to `/map/go`, so it never appears in an address that a request log keeps.
-3. Store nothing personal. Record an analytics event with the choice only (the event comes with the analytics events, M2).
+   - Until its place exists, Release 1 sends "Your family" to `/counselling` (its family part waits on I-31). "Your organisation" goes to `/organisations/team-map`, whose page exists from M2 (what the Team Map is waits on I-12; its request form comes with the pipeline, M4). The related items are not shown yet. The answers and their doors are in `src/lib/map/stepZero.ts`; the form posts the answer to `/map/go`, so it never appears in an address that a request log keeps.
+3. Store nothing personal. Record an analytics event with the choice only: `/map/go` writes a `step0` event (the choice, the page `/map`, the default register, the day's pseudonymous session code and the time) after its response has gone, so the visitor never waits for it and a failure to write it never changes where they are sent (`12` §7; `src/lib/analytics/`). No cookie is set and nothing is kept in the browser.
 
 ## F2 · The Subjective Self Map · R2
 

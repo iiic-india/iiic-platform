@@ -11,6 +11,11 @@ import { Scope } from '@/components/blocks/PageBlocks'
  * and the crisis numbers above the footer, since someone who followed a broken counselling
  * link may need them. The path is the one src/proxy.ts sets on every request, which
  * overwrites any value a client sends. Next adds the noindex tag to every 404 response.
+ *
+ * Item 9, the 404 log, is written by the route that answers with this page
+ * (src/lib/redirects/lookup.ts, redirectOrNotFound), never here: Next.js renders this component
+ * on every page of the segment, served or not, since it hands it to the layout as the page to
+ * show should one be missing. Nothing here may write anything or count anything.
  */
 export default async function NotFound() {
   const path = (await headers()).get('x-pathname') ?? ''

@@ -25,7 +25,7 @@ test('a page in every route group, Find your path, the 404 and the admin sign-in
     await page.goto(path)
     await page.waitForLoadState('networkidle')
   }
-  // The answer itself is posted (the privacy notice: Find your path stores nothing about you).
+  // The answer itself is posted, and counted with no cookie (the privacy notice; docs/12 §10).
   // The page's request context shares the browser's cookies, so a cookie set here is caught.
   const answer = await page.request.post('/map/go', { form: { who: 'yourself' }, maxRedirects: 0 })
   expect(answer.status()).toBe(303)

@@ -1,12 +1,13 @@
 // @vitest-environment node
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
 import { starterAt } from '@/content/starter'
+import { JOURNAL_PATH } from '@/lib/journal/addresses'
 import { STEP_ZERO_CHOICES, STEP_ZERO_QUESTION } from '@/lib/map/stepZero'
-import { APP_PAGES, MAP_PAGE } from '@/lib/seo/appPages'
+import { APP_PAGES, JOURNAL_PAGE, MAP_PAGE } from '@/lib/seo/appPages'
 import { isNoindexPath, pageSlugOf } from '@/lib/seo/paths'
 import { canonicalPath, hasPlaceholder, SITE_NAME } from '@/lib/seo/site'
 
@@ -31,6 +32,22 @@ describe('Find your path, in search', () => {
   })
 })
 
+describe('the Journal, in search', () => {
+  it('takes the keyword map’s title, and says what the Journal holds in the plan’s words', () => {
+    expect(JOURNAL_PAGE.path).toBe(JOURNAL_PATH)
+    // docs/content/keyword-map.md, "Proof, Journal, Map and the rest".
+    expect(JOURNAL_PAGE.title).toBe('The Journal: Subjective Self in work and family')
+    // docs/00: "Articles applying the framework to work, family and self".
+    expect(JOURNAL_PAGE.description).toMatch(/^Articles .*applying Subjective Self to work, family/)
+    expect(JOURNAL_PAGE.description).toContain(`${SITE_NAME} (IIIC), Ahmedabad`)
+  })
+})
+
+/** The route groups under src/app/(platform), one per register. */
+const ROUTE_GROUPS = readdirSync(join(process.cwd(), 'src/app/(platform)')).filter((name) =>
+  /^\(.+\)$/.test(name),
+)
+
 describe.each(APP_PAGES.map((page) => [page.path, page] as const))(
   'the app’s own page %s',
   (path, page) => {
@@ -38,8 +55,11 @@ describe.each(APP_PAGES.map((page) => [page.path, page] as const))(
       expect(canonicalPath(path)).toBe(path)
       expect(starterAt(pageSlugOf(path))).toBeUndefined()
       expect(isNoindexPath(path)).toBe(false)
-      const route = join(process.cwd(), 'src/app/(platform)/(default)', path, 'page.tsx')
-      expect(existsSync(route), route).toBe(true)
+      // A route of its own, in the register its route group sets.
+      const routes = ROUTE_GROUPS.map((group) =>
+        join(process.cwd(), 'src/app/(platform)', group, path, 'page.tsx'),
+      ).filter((route) => existsSync(route))
+      expect(routes, path).toHaveLength(1)
     })
 
     it('has a title and a description within their limits, with nothing made up (D-65)', () => {
@@ -57,7 +77,7 @@ describe.each(APP_PAGES.map((page) => [page.path, page] as const))(
 )
 
 describe('the app’s own pages', () => {
-  it('are Find your path alone, for now', () => {
-    expect(APP_PAGES.map((page) => page.path)).toEqual(['/map'])
+  it('are Find your path and the Journal, for now', () => {
+    expect(APP_PAGES.map((page) => page.path)).toEqual(['/map', '/journal'])
   })
 })

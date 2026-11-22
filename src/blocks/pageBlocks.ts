@@ -78,8 +78,8 @@ const intro: Field = {
   admin: { description: 'A sentence or two beside the heading. Optional.' },
 }
 
-/** The ids the fixed blocks carry (scope, certificate, contact): no section may take one. */
-export const FIXED_ANCHORS = ['scope', 'certificate', 'contact'] as const
+/** The ids the fixed blocks carry (scope, certificate, contact, legal): no section may take one. */
+export const FIXED_ANCHORS = ['scope', 'certificate', 'contact', 'legal'] as const
 
 /** A short name a link opens a section by: small letters, numbers and hyphens. */
 export function isAnchor(value: unknown): true | string {
@@ -431,6 +431,20 @@ const Contact: Block = {
   fields: [],
 }
 
+/**
+ * Who runs the site (docs/08 §4; docs/12 §11, `/legal`): the legal name and trade name, the
+ * address, the GSTIN, customer care, the grievance officer, the CERT-In point of contact and the
+ * dark-pattern audit. The block has no fields: the details are the owner's, in the settings
+ * (src/globals/Settings.ts), and each shows its placeholder while it is empty, wherever the
+ * block is placed (src/lib/settings/legal.ts).
+ */
+const Legal: Block = {
+  slug: 'legal',
+  interfaceName: 'LegalBlock',
+  labels: { singular: 'Legal information', plural: 'Legal information' },
+  fields: [],
+}
+
 const FounderNote: Block = {
   slug: 'founderNote',
   interfaceName: 'FounderNoteBlock',
@@ -448,6 +462,31 @@ const FounderNote: Block = {
       },
     },
     { name: 'attribution', type: 'text' },
+    anchor,
+    copyStatus,
+  ],
+}
+
+/**
+ * The questions people ask about the page (docs/02, page anatomy; I-20), as the kit's accordion.
+ * The block holds the section's own words only: the questions are kept, drafted and published
+ * in Content → FAQs under the page's address, and the section shows the published ones in their
+ * order. A page shows its list once, and its structured data names only those questions (D-62).
+ */
+const Faq: Block = {
+  slug: 'faq',
+  interfaceName: 'FaqBlock',
+  labels: { singular: 'Questions (FAQ)', plural: 'Questions (FAQ)' },
+  fields: [
+    kicker,
+    {
+      ...heading,
+      admin: {
+        description:
+          'The heading over the questions, such as Questions people ask. The questions themselves are kept in Content → FAQs, under this page’s address.',
+      },
+    },
+    intro,
     anchor,
     copyStatus,
   ],
@@ -498,8 +537,16 @@ export const PAGE_BLOCKS: Block[] = [
   Certificate,
   FounderNote,
   Contact,
+  Legal,
+  Faq,
   Band,
 ]
+
+/** Whether a page has a questions section, which shows the questions published for it. */
+export function hasQuestions(layout: unknown): boolean {
+  const blocks = Array.isArray(layout) ? (layout as { blockType?: unknown }[]) : []
+  return blocks.some((block) => block.blockType === 'faq')
+}
 
 /*
  * The page rules. src/collections/Pages.ts runs them, with every field's own check, when a
@@ -538,22 +585,28 @@ function fixedLabel(type: string): string {
 }
 
 /**
+ * The sections a page carries once at most: the fixed blocks, whose ids are their own, and the
+ * questions section, which shows the page's one list of questions.
+ */
+const ONCE_A_PAGE: readonly string[] = [...FIXED_ANCHORS, 'faq']
+
+/**
  * No two sections answer to the same link name, none takes the shell's or a fixed block's,
- * and each fixed block comes once.
+ * and each fixed block, like the questions section, comes once.
  */
 export function uniqueAnchors(layout: unknown): true | string {
   const blocks = Array.isArray(layout)
     ? (layout as { blockType?: unknown; anchor?: unknown }[])
     : []
   const taken = new Set<string>([...SHELL_IDS, ...FIXED_ANCHORS])
-  const fixed = new Set<string>()
+  const once = new Set<string>()
   for (const block of blocks) {
     const type = block.blockType
-    if (typeof type === 'string' && (FIXED_ANCHORS as readonly string[]).includes(type)) {
-      if (fixed.has(type)) {
+    if (typeof type === 'string' && ONCE_A_PAGE.includes(type)) {
+      if (once.has(type)) {
         return `A page has one "${fixedLabel(type)}" section at most: remove the others.`
       }
-      fixed.add(type)
+      once.add(type)
     }
     if (typeof block.anchor !== 'string' || block.anchor === '') continue
     if (taken.has(block.anchor)) {

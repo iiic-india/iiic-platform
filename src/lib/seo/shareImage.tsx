@@ -215,6 +215,36 @@ export function shareImageTitle(title: string): string {
   return heading !== '' && shareImageTitleFit(heading) ? heading : SITE_NAME
 }
 
+/** The characters the bundled Manrope holds: basic Latin and Latin-1, the byline's font. */
+const MANROPE_CHARACTER = /[ -~ -ÿ]/u
+
+/**
+ * The byline's limit: the longest name an article takes (src/lib/journal/rules.ts), which fits
+ * one line of the city's size on the artboard.
+ */
+export const SHARE_IMAGE_BYLINE_MAX = 40
+
+/**
+ * An article's author's name as the image draws it, under the title in place of the city
+ * (docs/12 §3: article images show the title and the author's name): in the characters the
+ * bundled Manrope holds, a letter it lacks by its base letter ("ā" as "a"), so that, as with the
+ * title, no font is ever looked for elsewhere. Nothing when the name holds a placeholder, holds
+ * no letter the font can draw, or is longer than one line of the artboard.
+ */
+export function shareImageByline(name: string | null | undefined): string | undefined {
+  if (!name || hasPlaceholder(name)) return undefined
+  const drawn = [...name.normalize('NFC')]
+    .map((char) =>
+      MANROPE_CHARACTER.test(char)
+        ? char
+        : [...char.normalize('NFD')].filter((part) => MANROPE_CHARACTER.test(part)).join(''),
+    )
+    .join('')
+    .replace(/\s+/gu, ' ')
+    .trim()
+  return /\p{L}/u.test(drawn) && [...drawn].length <= SHARE_IMAGE_BYLINE_MAX ? drawn : undefined
+}
+
 /**
  * The two labels beside a heading. The image names the institute and its city once: the name
  * as the kicker and the city below, unless the heading already says either. Where the heading
@@ -265,18 +295,25 @@ function loadAssets(): Promise<Assets> {
 }
 
 export type ShareImageInput = {
-  /** The page's search title. Left out for the home page, whose image carries the name. */
+  /** The page's search title, or an article's own. Left out for the home page. */
   title?: string
   /** The home page: the institute's name is the heading. */
   home?: boolean
+  /** A Journal article's author, drawn under its title in place of the city. */
+  byline?: string | null
 }
 
 /**
  * The share image of a page, 1200 by 630, as a PNG response. The home page's, and that of a
  * page whose title cannot be drawn, carries the institute's name under its short name; every
- * other page's carries the page's title under the institute's name.
+ * other page's carries the page's title under the institute's name, and an article's its
+ * author's name below.
  */
-export async function shareImage({ title, home = false }: ShareImageInput): Promise<ImageResponse> {
+export async function shareImage({
+  title,
+  home = false,
+  byline,
+}: ShareImageInput): Promise<ImageResponse> {
   const { fonts, mark } = await loadAssets()
   const colour = SHARE_IMAGE_COLOURS
   const heading = home || title === undefined ? SITE_NAME : shareImageTitle(title)
@@ -286,7 +323,9 @@ export async function shareImage({ title, home = false }: ShareImageInput): Prom
     size: SHARE_IMAGE_TITLE_SETTINGS[0].size,
     breakWords: false,
   }
-  const { kicker, city } = shareImageLabels(heading)
+  const labels = shareImageLabels(heading)
+  const kicker = labels.kicker
+  const city = (home ? undefined : shareImageByline(byline)) ?? labels.city
 
   return new ImageResponse(
     <div
@@ -359,6 +398,9 @@ export async function shareImage({ title, home = false }: ShareImageInput): Prom
             fontSize: 26,
             lineHeight: `${CITY_HEIGHT}px`,
             color: colour['--iiic-slate-500'],
+            // One line, the city or an article's author: never wrapped onto the padding.
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
           }}
         >
           {city}

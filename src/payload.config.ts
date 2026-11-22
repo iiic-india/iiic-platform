@@ -9,11 +9,24 @@ import { buildConfig, type EmailAdapter } from 'payload'
 import { payloadTotp } from 'payload-totp'
 import sharp from 'sharp'
 
+import { AnalyticsEvents } from './collections/AnalyticsEvents'
 import { AuditLog } from './collections/AuditLog'
+import { Consents } from './collections/Consents'
+import { ConsentVersions } from './collections/ConsentVersions'
+import { Faqs } from './collections/Faqs'
 import { Media } from './collections/Media'
+import { MissingPages } from './collections/MissingPages'
 import { Pages } from './collections/Pages'
+import { People } from './collections/People'
+import { Posts } from './collections/Posts'
+import { Practitioners } from './collections/Practitioners'
+import { redirects } from './collections/Redirects'
+import { Services } from './collections/Services'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
+import { Topics } from './collections/Topics'
 import { Users } from './collections/Users'
+import { Settings } from './globals/Settings'
+import { jobs } from './jobs'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
 import { reportServerError, reportTestError } from './lib/monitoring/sentry'
@@ -94,7 +107,29 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Pages, Media, StaffRecoveryCodes, AuditLog],
+  // The redirects collection comes from Payload's redirects plugin (src/collections/Redirects.ts).
+  collections: [
+    Users,
+    Pages,
+    Posts,
+    Topics,
+    Faqs,
+    MissingPages,
+    Media,
+    Practitioners,
+    Services,
+    StaffRecoveryCodes,
+    AuditLog,
+    // The trust layer (docs/04): the one record of a person, the consent ledger and its notices,
+    // and the funnel's anonymous events.
+    People,
+    Consents,
+    ConsentVersions,
+    AnalyticsEvents,
+  ],
+  globals: [Settings],
+  // Automations (src/jobs/index.ts): never run on their own here.
+  jobs,
   editor: lexicalEditor(),
   email: config.RESEND_API_KEY
     ? resendAdapter({
@@ -155,6 +190,9 @@ export default buildConfig({
         },
       },
     }),
+    // Old addresses and where they lead (docs/12 §3). Before payload-totp, so that its access
+    // rules wait for the two-factor code like every other collection's.
+    redirects,
     // Staff two-factor (docs/08 §9). It wraps the access of every collection before it, so it
     // stays the last plugin that adds collections; the two transforms after it only add hooks
     // and replace its English strings.

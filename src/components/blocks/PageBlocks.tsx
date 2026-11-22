@@ -12,15 +12,15 @@ import {
 } from '@/lib/certificates/statement'
 import { LEGAL_REVIEW_AWAITS } from '@/lib/content/legalReview'
 import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
-import type { PageBlock, PageContent } from '@/lib/content/types'
-import {
-  CRISIS_HEADING,
-  CRISIS_LINES,
-  SCOPE_AWAITS,
-  SCOPE_HEADING,
-  SCOPE_STATEMENT,
-} from '@/lib/counselling/scope'
+import type { FaqItem, PageBlock, PageContent } from '@/lib/content/types'
 import { type Devices, devicesAt } from '@/lib/experience/narrative'
+import {
+  LEGAL_INFORMATION_COLUMNS,
+  LEGAL_INFORMATION_HEADING,
+  legalRows,
+  NO_LEGAL_INFORMATION,
+  type LegalInformation,
+} from '@/lib/settings/legal'
 import { CONTACT, CONTACT_HEADING, mailHref, telHref } from '@/lib/site/contact'
 import type {
   BandBlock,
@@ -28,6 +28,7 @@ import type {
   ComparisonBlock,
   DoorsBlock,
   FactListBlock,
+  FaqBlock,
   FounderNoteBlock,
   HeroBlock,
   PointsBlock,
@@ -36,6 +37,7 @@ import type {
 } from '@/payload-types'
 
 import styles from './blocks.module.css'
+import { Scope } from './Scope'
 import { renderText } from './text'
 
 /**
@@ -414,45 +416,6 @@ function FactList({ block }: { block: FactListBlock }) {
 }
 
 /**
- * The counselling scope statement and the crisis numbers (docs/08 §7), in the one wording
- * every counselling surface shares: the counselling page, whose hero links here by its id, and
- * the 404 on a counselling path (docs/11 §5.1, item 8). Until the lawyer fixes the wording it
- * is marked as a draft (I-22). Each number's link also names its line for a screen reader, so
- * that a list of the page's links still says which number is which.
- */
-export function Scope() {
-  return (
-    <section className="iiic-section" id="scope">
-      <DraftMark what="Draft wording" awaits={SCOPE_AWAITS} />
-      <SectionHead heading={SCOPE_HEADING} />
-      <div className="iiic-prose">
-        {SCOPE_STATEMENT.map((sentence) => (
-          <p key={sentence}>{sentence}</p>
-        ))}
-        <h3>{CRISIS_HEADING}</h3>
-        <ul>
-          {CRISIS_LINES.map((line) => (
-            <li key={line.label}>
-              {line.label}:{' '}
-              {line.numbers.map((number, index) => (
-                <span key={number}>
-                  {index > 0 ? ' or ' : null}
-                  <a className="iiic-link" href={telHref(number)}>
-                    {number}
-                    <span className="iiic-sr-only">, {line.label}</span>
-                  </a>
-                </span>
-              ))}
-              {line.note ? ` (${line.note})` : null}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  )
-}
-
-/**
  * What the certificate is and is not (docs/08 §7), in the one wording every certificate and
  * the course page share. Until the lawyer clears the wording it is marked as a draft (I-22).
  */
@@ -541,6 +504,86 @@ function Contact() {
   )
 }
 
+/**
+ * Who runs the site (docs/08 §4; docs/12 §11): the legal information in the settings, as a
+ * table whose rows are headed by their items, so a screen reader reads every detail with its
+ * label. A detail the settings lack is its placeholder (src/lib/settings/legal.ts). On a narrow
+ * screen the table scrolls inside its region, as the comparison's does.
+ */
+function LegalInformationSection({ legal }: { legal: LegalInformation }) {
+  return (
+    <section className="iiic-section" id="legal">
+      <SectionHead heading={LEGAL_INFORMATION_HEADING} />
+      <div
+        className={`iiic-table-wrap ${styles.tableRegion}`}
+        role="region"
+        aria-label={LEGAL_INFORMATION_HEADING}
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region needs keyboard focus
+        tabIndex={0}
+      >
+        <table className="iiic-table">
+          <thead>
+            <tr>
+              <th scope="col">{LEGAL_INFORMATION_COLUMNS.item}</th>
+              <th scope="col">{LEGAL_INFORMATION_COLUMNS.detail}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {legalRows(legal).map((row) => (
+              <tr key={row.item}>
+                <th scope="row" className={styles.rowHead}>
+                  {row.item}
+                </th>
+                <td>
+                  <strong>{renderText(row.text)}</strong>
+                  {row.link ? (
+                    <>
+                      {' · '}
+                      <a className="iiic-link" href={row.link.href}>
+                        {row.link.label}
+                      </a>
+                    </>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
+/**
+ * The questions published for the page (Content → FAQs), in their order, as the kit's accordion:
+ * each opens without JavaScript, and its answer is a paragraph a line. With no question
+ * published the section is not drawn, and the page's structured data names none (D-62).
+ */
+function Faq({ block, faqs }: { block: FaqBlock; faqs: readonly FaqItem[] }) {
+  if (faqs.length === 0) return null
+  return (
+    <section className="iiic-section" id={block.anchor ?? undefined}>
+      <CandidateMark status={block.copyStatus} />
+      <SectionHead kicker={block.kicker} heading={block.heading} intro={block.intro} />
+      <div className={styles.faqs}>
+        {faqs.map((faq) => (
+          <details className="iiic-accordion" key={faq.id}>
+            <summary>{faq.question}</summary>
+            <div>
+              {faq.answer
+                .split('\n')
+                .filter((line) => line.trim() !== '')
+                .map((line, index) => (
+                  <p key={index}>{line}</p>
+                ))}
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 /** The one yellow band of a page. It spans the window, so it sits outside the page column. */
 function Band({ block, marked }: { block: BandBlock; marked: boolean }) {
   return (
@@ -573,12 +616,16 @@ function Section({
   draft,
   devices,
   index,
+  legal,
+  faqs,
 }: {
   block: Exclude<PageBlock, BandBlock>
   draft: boolean
   devices: Devices
   /** The block's place on its page, which names what a device needs to name. */
   index: number
+  legal: LegalInformation
+  faqs: readonly FaqItem[]
 }) {
   switch (block.blockType) {
     case 'hero':
@@ -610,6 +657,10 @@ function Section({
       return <FounderNote block={block} />
     case 'contact':
       return <Contact />
+    case 'legal':
+      return <LegalInformationSection legal={legal} />
+    case 'faq':
+      return <Faq block={block} faqs={faqs} />
   }
 }
 
@@ -617,16 +668,23 @@ function Section({
  * A page's sections in order, in the page column, and its closing band across the window. A
  * legal page that is still a draft says so above its heading (D-52). The page's slug says
  * whether it is a narrative page and which devices it carries (docs/11 §3): on the founders'
- * page every section between the hero and the band is a chapter that reveals once.
+ * page every section between the hero and the band is a chapter that reveals once. The legal
+ * information section draws what the settings hold (the route reads it,
+ * src/lib/settings/read.ts); without it, every detail is its placeholder. The questions section
+ * shows the questions given, which PageAt reads for the page (src/lib/content/faqs.ts).
  */
 export function RenderBlocks({
   layout,
   legalReview,
   slug,
+  legal = NO_LEGAL_INFORMATION,
+  faqs = [],
 }: {
   layout: PageContent['layout']
   legalReview?: PageContent['legalReview']
   slug?: string
+  legal?: LegalInformation
+  faqs?: readonly FaqItem[]
 }) {
   const devices = devicesAt(slug)
   const band = layout.find((block): block is BandBlock => block.blockType === 'band')
@@ -643,6 +701,8 @@ export function RenderBlocks({
               draft={legalReview === 'draft'}
               devices={devices}
               index={index}
+              legal={legal}
+              faqs={faqs}
               key={block.id ?? index}
             />
           )
@@ -665,3 +725,5 @@ export function RenderBlocks({
     </>
   )
 }
+
+export { Scope }

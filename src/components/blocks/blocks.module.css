@@ -38,6 +38,11 @@
   margin-top: 80px;
 }
 
+/* The questions under their heading, as wide as the kit's reading measure. */
+.faqs {
+  max-width: var(--iiic-measure);
+}
+
 /* The small print under the actions of a hero. */
 .heroNote {
   margin-top: 16px;

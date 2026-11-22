@@ -8,6 +8,7 @@ import { LEGAL } from '@/content/starter/legal'
 import { placeholdersIn } from '@/lib/content/placeholders'
 import type { PageContent } from '@/lib/content/types'
 import { CRISIS_HEADING, CRISIS_LINES } from '@/lib/counselling/scope'
+import { LEGAL_INFORMATION_HEADING, legalRows, NO_LEGAL_INFORMATION } from '@/lib/settings/legal'
 import type { ComparisonBlock } from '@/payload-types'
 
 afterEach(cleanup)
@@ -120,6 +121,7 @@ const EVERY_FIELD: PageContent['layout'] = [
     copyStatus: 'approved',
   },
   { blockType: 'contact' },
+  { blockType: 'legal' },
   {
     blockType: 'band',
     kicker: todo('band kicker'),
@@ -136,8 +138,9 @@ describe('a placeholder in any field a visitor sees', () => {
   it('draws a placeholder in every text field as the chip, and reports exactly those', () => {
     const { container } = render(<RenderBlocks layout={EVERY_FIELD} />)
     expect(asChips(placeholdersIn({ layout: EVERY_FIELD }))).toEqual(chips(container))
-    // The 52 typed placeholders, and the two the founder's note and the contact section draw.
-    expect(chips(container)).toHaveLength(54)
+    // The 52 typed placeholders, the two the founder's note and the contact section draw, and
+    // the seven of the legal information while the settings hold none of it.
+    expect(chips(container)).toHaveLength(61)
     // None is left as raw text.
     const page = container.cloneNode(true) as HTMLElement
     for (const chip of page.querySelectorAll('.iiic-todo')) chip.remove()
@@ -214,11 +217,17 @@ describe('a comparison', () => {
     }
   })
 
-  it('heads each line of the legal information table with its label', () => {
+  it('heads each line of the legal information table with its label, as a comparison does', () => {
     render(<RenderBlocks layout={LEGAL.layout} legalReview={LEGAL.legalReview} />)
     const labels = screen.getAllByRole('rowheader').map((cell) => cell.textContent)
-    expect(labels).toEqual(comparisonOf(LEGAL).pairs.map((pair) => pair.left))
+    expect(labels).toEqual(legalRows(NO_LEGAL_INFORMATION).map((row) => row.item))
     expect(labels).toContain('Grievance officer')
+    const region = screen.getByRole('region', { name: LEGAL_INFORMATION_HEADING })
+    expect(region.getAttribute('tabindex')).toBe('0')
+    expect(region.className.split(' ')).toEqual(['iiic-table-wrap', styles.tableRegion])
+    for (const row of within(region).getAllByRole('row').slice(1)) {
+      expect(row.querySelector('th[scope="row"]')?.className).toBe(styles.rowHead)
+    }
   })
 
   it('scrolls inside a region that keyboard focus reaches and that shows the kit’s ring', () => {

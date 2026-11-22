@@ -8,7 +8,7 @@ import { ACCESSIBILITY, LEGAL_PAGES } from '@/content/starter/legal'
 import { getPage } from '@/lib/content/pages'
 import { pagePath } from '@/lib/content/slug'
 import type { PageContent } from '@/lib/content/types'
-import { MAP_PAGE } from '@/lib/seo/appPages'
+import { APP_PAGES, JOURNAL_PAGE, MAP_PAGE } from '@/lib/seo/appPages'
 import { buildLlmsTxt, type LlmsPage } from '@/lib/seo/llms'
 import { FOUNDER, HOME_TITLE, SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo/site'
 import { sitemapEntries, type SitemapSource } from '@/lib/seo/sitemap'
@@ -25,14 +25,37 @@ vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
 const ORIGIN = 'https://fake.example'
 const STARTERS = Object.keys(STARTER_PAGES)
 
-/** The starter pages and Find your path, as the route lists them while the CMS holds nothing. */
+/**
+ * The starter pages, Find your path and the Journal, as the route lists them while the CMS
+ * holds nothing.
+ */
 const SITE_PAGES: LlmsPage[] = [
   ...Object.entries(STARTER_PAGES).map(([slug, page]) => ({
     path: pagePath(slug),
     title: slug === 'home' ? HOME_TITLE : page.title,
     description: page.description,
   })),
-  MAP_PAGE,
+  ...APP_PAGES,
+]
+
+/** A topic and two articles of the Journal, as the route lists them. Obviously fake. */
+const JOURNAL_PAGES: LlmsPage[] = [
+  {
+    path: '/journal/topic/fake-topic',
+    title: 'The Journal: Fake topic',
+    description: JOURNAL_PAGE.description,
+  },
+  {
+    path: '/journal/fake-newer-article',
+    title: 'A fake newer article?',
+    description: 'A fake excerpt.',
+    publishedAt: '2026-11-21T20:00:00.000Z',
+  },
+  {
+    path: '/journal/fake-older-article',
+    title: 'A fake older article?',
+    publishedAt: '2026-10-30T08:30:00.000Z',
+  },
 ]
 
 /** The file's parts: what comes before the first section, then each section by its heading. */
@@ -54,6 +77,8 @@ const source = (held: Partial<SitemapSource> = {}): SitemapSource => ({
   starterSlugs: STARTERS,
   published: [],
   everPublished: [],
+  posts: [],
+  topics: [],
   ...held,
 })
 
@@ -135,6 +160,28 @@ describe('llms.txt', () => {
       `- [${String(STARTER_PAGES.framework?.title)}](${ORIGIN}/framework): ${String(STARTER_PAGES.framework?.description)}`,
     )
     expect(listed).toContain(`- [Find your path](${ORIGIN}/map): ${MAP_PAGE.description}`)
+    expect(listed).toContain(
+      `- [${JOURNAL_PAGE.title}](${ORIGIN}/journal): ${JOURNAL_PAGE.description}`,
+    )
+  })
+
+  it('puts the Journal’s topics and articles under their own heading, each article with its date in India', () => {
+    const { sections } = parts(buildLlmsTxt([...SITE_PAGES, ...JOURNAL_PAGES], ORIGIN))
+    expect(Object.keys(sections)).toEqual(['Pages', 'Journal', 'Legal'])
+    expect(sections.Journal).toEqual([
+      `- [The Journal: Fake topic](${ORIGIN}/journal/topic/fake-topic): ${JOURNAL_PAGE.description}`,
+      // 20:00 UTC on 21 November is the 22nd in Asia/Kolkata (CLAUDE.md #8).
+      `- [A fake newer article?](${ORIGIN}/journal/fake-newer-article): A fake excerpt. Published 22 November 2026.`,
+      `- [A fake older article?](${ORIGIN}/journal/fake-older-article): Published 30 October 2026.`,
+    ])
+    // The Journal itself stays among the pages.
+    expect(sections.Pages).toContain(
+      `- [${JOURNAL_PAGE.title}](${ORIGIN}/journal): ${JOURNAL_PAGE.description}`,
+    )
+  })
+
+  it('has no Journal heading while no article is published', () => {
+    expect(Object.keys(parts(buildLlmsTxt(SITE_PAGES, ORIGIN)).sections)).not.toContain('Journal')
   })
 
   it('puts the legal pages under their own heading, and every other page under Pages', () => {
@@ -327,6 +374,37 @@ describe('the route /llms.txt', () => {
     const text = await (await GET()).text()
     expect(text).not.toContain('fake-gone')
     expect(text).toContain(`](${ORIGIN}/about)`)
+  })
+
+  it('lists the Journal’s topics and published articles in their own words, with their dates', async () => {
+    const held = cmsHolds({
+      posts: [
+        {
+          slug: 'fake-article',
+          title: 'A fake article whose title is far too long for a browser tab to hold?',
+          searchTitle: 'A fake search title',
+          excerpt: 'A fake excerpt.',
+          publishedAt: '2026-11-21T08:30:00.000Z',
+          updatedAt: '2026-11-22T09:00:00.000Z',
+        },
+      ],
+      topics: [{ slug: 'fake-topic', name: 'Fake topic', description: 'A fake topic.' }],
+    })
+    const text = await (await GET()).text()
+    expect(parts(text).sections.Journal).toEqual([
+      `- [The Journal: Fake topic](${ORIGIN}/journal/topic/fake-topic): A fake topic.`,
+      `- [A fake search title](${ORIGIN}/journal/fake-article): A fake excerpt. Published 21 November 2026.`,
+    ])
+    // Nothing asked the CMS for a page: the Journal's entries carry their own words.
+    expect(vi.mocked(getPage).mock.calls.map(([slug]) => slug)).not.toContain('journal')
+    const linked = Object.values(parts(text).sections)
+      .flat()
+      .map((line) => line.match(/\]\(([^)]+)\)/)?.[1])
+    expect([...linked].sort()).toEqual(
+      sitemapEntries(held, ORIGIN)
+        .map(({ url }) => url)
+        .sort(),
+    )
   })
 
   it('names the same pages as the sitemap, whatever the CMS holds', async () => {

@@ -2,6 +2,7 @@ import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import FindYourPathPage from '@/app/(platform)/(default)/map/page'
+import { hasQuestions } from '@/blocks/pageBlocks'
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { SiteFooter } from '@/components/site/SiteFooter'
 import { STARTER_PAGES } from '@/content/starter'
@@ -18,7 +19,10 @@ import {
   WHOLE_PAGE,
   type PageRef,
 } from '@/lib/content/placeholders'
-import type { PageContent } from '@/lib/content/types'
+import type { FaqItem, PageContent } from '@/lib/content/types'
+
+/** A published question, so that a page's questions section is drawn. Obviously fake. */
+const FAKE_FAQS: FaqItem[] = [{ id: '1', question: 'Fake question?', answer: 'Fake answer.' }]
 
 // next/image needs Next's loader; the footer's structure is not what is tested here.
 vi.mock('next/image', () => ({ default: () => null }))
@@ -150,6 +154,7 @@ const EVERY_FIELD: PageContent['layout'] = [
     copyStatus: 'approved',
   },
   { blockType: 'contact' },
+  { blockType: 'legal' },
   {
     blockType: 'band',
     kicker: todo('band kicker'),
@@ -170,8 +175,13 @@ const fakeStatement = {
 
 describe.each(Object.entries(STARTER_PAGES))('what the report reads on "%s"', (_, page) => {
   it('is exactly what the page draws: every placeholder, marker and draft label', () => {
+    // Drawn with its questions section showing, as it does once a question is published.
     const { container } = render(
-      <RenderBlocks layout={page.layout} legalReview={page.legalReview} />,
+      <RenderBlocks
+        layout={page.layout}
+        legalReview={page.legalReview}
+        faqs={hasQuestions(page.layout) ? FAKE_FAQS : []}
+      />,
     )
     expect(asChips(placeholdersIn(page))).toEqual(chips(container))
     expect(candidateSections(page)).toHaveLength(
@@ -193,10 +203,11 @@ describe('every text field a block draws', () => {
   it('draws a placeholder as the chip, and the report lists exactly those', () => {
     const { container } = render(<RenderBlocks layout={EVERY_FIELD} />)
     expect(chips(container)).toEqual(asChips(placeholdersIn({ layout: EVERY_FIELD })))
-    // Each typed placeholder, and the two the blocks draw themselves: the founder's photograph
-    // and the contact address. None is left out of both, and none is drawn as plain text.
-    expect(chips(container)).toHaveLength(typed.length + 2)
-    expect(container.textContent?.match(/\[\[TODO:/g)).toHaveLength(typed.length + 2)
+    // Each typed placeholder, the two the blocks draw themselves (the founder's photograph and
+    // the contact address), and the legal information's seven while the settings hold none of
+    // it. None is left out of both, and none is drawn as plain text.
+    expect(chips(container)).toHaveLength(typed.length + 2 + 7)
+    expect(container.textContent?.match(/\[\[TODO:/g)).toHaveLength(typed.length + 2 + 7)
   })
 
   it('reports nothing from the admin’s block name, which the page never draws', () => {

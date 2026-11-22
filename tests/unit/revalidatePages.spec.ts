@@ -2,7 +2,16 @@
 import { revalidateTag } from 'next/cache'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { PAGES_TAG, pageTag, revalidatePages } from '@/lib/content/revalidate'
+import {
+  PAGES_TAG,
+  pageTag,
+  POSTS_TAG,
+  postTag,
+  revalidatePages,
+  revalidatePosts,
+  revalidateTopics,
+  TOPICS_TAG,
+} from '@/lib/content/revalidate'
 
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }))
 const revalidate = vi.mocked(revalidateTag)
@@ -33,5 +42,33 @@ describe('revalidatePages', () => {
       throw new Error('fake failure')
     })
     expect(() => revalidatePages('home')).toThrow('fake failure')
+  })
+})
+
+describe('revalidatePosts and revalidateTopics', () => {
+  it('mark the Journal’s lists and each named article stale, at its new and old address', () => {
+    revalidatePosts('fake-new', 'fake-old', null, undefined)
+    expect(revalidate.mock.calls).toEqual([
+      [POSTS_TAG, { expire: 0 }],
+      [postTag('fake-new'), { expire: 0 }],
+      [postTag('fake-old'), { expire: 0 }],
+    ])
+    expect(postTag('fake-new')).toBe('post:fake-new')
+  })
+
+  it('mark the topics stale, and the articles and lists that show them', () => {
+    revalidateTopics()
+    expect(revalidate.mock.calls).toEqual([
+      [TOPICS_TAG, { expire: 0 }],
+      [POSTS_TAG, { expire: 0 }],
+    ])
+  })
+
+  it('do nothing outside a request', () => {
+    revalidate.mockImplementation(() => {
+      throw new Error('Invariant: static generation store missing in revalidateTag posts')
+    })
+    expect(() => revalidatePosts('fake-article')).not.toThrow()
+    expect(() => revalidateTopics()).not.toThrow()
   })
 })

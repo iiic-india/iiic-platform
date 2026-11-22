@@ -1,6 +1,7 @@
 import { CERTIFICATE_HEADING } from '@/lib/certificates/statement'
 import type { PageContent } from '@/lib/content/types'
 import { SCOPE_HEADING } from '@/lib/counselling/scope'
+import { LEGAL_PLACEHOLDERS, typed } from '@/lib/settings/legal'
 import { CONTACT } from '@/lib/site/contact'
 
 /**
@@ -23,10 +24,8 @@ import { CONTACT } from '@/lib/site/contact'
 const GRIEVANCE = { label: 'Contact the grievance officer', href: '/grievance' }
 const CONTACT_US = { label: 'Contact', href: '/about#contact' }
 
-const LEGAL_NAME =
-  '[[TODO: the proprietor’s legal name, exactly as on PAN and registrations, I-26]]'
-const OFFICER = '[[TODO: the grievance officer’s name, designation and contact, I-21]]'
-const REACH = `${CONTACT.email} or ${CONTACT.phone}, ${CONTACT.hours}`
+const LEGAL_NAME = typed(LEGAL_PLACEHOLDERS.legalName)
+const OFFICER = typed(LEGAL_PLACEHOLDERS.grievanceOfficer)
 
 export const LEGAL: PageContent = {
   title: 'Legal information',
@@ -45,38 +44,10 @@ export const LEGAL: PageContent = {
       primary: GRIEVANCE,
       copyStatus: 'approved',
     },
-    {
-      blockType: 'comparison',
-      heading: 'Who runs this site',
-      leftLabel: 'Item',
-      rightLabel: 'Detail',
-      pairs: [
-        {
-          left: 'Trade name',
-          right:
-            'Indian Institute of Image Catalysts (IIIC) [[TODO: the trade name exactly as registered, I-26]]',
-        },
-        { left: 'Legal name', right: LEGAL_NAME },
-        { left: 'Kind of business', right: 'Sole proprietorship' },
-        {
-          left: 'Address',
-          right: `${CONTACT.address} [[TODO: the address as it should print, with its PIN, I-33]]`,
-        },
-        // The platform domain (D-05).
-        { left: 'Website', right: 'imagecatalysts.in' },
-        // IIIC is registered for GST; the number itself is still to come (docs/09, I-05).
-        { left: 'GSTIN', right: '[[TODO: the GSTIN, I-05]]' },
-        { left: 'Customer care', right: REACH },
-        { left: 'Grievance officer', right: OFFICER },
-        { left: 'CERT-In point of contact', right: '[[TODO: name, email and phone, I-27]]' },
-        {
-          left: 'Dark-pattern self-audit',
-          right:
-            '[[TODO: the yearly certificate of compliance, shown here from 1 January 2027, I-22]]',
-        },
-      ],
-      copyStatus: 'approved',
-    },
+    // Who runs the site, from the settings: the legal name and trade name, the address, the
+    // GSTIN, customer care, the grievance officer, the CERT-In point of contact and the
+    // dark-pattern audit, each a placeholder until the owner enters it (src/lib/settings/legal.ts).
+    { blockType: 'legal' },
   ],
 }
 
@@ -112,9 +83,16 @@ export const PRIVACY: PageContent = {
       heading: 'What this site collects today',
       lead: 'You can read this site without giving any personal details.',
       points: [
-        { text: '“Find your path” asks one question and stores nothing about you.' },
+        {
+          // The step-0 event (docs/03 F1; docs/12 §7): the answer, the page, the time and the
+          // day's session code, worked out on the server (src/lib/analytics/session.ts).
+          text: '“Find your path” asks one question. To count the answers, the site records the one you choose, the time, and a code that changes every day. The code is worked out from your IP address and browser, and neither is kept with it.',
+        },
         {
           text: 'The servers that deliver the site keep a log of requests: the page asked for, the time, the IP address and the browser. The log is used to keep the site secure and working.',
+        },
+        {
+          text: 'When an address has no page, the site keeps the address and the name of the site that linked to it, to fix broken links, and removes them once 180 days pass without anyone asking for that address.',
         },
         {
           text: 'The site sets no cookies when you read it, so it shows no cookie banner. Cookies are set only for IIIC’s staff when they sign in.',
@@ -163,7 +141,12 @@ export const PRIVACY: PageContent = {
           text: 'If you are under 18, a parent or guardian makes the booking and gives the consent.',
         },
         {
-          text: 'IIIC sends no marketing to anyone under 18 and records no analytics events about them.',
+          // docs/08 §3 and docs/12 §10: the age band from a booking or the Map stops analytics
+          // events; the step-0 count is taken before any age is asked (lawyer to confirm, I-22).
+          text: 'IIIC sends no marketing to anyone under 18. Once a booking or the Map tells IIIC that a person is under 18, the site records no analytics events about them.',
+        },
+        {
+          text: '“Find your path” does not ask your age, so the count of its answers is taken before anyone’s age is known.',
         },
       ],
       copyStatus: 'approved',

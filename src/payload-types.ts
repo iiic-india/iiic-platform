@@ -69,24 +69,55 @@ export interface Config {
   collections: {
     users: User;
     pages: Page;
+    posts: Post;
+    topics: Topic;
+    faqs: Faq;
+    'missing-pages': MissingPage;
     media: Media;
+    practitioners: Practitioner;
+    services: Service;
     'staff-recovery-codes': StaffRecoveryCode;
     'audit-log': AuditLog;
+    people: Person;
+    consents: Consent;
+    'consent-versions': ConsentVersion;
+    'analytics-events': AnalyticsEvent;
+    redirects: Redirect;
     'totp-attempts': TotpAttempt;
     'payload-kv': PayloadKv;
+    'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    people: {
+      consents: 'consents';
+    };
+    consents: {
+      withdrawal: 'consents';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    posts: PostsSelect<false> | PostsSelect<true>;
+    topics: TopicsSelect<false> | TopicsSelect<true>;
+    faqs: FaqsSelect<false> | FaqsSelect<true>;
+    'missing-pages': MissingPagesSelect<false> | MissingPagesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    practitioners: PractitionersSelect<false> | PractitionersSelect<true>;
+    services: ServicesSelect<false> | ServicesSelect<true>;
     'staff-recovery-codes': StaffRecoveryCodesSelect<false> | StaffRecoveryCodesSelect<true>;
     'audit-log': AuditLogSelect<false> | AuditLogSelect<true>;
+    people: PeopleSelect<false> | PeopleSelect<true>;
+    consents: ConsentsSelect<false> | ConsentsSelect<true>;
+    'consent-versions': ConsentVersionsSelect<false> | ConsentVersionsSelect<true>;
+    'analytics-events': AnalyticsEventsSelect<false> | AnalyticsEventsSelect<true>;
+    redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
+    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -95,15 +126,25 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    settings: PlatformSettings;
+  };
+  globalsSelect: {
+    settings: SettingsSelect<false> | SettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
   };
   user: User;
   jobs: {
-    tasks: unknown;
+    tasks: {
+      'O5-purge-missing-pages': TaskO5PurgeMissingPages;
+      inline: {
+        input: unknown;
+        output: unknown;
+      };
+    };
     workflows: unknown;
   };
 }
@@ -173,7 +214,7 @@ export interface Page {
    */
   title: string;
   /**
-   * Where the page lives: "home" for the first page, "framework" for /framework.
+   * Where the page lives: "home" for the first page, "framework" for /framework. Change it on a published page and, once you publish, the old address sends visitors here.
    */
   slug: string;
   /**
@@ -201,6 +242,8 @@ export interface Page {
     | CertificateBlock
     | FounderNoteBlock
     | ContactBlock
+    | LegalBlock
+    | FaqBlock
     | BandBlock
   )[];
   /**
@@ -545,6 +588,44 @@ export interface ContactBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LegalBlock".
+ */
+export interface LegalBlock {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'legal';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FaqBlock".
+ */
+export interface FaqBlock {
+  /**
+   * The small line above the heading. Optional.
+   */
+  kicker?: string | null;
+  /**
+   * The heading over the questions, such as Questions people ask. The questions themselves are kept in Content → FAQs, under this page’s address.
+   */
+  heading: string;
+  /**
+   * A sentence or two beside the heading. Optional.
+   */
+  intro?: string | null;
+  /**
+   * A short name to link to this section by: with "story", a link to /page#story opens here. Optional.
+   */
+  anchor?: string | null;
+  /**
+   * Candidate copy is shown with a marker until IIIC approves it (I-41).
+   */
+  copyStatus?: ('approved' | 'candidate') | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'faq';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "BandBlock".
  */
 export interface BandBlock {
@@ -575,6 +656,186 @@ export interface BandBlock {
   blockType: 'band';
 }
 /**
+ * The Journal: each article answers one question in IIIC’s words and ends with a question to sit with.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts".
+ */
+export interface Post {
+  id: number;
+  /**
+   * The question the article answers, as a reader would ask it (docs/12 §3). It is the heading of the page.
+   */
+  title: string;
+  /**
+   * One or two sentences that answer the title. The Journal's lists show it, and search results do when the article has no description of its own. Up to 155 characters.
+   */
+  excerpt: string;
+  body: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * Every article ends with one reflective question (docs/11 §3.6). Readers can copy it to take it with them.
+   */
+  question: string;
+  /**
+   * The title in the browser tab and in search results, up to 53 characters: the tab adds " · IIIC" (D-65). Needed when the title is longer; otherwise the title is used.
+   */
+  searchTitle?: string | null;
+  /**
+   * One or two sentences for search results and shared links, up to 155 characters. Without one, the excerpt is used.
+   */
+  description?: string | null;
+  /**
+   * The article lives at /journal/ and this address. Set it once: links to it stay.
+   */
+  slug: string;
+  /**
+   * The first topic is the article’s home: its breadcrumb, and the page it links to after its question.
+   */
+  topics: (number | Topic)[];
+  author: 'founder' | 'other';
+  /**
+   * As the author wants it shown.
+   */
+  authorName?: string | null;
+  /**
+   * The date the article shows. Set when it is first published, unless you give one.
+   */
+  publishedAt?: string | null;
+  publishedAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * Counted from the body when the article is saved: 200 words a minute.
+   */
+  readingTime?: number | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * The Journal’s topics: one per door, and Subjective Self. A topic shows on the site once an article in it is published.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "topics".
+ */
+export interface Topic {
+  id: number;
+  /**
+   * As the list of topics and an article's breadcrumb show it. Up to 30 characters.
+   */
+  name: string;
+  /**
+   * The topic lives at /journal/topic/ and this address.
+   */
+  slug: string;
+  /**
+   * The page an article in this topic links to after its question.
+   */
+  door: 'framework' | 'organisations' | 'learn' | 'counselling';
+  /**
+   * One or two sentences under the topic's name, for search results and shared links too. Up to 155 characters.
+   */
+  description?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs".
+ */
+export interface Faq {
+  id: number;
+  /**
+   * The question as people ask it (I-20).
+   */
+  question: string;
+  /**
+   * IIIC’s answer, one paragraph a line, the plainest sentence first. Every fact in it can be pointed to (docs/09).
+   */
+  answer: string;
+  /**
+   * The page it is asked about, by its address without the first slash: counselling for /counselling, organisations/team-map for the Team Map. The page shows it in its questions section.
+   */
+  page: string;
+  /**
+   * Where it stands among its page’s questions: 1 comes first. Questions with the same number keep the order they were added in.
+   */
+  order: number;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Addresses visitors asked for that the site has no page at, most visited first. Open one to send its visitors to a page with a redirect.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "missing-pages".
+ */
+export interface MissingPage {
+  id: number;
+  path: string;
+  hits: number;
+  firstSeen: string;
+  firstSeen_tz: 'Asia/Kolkata';
+  lastSeen: string;
+  lastSeen_tz: 'Asia/Kolkata';
+  /**
+   * The site the latest visitor came from, when their browser said: its name only, never the page.
+   */
+  referrerHost?: string | null;
+  /**
+   * Set when a redirect sends this address on to a page.
+   */
+  resolved?: (number | null) | Redirect;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Old addresses and where each one leads now. The site makes one itself when a published page gets a new address.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects".
+ */
+export interface Redirect {
+  id: number;
+  /**
+   * The address visitors ask for, such as /about-us.
+   */
+  from: string;
+  to?: {
+    /**
+     * A page is followed wherever it moves. Choose an address for a page the admin does not hold, or to open one section of a page.
+     */
+    type?: ('reference' | 'custom') | null;
+    reference?: {
+      relationTo: 'pages';
+      value: number | Page;
+    } | null;
+    /**
+     * Such as /about, or /about#contact for a section.
+     */
+    url?: string | null;
+  };
+  /**
+   * Permanent tells search engines to list the new address instead.
+   */
+  type: '308' | '307';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
@@ -597,6 +858,149 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "practitioners".
+ */
+export interface Practitioner {
+  id: number;
+  /**
+   * The name the site shows, as the person wants it shown (I-09).
+   */
+  publicName: string;
+  /**
+   * A photograph the person has agreed to publish (I-09, I-18).
+   */
+  photo?: (number | null) | Media;
+  /**
+   * Each exactly as it appears on the certificate, one to a row (I-09). Never a title the certificate does not give: no "Dr." without a doctorate, and no clinical title without its registration (CLAUDE.md #9).
+   */
+  credentials?:
+    | {
+        credential: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The person’s real background, as they supplied it. Counselling is described as non-clinical conversation (src/brand/VOICE.md).
+   */
+  bio?: string | null;
+  services?: (number | Service)[] | null;
+  /**
+   * The practitioner’s own staff account, which an owner links. Never shown on the site.
+   */
+  staff?: (number | null) | User;
+  /**
+   * Shown on the site while ticked. Tick it once the profile is complete and its credentials are checked against the certificates (I-09).
+   */
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services".
+ */
+export interface Service {
+  id: number;
+  /**
+   * The service’s name, as IIIC calls it (I-11).
+   */
+  name: string;
+  /**
+   * Which booking flow takes it (docs/03 F3).
+   */
+  type: 'session' | 'call' | 'info' | 'seat';
+  /**
+   * A short name for links and the booking flow, such as one-to-one-session.
+   */
+  slug: string;
+  /**
+   * The door it belongs to, which sets the look of its booking pages.
+   */
+  register: 'consultancy' | 'education' | 'counselling';
+  /**
+   * Where it takes place, as IIIC sets it for this service (D-03, I-08).
+   */
+  format: 'online' | 'office' | 'both';
+  /**
+   * What a client chooses between, such as 15, 30 or 45 minutes. Prices are never shown while they are unpublished (D-21).
+   */
+  options?:
+    | {
+        /**
+         * Optional, such as Individual or Family.
+         */
+        label?: string | null;
+        duration?: number | null;
+        /**
+         * The all-in price in paise: ₹1,500 is 150000. Shown nowhere until IIIC publishes prices (D-21, I-28).
+         */
+        price?: number | null;
+        /**
+         * Prices are all-in (docs/04); untick only if the CA settles otherwise (D-21, I-28).
+         */
+        gstInclusive?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * For GST invoices, as the CA classifies the service (I-29).
+   */
+  sacCode?: string | null;
+  /**
+   * Leave a rule empty to use the default in Settings. The cancellation and refund rule waits on IIIC’s policy (D-16, I-07).
+   */
+  bookingRules?: {
+    /**
+     * The earliest a booking can start.
+     */
+    noticeHours?: number | null;
+    /**
+     * How far ahead it can be booked.
+     */
+    horizonDays?: number | null;
+    /**
+     * Kept free after each booking.
+     */
+    bufferMinutes?: number | null;
+    /**
+     * How long a slot is held while the client pays.
+     */
+    holdMinutes?: number | null;
+    /**
+     * A client may reschedule free of charge up to this many hours before the start.
+     */
+    rescheduleWindowHours?: number | null;
+    /**
+     * Each step: a cancellation at least so many hours before the start is refunded this share of what was paid. Empty until IIIC sets the rule (D-16, I-07).
+     */
+    refunds?:
+      | {
+          hoursBefore: number;
+          refundPercent: number;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Every claim the page makes, with where it comes from (docs/content/README.md). A claim with no source does not go on the page.
+   */
+  facts?:
+    | {
+        statement: string;
+        source: 'brochure' | 'site' | 'form' | 'founder' | 'description' | 'pageCopy' | 'counted';
+        checkedAt?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Tick it when the service is ready to be offered. A service is retired by unticking it, never deleted: bookings point at it.
+   */
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -631,6 +1035,206 @@ export interface AuditLog {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "people".
+ */
+export interface Person {
+  id: number;
+  fullName: string;
+  /**
+   * Stored with its country code: +91 for India.
+   */
+  mobile?: string | null;
+  email?: string | null;
+  mobileVerifiedAt?: string | null;
+  mobileVerifiedAt_tz?: 'Asia/Kolkata' | null;
+  emailVerifiedAt?: string | null;
+  emailVerifiedAt_tz?: 'Asia/Kolkata' | null;
+  preferredChannel?: ('email' | 'whatsapp') | null;
+  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  /**
+   * Under 18: a parent or guardian books and consents for them.
+   */
+  ageBand?: ('under18' | 'adult') | null;
+  city?: string | null;
+  /**
+   * How the person first reached IIIC, such as a booking or a referral.
+   */
+  source?: string | null;
+  /**
+   * The campaign tags on the link the person first arrived by, if any.
+   */
+  utm?: {
+    source?: string | null;
+    medium?: string | null;
+    campaign?: string | null;
+    term?: string | null;
+    content?: string | null;
+  };
+  /**
+   * Short labels for the office’s own use.
+   */
+  tags?: string[] | null;
+  /**
+   * What the person has agreed to, and any withdrawal, newest first.
+   */
+  consents?: {
+    docs?: (number | Consent)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Every consent, and every withdrawal as an entry of its own. Entries are never changed or deleted.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consents".
+ */
+export interface Consent {
+  id: number;
+  /**
+   * Named by the platform.
+   */
+  title?: string | null;
+  /**
+   * To record a withdrawal, choose the consent it ends. Leave empty to record a consent.
+   */
+  withdraws?: (number | null) | Consent;
+  /**
+   * For a withdrawal, taken from the consent it ends.
+   */
+  person?: (number | null) | Person;
+  /**
+   * The consent text the person saw, in the version they saw. For a withdrawal, taken from the consent it ends.
+   */
+  noticeVersion: number | ConsentVersion;
+  /**
+   * Taken from the notice.
+   */
+  purpose:
+    | 'bookingCommunications'
+    | 'marketingEmail'
+    | 'marketingWhatsapp'
+    | 'mapStorage'
+    | 'mapSharing'
+    | 'testimonialPublication'
+    | 'relatedProgrammes';
+  /**
+   * Taken from the notice.
+   */
+  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  /**
+   * When the person gave it: leave empty for now. For a withdrawal, taken from the consent it ends.
+   */
+  grantedAt: string;
+  grantedAt_tz: 'Asia/Kolkata';
+  /**
+   * Only on a withdrawal: when the person withdrew. Leave empty for now.
+   */
+  withdrawnAt?: string | null;
+  withdrawnAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * How it reached IIIC.
+   */
+  channel: 'web' | 'email' | 'whatsapp' | 'phone' | 'inPerson' | 'recordDeleted';
+  /**
+   * What shows it was the person: recorded by the server for a form on the site.
+   */
+  evidence?: {
+    /**
+     * Which form, or which message they replied to.
+     */
+    form?: string | null;
+    /**
+     * For a consent by email, WhatsApp, phone or paper: the file name of the saved copy.
+     */
+    reference?: string | null;
+    ip?: string | null;
+    userAgent?: string | null;
+  };
+  /**
+   * For a counselling booking or the Map: the message id of the email that confirmed the consent in writing.
+   */
+  writtenReceipt?: string | null;
+  /**
+   * The entry that withdrew this consent, if it has been withdrawn.
+   */
+  withdrawal?: {
+    docs?: (number | Consent)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The words beside each consent checkbox, one version at a time. A version in force never changes: add a new one.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consent-versions".
+ */
+export interface ConsentVersion {
+  id: number;
+  /**
+   * Named by the platform.
+   */
+  title?: string | null;
+  purpose:
+    | 'bookingCommunications'
+    | 'marketingEmail'
+    | 'marketingWhatsapp'
+    | 'mapStorage'
+    | 'mapSharing'
+    | 'testimonialPublication'
+    | 'relatedProgrammes';
+  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  /**
+   * Numbered by the platform.
+   */
+  version: number;
+  /**
+   * The words exactly as the person sees them.
+   */
+  text: string;
+  /**
+   * From this time, forms show this version. After it, the text can no longer change.
+   */
+  effectiveFrom: string;
+  effectiveFrom_tz: 'Asia/Kolkata';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The funnel, one event at a time, with no link to any person. Written by the platform only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "analytics-events".
+ */
+export interface AnalyticsEvent {
+  id: number;
+  name:
+    | 'door'
+    | 'step0'
+    | 'booking_started'
+    | 'time_chosen'
+    | 'booking_confirmed'
+    | 'request_submitted'
+    | 'map_completed'
+    | 'newsletter_confirmed'
+    | 'search_no_results';
+  route: string;
+  register: 'default' | 'consultancy' | 'education' | 'counselling';
+  whoFor?: ('yourself' | 'family' | 'organisation') | null;
+  /**
+   * A code that changes every day, worked out on the server from the address and browser, which are not kept.
+   */
+  sessionHash: string;
+  at: string;
+  at_tz: 'Asia/Kolkata';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "totp-attempts".
  */
 export interface TotpAttempt {
@@ -657,6 +1261,98 @@ export interface PayloadKv {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs".
+ */
+export interface PayloadJob {
+  id: number;
+  /**
+   * Input data provided to the job
+   */
+  input?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  taskStatus?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  completedAt?: string | null;
+  totalTried?: number | null;
+  /**
+   * If hasError is true this job will not be retried
+   */
+  hasError?: boolean | null;
+  /**
+   * If hasError is true, this is the error that caused it
+   */
+  error?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Task execution log
+   */
+  log?:
+    | {
+        executedAt: string;
+        completedAt: string;
+        taskSlug: 'inline' | 'O5-purge-missing-pages';
+        taskID: string;
+        input?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        output?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        state: 'failed' | 'succeeded';
+        error?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  taskSlug?: ('inline' | 'O5-purge-missing-pages') | null;
+  queue?: string | null;
+  waitUntil?: string | null;
+  processing?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -671,12 +1367,52 @@ export interface PayloadLockedDocument {
         value: number | Page;
       } | null)
     | ({
+        relationTo: 'posts';
+        value: number | Post;
+      } | null)
+    | ({
+        relationTo: 'topics';
+        value: number | Topic;
+      } | null)
+    | ({
+        relationTo: 'faqs';
+        value: number | Faq;
+      } | null)
+    | ({
+        relationTo: 'missing-pages';
+        value: number | MissingPage;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
       } | null)
     | ({
+        relationTo: 'practitioners';
+        value: number | Practitioner;
+      } | null)
+    | ({
+        relationTo: 'services';
+        value: number | Service;
+      } | null)
+    | ({
         relationTo: 'staff-recovery-codes';
         value: number | StaffRecoveryCode;
+      } | null)
+    | ({
+        relationTo: 'people';
+        value: number | Person;
+      } | null)
+    | ({
+        relationTo: 'consents';
+        value: number | Consent;
+      } | null)
+    | ({
+        relationTo: 'consent-versions';
+        value: number | ConsentVersion;
+      } | null)
+    | ({
+        relationTo: 'redirects';
+        value: number | Redirect;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -773,6 +1509,8 @@ export interface PagesSelect<T extends boolean = true> {
         certificate?: T | CertificateBlockSelect<T>;
         founderNote?: T | FounderNoteBlockSelect<T>;
         contact?: T | ContactBlockSelect<T>;
+        legal?: T | LegalBlockSelect<T>;
+        faq?: T | FaqBlockSelect<T>;
         band?: T | BandBlockSelect<T>;
       };
   facts?:
@@ -1002,6 +1740,27 @@ export interface ContactBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LegalBlock_select".
+ */
+export interface LegalBlockSelect<T extends boolean = true> {
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "FaqBlock_select".
+ */
+export interface FaqBlockSelect<T extends boolean = true> {
+  kicker?: T;
+  heading?: T;
+  intro?: T;
+  anchor?: T;
+  copyStatus?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "BandBlock_select".
  */
 export interface BandBlockSelect<T extends boolean = true> {
@@ -1022,6 +1781,69 @@ export interface BandBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts_select".
+ */
+export interface PostsSelect<T extends boolean = true> {
+  title?: T;
+  excerpt?: T;
+  body?: T;
+  question?: T;
+  searchTitle?: T;
+  description?: T;
+  slug?: T;
+  topics?: T;
+  author?: T;
+  authorName?: T;
+  publishedAt?: T;
+  publishedAt_tz?: T;
+  readingTime?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "topics_select".
+ */
+export interface TopicsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  door?: T;
+  description?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs_select".
+ */
+export interface FaqsSelect<T extends boolean = true> {
+  question?: T;
+  answer?: T;
+  page?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "missing-pages_select".
+ */
+export interface MissingPagesSelect<T extends boolean = true> {
+  path?: T;
+  hits?: T;
+  firstSeen?: T;
+  firstSeen_tz?: T;
+  lastSeen?: T;
+  lastSeen_tz?: T;
+  referrerHost?: T;
+  resolved?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
@@ -1039,6 +1861,74 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "practitioners_select".
+ */
+export interface PractitionersSelect<T extends boolean = true> {
+  publicName?: T;
+  photo?: T;
+  credentials?:
+    | T
+    | {
+        credential?: T;
+        id?: T;
+      };
+  bio?: T;
+  services?: T;
+  staff?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services_select".
+ */
+export interface ServicesSelect<T extends boolean = true> {
+  name?: T;
+  type?: T;
+  slug?: T;
+  register?: T;
+  format?: T;
+  options?:
+    | T
+    | {
+        label?: T;
+        duration?: T;
+        price?: T;
+        gstInclusive?: T;
+        id?: T;
+      };
+  sacCode?: T;
+  bookingRules?:
+    | T
+    | {
+        noticeHours?: T;
+        horizonDays?: T;
+        bufferMinutes?: T;
+        holdMinutes?: T;
+        rescheduleWindowHours?: T;
+        refunds?:
+          | T
+          | {
+              hoursBefore?: T;
+              refundPercent?: T;
+              id?: T;
+            };
+      };
+  facts?:
+    | T
+    | {
+        statement?: T;
+        source?: T;
+        checkedAt?: T;
+        id?: T;
+      };
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1068,6 +1958,111 @@ export interface AuditLogSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "people_select".
+ */
+export interface PeopleSelect<T extends boolean = true> {
+  fullName?: T;
+  mobile?: T;
+  email?: T;
+  mobileVerifiedAt?: T;
+  mobileVerifiedAt_tz?: T;
+  emailVerifiedAt?: T;
+  emailVerifiedAt_tz?: T;
+  preferredChannel?: T;
+  language?: T;
+  ageBand?: T;
+  city?: T;
+  source?: T;
+  utm?:
+    | T
+    | {
+        source?: T;
+        medium?: T;
+        campaign?: T;
+        term?: T;
+        content?: T;
+      };
+  tags?: T;
+  consents?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consents_select".
+ */
+export interface ConsentsSelect<T extends boolean = true> {
+  title?: T;
+  withdraws?: T;
+  person?: T;
+  noticeVersion?: T;
+  purpose?: T;
+  language?: T;
+  grantedAt?: T;
+  grantedAt_tz?: T;
+  withdrawnAt?: T;
+  withdrawnAt_tz?: T;
+  channel?: T;
+  evidence?:
+    | T
+    | {
+        form?: T;
+        reference?: T;
+        ip?: T;
+        userAgent?: T;
+      };
+  writtenReceipt?: T;
+  withdrawal?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consent-versions_select".
+ */
+export interface ConsentVersionsSelect<T extends boolean = true> {
+  title?: T;
+  purpose?: T;
+  language?: T;
+  version?: T;
+  text?: T;
+  effectiveFrom?: T;
+  effectiveFrom_tz?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "analytics-events_select".
+ */
+export interface AnalyticsEventsSelect<T extends boolean = true> {
+  name?: T;
+  route?: T;
+  register?: T;
+  whoFor?: T;
+  sessionHash?: T;
+  at?: T;
+  at_tz?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects_select".
+ */
+export interface RedirectsSelect<T extends boolean = true> {
+  from?: T;
+  to?:
+    | T
+    | {
+        type?: T;
+        reference?: T;
+        url?: T;
+      };
+  type?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "totp-attempts_select".
  */
 export interface TotpAttemptsSelect<T extends boolean = true> {
@@ -1082,6 +2077,37 @@ export interface TotpAttemptsSelect<T extends boolean = true> {
 export interface PayloadKvSelect<T extends boolean = true> {
   key?: T;
   data?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs_select".
+ */
+export interface PayloadJobsSelect<T extends boolean = true> {
+  input?: T;
+  taskStatus?: T;
+  completedAt?: T;
+  totalTried?: T;
+  hasError?: T;
+  error?: T;
+  log?:
+    | T
+    | {
+        executedAt?: T;
+        completedAt?: T;
+        taskSlug?: T;
+        taskID?: T;
+        input?: T;
+        output?: T;
+        state?: T;
+        error?: T;
+        id?: T;
+      };
+  taskSlug?: T;
+  queue?: T;
+  waitUntil?: T;
+  processing?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1116,6 +2142,247 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
+ * What the site prints about IIIC, the rules it runs by, and the switches for what is not live yet.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings".
+ */
+export interface PlatformSettings {
+  id: number;
+  legal?: {
+    /**
+     * Exactly as on PAN and registrations (I-26).
+     */
+    legalName?: string | null;
+    /**
+     * Exactly as registered (I-26).
+     */
+    tradeName?: string | null;
+    /**
+     * Exactly as it should print, with its PIN (I-33).
+     */
+    address?: string | null;
+    /**
+     * I-05.
+     */
+    gstin?: string | null;
+    /**
+     * Only while there is no GSTIN: the status as it should print.
+     */
+    gstStatus?: string | null;
+    /**
+     * For invoices (I-05).
+     */
+    udyam?: string | null;
+    /**
+     * Leave these empty to print the contact details the site already shows.
+     */
+    customerCare?: {
+      email?: string | null;
+      phone?: string | null;
+      /**
+       * Such as Monday to Friday, 10 AM – 6 PM.
+       */
+      hours?: string | null;
+    };
+    /**
+     * Printed once the name, the designation and an email or phone are all filled in (I-21).
+     */
+    grievanceOfficer?: {
+      name?: string | null;
+      designation?: string | null;
+      email?: string | null;
+      phone?: string | null;
+    };
+    /**
+     * Printed once the name, email and phone are all filled in (I-27).
+     */
+    certIn?: {
+      name?: string | null;
+      email?: string | null;
+      phone?: string | null;
+    };
+  };
+  bank?: {
+    accountName?: string | null;
+    bankName?: string | null;
+    branch?: string | null;
+    accountNumber?: string | null;
+    ifsc?: string | null;
+  };
+  /**
+   * What a service uses unless it sets its own. The reschedule window waits on the cancellation rules (D-16).
+   */
+  booking?: {
+    /**
+     * The earliest a time can be booked, from now.
+     */
+    noticeHours?: number | null;
+    /**
+     * How far ahead times are offered.
+     */
+    horizonDays?: number | null;
+    /**
+     * How long a time is held during payment.
+     */
+    holdMinutes?: number | null;
+    /**
+     * Kept free after each session.
+     */
+    bufferMinutes?: number | null;
+    /**
+     * Set with the cancellation rules (D-16).
+     */
+    rescheduleWindowHours?: number | null;
+  };
+  /**
+   * No WhatsApp message or SMS goes out between these times, India time.
+   */
+  quietHours: {
+    start: string;
+    end: string;
+  };
+  flags?: {
+    /**
+     * Shows prices on the site, in emails and in templates. Leave it off until IIIC publishes prices (D-21).
+     */
+    pricesPublic?: boolean | null;
+    /**
+     * Takes payment when a session is booked. Needs “Prices are public” first (D-24).
+     */
+    payAtBooking?: boolean | null;
+    /**
+     * The full Subjective Self Map (Release 2).
+     */
+    mapEnabled?: boolean | null;
+    /**
+     * Signing in to My IIIC (Release 2).
+     */
+    accountsEnabled?: boolean | null;
+    /**
+     * Suggestions of IIIC’s other programmes after a step (Release 2).
+     */
+    bridgesEnabled?: boolean | null;
+  };
+  processors?:
+    | {
+        name: string;
+        location?: string | null;
+        contract?: string | null;
+        holds?: string | null;
+        reviewedOn?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  darkPatternAudits?:
+    | {
+        auditedOn: string;
+        auditedBy: string;
+        notes?: string | null;
+        /**
+         * Shown on /legal with the date of the audit.
+         */
+        certificate?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings_select".
+ */
+export interface SettingsSelect<T extends boolean = true> {
+  legal?:
+    | T
+    | {
+        legalName?: T;
+        tradeName?: T;
+        address?: T;
+        gstin?: T;
+        gstStatus?: T;
+        udyam?: T;
+        customerCare?:
+          | T
+          | {
+              email?: T;
+              phone?: T;
+              hours?: T;
+            };
+        grievanceOfficer?:
+          | T
+          | {
+              name?: T;
+              designation?: T;
+              email?: T;
+              phone?: T;
+            };
+        certIn?:
+          | T
+          | {
+              name?: T;
+              email?: T;
+              phone?: T;
+            };
+      };
+  bank?:
+    | T
+    | {
+        accountName?: T;
+        bankName?: T;
+        branch?: T;
+        accountNumber?: T;
+        ifsc?: T;
+      };
+  booking?:
+    | T
+    | {
+        noticeHours?: T;
+        horizonDays?: T;
+        holdMinutes?: T;
+        bufferMinutes?: T;
+        rescheduleWindowHours?: T;
+      };
+  quietHours?:
+    | T
+    | {
+        start?: T;
+        end?: T;
+      };
+  flags?:
+    | T
+    | {
+        pricesPublic?: T;
+        payAtBooking?: T;
+        mapEnabled?: T;
+        accountsEnabled?: T;
+        bridgesEnabled?: T;
+      };
+  processors?:
+    | T
+    | {
+        name?: T;
+        location?: T;
+        contract?: T;
+        holds?: T;
+        reviewedOn?: T;
+        id?: T;
+      };
+  darkPatternAudits?:
+    | T
+    | {
+        auditedOn?: T;
+        auditedBy?: T;
+        notes?: T;
+        certificate?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "collections_widget".
  */
@@ -1124,6 +2391,16 @@ export interface CollectionsWidget {
     [k: string]: unknown;
   };
   width: 'full';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO5-purge-missing-pages".
+ */
+export interface TaskO5PurgeMissingPages {
+  input?: unknown;
+  output: {
+    removed: number;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

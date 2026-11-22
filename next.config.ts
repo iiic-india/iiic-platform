@@ -5,6 +5,7 @@ import { withPayload } from '@payloadcms/next/withPayload'
 import { withSentryConfig } from '@sentry/nextjs/config'
 import type { NextConfig } from 'next'
 
+import { oldSiteRedirects } from './src/lib/redirects/oldSite'
 import { headerRules, withoutColorSchemeHints } from './src/lib/security/headers'
 import { HTML_LIMITED_BOTS } from './src/lib/seo/bots'
 
@@ -24,6 +25,12 @@ const nextConfig: NextConfig = {
   // The Content-Security-Policy is set per request by src/proxy.ts.
   async headers() {
     return headerRules(process.env.VERCEL_ENV, process.env.SEARCH_INDEXING)
+  },
+  // The old site's addresses, by host: nothing matches until iiicedu.com points here (docs/02,
+  // Redirects). Redirects made in the admin are answered by the pages, not here
+  // (src/lib/redirects/lookup.ts).
+  async redirects() {
+    return oldSiteRedirects()
   },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {

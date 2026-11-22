@@ -47,20 +47,34 @@ const adminPage = {
 
 function view(user: Record<string, unknown> | null, docs: unknown[] = []) {
   const find = vi.fn(async () => ({ docs }))
-  const payload = { config: { routes: { admin: '/admin' }, serverURL: '' }, find }
+  // The settings as a global nobody has saved: no legal information yet.
+  const findGlobal = vi.fn(async () => ({}))
+  const payload = { config: { routes: { admin: '/admin' }, serverURL: '' }, find, findGlobal }
   const props = {
     initPageResult: { req: { payload, user, i18n: {} }, permissions: {}, visibleEntities: {} },
     params: {},
     searchParams: {},
   } as unknown as AdminViewServerProps
-  return { props, find }
+  return { props, find, findGlobal }
 }
 
 describe('the placeholders report', () => {
   it('sends someone who has not signed in to the sign-in page, and reads nothing', async () => {
-    const { props, find } = view(null)
+    const { props, find, findGlobal } = view(null)
     await expect(PlaceholdersView(props)).rejects.toThrow(/^redirect \/admin\/login$/)
     expect(find).not.toHaveBeenCalled()
+    expect(findGlobal).not.toHaveBeenCalled()
+  })
+
+  it('reads only the legal information of the settings, to know what the footer and /legal still wait for', async () => {
+    const { props, findGlobal } = view(editor, [adminPage])
+    await PlaceholdersView(props)
+    expect(findGlobal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: 'settings',
+        select: { legal: true, darkPatternAudits: true },
+      }),
+    )
   })
 
   it('sends a session without the two-factor code back to the admin, and reads nothing', async () => {

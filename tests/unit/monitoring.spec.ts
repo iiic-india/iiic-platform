@@ -10,6 +10,7 @@ import {
   reportServerError,
   reportTestError,
   startMonitoring,
+  withReference,
 } from '@/lib/monitoring/sentry'
 
 vi.mock('@sentry/nextjs', () => ({
@@ -184,6 +185,29 @@ describe('startMonitoring', () => {
       {},
     )
     expect(sent).toEqual({ type: undefined })
+  })
+
+  it('tags a report with the digest the 500 page shows as its reference', () => {
+    vi.mocked(env).mockReturnValue({ sentryDsn: DSN } as ReturnType<typeof env>)
+    startMonitoring()
+    const options = sentry.init.mock.calls[0]?.[0]
+    const error = Object.assign(new Error('fake'), { digest: '2938475610@E394' })
+    const sent = options?.beforeSend?.(
+      { type: undefined, tags: { role: 'owner' } },
+      { originalException: error },
+    )
+    expect(sent).toEqual({ type: undefined, tags: { role: 'owner', digest: '2938475610@E394' } })
+  })
+})
+
+describe('withReference', () => {
+  it('leaves a report without a digest, or with one that is not Next.js’s, as it was', () => {
+    const event = { tags: { role: 'owner' } }
+    expect(withReference(event, {})).toBe(event)
+    expect(withReference(event, { originalException: new Error('fake') })).toBe(event)
+    for (const digest of [42, '', 'has spaces', 'a'.repeat(65), 'fake.person@example.invalid']) {
+      expect(withReference(event, { originalException: { digest } }), String(digest)).toBe(event)
+    }
   })
 })
 

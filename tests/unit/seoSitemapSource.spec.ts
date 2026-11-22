@@ -3,12 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { STARTER_PAGES } from '@/content/starter'
 import { PAGES_TAG } from '@/lib/content/revalidate'
+import { journalIndex } from '@/lib/journal/posts'
+import { redirectTable } from '@/lib/redirects/lookup'
 import { sitemapEntries } from '@/lib/seo/sitemap'
 import { sitemapSource } from '@/lib/seo/sitemapSource'
 
 // What the sitemap and llms.txt read from the CMS (src/lib/seo/sitemapSource.ts), against a
 // fake Payload. The cache records its key and tags, and passes through to the CMS unless a
-// test gives it an entry of its own to answer with.
+// test gives it an entry of its own to answer with. The Journal's part is read through
+// journalIndex, faked here and tested on its own (tests/unit/journalPosts.spec.ts).
 const { find, cacheCalls, cacheEntry } = vi.hoisted(() => ({
   find: vi.fn(),
   cacheCalls: [] as unknown[][],
@@ -18,6 +21,9 @@ const { find, cacheCalls, cacheEntry } = vi.hoisted(() => ({
 vi.mock('server-only', () => ({}))
 vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('payload', () => ({ getPayload: async () => ({ find }) }))
+// The redirects the site follows (src/lib/redirects/lookup.ts, cached by tags of their own):
+// none, unless a test sets some.
+vi.mock('@/lib/redirects/lookup', () => ({ redirectTable: vi.fn(async () => []) }))
 vi.mock('next/cache', () => ({
   revalidateTag: vi.fn(),
   unstable_cache: (fn: () => unknown, key: string[], options: unknown) => {
@@ -25,6 +31,31 @@ vi.mock('next/cache', () => ({
     return async () => cacheEntry.value ?? fn()
   },
 }))
+vi.mock('@/lib/journal/posts', () => ({ journalIndex: vi.fn() }))
+
+/** What the fake Journal holds: one article and its topic. Obviously fake. */
+const JOURNAL = {
+  posts: [
+    {
+      slug: 'fake-article',
+      title: 'Fake article?',
+      excerpt: 'A fake excerpt.',
+      searchTitle: null,
+      description: null,
+      publishedAt: '2026-11-21T08:30:00.000Z',
+      updatedAt: '2026-11-22T08:30:00.000Z',
+    },
+  ],
+  topics: [
+    {
+      id: 7,
+      slug: 'fake-topic',
+      name: 'Fake topic',
+      door: 'framework' as const,
+      description: null,
+    },
+  ],
+}
 
 type Query = { where: Record<string, unknown>; overrideAccess: boolean }
 
@@ -47,10 +78,19 @@ beforeEach(() => {
   find.mockImplementation(async ({ where }: Query) => ({
     docs: '_status' in where ? HELD.published : HELD.everPublished,
   }))
+  vi.mocked(redirectTable).mockResolvedValue([])
+  vi.mocked(journalIndex).mockReset()
+  vi.mocked(journalIndex).mockResolvedValue(JOURNAL)
 })
 
+/** The Journal's part of the source, as the sitemap reads it. */
+const JOURNAL_PART = {
+  posts: JOURNAL.posts,
+  topics: [{ slug: 'fake-topic', name: 'Fake topic', description: null }],
+}
+
 describe('what the sitemap reads from the CMS', () => {
-  it('is the starter pages, the pages published now and every address ever published', async () => {
+  it('is the starter pages, the pages published now, every address ever published and the Journal', async () => {
     expect(await sitemapSource()).toEqual({
       starterSlugs: Object.keys(STARTER_PAGES),
       published: [
@@ -58,7 +98,33 @@ describe('what the sitemap reads from the CMS', () => {
         { slug: 'fake-page', updatedAt: '2026-11-21T08:30:00.000Z' },
       ],
       everPublished: ['framework', 'fake-page', 'learn'],
+      redirected: [],
+      ...JOURNAL_PART,
     })
+    expect(journalIndex).toHaveBeenCalledTimes(1)
+  })
+
+  it('lists the Journal’s published articles with their dates, and the topics that hold one', async () => {
+    const urls = sitemapEntries(await sitemapSource(), 'https://fake.example')
+    expect(urls).toContainEqual({
+      url: 'https://fake.example/journal/fake-article',
+      lastModified: '2026-11-22T08:30:00.000Z',
+    })
+    expect(urls).toContainEqual({ url: 'https://fake.example/journal/topic/fake-topic' })
+    expect(urls).toContainEqual({ url: 'https://fake.example/journal' })
+  })
+
+  it('leaves out a starter page whose address a redirect leads from (D-57)', async () => {
+    vi.mocked(redirectTable).mockResolvedValue([
+      { from: '/about', to: '/fake-page', status: '308' },
+      { from: '/framework', to: '/fake-page', status: '307' },
+    ])
+    const source = await sitemapSource()
+    expect(source.redirected).toEqual(['/about', '/framework'])
+    const urls = sitemapEntries(source, 'https://fake.example').map(({ url }) => url)
+    expect(urls).not.toContain('https://fake.example/about')
+    // A published page wins over a redirect from its address.
+    expect(urls).toContain('https://fake.example/framework')
   })
 
   it('reads the published pages as a visitor does, so that no draft is listed', async () => {
@@ -107,6 +173,8 @@ describe('what the sitemap reads from the CMS', () => {
       starterSlugs: Object.keys(STARTER_PAGES),
       published: [{ slug: 'fake-page', updatedAt: '2026-11-21T08:30:00.000Z' }],
       everPublished: ['fake-page'],
+      redirected: [],
+      ...JOURNAL_PART,
     })
     // The CMS was not asked: the cached entry answered.
     expect(find).not.toHaveBeenCalled()

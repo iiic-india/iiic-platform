@@ -3,17 +3,20 @@ import { expect, test } from '@playwright/test'
 
 import { STARTER_PAGES } from '../../src/content/starter'
 import { pagePath } from '../../src/lib/content/slug'
+import { CONSULTANCY_SERVICES, TEAM_MAP } from '../../src/lib/site/consultancy'
 
 // Every page the site shows, the 404 in each register included: the accessibility page says
-// each has passed these checks. The starter pages are the pages built so far (docs/02), and
-// /map asks Find your path's question. The 404 is what links to pages not built yet (Proof,
-// Journal, the footer's Verify a certificate) reach today; on a counselling path, where "Book a
-// session" leads for now, it carries the scope statement and the crisis numbers (docs/11
-// §5.1, item 8). Under /institute/, /organisations/ and /counselling/ it takes that section's
-// register (docs/02).
+// each has passed these checks. The starter pages are the pages built so far (docs/02), /map
+// asks Find your path's question, and /journal is the Journal, empty in CI's database. The 404
+// is what links to pages not built yet (Proof, the footer's Verify a certificate) reach today;
+// on a counselling path, where "Book a session" leads for now, it carries the scope statement
+// and the crisis numbers (docs/11 §5.1, item 8). Under /institute/, /organisations/,
+// /counselling/ and /journal/ it takes that section's register (docs/02).
 const PAGES = [
   ...Object.keys(STARTER_PAGES).map(pagePath),
   '/map',
+  '/journal',
+  '/journal/no-such-article',
   '/no-such-page',
   '/book/session',
   '/institute/verify',
@@ -143,7 +146,8 @@ test.describe('Public shell', () => {
     for (const answer of await answers.all()) await expect(answer).not.toBeChecked()
     await page.getByRole('radio', { name: 'Your organisation' }).check()
     await page.getByRole('button', { name: 'Continue' }).click()
-    await expect(page).toHaveURL(/\/organisations$/)
+    // docs/03 F1: an organisation's door is the Team Map.
+    await expect(page).toHaveURL(/\/organisations\/team-map$/)
     await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'consultancy')
   })
 
@@ -337,6 +341,38 @@ test.describe('Public shell', () => {
       'Brand positioning',
     ])
     await expect(page.locator('.iiic-band-yellow')).toHaveCount(1)
+  })
+
+  // docs/02: a landing page for each of the three services docs/09 names, and the Team Map, in
+  // the consultancy register, each with its search title, its own canonical URL and its Service
+  // (D-62, D-65).
+  for (const { slug, name } of [...CONSULTANCY_SERVICES, TEAM_MAP]) {
+    test(`/${slug} is the consultancy’s page for ${name}`, async ({ page }) => {
+      const response = await page.goto(`/${slug}`)
+      expect(response?.status()).toBe(200)
+      await expect(page).toHaveTitle(`${STARTER_PAGES[slug]?.title} · IIIC`)
+      const canonical = await page.locator('link[rel="canonical"]').getAttribute('href')
+      expect(new URL(canonical ?? '').pathname).toBe(`/${slug}`)
+      await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'consultancy')
+      const data = (await page.locator('script[type="application/ld+json"]').textContent()) ?? ''
+      const graph = (JSON.parse(data) as { '@graph': Record<string, unknown>[] })['@graph']
+      const services = graph.filter((node) => node['@type'] === 'Service')
+      expect(services).toHaveLength(1)
+      expect(services[0]).toMatchObject({ name, audience: { '@type': 'BusinessAudience' } })
+      expect(data).not.toMatch(/"offers"|"price/)
+      // No price while prices are unpublished (D-21); a FAQPage only around questions shown.
+      await expect(page.locator('main')).not.toContainText(/₹|Rs\.?\s?\d/)
+      const shown = await page.locator('main details.iiic-accordion').count()
+      expect(graph.filter((node) => node['@type'] === 'FAQPage')).toHaveLength(shown > 0 ? 1 : 0)
+      await expect(page.locator('.iiic-band-yellow')).toHaveCount(1)
+    })
+  }
+
+  test('the organisations page opens each service’s page and the Team Map', async ({ page }) => {
+    await page.goto('/organisations')
+    for (const { slug } of [...CONSULTANCY_SERVICES, TEAM_MAP]) {
+      await expect(page.locator(`main a[href="/${slug}"]`).first()).toBeVisible()
+    }
   })
 
   test('the framework page: the comparison’s table, IIIC’s lines, one closing band', async ({

@@ -1,3 +1,10 @@
+import {
+  CONSULTANCY_AUDIENCE,
+  CONSULTANCY_NAME,
+  CONSULTANCY_SERVICES,
+  type ConsultancyOffer,
+  TEAM_MAP,
+} from '@/lib/site/consultancy'
 import { CONTACT } from '@/lib/site/contact'
 
 import { pageSlugOf } from './paths'
@@ -39,6 +46,8 @@ export type PageGraphInput = {
   description?: string | null
   /** The pages above this one, nearest last: [{ path: "/organisations", title: "…" }]. */
   trail?: { path: string; title: string }[]
+  /** The questions the page shows in its questions section, and only those (D-62). */
+  faqs?: readonly { question: string; answer: string }[]
 }
 
 export const ids = (origin: string = siteOrigin()) => ({
@@ -207,15 +216,58 @@ export function consultancyNode(origin: string = siteOrigin()): JsonLdNode {
   return {
     '@type': 'Service',
     '@id': `${canonicalUrl('/organisations', origin)}#service`,
-    name: 'Business & Management Consultancy',
+    name: CONSULTANCY_NAME,
     serviceType: 'Business and management consultancy',
     description:
       'Alongside leadership development, we build organisational systems, processes and Standard Operating Procedures (SOPs) through an HR-centric approach.',
     provider: ref(ids(origin).organization),
-    audience: {
-      '@type': 'BusinessAudience',
-      audienceType: 'Founders, business owners and SME/MSME leaders',
-    },
+    audience: { '@type': 'BusinessAudience', audienceType: CONSULTANCY_AUDIENCE },
+  }
+}
+
+/**
+ * One of the consultancy's offers on its own page (D-62): its name, the business as provider by
+ * its @id, and the consultancy's audience. What each offer is, and what a client receives,
+ * waits on IIIC (I-11, I-12), so the node describes neither, and it names no offer or price
+ * (D-21).
+ */
+export function consultancyOfferNode(
+  offer: ConsultancyOffer,
+  origin: string = siteOrigin(),
+): JsonLdNode {
+  return {
+    '@type': 'Service',
+    '@id': `${canonicalUrl(`/${offer.slug}`, origin)}#service`,
+    name: offer.name,
+    serviceType: 'Business and management consultancy',
+    provider: ref(ids(origin).organization),
+    audience: { '@type': 'BusinessAudience', audienceType: CONSULTANCY_AUDIENCE },
+  }
+}
+
+/**
+ * The questions a page shows, and only those (D-62; I-20): a FAQPage that is part of the page,
+ * with each question and its answer as the page shows them. A question or an answer that is
+ * empty or still holds a placeholder is left out (a published question holds none,
+ * src/collections/Faqs.ts); a page that shows no question has no FAQPage.
+ */
+export function faqNode(input: PageGraphInput, origin: string = siteOrigin()): JsonLdNode | null {
+  const questions = (input.faqs ?? []).flatMap(({ question, answer }) => {
+    const name = fact(question)
+    const text = fact(answer)
+    return name && text
+      ? [{ '@type': 'Question', name, acceptedAnswer: { '@type': 'Answer', text } }]
+      : []
+  })
+  if (questions.length === 0) return null
+  const url = canonicalUrl(input.path, origin)
+  return {
+    '@type': 'FAQPage',
+    '@id': `${url}#faq`,
+    url,
+    inLanguage: SITE_LANGUAGE,
+    isPartOf: ref(`${url}#webpage`),
+    mainEntity: questions,
   }
 }
 
@@ -278,8 +330,10 @@ function pageNodes(slug: string, origin: string): JsonLdNode[] {
       return counsellingNodes(origin)
     case 'learn':
       return [courseNode(origin)]
-    default:
-      return []
+    default: {
+      const offer = [...CONSULTANCY_SERVICES, TEAM_MAP].find((entry) => entry.slug === slug)
+      return offer ? [consultancyOfferNode(offer, origin)] : []
+    }
   }
 }
 
@@ -302,14 +356,70 @@ function compact<T extends JsonLdValue | undefined>(value: T): T | undefined {
 /** A page's whole graph. */
 export function pageGraph(input: PageGraphInput, origin: string = siteOrigin()): JsonLdGraph {
   const home = canonicalPath(input.path) === '/'
+  const faq = faqNode(input, origin)
   const nodes = [
     webPageNode(input, origin),
     ...(home ? [] : [breadcrumbNode(input, origin)]),
     ...pageNodes(pageSlugOf(input.path), origin),
+    ...(faq ? [faq] : []),
   ]
   return {
     '@context': 'https://schema.org',
     '@graph': nodes.map((node) => compact(node) as JsonLdNode),
+  }
+}
+
+/** What a Journal article's graph is built from: its page, and the article itself. */
+export type ArticleGraphInput = PageGraphInput & {
+  /** The article's own title; its search title, the page's name, may be shorter. */
+  headline: string
+  datePublished?: string | null
+  dateModified?: string | null
+  /** The founder, given by his @id (D-64), or someone else by the name the article shows. */
+  author: { founder: true } | { founder: false; name?: string | null }
+  /** The article's first topic. */
+  section?: string | null
+  /** The absolute address of the article's share image. */
+  image?: string
+}
+
+/**
+ * A Journal article (D-62; docs/12 §3): its headline, its dates, its author and IIIC as its
+ * publisher, both by @id where the graph knows them. An author who is not the founder is a
+ * Person with the name the article shows and nothing more; no name, no author.
+ */
+export function articleNode(input: ArticleGraphInput, origin: string = siteOrigin()): JsonLdNode {
+  const id = ids(origin)
+  const url = canonicalUrl(input.path, origin)
+  const name = input.author.founder ? undefined : fact(input.author.name)
+  return {
+    '@type': 'Article',
+    '@id': `${url}#article`,
+    headline: fact(input.headline) ?? fact(input.title) ?? SITE_NAME,
+    description: fact(input.description),
+    url,
+    mainEntityOfPage: ref(`${url}#webpage`),
+    inLanguage: SITE_LANGUAGE,
+    datePublished: input.datePublished ?? undefined,
+    dateModified: input.dateModified ?? input.datePublished ?? undefined,
+    author: input.author.founder ? ref(id.founder) : name ? { '@type': 'Person', name } : undefined,
+    publisher: ref(id.organization),
+    articleSection: fact(input.section),
+    image: input.image,
+  }
+}
+
+/**
+ * An article page's whole graph: its page and the way down to it (pageGraph), then the
+ * article, and the founder's own node when he wrote it, so that the author it points at is
+ * described on the page as on the home and About pages (D-64).
+ */
+export function articleGraph(input: ArticleGraphInput, origin: string = siteOrigin()): JsonLdGraph {
+  const page = pageGraph(input, origin)
+  const nodes = [articleNode(input, origin), ...(input.author.founder ? [founderNode(origin)] : [])]
+  return {
+    ...page,
+    '@graph': [...page['@graph'], ...nodes.map((node) => compact(node) as JsonLdNode)],
   }
 }
 

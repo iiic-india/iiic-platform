@@ -10,10 +10,12 @@ import {
   PAGE_BLOCKS,
   uniqueAnchors,
 } from '@/blocks/pageBlocks'
+import { factsField } from '@/fields/facts'
 import { copyStarterPage } from '@/lib/content/copyStarter'
 import { mistypedPlaceholders } from '@/lib/content/placeholders'
 import { revalidatePages } from '@/lib/content/revalidate'
 import { PAGE_SLUG } from '@/lib/content/slug'
+import { noteAddressChange, redirectOldAddress } from '@/lib/redirects/pageMoves'
 
 /**
  * The public pages, built from the kit's blocks (docs/05, Content; docs/04). A page is
@@ -70,8 +72,11 @@ export const Pages: CollectionConfig = {
   // Copies a starter page in as a draft (src/lib/content/copyStarter.ts, D-54).
   endpoints: [{ path: '/from-starter', method: 'post', handler: copyStarterPage }],
   hooks: {
-    // An editor's change is on the site at the next request (docs/12 §4).
+    // A published page's old address redirects to its new one (src/lib/redirects/pageMoves.ts).
+    beforeChange: [noteAddressChange],
     afterChange: [
+      redirectOldAddress,
+      // An editor's change is on the site at the next request (docs/12 §4).
       ({ doc, previousDoc }) => {
         revalidatePages(doc?.slug, previousDoc?.slug)
         return doc
@@ -108,7 +113,8 @@ export const Pages: CollectionConfig = {
         'Use small letters, numbers and hyphens, such as framework or organisations/team-map.',
       admin: {
         position: 'sidebar',
-        description: 'Where the page lives: "home" for the first page, "framework" for /framework.',
+        description:
+          'Where the page lives: "home" for the first page, "framework" for /framework. Change it on a published page and, once you publish, the old address sends visitors here.',
       },
     },
     {
@@ -199,37 +205,6 @@ export const Pages: CollectionConfig = {
         return carriesFixedStatements(value, (options.data as { slug?: unknown } | undefined)?.slug)
       },
     },
-    {
-      name: 'facts',
-      type: 'array',
-      labels: { singular: 'Fact', plural: 'Facts' },
-      admin: {
-        description:
-          'Every claim the page makes, with where it comes from (docs/content/README.md). A claim with no source does not go on the page.',
-      },
-      fields: [
-        { name: 'statement', type: 'textarea', required: true },
-        {
-          type: 'row',
-          fields: [
-            {
-              name: 'source',
-              type: 'select',
-              required: true,
-              options: [
-                { label: 'Brochure', value: 'brochure' },
-                { label: 'Current site', value: 'site' },
-                { label: 'Registration form', value: 'form' },
-                { label: 'Founder', value: 'founder' },
-                { label: "IIIC's description or philosophy", value: 'description' },
-                { label: 'Page copy IIIC supplied', value: 'pageCopy' },
-                { label: 'Counted', value: 'counted' },
-              ],
-            },
-            { name: 'checkedAt', type: 'date', label: 'Checked on' },
-          ],
-        },
-      ],
-    },
+    factsField,
   ],
 }

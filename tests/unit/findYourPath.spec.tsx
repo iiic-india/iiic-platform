@@ -1,10 +1,33 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { dynamic, GET, maxDuration, POST, runtime } from '@/app/(platform)/(default)/map/go/route'
 import FindYourPathPage from '@/app/(platform)/(default)/map/page'
 import { starterAt } from '@/content/starter'
+import { recordEventQuietly } from '@/lib/analytics/record'
 import { doorFor, STEP_ZERO_CHOICES, WHO_FOR } from '@/lib/map/stepZero'
+
+// What next/server's `after` is handed runs once the response has gone; here it waits in a
+// list, so a test can tell what ran before the answer and what after. The event itself is
+// written by src/lib/analytics/record.ts (tests/unit/analyticsRecord.spec.ts).
+const scheduled = vi.hoisted(() => [] as (() => unknown)[])
+vi.mock('next/server', () => ({
+  after: (task: () => unknown) => {
+    scheduled.push(task)
+  },
+}))
+vi.mock('@/lib/analytics/record', () => ({ recordEventQuietly: vi.fn(async () => undefined) }))
+const record = vi.mocked(recordEventQuietly)
+
+beforeEach(() => {
+  scheduled.length = 0
+  record.mockClear()
+})
+
+/** Runs what the route left for after its response, as Next.js would. */
+async function afterResponse() {
+  for (const task of scheduled.splice(0)) await task()
+}
 
 // The page's structured data is drawn by a server component that reads the request's nonce
 // (tests/unit/seoJsonLd.spec.tsx tests it). A plain element stands in for it here, with the
@@ -56,7 +79,7 @@ describe('Find your path: where an answer is sent', () => {
   it.each([
     ['yourself', '/counselling'],
     ['family', '/counselling'],
-    ['organisation', '/organisations'],
+    ['organisation', '/organisations/team-map'],
   ])('sends "%s" to %s', async (who, door) => {
     const response = await go(`who=${who}`)
     expect(response.status).toBe(303)
@@ -87,6 +110,47 @@ describe('Find your path: where an answer is sent', () => {
     expect(runtime).toBe('nodejs')
     expect(maxDuration).toBe(10)
     expect(dynamic).toBe('force-dynamic')
+  })
+})
+
+describe('Find your path: counting the answers (docs/03 F1, step 3)', () => {
+  it.each([...WHO_FOR])(
+    'counts "%s" as a step-0 event once the visitor has been sent on',
+    async (who) => {
+      const response = await go(`who=${who}`)
+      // The answer is sent on before anything is written: the visitor never waits for it.
+      expect(response.status).toBe(303)
+      expect(record).not.toHaveBeenCalled()
+      expect(scheduled).toHaveLength(1)
+      await afterResponse()
+      expect(record).toHaveBeenCalledTimes(1)
+      const [event, headers] = record.mock.calls[0] ?? []
+      // The choice, the page and its register: nothing else about the visitor.
+      expect(event).toEqual({ name: 'step0', route: '/map', register: 'default', whoFor: who })
+      expect(headers).toBeInstanceOf(Headers)
+    },
+  )
+
+  it('counts nothing that is not one of the three answers, and nothing from an address', async () => {
+    for (const body of ['', 'who=', 'who=everyone', 'next=%2Fadmin']) {
+      expect((await go(body)).headers.get('Location'), body).toBe('/map')
+    }
+    expect((await go('{"who":"yourself"}', 'application/json')).headers.get('Location')).toBe(
+      '/map',
+    )
+    GET()
+    expect(scheduled).toHaveLength(0)
+    expect(record).not.toHaveBeenCalled()
+  })
+
+  it('sends the visitor to the same door whether or not the count is written', async () => {
+    record.mockRejectedValueOnce(new Error('fake: the database is down'))
+    const response = await go('who=organisation')
+    // The organisation's door is the Team Map's page (src/lib/map/stepZero.ts).
+    expect(response.headers.get('Location')).toBe('/organisations/team-map')
+    // The count runs after the answer has gone; what happens to it cannot change the answer.
+    await expect(afterResponse()).rejects.toThrow('fake')
+    expect(response.status).toBe(303)
   })
 })
 
