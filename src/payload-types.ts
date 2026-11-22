@@ -73,6 +73,10 @@ export interface Config {
     media: Media;
     'staff-recovery-codes': StaffRecoveryCode;
     'audit-log': AuditLog;
+    people: Person;
+    consents: Consent;
+    'consent-versions': ConsentVersion;
+    'analytics-events': AnalyticsEvent;
     redirects: Redirect;
     'totp-attempts': TotpAttempt;
     'payload-kv': PayloadKv;
@@ -81,7 +85,14 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    people: {
+      consents: 'consents';
+    };
+    consents: {
+      withdrawal: 'consents';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
@@ -89,6 +100,10 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     'staff-recovery-codes': StaffRecoveryCodesSelect<false> | StaffRecoveryCodesSelect<true>;
     'audit-log': AuditLogSelect<false> | AuditLogSelect<true>;
+    people: PeopleSelect<false> | PeopleSelect<true>;
+    consents: ConsentsSelect<false> | ConsentsSelect<true>;
+    'consent-versions': ConsentVersionsSelect<false> | ConsentVersionsSelect<true>;
+    'analytics-events': AnalyticsEventsSelect<false> | AnalyticsEventsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -101,8 +116,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    settings: PlatformSettings;
+  };
+  globalsSelect: {
+    settings: SettingsSelect<false> | SettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -213,6 +232,7 @@ export interface Page {
     | CertificateBlock
     | FounderNoteBlock
     | ContactBlock
+    | LegalBlock
     | BandBlock
   )[];
   /**
@@ -557,6 +577,15 @@ export interface ContactBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LegalBlock".
+ */
+export interface LegalBlock {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'legal';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "BandBlock".
  */
 export interface BandBlock {
@@ -698,6 +727,206 @@ export interface AuditLog {
    */
   changed?: string | null;
   ip?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "people".
+ */
+export interface Person {
+  id: number;
+  fullName: string;
+  /**
+   * Stored with its country code: +91 for India.
+   */
+  mobile?: string | null;
+  email?: string | null;
+  mobileVerifiedAt?: string | null;
+  mobileVerifiedAt_tz?: 'Asia/Kolkata' | null;
+  emailVerifiedAt?: string | null;
+  emailVerifiedAt_tz?: 'Asia/Kolkata' | null;
+  preferredChannel?: ('email' | 'whatsapp') | null;
+  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  /**
+   * Under 18: a parent or guardian books and consents for them.
+   */
+  ageBand?: ('under18' | 'adult') | null;
+  city?: string | null;
+  /**
+   * How the person first reached IIIC, such as a booking or a referral.
+   */
+  source?: string | null;
+  /**
+   * The campaign tags on the link the person first arrived by, if any.
+   */
+  utm?: {
+    source?: string | null;
+    medium?: string | null;
+    campaign?: string | null;
+    term?: string | null;
+    content?: string | null;
+  };
+  /**
+   * Short labels for the office’s own use.
+   */
+  tags?: string[] | null;
+  /**
+   * What the person has agreed to, and any withdrawal, newest first.
+   */
+  consents?: {
+    docs?: (number | Consent)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Every consent, and every withdrawal as an entry of its own. Entries are never changed or deleted.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consents".
+ */
+export interface Consent {
+  id: number;
+  /**
+   * Named by the platform.
+   */
+  title?: string | null;
+  /**
+   * To record a withdrawal, choose the consent it ends. Leave empty to record a consent.
+   */
+  withdraws?: (number | null) | Consent;
+  /**
+   * For a withdrawal, taken from the consent it ends.
+   */
+  person?: (number | null) | Person;
+  /**
+   * The consent text the person saw, in the version they saw. For a withdrawal, taken from the consent it ends.
+   */
+  noticeVersion: number | ConsentVersion;
+  /**
+   * Taken from the notice.
+   */
+  purpose:
+    | 'bookingCommunications'
+    | 'marketingEmail'
+    | 'marketingWhatsapp'
+    | 'mapStorage'
+    | 'mapSharing'
+    | 'testimonialPublication'
+    | 'relatedProgrammes';
+  /**
+   * Taken from the notice.
+   */
+  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  /**
+   * When the person gave it: leave empty for now. For a withdrawal, taken from the consent it ends.
+   */
+  grantedAt: string;
+  grantedAt_tz: 'Asia/Kolkata';
+  /**
+   * Only on a withdrawal: when the person withdrew. Leave empty for now.
+   */
+  withdrawnAt?: string | null;
+  withdrawnAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * How it reached IIIC.
+   */
+  channel: 'web' | 'email' | 'whatsapp' | 'phone' | 'inPerson' | 'recordDeleted';
+  /**
+   * What shows it was the person: recorded by the server for a form on the site.
+   */
+  evidence?: {
+    /**
+     * Which form, or which message they replied to.
+     */
+    form?: string | null;
+    /**
+     * For a consent by email, WhatsApp, phone or paper: the file name of the saved copy.
+     */
+    reference?: string | null;
+    ip?: string | null;
+    userAgent?: string | null;
+  };
+  /**
+   * For a counselling booking or the Map: the message id of the email that confirmed the consent in writing.
+   */
+  writtenReceipt?: string | null;
+  /**
+   * The entry that withdrew this consent, if it has been withdrawn.
+   */
+  withdrawal?: {
+    docs?: (number | Consent)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The words beside each consent checkbox, one version at a time. A version in force never changes: add a new one.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consent-versions".
+ */
+export interface ConsentVersion {
+  id: number;
+  /**
+   * Named by the platform.
+   */
+  title?: string | null;
+  purpose:
+    | 'bookingCommunications'
+    | 'marketingEmail'
+    | 'marketingWhatsapp'
+    | 'mapStorage'
+    | 'mapSharing'
+    | 'testimonialPublication'
+    | 'relatedProgrammes';
+  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  /**
+   * Numbered by the platform.
+   */
+  version: number;
+  /**
+   * The words exactly as the person sees them.
+   */
+  text: string;
+  /**
+   * From this time, forms show this version. After it, the text can no longer change.
+   */
+  effectiveFrom: string;
+  effectiveFrom_tz: 'Asia/Kolkata';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The funnel, one event at a time, with no link to any person. Written by the platform only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "analytics-events".
+ */
+export interface AnalyticsEvent {
+  id: number;
+  name:
+    | 'door'
+    | 'step0'
+    | 'booking_started'
+    | 'time_chosen'
+    | 'booking_confirmed'
+    | 'request_submitted'
+    | 'map_completed'
+    | 'newsletter_confirmed'
+    | 'search_no_results';
+  route: string;
+  register: 'default' | 'consultancy' | 'education' | 'counselling';
+  whoFor?: ('yourself' | 'family' | 'organisation') | null;
+  /**
+   * A code that changes every day, worked out on the server from the address and browser, which are not kept.
+   */
+  sessionHash: string;
+  at: string;
+  at_tz: 'Asia/Kolkata';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -845,6 +1074,18 @@ export interface PayloadLockedDocument {
         value: number | StaffRecoveryCode;
       } | null)
     | ({
+        relationTo: 'people';
+        value: number | Person;
+      } | null)
+    | ({
+        relationTo: 'consents';
+        value: number | Consent;
+      } | null)
+    | ({
+        relationTo: 'consent-versions';
+        value: number | ConsentVersion;
+      } | null)
+    | ({
         relationTo: 'redirects';
         value: number | Redirect;
       } | null);
@@ -943,6 +1184,7 @@ export interface PagesSelect<T extends boolean = true> {
         certificate?: T | CertificateBlockSelect<T>;
         founderNote?: T | FounderNoteBlockSelect<T>;
         contact?: T | ContactBlockSelect<T>;
+        legal?: T | LegalBlockSelect<T>;
         band?: T | BandBlockSelect<T>;
       };
   facts?:
@@ -1172,6 +1414,14 @@ export interface ContactBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LegalBlock_select".
+ */
+export interface LegalBlockSelect<T extends boolean = true> {
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "BandBlock_select".
  */
 export interface BandBlockSelect<T extends boolean = true> {
@@ -1251,6 +1501,94 @@ export interface AuditLogSelect<T extends boolean = true> {
   entityId?: T;
   changed?: T;
   ip?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "people_select".
+ */
+export interface PeopleSelect<T extends boolean = true> {
+  fullName?: T;
+  mobile?: T;
+  email?: T;
+  mobileVerifiedAt?: T;
+  mobileVerifiedAt_tz?: T;
+  emailVerifiedAt?: T;
+  emailVerifiedAt_tz?: T;
+  preferredChannel?: T;
+  language?: T;
+  ageBand?: T;
+  city?: T;
+  source?: T;
+  utm?:
+    | T
+    | {
+        source?: T;
+        medium?: T;
+        campaign?: T;
+        term?: T;
+        content?: T;
+      };
+  tags?: T;
+  consents?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consents_select".
+ */
+export interface ConsentsSelect<T extends boolean = true> {
+  title?: T;
+  withdraws?: T;
+  person?: T;
+  noticeVersion?: T;
+  purpose?: T;
+  language?: T;
+  grantedAt?: T;
+  grantedAt_tz?: T;
+  withdrawnAt?: T;
+  withdrawnAt_tz?: T;
+  channel?: T;
+  evidence?:
+    | T
+    | {
+        form?: T;
+        reference?: T;
+        ip?: T;
+        userAgent?: T;
+      };
+  writtenReceipt?: T;
+  withdrawal?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consent-versions_select".
+ */
+export interface ConsentVersionsSelect<T extends boolean = true> {
+  title?: T;
+  purpose?: T;
+  language?: T;
+  version?: T;
+  text?: T;
+  effectiveFrom?: T;
+  effectiveFrom_tz?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "analytics-events_select".
+ */
+export interface AnalyticsEventsSelect<T extends boolean = true> {
+  name?: T;
+  route?: T;
+  register?: T;
+  whoFor?: T;
+  sessionHash?: T;
+  at?: T;
+  at_tz?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1348,6 +1686,247 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * What the site prints about IIIC, the rules it runs by, and the switches for what is not live yet.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings".
+ */
+export interface PlatformSettings {
+  id: number;
+  legal?: {
+    /**
+     * Exactly as on PAN and registrations (I-26).
+     */
+    legalName?: string | null;
+    /**
+     * Exactly as registered (I-26).
+     */
+    tradeName?: string | null;
+    /**
+     * Exactly as it should print, with its PIN (I-33).
+     */
+    address?: string | null;
+    /**
+     * I-05.
+     */
+    gstin?: string | null;
+    /**
+     * Only while there is no GSTIN: the status as it should print.
+     */
+    gstStatus?: string | null;
+    /**
+     * For invoices (I-05).
+     */
+    udyam?: string | null;
+    /**
+     * Leave these empty to print the contact details the site already shows.
+     */
+    customerCare?: {
+      email?: string | null;
+      phone?: string | null;
+      /**
+       * Such as Monday to Friday, 10 AM – 6 PM.
+       */
+      hours?: string | null;
+    };
+    /**
+     * Printed once the name, the designation and an email or phone are all filled in (I-21).
+     */
+    grievanceOfficer?: {
+      name?: string | null;
+      designation?: string | null;
+      email?: string | null;
+      phone?: string | null;
+    };
+    /**
+     * Printed once the name, email and phone are all filled in (I-27).
+     */
+    certIn?: {
+      name?: string | null;
+      email?: string | null;
+      phone?: string | null;
+    };
+  };
+  bank?: {
+    accountName?: string | null;
+    bankName?: string | null;
+    branch?: string | null;
+    accountNumber?: string | null;
+    ifsc?: string | null;
+  };
+  /**
+   * What a service uses unless it sets its own. The reschedule window waits on the cancellation rules (D-16).
+   */
+  booking?: {
+    /**
+     * The earliest a time can be booked, from now.
+     */
+    noticeHours?: number | null;
+    /**
+     * How far ahead times are offered.
+     */
+    horizonDays?: number | null;
+    /**
+     * How long a time is held during payment.
+     */
+    holdMinutes?: number | null;
+    /**
+     * Kept free after each session.
+     */
+    bufferMinutes?: number | null;
+    /**
+     * Set with the cancellation rules (D-16).
+     */
+    rescheduleWindowHours?: number | null;
+  };
+  /**
+   * No WhatsApp message or SMS goes out between these times, India time.
+   */
+  quietHours: {
+    start: string;
+    end: string;
+  };
+  flags?: {
+    /**
+     * Shows prices on the site, in emails and in templates. Leave it off until IIIC publishes prices (D-21).
+     */
+    pricesPublic?: boolean | null;
+    /**
+     * Takes payment when a session is booked. Needs “Prices are public” first (D-24).
+     */
+    payAtBooking?: boolean | null;
+    /**
+     * The full Subjective Self Map (Release 2).
+     */
+    mapEnabled?: boolean | null;
+    /**
+     * Signing in to My IIIC (Release 2).
+     */
+    accountsEnabled?: boolean | null;
+    /**
+     * Suggestions of IIIC’s other programmes after a step (Release 2).
+     */
+    bridgesEnabled?: boolean | null;
+  };
+  processors?:
+    | {
+        name: string;
+        location?: string | null;
+        contract?: string | null;
+        holds?: string | null;
+        reviewedOn?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  darkPatternAudits?:
+    | {
+        auditedOn: string;
+        auditedBy: string;
+        notes?: string | null;
+        /**
+         * Shown on /legal with the date of the audit.
+         */
+        certificate?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings_select".
+ */
+export interface SettingsSelect<T extends boolean = true> {
+  legal?:
+    | T
+    | {
+        legalName?: T;
+        tradeName?: T;
+        address?: T;
+        gstin?: T;
+        gstStatus?: T;
+        udyam?: T;
+        customerCare?:
+          | T
+          | {
+              email?: T;
+              phone?: T;
+              hours?: T;
+            };
+        grievanceOfficer?:
+          | T
+          | {
+              name?: T;
+              designation?: T;
+              email?: T;
+              phone?: T;
+            };
+        certIn?:
+          | T
+          | {
+              name?: T;
+              email?: T;
+              phone?: T;
+            };
+      };
+  bank?:
+    | T
+    | {
+        accountName?: T;
+        bankName?: T;
+        branch?: T;
+        accountNumber?: T;
+        ifsc?: T;
+      };
+  booking?:
+    | T
+    | {
+        noticeHours?: T;
+        horizonDays?: T;
+        holdMinutes?: T;
+        bufferMinutes?: T;
+        rescheduleWindowHours?: T;
+      };
+  quietHours?:
+    | T
+    | {
+        start?: T;
+        end?: T;
+      };
+  flags?:
+    | T
+    | {
+        pricesPublic?: T;
+        payAtBooking?: T;
+        mapEnabled?: T;
+        accountsEnabled?: T;
+        bridgesEnabled?: T;
+      };
+  processors?:
+    | T
+    | {
+        name?: T;
+        location?: T;
+        contract?: T;
+        holds?: T;
+        reviewedOn?: T;
+        id?: T;
+      };
+  darkPatternAudits?:
+    | T
+    | {
+        auditedOn?: T;
+        auditedBy?: T;
+        notes?: T;
+        certificate?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
