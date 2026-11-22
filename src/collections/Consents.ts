@@ -25,6 +25,7 @@ import {
 } from '@/lib/privacy/consentLedger'
 import { RECORD_DELETED } from '@/lib/privacy/consents'
 import { CONSENT_CHANNELS, CONSENT_PURPOSES, purposeLabel } from '@/lib/privacy/purposes'
+import { withdrawReviewsOnWithdrawal } from '@/lib/proof/ledger'
 import { LANGUAGES } from '@/lib/site/languages'
 import { formatIstDate, formatIstTime, IST_FIELD } from '@/lib/time/ist'
 
@@ -203,6 +204,9 @@ export const Consents: CollectionConfig = {
   hooks: {
     beforeValidate: [completeEntry],
     beforeChange: [neverChange, nameEntry],
+    // A withdrawn consent to publish a testimonial takes the person's reviews down at once, in
+    // the same transaction (docs/06 V2; src/lib/proof/ledger.ts).
+    afterChange: [withdrawReviewsOnWithdrawal],
     beforeDelete: [neverDelete],
   },
   fields: [

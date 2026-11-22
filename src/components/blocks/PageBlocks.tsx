@@ -4,6 +4,7 @@ import experience from '@/components/experience/experience.module.css'
 import { FlipLines } from '@/components/experience/FlipLines'
 import { InsightNav } from '@/components/experience/InsightNav'
 import { RevealChapters } from '@/components/experience/RevealChapters'
+import { FirstVoice, PlainVoices, WithVoice } from '@/components/proof/Voices'
 import { Todo } from '@/components/Todo'
 import {
   CERTIFICATE_AWAITS,
@@ -14,6 +15,8 @@ import { LEGAL_REVIEW_AWAITS } from '@/lib/content/legalReview'
 import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
 import type { FaqItem, PageBlock, PageContent } from '@/lib/content/types'
 import { type Devices, devicesAt } from '@/lib/experience/narrative'
+import { isCounsellingPage } from '@/lib/proof/reviews'
+import { NO_VOICES, type PageVoices } from '@/lib/proof/voices'
 import {
   LEGAL_INFORMATION_COLUMNS,
   LEGAL_INFORMATION_HEADING,
@@ -120,7 +123,16 @@ function SectionHead({
   )
 }
 
-function Hero({ block, draft }: { block: HeroBlock; draft: boolean }) {
+function Hero({
+  block,
+  draft,
+  firstVoice = null,
+}: {
+  block: HeroBlock
+  draft: boolean
+  /** The home page's first voice, under the actions (docs/11 §3.8). */
+  firstVoice?: PageVoices['first']
+}) {
   return (
     <section className={`iiic-hero ${styles.heroSolo}`}>
       <div>
@@ -136,6 +148,7 @@ function Hero({ block, draft }: { block: HeroBlock; draft: boolean }) {
         {block.note ? (
           <div className={`iiic-type-small ${styles.heroNote}`}>{renderText(block.note)}</div>
         ) : null}
+        <FirstVoice voice={firstVoice} />
       </div>
     </section>
   )
@@ -618,6 +631,7 @@ function Section({
   index,
   legal,
   faqs,
+  firstVoice,
 }: {
   block: Exclude<PageBlock, BandBlock>
   draft: boolean
@@ -626,10 +640,11 @@ function Section({
   index: number
   legal: LegalInformation
   faqs: readonly FaqItem[]
+  firstVoice: PageVoices['first']
 }) {
   switch (block.blockType) {
     case 'hero':
-      return <Hero block={block} draft={draft} />
+      return <Hero block={block} draft={draft} firstVoice={firstVoice} />
     case 'doors':
       return <Doors block={block} />
     case 'statement':
@@ -672,6 +687,12 @@ function Section({
  * information section draws what the settings hold (the route reads it,
  * src/lib/settings/read.ts); without it, every detail is its placeholder. The questions section
  * shows the questions given, which PageAt reads for the page (src/lib/content/faqs.ts).
+ *
+ * The reviews pinned to the page are its voices (docs/11 §3.8; src/lib/proof/read.ts): the
+ * home page's first voice under its hero, and one beside each section that has one, by the
+ * section's link name; on the counselling page up to three plain cards in the section's text
+ * instead. Where nothing is pinned nothing is drawn. A voice reveals once as it comes into view,
+ * except inside a chapter, which reveals as a whole, and on counselling, where nothing moves.
  */
 export function RenderBlocks({
   layout,
@@ -679,23 +700,32 @@ export function RenderBlocks({
   slug,
   legal = NO_LEGAL_INFORMATION,
   faqs = [],
+  voices = NO_VOICES,
 }: {
   layout: PageContent['layout']
   legalReview?: PageContent['legalReview']
   slug?: string
   legal?: LegalInformation
   faqs?: readonly FaqItem[]
+  voices?: PageVoices
 }) {
   const devices = devicesAt(slug)
+  const counselling = isCounsellingPage(slug)
   const band = layout.find((block): block is BandBlock => block.blockType === 'band')
   const sections = layout.filter(
     (block): block is Exclude<PageBlock, BandBlock> => block.blockType !== 'band',
   )
+  const voicesOf = (block: Exclude<PageBlock, BandBlock>) => {
+    const anchor = 'anchor' in block ? block.anchor : null
+    return anchor ? voices.bySection[anchor] : undefined
+  }
+  const revealsVoices =
+    !counselling && !devices.chapters && sections.some((block) => voicesOf(block)?.length)
   return (
     <>
       <div className={`iiic-page ${styles.page}`}>
         {sections.map((block, index) => {
-          const section = (
+          const drawn = (
             <Section
               block={block}
               draft={legalReview === 'draft'}
@@ -703,6 +733,16 @@ export function RenderBlocks({
               index={index}
               legal={legal}
               faqs={faqs}
+              firstVoice={slug === 'home' ? voices.first : null}
+            />
+          )
+          const section = counselling ? (
+            <PlainVoices section={drawn} voices={voicesOf(block)} key={block.id ?? index} />
+          ) : (
+            <WithVoice
+              section={drawn}
+              voice={voicesOf(block)?.[0]}
+              reveal={!devices.chapters}
               key={block.id ?? index}
             />
           )
@@ -714,7 +754,7 @@ export function RenderBlocks({
             section
           )
         })}
-        {devices.chapters ? <RevealChapters /> : null}
+        {devices.chapters || revealsVoices ? <RevealChapters /> : null}
         {band?.copyStatus === 'candidate' ? (
           <div className={styles.band}>
             <CandidateMark status={band.copyStatus} />

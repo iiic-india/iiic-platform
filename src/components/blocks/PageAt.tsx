@@ -6,6 +6,9 @@ import { getFaqs } from '@/lib/content/faqs'
 import { getPage } from '@/lib/content/pages'
 import { pagePath } from '@/lib/content/slug'
 import type { FaqItem, PageContent } from '@/lib/content/types'
+import { getPageVoices } from '@/lib/proof/read'
+import { takesVoices } from '@/lib/proof/reviews'
+import { NO_VOICES, type PageVoices } from '@/lib/proof/voices'
 import { redirectOrNotFound } from '@/lib/redirects/lookup'
 import { buildMetadata } from '@/lib/seo/metadata'
 import { pageGraph } from '@/lib/seo/schema'
@@ -35,9 +38,18 @@ export async function PageAt({ slug }: { slug: string }) {
         slug={slug}
         legal={await legalInformationFor(page.layout)}
         faqs={faqs}
+        voices={await voicesFor(slug)}
       />
     </>
   )
+}
+
+/**
+ * The reviews pinned to a page (docs/11 §3.8), read only for the pages that take voices: a
+ * legal page, the Map or an error page never asks.
+ */
+export async function voicesFor(slug: string): Promise<PageVoices> {
+  return takesVoices(slug) ? getPageVoices(slug) : NO_VOICES
 }
 
 /**

@@ -23,5 +23,18 @@ export const JOURNAL_PAGE = {
     'Articles from the Indian Institute of Image Catalysts (IIIC), Ahmedabad, applying Subjective Self to work, family and the self.',
 } as const
 
+/**
+ * Proof (docs/02): the title the keyword map gives it (docs/content/keyword-map.md, "Proof,
+ * Journal, Map and the rest"), and a description of what it holds by the rule every review on
+ * it keeps (D-37), with the institute's name and city (D-63, D-65). It names no count and no
+ * outcome; the keyword map's description comes once reviews are published (I-42).
+ */
+export const PROOF_PAGE = {
+  path: '/proof',
+  title: 'IIIC reviews: Gaurang Mistry’s programmes',
+  description:
+    'Reviews of Gaurang Mistry’s programmes, each published with its writer’s permission, from the Indian Institute of Image Catalysts (IIIC), Ahmedabad.',
+} as const
+
 /** Every such page, for the sitemap and llms.txt. */
-export const APP_PAGES = [MAP_PAGE, JOURNAL_PAGE] as const
+export const APP_PAGES = [MAP_PAGE, JOURNAL_PAGE, PROOF_PAGE] as const

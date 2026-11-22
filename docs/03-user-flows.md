@@ -89,7 +89,7 @@ Release 2 adds the Team Map itself: a link the client shares with their team, an
 4. Withdrawal by the person (from the link, a reply or My IIIC) unpublishes at once (V2).
 5. **Case studies** (consultancy): written by IIIC, numbers agreed with the client, client approval recorded (file and date) before publishing.
 6. Counselling stories are anonymised by default.
-7. **R1 · Earlier reviews (D-37).** Reviews of Gaurang Mistry's programmes from before the platform are imported from the intake sheet, screened (`content/copy-architecture.md` §6), sent to their writers for consent with a preview of exactly what will appear (V1), approved by an owner, and published with the name in the form the person chose, their designation, place, the programme and the year. A withdrawal unpublishes at once (V2).
+7. **R1 · Earlier reviews (D-37).** Reviews of Gaurang Mistry's programmes from before the platform are imported from the intake sheet, screened (`content/copy-architecture.md` §6), sent to their writers for consent with a preview of exactly what will appear (V1), approved by an owner, and published with the name in the form the person chose, their designation, place, the programme and the year. A withdrawal unpublishes at once (V2). As built (M2): `pnpm reviews:import` records each row (person, review at received, consent with its evidence) whole or not at all and is safe to run again; the operator screens and records the reply, the writer's yes moves the review to approved, an owner publishes it, and a withdrawal in the consent log takes the person's reviews down in the same transaction (`05`, Proof as built). The consent request message itself (V1) is sent by hand from the intake sheet until M6.
 
 ## F9 · Cross-path bridges · R2
 

@@ -23,6 +23,7 @@ module.exports = {
         'http://localhost:3000/journal',
         'http://localhost:3000/search',
         'http://localhost:3000/search?q=framework',
+        'http://localhost:3000/proof',
         'http://localhost:3000/about',
         'http://localhost:3000/institute',
         'http://localhost:3000/legal',

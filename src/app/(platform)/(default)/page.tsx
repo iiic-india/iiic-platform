@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { faqsFor, metadataOf, PageJsonLd } from '@/components/blocks/PageAt'
+import { faqsFor, metadataOf, PageJsonLd, voicesFor } from '@/components/blocks/PageAt'
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
 import { getPage } from '@/lib/content/pages'
 import { logMissingPage } from '@/lib/redirects/log'
@@ -35,6 +35,7 @@ export default async function HomePage() {
         slug="home"
         legal={await legalInformationFor(page.layout)}
         faqs={faqs}
+        voices={await voicesFor('home')}
       />
     </>
   )

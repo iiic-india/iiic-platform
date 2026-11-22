@@ -7,8 +7,9 @@ import { CONSULTANCY_SERVICES, TEAM_MAP } from '../../src/lib/site/consultancy'
 
 // Every page the site shows, the 404 in each register included: the accessibility page says
 // each has passed these checks. The starter pages are the pages built so far (docs/02), /map
-// asks Find your path's question, and /journal is the Journal, empty in CI's database. The 404
-// is what links to pages not built yet (Proof, the footer's Verify a certificate) reach today;
+// asks Find your path's question, /journal is the Journal and /proof is Proof, both empty in
+// CI's database. The 404 is what links to pages not built yet (the footer's Verify a
+// certificate) reach today;
 // on a counselling path, where "Book a session" leads for now, it carries the scope statement
 // and the crisis numbers (docs/11 §5.1, item 8). Under /institute/, /organisations/,
 // /counselling/ and /journal/ it takes that section's register (docs/02).
@@ -19,6 +20,7 @@ const PAGES = [
   '/search',
   '/search?q=framework',
   '/search?q=zzqqxxnothing',
+  '/proof',
   '/journal/no-such-article',
   '/no-such-page',
   '/book/session',

@@ -65,6 +65,9 @@ vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
 vi.mock('@/lib/settings/read', () => ({ legalInformationFor: async () => undefined }))
 // No question is published: the questions sections draw nothing.
 vi.mock('@/lib/content/faqs', () => ({ getFaqs: vi.fn(async () => []) }))
+vi.mock('@/lib/proof/read', () => ({
+  getPageVoices: vi.fn(async () => ({ first: null, bySection: {} })),
+}))
 vi.mock('next/headers', () => ({
   headers: async () => new Headers({ 'x-pathname': request.path }),
 }))
@@ -191,6 +194,9 @@ const OWN = [
   '(default)/search/page.tsx',
 ]
 
+/** Proof, which draws itself too: tests/unit/proofPage.spec.tsx. */
+const PROOF = ['(default)/proof/page.tsx']
+
 /** The Journal's pages, which draw themselves too: tests/unit/journalPages.spec.tsx. */
 const JOURNAL = [
   '(education)/journal/page.tsx',
@@ -219,7 +225,7 @@ describe('the pages under src/app/(platform)', () => {
       .map((file) => file.replaceAll('\\', '/'))
       .filter((file) => /(?:^|\/)(?:page|not-found)\.tsx$/.test(file))
     expect(found.sort()).toEqual(
-      [...OWN, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND]
+      [...OWN, ...PROOF, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND]
         .map((entry) => (typeof entry === 'string' ? entry : entry.file))
         .sort(),
     )
