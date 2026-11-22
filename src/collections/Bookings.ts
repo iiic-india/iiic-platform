@@ -5,6 +5,7 @@ import { hasRole } from '@/access/roles'
 import { AGE_BANDS } from '@/collections/People'
 import { istDayField } from '@/fields/istDay'
 import { basisPointsField, paiseField, wholeNumber } from '@/fields/numbers'
+import { assignReference, fillEnd, keepMoves } from '@/lib/booking/bookingHooks'
 import {
   BOOKING_FOR,
   BOOKING_FORMATS,
@@ -66,6 +67,9 @@ export const Bookings: CollectionConfig = {
     update: allow(POLICY.bookings.update),
     delete: allow(POLICY.bookings.delete),
   },
+  // The reference, the end from the length, and the moves a staff edit may make
+  // (src/lib/booking/bookingHooks.ts); the booking module's operations do the rest.
+  hooks: { beforeChange: [assignReference, fillEnd, keepMoves] },
   defaultSort: '-startsAt',
   disableBulkEdit: true,
   indexes: [{ fields: ['practitioner', 'startsAt'] }, { fields: ['status', 'holdExpiresAt'] }],
