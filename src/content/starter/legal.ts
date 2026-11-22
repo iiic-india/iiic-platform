@@ -95,7 +95,9 @@ export const PRIVACY: PageContent = {
           text: 'When an address has no page, the site keeps the address and the name of the site that linked to it, to fix broken links, and removes them once 180 days pass without anyone asking for that address.',
         },
         {
-          text: 'The site sets no cookies when you read it, so it shows no cookie banner. Cookies are set only for IIIC’s staff when they sign in.',
+          // docs/12 §10: the session and two-factor cookies, and the draft-mode cookie a preview
+          // sets (OS-4), all for staff alone.
+          text: 'The site sets no cookies when you read it, so it shows no cookie banner. Cookies are set only for IIIC’s staff: when they sign in, and while they preview a page before it is published.',
         },
         { text: 'There are no advertising trackers.' },
       ],

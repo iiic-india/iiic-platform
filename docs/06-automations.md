@@ -6,6 +6,7 @@ Everything the platform does on its own. Each automation is an event or a schedu
 
 - **Event-driven, idempotent.** Domain events (`booking.confirmed`, `payment.captured`, `lead.created`, …) enqueue jobs with an idempotency key, so a retried webhook or a double click never sends twice.
 - **Scheduled jobs** (reminders, digests, retention) are enqueued at a computed `run_at` and recomputed when the underlying booking changes (a reschedule cancels and re-plans its reminders).
+- **Scheduled publishing** of pages and Journal articles is Payload's own (`versions.drafts.schedulePublish`), which runs on the same jobs queue: it is switched on with the cron runner (M6), not before, since nothing would run the scheduled job until then.
 - **Retries.** Three attempts with backoff (1 min, 10 min, 1 h); then the job fails visibly on Today and in the log.
 - **Quiet hours.** No WhatsApp or SMS between 21:00 and 08:00 IST (setting); messages due in that window are sent at 08:00, except a reminder that would then arrive after the session, which is dropped. The window is in Settings → Platform settings (M2), read with `readQuietHours` and tested with `inQuietHours` (`src/lib/settings/`).
 - **Consent.** Transactional messages (confirmations, reminders, receipts, login codes) go to anyone who booked. Anything promotional (bridges, follow-up offers, newsletters, nudges) needs the matching consent and stops the moment it is withdrawn.

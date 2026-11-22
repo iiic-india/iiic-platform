@@ -31,7 +31,7 @@ Everything else is paper, ink, two typefaces and air. The framework's own claim 
 
 A 6 px bar fixed below the header on narrative pages, `background: var(--iiic-accent)`, `transform-origin: left`, scaled from 0 to 1 with scroll. Built with a CSS scroll-driven animation (`animation-timeline: scroll(root)`) inside `@supports`, with a passive-scroll JavaScript fallback that sets a custom property; under reduced motion the bar is static and full-width (it becomes the brand's bar). `aria-hidden="true"`; the page's headings carry the structure for screen readers. Pages: `/`, `/framework`, `/founders`, `/journal/[slug]`; not booking, not counselling.
 
-As built (M2): the bar sits on the header's lower rule (`src/components/experience/ReadingBar.tsx`, in the header), so it always has the header's paper or white behind it. It is drawn on the paths of the narrative pages that `src/lib/experience/narrative.ts` lists (`/`, `/framework`, `/founders`; the Journal's articles join with the Journal) and on no other page. The fallback listens only where the browser has no scroll-driven animations and motion is not reduced, and draws once a frame; without JavaScript in such a browser the bar stays at zero. It reaches full width at the end of the page.
+As built (M2): the bar sits on the header's lower rule (`src/components/experience/ReadingBar.tsx`, in the header), so it always has the header's paper or white behind it. It is drawn on the paths of the narrative pages that `src/lib/experience/narrative.ts` lists (`/`, `/framework`, `/founders`) and on a Journal article's path (`/journal/[slug]`), and on no other page. On an article it is drawn only while the article asks for it with `data-reading-bar` (`src/components/journal/Article.tsx`), which an article that leads to counselling (`leadsToCounselling`) never does: the stylesheet shows the bar with `:has()` before any script runs, the header follows each page on client navigation, and a browser without `:has()` draws no bar on any article rather than one on a counselling surface. The fallback listens only where the browser has no scroll-driven animations and motion is not reduced, and draws once a frame; without JavaScript in such a browser the bar stays at zero. It reaches full width at the end of the page.
 
 ### 3.2 Flip the line (Object or subject?)
 
@@ -95,7 +95,9 @@ Order and copy are in `content/copy-architecture.md` §4.1; this is the choreogr
 | 8 | The Journal (three) | Nothing | |
 | 9 | Closing band (yellow): the heading, the Sanskrit line, the action | The bar reaches full width as the band enters | The page's one yellow band |
 
-The whole page is server-rendered HTML with one small script for the reveals and flips (under 6 KB gzipped) and no third-party code. `content-visibility: auto` on sections 4–9 with `contain-intrinsic-size` set from their rendered heights.
+The whole page is server-rendered HTML with one small script for the reveals and flips (under 6 KB gzipped) and no third-party code.
+
+As built (M2): the doors' cards (rows 2; 60 ms apart within a row of three) and the steps (row 4) reveal once with the founders' chapters' script (`src/components/experience/RevealChapters.tsx`, `data-reveal`), held back only while wholly below the window and only once the script runs, never under reduced motion; "In their words" (row 6) joins when Proof is built. Row 8 shows the three newest published articles under the candidate heading "A little clarity" (I-41) with a link to all of them, and is not drawn while no article is published. `content-visibility: auto` on sections 4–9 with `contain-intrinsic-size` set from their rendered heights.
 
 ## 5. Error pages, search and small pages
 

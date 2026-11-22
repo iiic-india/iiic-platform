@@ -393,6 +393,8 @@ M2 is done when "editing a page in the admin updates it with a preview and reval
 
 One change is needed. Every response sends `frame-ancestors 'none'` and `X-Frame-Options: DENY` today (`12` §5), which stops the admin's iframe from loading the page; Payload's docs say to allow the admin's origin with `frame-ancestors`. Proposal OS-4: only draft-mode responses for signed-in staff send `frame-ancestors 'self'` and `X-Frame-Options: SAMEORIGIN`, with `noindex`; every other response keeps `'none'` and `DENY`; the headers test is updated to match (`12` §5); the draft-mode cookie joins the cookie inventory and the notice's cookie section (`12` §10).
 
+As built (`m2/preview-and-journal-extras`): the admin frames `/api/preview?collection=…&slug=…`, which checks the session first (a role that reads drafts, and the two-factor code), turns on Next.js's draft mode and opens the document at its own address, so the route that will draw it draws it in its register; the page reads the newest version for that request only (`getPageToShow`, `getPostToShow`) and everyone else gets the published page or the 404. The proxy allows the frame only when the draft-mode cookie, the session cookie and a two-factor cookie whose token verifies are all there; the admin's own policy allows `frame-src 'self'`. A notice above the header says it is a preview, with "Leave preview" (`/api/preview/exit`); signing out leaves it too. No autosave: each autosave would write a version and an audit entry, so the frame reloads at each save instead.
+
 ### 5.4 React Email, and the kit's templates by system
 
 `react-email` 6.11.16 and `@react-email/components` 1.0.12 are current ([npm][s-npm-reactemail]). The templates in `src/emails/` are ports of `src/brand/templates/email/`, each with a plain-text part, one purpose and one action, tested on the matrix in `13` §5. Payload's own mail already goes through `@payloadcms/email-resend` (D-47).
@@ -472,10 +474,10 @@ Every item in `10` M2, with its state on 22 November 2026:
 | Public pages: home, framework, founders, organisations, counselling, learn, institute, about, the legal drafts, `/accessibility`, Find your path | Live |
 | The search system in `12` §3 (D-61 to D-68) | Live, except `/search` |
 | `humans.txt` and the manifest | Live |
-| The reading devices: the bar, the flip, the sticky question, the chapters; the reveals (`11` §4: the cards and steps) | On a branch, except the reveals of the cards and steps (to build) |
+| The reading devices: the bar, the flip, the sticky question, the chapters; the reveals (`11` §4: the cards and steps) | On a branch; the reveals of the home page's cards and steps, and the bar on Journal articles (never on one that leads to counselling), on `m2/preview-and-journal-extras` |
 | The 404 log (missing pages) with one-click redirects, the static 500, `security.txt` | On a branch; check that redirects on slug change (`12` §3 URLs) come with it |
-| Live preview in the admin (done-when) | To build (§5.3, OS-4) |
-| Posts and topics: the Journal with topics, pagination, reading time and the question to sit with; the Journal teaser on the home page | The Journal in progress; the home page's teaser once articles exist |
+| Live preview in the admin (done-when) | On `m2/preview-and-journal-extras` (§5.3, OS-4): pages and articles beside the editor and in a tab, for staff with their two-factor code only; framing allowed on those draft-mode responses alone; the draft-mode cookie in the inventory. Scheduled publishing is not built: Payload runs it on the jobs queue, which waits for the M6 cron runner |
+| Posts and topics: the Journal with topics, pagination, reading time and the question to sit with; the Journal teaser on the home page | The Journal on a branch; the home page's teaser (drawn while an article is published), images in the body and the RSS feed (`/journal/feed.xml`) on `m2/preview-and-journal-extras` |
 | `@payloadcms/plugin-seo` for posts (D-68's condition) | To build, with posts |
 | Testimonials with the review fields in `04`, and the one-off import of the intake sheet with its consent evidence | To build |
 | Proof (`/proof`, `/proof/[slug]`): "In their words" with its filters, the case studies' empty state; the voices beside the text; plain review cards on counselling pages (D-58) | To build |
@@ -484,7 +486,7 @@ Every item in `10` M2, with its state on 22 November 2026:
 | FAQs, with `FAQPage` markup only around questions shown on the page (I-20) | To build |
 | Services and practitioners, with the three service pages and `/organisations/team-map` (its form comes in M4) | To build |
 | Consent versions | In progress, with the trust layer |
-| Analytics events (doors, step 0, searches with no results) and the Cloudflare beacon | The events table and step 0 in progress; the beacon in M2, with its CSP origin (§3.12) |
+| Analytics events (doors, step 0, searches with no results) and the Cloudflare beacon | The events table and step 0 on a branch; the beacon on `m2/preview-and-journal-extras`, loaded with the request's nonce and its CSP origins only where `NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN` is set, never in the admin (§3.12); the token is set in Vercel when IIIC wants traffic counted |
 | The `iiicedu.com` redirect rules from `content/sources/old-site-iiicedu-com.md`, applied at launch | On a branch, with the 404 log; inert until the domain points at Vercel |
 | Search Console and Bing verified on the staging domain (`12` §3) | Not recorded as done |
 | The done-when checks: 320–1600 px, axe, the acceptance in `11` §10, Lighthouse on the home, framework, founders and counselling pages, every claim traced to a fact | Run on each slice; the full set once the items above have landed |
