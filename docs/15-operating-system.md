@@ -477,8 +477,8 @@ Every item in `10` M2, with its state on 22 November 2026:
 | Live preview in the admin (done-when) | To build (§5.3, OS-4) |
 | Posts and topics: the Journal with topics, pagination, reading time and the question to sit with; the Journal teaser on the home page | The Journal in progress; the home page's teaser once articles exist |
 | `@payloadcms/plugin-seo` for posts (D-68's condition) | To build, with posts |
-| Testimonials with the review fields in `04`, and the one-off import of the intake sheet with its consent evidence | To build |
-| Proof (`/proof`, `/proof/[slug]`): "In their words" with its filters, the case studies' empty state; the voices beside the text; plain review cards on counselling pages (D-58) | To build |
+| Testimonials with the review fields in `04`, and the one-off import of the intake sheet with its consent evidence | On a branch (`m2/proof`): the collection with the consent gate and withdrawal (V2), and `pnpm reviews:import`; the migration with the combined branches; the original file and video reviews wait for the private documents bucket; nothing real imported until I-42 |
+| Proof (`/proof`, `/proof/[slug]`): "In their words" with its filters, the case studies' empty state; the voices beside the text; plain review cards on counselling pages (D-58) | On a branch (`m2/proof`): `/proof` with its door filters and empty states (stories, case studies); voices by placement beside any section with a link name, the home page's first voice and counselling's plain cards; `/proof/[slug]` stays the 404 until case studies exist (I-16). The stacked "In their words" sections of the home, founders, organisations and learn pages are still to build |
 | `/search` with the search index (D-34), then `SearchAction` | To build |
 | Settings: the legal information, the contact details and the flags (`prices_public` and the rest), with the footer and contact section reading from it | In progress, with `people` and `consents` (the trust layer) |
 | FAQs, with `FAQPage` markup only around questions shown on the page (I-20) | To build |
