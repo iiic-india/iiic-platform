@@ -7,6 +7,7 @@ import { ABOUT, ABOUT_IIIC_LINES, PUBLIC_WORKSHOP } from '@/content/starter/abou
 import { COUNSELLING, COUNSELLING_IIIC_LINES } from '@/content/starter/counselling'
 import {
   FOUNDERS,
+  FOUNDERS_CHAPTER_KICKER,
   FOUNDERS_IIIC_LINES,
   FOUNDERS_NARRATIVE_FIGURES,
   FOUNDERS_STORY_LABEL,
@@ -631,7 +632,10 @@ describe('the founders starter page, drawn', () => {
   it('tells the story in IIIC’s words and says it is an illustration (D-28)', () => {
     const { container } = draw()
     const story = container.querySelector('#story') as HTMLElement
-    expect(story.querySelector('.iiic-kicker')?.textContent).toBe(FOUNDERS_STORY_LABEL)
+    // The chapter's kicker waits on IIIC (I-41); the label follows it, whatever it becomes.
+    const kicker = story.querySelector('.iiic-kicker') as HTMLElement
+    expect(kicker.textContent).toBe(`${FOUNDERS_CHAPTER_KICKER} · ${FOUNDERS_STORY_LABEL}`)
+    expect(kicker.querySelector('.iiic-todo')?.getAttribute('data-todo')).toBe('I-41')
     expect([...story.querySelectorAll('.iiic-prose p')].map((p) => p.textContent)).toEqual([
       LINES.shed,
       LINES.today,
@@ -712,8 +716,20 @@ describe('the founders starter page, drawn', () => {
     const marks = [...container.querySelectorAll('[data-candidate="I-41"]')]
     expect(marks).toHaveLength(1)
     expect(marks[0]?.closest('section')?.querySelector('h2')?.textContent).toBe('Six Insights')
-    expect(container.querySelector('.iiic-todo')).toBeNull()
     expect(container.querySelector('[data-draft]')).toBeNull()
+  })
+
+  it('waits on IIIC for the four chapter kickers alone, each above IIIC’s heading (I-41)', () => {
+    const { container } = draw()
+    const chips = [...container.querySelectorAll('.iiic-todo')]
+    expect(chips.map((chip) => chip.textContent)).toEqual(Array(4).fill(FOUNDERS_CHAPTER_KICKER))
+    expect(
+      chips.map((chip) => chip.closest('.iiic-section-head')?.querySelector('h2')?.textContent),
+    ).toEqual([LINES.storyHeading, LINES.shiftHeading, 'Six Insights', LINES.rhythmHeading])
+    for (const chip of chips) {
+      expect(chip.closest('.iiic-kicker')).not.toBeNull()
+      expect(chip.getAttribute('data-todo')).toBe('I-41')
+    }
   })
 })
 

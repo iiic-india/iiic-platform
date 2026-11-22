@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import mark from '@/brand/logo/iiic-mark.svg'
+import { ReadingBar } from '@/components/experience/ReadingBar'
 
 import { NavToggle } from './NavToggle'
 
@@ -42,6 +43,8 @@ export function SiteHeader() {
           Find your path
         </Link>
       </nav>
+      {/* The bar on a narrative page (docs/11 §3.1), on the header's lower rule. */}
+      <ReadingBar />
     </header>
   )
 }

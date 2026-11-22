@@ -31,7 +31,11 @@ import {
 import { Pages } from '@/collections/Pages'
 import { STARTER_IIIC_LINES, STARTER_PAGES, starterAt } from '@/content/starter'
 import { PUBLIC_WORKSHOP } from '@/content/starter/about'
-import { FOUNDERS_NARRATIVE_FIGURES, FOUNDERS_STORY_LABEL } from '@/content/starter/founders'
+import {
+  FOUNDERS_CHAPTER_KICKER,
+  FOUNDERS_NARRATIVE_FIGURES,
+  FOUNDERS_STORY_LABEL,
+} from '@/content/starter/founders'
 import { FRAMEWORK_IIIC_LINES } from '@/content/starter/framework'
 import { PDEU_WORKSHOP } from '@/content/starter/learn'
 import { hasStrayBrackets } from '@/lib/content/placeholders'
@@ -67,8 +71,14 @@ const decisions = readFileSync(join(process.cwd(), 'docs/decisions.md'), 'utf8')
 const APPROVED_EXTRAS: Readonly<Record<string, readonly string[]>> = {
   // IIIC's diagram heading, "HUMAN TRANSFORMATION", in sentence case.
   framework: ['Human transformation'],
-  // D-55's additions, and the signature line (D-36).
-  founders: ['Built on Subjective Self', FOUNDERS_STORY_LABEL, 'आत्मानं विद्धि', 'Know thyself'],
+  // D-55's additions, and the signature line (D-36). The story's label follows its chapter's
+  // kicker, which is a placeholder until IIIC approves the words (docs/11 §3.5; I-41).
+  founders: [
+    'Built on Subjective Self',
+    `${FOUNDERS_CHAPTER_KICKER} · ${FOUNDERS_STORY_LABEL}`,
+    'आत्मानं विद्धि',
+    'Know thyself',
+  ],
   // The page's kicker, IIIC's name until the headline has its years (I-32), and its action (§4.9).
   about: ['About', 'Indian Institute of Image Catalysts', 'Contact'],
 }
