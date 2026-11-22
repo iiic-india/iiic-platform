@@ -3,7 +3,7 @@ import 'server-only'
 import type { Payload } from 'payload'
 
 import { eventFromGatewayPayment } from './checkout'
-import type { PaymentsDeps } from './deps'
+import { PAYMENTS_OFF_MESSAGE, type PaymentsDeps } from './deps'
 import type { PollPendingOrders } from './operations'
 import { freshRequest } from './store'
 import type { ProcessGatewayEventWith } from './webhook'
@@ -35,7 +35,10 @@ export function makePollPendingOrders(
 ): PollPendingOrders {
   return async (req, now) => {
     const gateway = deps.gateway()
-    if (!gateway.ok) return { checked: 0 }
+    if (!gateway.ok) {
+      req.payload.logger.warn(PAYMENTS_OFF_MESSAGE)
+      return { checked: 0 }
+    }
     const payload = req.payload
     const read = await freshRequest(payload)
     const { docs: pending } = await payload.find({

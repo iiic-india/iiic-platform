@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { Result } from '@/lib/result'
 
+import { PAYMENTS_OFF_MESSAGE } from './deps'
 import type { GatewayError, PaymentGateway } from './gateway'
 import type { PaymentError } from './operations'
 import type { ProcessedEvent } from './webhook'
@@ -41,7 +42,10 @@ export async function handleRazorpayWebhook(
   input: WebhookInput,
   deps: WebhookDeps,
 ): Promise<WebhookAnswer> {
-  if (!deps.gateway.ok) return refuse(503, 'payments-not-configured')
+  if (!deps.gateway.ok) {
+    deps.log.error(PAYMENTS_OFF_MESSAGE)
+    return refuse(503, 'payments-not-configured')
+  }
   if (!input.signature || !deps.gateway.value.verifyWebhook(input.rawBody, input.signature)) {
     return refuse(401, 'bad-signature')
   }

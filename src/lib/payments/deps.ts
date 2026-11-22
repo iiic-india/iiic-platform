@@ -16,3 +16,7 @@ export type PaymentsDeps = {
   emit: EmitDomainEvent
   now: () => Date
 }
+
+/** What the logs say while this deployment has no gateway: payments are off, and why. */
+export const PAYMENTS_OFF_MESSAGE =
+  'Payments are off: the Razorpay keys are not set (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET).'

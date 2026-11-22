@@ -6,7 +6,7 @@ import type { PayloadRequest } from 'payload'
 import { IST } from '@/lib/time/ist'
 import type { Payment } from '@/payload-types'
 
-import type { PaymentsDeps } from './deps'
+import { PAYMENTS_OFF_MESSAGE, type PaymentsDeps } from './deps'
 import type { GatewayPayment } from './gateway'
 import { CAPTURED_STATES } from './moves'
 import type { ReconcileDay } from './operations'
@@ -72,7 +72,10 @@ async function oursFor(req: PayloadRequest, found: GatewayPayment): Promise<Paym
 export function makeReconcileDay(deps: PaymentsDeps): ReconcileDay {
   return async (req, window) => {
     const gateway = deps.gateway()
-    if (!gateway.ok) return { checked: 0, flagged: 0 }
+    if (!gateway.ok) {
+      req.payload.logger.warn(PAYMENTS_OFF_MESSAGE)
+      return { checked: 0, flagged: 0 }
+    }
     const listed = await gateway.value.listPayments(window)
     // No list, no reconciliation: the job fails and is retried (docs/06, Engine rules).
     if (!listed.ok)

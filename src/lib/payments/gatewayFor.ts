@@ -15,9 +15,6 @@ import { RazorpayGateway } from './razorpay'
  * while the rest of the app builds and runs (bookings confirm without payment, docs/16 §8).
  */
 
-export const PAYMENTS_OFF_MESSAGE =
-  'Payments are off: the Razorpay keys are not set (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET).'
-
 type Holder = { fake?: FakeGateway; razorpay?: { keyId: string; gateway: RazorpayGateway } }
 
 // One per server process, so the fake's orders outlive a request (the e2e tests pay through it).
