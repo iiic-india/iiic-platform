@@ -15,6 +15,8 @@ import { recordAudit } from '@/lib/audit/record'
  * bookkeeping, the recovery codes, whose endpoints write one entry per action instead of one per
  * code (src/lib/auth/recoveryEndpoints.ts), and the analytics events, which the server writes
  * for visitors' steps and which hold nobody's data (S0: docs/08 §2 audits publishing only).
+ * The search index is left out too: its entries are copies the server makes of what was
+ * published, and the publishing itself is in the log (src/plugins/searchIndex.ts).
  */
 const NOT_AUDITED = new Set([
   'audit-log',
@@ -28,6 +30,7 @@ const NOT_AUDITED = new Set([
   'totp-attempts',
   'staff-recovery-codes',
   'analytics-events',
+  'search-index',
 ])
 
 /** Globals that hold no one's change: Payload's own job statistics. */

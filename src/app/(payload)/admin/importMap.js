@@ -16,6 +16,8 @@ import { HeadingFeatureClient as HeadingFeatureClient_e70f5e05f09f93e00b997edb1e
 import { ParagraphFeatureClient as ParagraphFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { CreateRedirect as CreateRedirect_40a388ea1dcd1cd3648583964e701d74 } from '../../../components/admin/CreateRedirect'
 import { ResolvedCell as ResolvedCell_eb99c300bb86ada485225c83d9fcc34f } from '../../../components/admin/ResolvedCell'
+import { LinkToDoc as LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
+import { ReindexButton as ReindexButton_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { PlaceholdersNavLink as PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2 } from '../../../components/admin/PlaceholdersNavLink'
 import { RecoveryCodes as RecoveryCodes_43c30919611f069a63a0aff35f9170f5 } from '../../../components/admin/RecoveryCodes'
 import { TOTPProvider as TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512 } from 'payload-totp/rsc'
@@ -45,6 +47,8 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#ParagraphFeatureClient": ParagraphFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "/components/admin/CreateRedirect#CreateRedirect": CreateRedirect_40a388ea1dcd1cd3648583964e701d74,
   "/components/admin/ResolvedCell#ResolvedCell": ResolvedCell_eb99c300bb86ada485225c83d9fcc34f,
+  "@payloadcms/plugin-search/client#LinkToDoc": LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634,
+  "@payloadcms/plugin-search/client#ReindexButton": ReindexButton_aead06e4cbf6b2620c5c51c9ab283634,
   "/components/admin/PlaceholdersNavLink#PlaceholdersNavLink": PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2,
   "/components/admin/RecoveryCodes#RecoveryCodes": RecoveryCodes_43c30919611f069a63a0aff35f9170f5,
   "payload-totp/rsc#TOTPProvider": TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512,
