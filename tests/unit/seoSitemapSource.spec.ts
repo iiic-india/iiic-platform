@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { STARTER_PAGES } from '@/content/starter'
 import { PAGES_TAG } from '@/lib/content/revalidate'
+import { redirectTable } from '@/lib/redirects/lookup'
 import { sitemapEntries } from '@/lib/seo/sitemap'
 import { sitemapSource } from '@/lib/seo/sitemapSource'
 
@@ -18,6 +19,9 @@ const { find, cacheCalls, cacheEntry } = vi.hoisted(() => ({
 vi.mock('server-only', () => ({}))
 vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('payload', () => ({ getPayload: async () => ({ find }) }))
+// The redirects the site follows (src/lib/redirects/lookup.ts, cached by tags of their own):
+// none, unless a test sets some.
+vi.mock('@/lib/redirects/lookup', () => ({ redirectTable: vi.fn(async () => []) }))
 vi.mock('next/cache', () => ({
   revalidateTag: vi.fn(),
   unstable_cache: (fn: () => unknown, key: string[], options: unknown) => {
@@ -47,6 +51,7 @@ beforeEach(() => {
   find.mockImplementation(async ({ where }: Query) => ({
     docs: '_status' in where ? HELD.published : HELD.everPublished,
   }))
+  vi.mocked(redirectTable).mockResolvedValue([])
 })
 
 describe('what the sitemap reads from the CMS', () => {
@@ -58,7 +63,21 @@ describe('what the sitemap reads from the CMS', () => {
         { slug: 'fake-page', updatedAt: '2026-11-21T08:30:00.000Z' },
       ],
       everPublished: ['framework', 'fake-page', 'learn'],
+      redirected: [],
     })
+  })
+
+  it('leaves out a starter page whose address a redirect leads from (D-57)', async () => {
+    vi.mocked(redirectTable).mockResolvedValue([
+      { from: '/about', to: '/fake-page', status: '308' },
+      { from: '/framework', to: '/fake-page', status: '307' },
+    ])
+    const source = await sitemapSource()
+    expect(source.redirected).toEqual(['/about', '/framework'])
+    const urls = sitemapEntries(source, 'https://fake.example').map(({ url }) => url)
+    expect(urls).not.toContain('https://fake.example/about')
+    // A published page wins over a redirect from its address.
+    expect(urls).toContain('https://fake.example/framework')
   })
 
   it('reads the published pages as a visitor does, so that no draft is listed', async () => {
@@ -107,6 +126,7 @@ describe('what the sitemap reads from the CMS', () => {
       starterSlugs: Object.keys(STARTER_PAGES),
       published: [{ slug: 'fake-page', updatedAt: '2026-11-21T08:30:00.000Z' }],
       everPublished: ['fake-page'],
+      redirected: [],
     })
     // The CMS was not asked: the cached entry answered.
     expect(find).not.toHaveBeenCalled()

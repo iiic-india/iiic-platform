@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 
 import { JsonLd } from '@/components/seo/JsonLd'
 import { getPage } from '@/lib/content/pages'
 import { pagePath } from '@/lib/content/slug'
 import type { PageContent } from '@/lib/content/types'
+import { redirectOrNotFound } from '@/lib/redirects/lookup'
 import { buildMetadata } from '@/lib/seo/metadata'
 import { pageGraph } from '@/lib/seo/schema'
 import { HOME_TITLE } from '@/lib/seo/site'
@@ -13,12 +13,13 @@ import { RenderBlocks } from './PageBlocks'
 
 /**
  * The page at a slug, drawn: the CMS page while it is published, the starter page until a page
- * at that address is first published (D-51), and the site's 404 otherwise, as while a page
- * that was published is unpublished (D-57). Its structured data comes first (D-62).
+ * at that address is first published (D-51), and otherwise the redirect from the address if
+ * there is one, else the site's 404, as while a page that was published is unpublished (D-57).
+ * Its structured data comes first (D-62).
  */
 export async function PageAt({ slug }: { slug: string }) {
   const page = await getPage(slug)
-  if (!page) notFound()
+  if (!page) return redirectOrNotFound(pagePath(slug))
   return (
     <>
       <PageJsonLd slug={slug} page={page} />

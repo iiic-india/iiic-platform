@@ -1,10 +1,13 @@
 // @vitest-environment node
-import type { Access } from 'payload'
+import type { Access, CollectionConfig, Config } from 'payload'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ownerWithCode } from '@/access/policy'
 import { ROLES, type Role } from '@/access/roles'
 import { Media } from '@/collections/Media'
+import { MissingPages } from '@/collections/MissingPages'
 import { Pages } from '@/collections/Pages'
+import { redirects } from '@/collections/Redirects'
 import { Users } from '@/collections/Users'
 import { revalidatePages } from '@/lib/content/revalidate'
 
@@ -20,7 +23,13 @@ type Outcome = 'all' | 'self' | 'published' | 'none'
 type Requester = Role | 'anonymous' | 'deactivated owner'
 type Expected = Record<string, Record<Requester, Outcome>>
 
-const EXPECTED: { users: Expected; media: Expected; pages: Expected } = {
+const EXPECTED: {
+  users: Expected
+  media: Expected
+  pages: Expected
+  redirects: Expected
+  missingPages: Expected
+} = {
   users: {
     read: row({ owner: 'all', staff: 'self' }),
     create: row({ owner: 'all', staff: 'none' }),
@@ -48,7 +57,27 @@ const EXPECTED: { users: Expected; media: Expected; pages: Expected } = {
     update: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
     delete: row({ owner: 'all', staff: 'none', editor: 'all' }),
   },
+  // Redirects are content (docs/05, Content): the staff who edit pages; visitors never read
+  // them through the API, the site reads them on the server.
+  redirects: {
+    read: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
+    create: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
+    update: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
+    delete: row({ owner: 'all', staff: 'none', editor: 'all' }),
+  },
+  // The 404 log (Content → Broken links): only the server adds entries.
+  missingPages: {
+    read: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
+    create: row({ owner: 'none', staff: 'none' }),
+    update: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
+    delete: row({ owner: 'all', staff: 'none', editor: 'all' }),
+  },
 }
+
+/** The collection the redirects plugin adds (src/collections/Redirects.ts). */
+const Redirects = (redirects({ collections: [] } as unknown as Config) as Config).collections?.find(
+  (collection) => collection.slug === 'redirects',
+) as CollectionConfig
 
 function row({
   owner,
@@ -88,7 +117,13 @@ async function outcome(access: Access | undefined, user: ReturnType<typeof reque
   return 'self'
 }
 
-const COLLECTIONS = { users: Users, media: Media, pages: Pages } as const
+const COLLECTIONS = {
+  users: Users,
+  media: Media,
+  pages: Pages,
+  redirects: Redirects,
+  missingPages: MissingPages,
+} as const
 
 describe('access by role (docs/05)', () => {
   for (const [slug, operations] of Object.entries(EXPECTED)) {
@@ -105,6 +140,17 @@ describe('access by role (docs/05)', () => {
       })
     }
   }
+
+  it('lets only an owner who has entered their code run, queue or cancel jobs through the API', () => {
+    const run = (who: Requester, strategy: string | null = 'totp') =>
+      ownerWithCode({ req: { user: requester(who, strategy) } })
+    expect(run('owner')).toBe(true)
+    for (const who of ['operator', 'editor', 'practitioner', 'finance', 'anonymous'] as const) {
+      expect(run(who), who).toBe(false)
+    }
+    expect(run('deactivated owner')).toBe(false)
+    expect(run('owner', 'local-jwt')).toBe(false)
+  })
 
   it('gives a session that has not entered its two-factor code the published pages only', async () => {
     // Pages.read runs without payload-totp's wrapper, so visitors can read; a password alone,
@@ -127,10 +173,10 @@ describe('the pages collection', () => {
   })
 
   it('marks a changed page stale at its new and its old address', async () => {
-    await Pages.hooks?.afterChange?.[0]?.({
-      doc: { slug: 'new' },
-      previousDoc: { slug: 'old' },
-    } as never)
+    // A draft: the redirects hook (src/lib/redirects/pageMoves.ts) acts only on a publish.
+    for (const hook of Pages.hooks?.afterChange ?? []) {
+      await hook({ doc: { slug: 'new' }, previousDoc: { slug: 'old' }, context: {} } as never)
+    }
     expect(revalidate.mock.calls).toEqual([['new', 'old']])
   })
 

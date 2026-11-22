@@ -108,6 +108,13 @@ describe('the privacy notice', () => {
     expect(text).toContain('There are no advertising trackers.')
   })
 
+  it('says how long the 404 log keeps an address as the purge does it (O5): 180 days unasked', () => {
+    const { container } = draw(PRIVACY)
+    const text = container.textContent ?? ''
+    expect(text).toContain('removes them once 180 days pass without anyone asking for that address')
+    expect(text).not.toContain('up to 180 days')
+  })
+
   it('records no analytics events about anyone under 18, in docs/08 §3’s words', () => {
     const { container } = draw(PRIVACY)
     // Anonymous page counts are not events about a person, so the sentence stays true when

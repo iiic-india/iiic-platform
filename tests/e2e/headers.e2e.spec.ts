@@ -35,6 +35,13 @@ const ROUTE_GROUPS: RouteGroup[] = [
   { name: 'llms.txt', path: '/llms.txt', html: true, private: true, status: 200 },
   { name: 'humans.txt', path: '/humans.txt', html: true, private: false, status: 200 },
   {
+    name: 'security.txt',
+    path: '/.well-known/security.txt',
+    html: true,
+    private: false,
+    status: 200,
+  },
+  {
     name: 'the web manifest',
     path: '/manifest.webmanifest',
     html: true,
@@ -179,7 +186,9 @@ test("Next.js's prerendered error pages are never served without the nonce", asy
     '/404',
     '/500',
     '/%5Fnot-found',
+    // The pages router holds the static 500 (src/pages/500.tsx); its own pages stay unserved.
     '/_app',
+    '/_document',
     '/_error',
   ]) {
     const response = await request.get(path)

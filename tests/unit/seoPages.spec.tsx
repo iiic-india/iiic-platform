@@ -45,6 +45,7 @@ import { JsonLd } from '@/components/seo/JsonLd'
 import { STARTER_PAGES, starterAt } from '@/content/starter'
 import { getPage } from '@/lib/content/pages'
 import type { PageContent } from '@/lib/content/types'
+import { logMissingPage } from '@/lib/redirects/log'
 import { MAP_PAGE } from '@/lib/seo/appPages'
 import { pageGraph } from '@/lib/seo/schema'
 import { HOME_TITLE, SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo/site'
@@ -67,6 +68,15 @@ vi.mock('next/navigation', () => ({
     throw new Error('fake not found')
   },
 }))
+// No redirect leads from any address here, and the 404 log, which the lookup writes as it
+// answers with the 404, writes nothing (src/lib/redirects/lookup.ts). The home page answers
+// with the 404 itself, so it calls the log itself: only whether it does is checked here.
+vi.mock('@/lib/redirects/lookup', () => ({
+  redirectOrNotFound: async () => {
+    throw new Error('fake not found')
+  },
+}))
+vi.mock('@/lib/redirects/log', () => ({ logMissingPage: vi.fn(async () => undefined) }))
 // The layout's own needs, none of them tested here: the deployment's origin, the faces
 // next/font loads at build time, and the request the layout waits for.
 vi.mock('@/lib/env', () => ({ env: () => ({ siteUrl: 'https://fake.example' }) }))
@@ -204,14 +214,19 @@ describe('the home page', () => {
     expect(canonical(metadata)).toBe(`${ORIGIN}/`)
   })
 
-  it('draws its structured data, then its blocks', async () => {
+  it('draws its structured data, then its blocks, and writes nothing to the 404 log', async () => {
+    vi.mocked(logMissingPage).mockClear()
     expectDataThenBlocks(await HomePage(), 'home', STARTER_PAGES.home!)
+    expect(logMissingPage).not.toHaveBeenCalled()
   })
 
   it('is the 404, with no canonical URL, while its published page is unpublished (D-57)', async () => {
     vi.mocked(getPage).mockResolvedValue(null)
+    vi.mocked(logMissingPage).mockClear()
     expect(await homeMetadata()).toEqual({})
     await expect(HomePage()).rejects.toThrow('fake not found')
+    // It answers with the 404 itself, so it writes the address to the log (docs/11 §5.1, item 9).
+    expect(logMissingPage).toHaveBeenCalledTimes(1)
   })
 })
 

@@ -6,6 +6,7 @@ import { STARTER_PAGES, starterAt } from '@/content/starter'
 import { getPage } from '@/lib/content/pages'
 import { PAGES_TAG, pageTag, revalidatePages } from '@/lib/content/revalidate'
 import type { PageContent } from '@/lib/content/types'
+import { redirectFor, redirectOrNotFound } from '@/lib/redirects/lookup'
 
 // What a visitor is shown at an address (D-51, D-57), against a fake Payload. The cache is a
 // pass-through that records its key and tags; React's cache passes through outside a server
@@ -35,6 +36,13 @@ vi.mock('@/lib/content/revalidate', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/content/revalidate')>()),
   revalidatePages: vi.fn(),
 }))
+// The redirects the site follows (src/lib/redirects/lookup.ts): none, unless a test sets one.
+vi.mock('@/lib/redirects/lookup', () => ({
+  redirectFor: vi.fn(async () => null),
+  redirectOrNotFound: vi.fn(async () => {
+    throw new Error('fake not found')
+  }),
+}))
 
 /** A page published in the admin at the framework page's address. Obviously fake. */
 const PUBLISHED: PageContent = {
@@ -53,6 +61,9 @@ beforeEach(() => {
   find.mockReset()
   count.mockReset()
   vi.mocked(revalidatePages).mockClear()
+  vi.mocked(redirectFor).mockReset()
+  vi.mocked(redirectFor).mockResolvedValue(null)
+  vi.mocked(redirectOrNotFound).mockClear()
   cacheCalls.length = 0
   adminHolds(null)
 })
@@ -79,6 +90,29 @@ describe('the page at an address (D-51, D-57)', () => {
     // The home page too: D-57 makes no exception for any address.
     expect(await getPage('framework')).toBeNull()
     expect(await getPage('home')).toBeNull()
+  })
+
+  it('gives way to a redirect from its address while only its starter page is there (D-57)', async () => {
+    vi.mocked(redirectFor).mockResolvedValue({ from: '/framework', to: '/team', status: '308' })
+    expect(await getPage('framework')).toBeNull()
+    expect(redirectFor).toHaveBeenCalledWith('/framework')
+    // The home page lives at "/".
+    await getPage('home')
+    expect(redirectFor).toHaveBeenLastCalledWith('/')
+  })
+
+  it('is the published page whatever the redirects say, and asks them nothing', async () => {
+    adminHolds(PUBLISHED)
+    vi.mocked(redirectFor).mockResolvedValue({ from: '/framework', to: '/team', status: '308' })
+    expect(await getPage('framework')).toEqual(PUBLISHED)
+    expect(redirectFor).not.toHaveBeenCalled()
+  })
+
+  it('asks the redirects nothing where there is no starter page to give way', async () => {
+    await getPage('no-such-page')
+    adminHolds(null, true)
+    await getPage('framework')
+    expect(redirectFor).not.toHaveBeenCalled()
   })
 
   it('is the 404 where there is no page and no starter page, whatever the name', async () => {
@@ -118,6 +152,16 @@ describe('a starter page by its address', () => {
       const params = Promise.resolve({ slug })
       await expect(CmsPage({ params }), slug.join('/')).rejects.toThrow('fake not found')
       expect(await generateMetadata({ params }), slug.join('/')).toEqual({})
+    }
+  })
+})
+
+describe('an address with no page', () => {
+  it('is answered by the redirect from it before the 404, whatever it looks like', async () => {
+    for (const slug of [['no-such-page'], ['Old', 'Page.html'], ['home']]) {
+      const params = Promise.resolve({ slug })
+      await expect(CmsPage({ params }), slug.join('/')).rejects.toThrow('fake not found')
+      expect(redirectOrNotFound).toHaveBeenLastCalledWith(`/${slug.join('/')}`)
     }
   })
 })

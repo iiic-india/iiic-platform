@@ -15,6 +15,7 @@ import * as migration_20261120_200720_page_legal_review from './20261120_200720_
 import * as migration_20261120_213852_page_section_anchor from './20261120_213852_page_section_anchor';
 import * as migration_20261121_094426_review_fixes from './20261121_094426_review_fixes';
 import * as migration_20261121_105711_facts_source_page_copy from './20261121_105711_facts_source_page_copy';
+import * as migration_20261121_185417_redirects_and_missing_pages from './20261121_185417_redirects_and_missing_pages';
 
 export const migrations = [
   {
@@ -100,6 +101,11 @@ export const migrations = [
   {
     up: migration_20261121_105711_facts_source_page_copy.up,
     down: migration_20261121_105711_facts_source_page_copy.down,
-    name: '20261121_105711_facts_source_page_copy'
+    name: '20261121_105711_facts_source_page_copy',
+  },
+  {
+    up: migration_20261121_185417_redirects_and_missing_pages.up,
+    down: migration_20261121_185417_redirects_and_missing_pages.down,
+    name: '20261121_185417_redirects_and_missing_pages'
   },
 ];

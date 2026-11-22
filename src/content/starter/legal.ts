@@ -117,6 +117,9 @@ export const PRIVACY: PageContent = {
           text: 'The servers that deliver the site keep a log of requests: the page asked for, the time, the IP address and the browser. The log is used to keep the site secure and working.',
         },
         {
+          text: 'When an address has no page, the site keeps the address and the name of the site that linked to it, to fix broken links, and removes them once 180 days pass without anyone asking for that address.',
+        },
+        {
           text: 'The site sets no cookies when you read it, so it shows no cookie banner. Cookies are set only for IIIC’s staff when they sign in.',
         },
         { text: 'There are no advertising trackers.' },

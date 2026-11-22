@@ -1,0 +1,20 @@
+/* The 500 page: the kit's page column with the room the 404 has above and below it, and the
+   reference set as the kit sets code in an article. No colour of its own (CLAUDE.md #2). */
+
+.page {
+  padding-top: 48px;
+  padding-bottom: 80px;
+}
+
+.heading {
+  margin: 0 0 16px;
+}
+
+.reference {
+  font-family: var(--iiic-font-mono);
+  font-size: 0.88em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--iiic-surface-wash);
+  overflow-wrap: anywhere;
+}

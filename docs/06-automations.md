@@ -67,7 +67,7 @@ Channels: E = email · W = WhatsApp · A = admin (Today, digest) · C = calendar
 | O2 | Weekly report | Monday 09:00 | The plan's metrics with week-on-week change | E (owners) |
 | O3 | Message or webhook failure | At once | Show on Today; email an owner if three fail within an hour | A, E |
 | O4 | Data request received | At once and at 50% / 80% of the deadline | Acknowledge to the person; remind the assignee | E, A |
-| O5 | Retention | Nightly | Delete expired holds, codes and tokens; anonymise records past retention; purge logs past their period | — |
+| O5 | Retention | Nightly | Delete expired holds, codes and tokens; anonymise records past retention; purge logs past their period. Built so far: the 404 log's entries not asked for in 180 days (task `O5-purge-missing-pages`, one audit entry per run that removes something); nothing runs it until the cron runner (M6) | — |
 | O6 | Backup check | Daily | Confirm the latest database backup exists and restores (weekly test restore) | A |
 | O7 | Consumer complaint or privacy grievance received | At once, then at 24 h and before each deadline | Automatic acknowledgement with a copy of the complaint as recorded; reminders to the assignee before the 48-hour and one-month marks | E, A |
 | O8 | Incident opened in the breach register | At once, 4 h, 6 h, 48 h, 72 h | Timers for the CERT-In report (6 h) and the Board's detailed report (72 h); owners alerted | A, E |

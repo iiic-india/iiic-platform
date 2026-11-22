@@ -11,9 +11,12 @@ import sharp from 'sharp'
 
 import { AuditLog } from './collections/AuditLog'
 import { Media } from './collections/Media'
+import { MissingPages } from './collections/MissingPages'
 import { Pages } from './collections/Pages'
+import { redirects } from './collections/Redirects'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Users } from './collections/Users'
+import { jobs } from './jobs'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
 import { reportServerError, reportTestError } from './lib/monitoring/sentry'
@@ -94,7 +97,10 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Pages, Media, StaffRecoveryCodes, AuditLog],
+  // The redirects collection comes from Payload's redirects plugin (src/collections/Redirects.ts).
+  collections: [Users, Pages, MissingPages, Media, StaffRecoveryCodes, AuditLog],
+  // Automations (src/jobs/index.ts): never run on their own here.
+  jobs,
   editor: lexicalEditor(),
   email: config.RESEND_API_KEY
     ? resendAdapter({
@@ -155,6 +161,9 @@ export default buildConfig({
         },
       },
     }),
+    // Old addresses and where they lead (docs/12 §3). Before payload-totp, so that its access
+    // rules wait for the two-factor code like every other collection's.
+    redirects,
     // Staff two-factor (docs/08 §9). It wraps the access of every collection before it, so it
     // stays the last plugin that adds collections; the two transforms after it only add hooks
     // and replace its English strings.

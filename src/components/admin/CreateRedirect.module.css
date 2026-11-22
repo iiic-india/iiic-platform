@@ -1,0 +1,57 @@
+/* The "Create redirect" panel at the top of a 404 log entry; colours and type come from the
+   admin's own styles and theme tokens. */
+.panel {
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-m);
+}
+
+.heading {
+  margin: 0 0 4px;
+}
+
+.intro {
+  margin: 0 0 16px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+/* The field and its button side by side, the button below once the panel is narrow. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.input {
+  flex: 1 1 240px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--theme-elevation-250);
+  border-radius: var(--style-radius-s);
+  background: var(--theme-input-bg, var(--theme-elevation-0));
+  color: var(--theme-text);
+  font: inherit;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--theme-success-500);
+  outline-offset: 2px;
+}
+
+.hint {
+  margin: 8px 0 0;
+  color: var(--theme-elevation-650);
+}
+
+.error {
+  margin: 8px 0 0;
+  color: var(--theme-error-650);
+}

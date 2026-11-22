@@ -69,11 +69,14 @@ export interface Config {
   collections: {
     users: User;
     pages: Page;
+    'missing-pages': MissingPage;
     media: Media;
     'staff-recovery-codes': StaffRecoveryCode;
     'audit-log': AuditLog;
+    redirects: Redirect;
     'totp-attempts': TotpAttempt;
     'payload-kv': PayloadKv;
+    'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -82,11 +85,14 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    'missing-pages': MissingPagesSelect<false> | MissingPagesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'staff-recovery-codes': StaffRecoveryCodesSelect<false> | StaffRecoveryCodesSelect<true>;
     'audit-log': AuditLogSelect<false> | AuditLogSelect<true>;
+    redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
+    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -103,7 +109,13 @@ export interface Config {
   };
   user: User;
   jobs: {
-    tasks: unknown;
+    tasks: {
+      'O5-purge-missing-pages': TaskO5PurgeMissingPages;
+      inline: {
+        input: unknown;
+        output: unknown;
+      };
+    };
     workflows: unknown;
   };
 }
@@ -173,7 +185,7 @@ export interface Page {
    */
   title: string;
   /**
-   * Where the page lives: "home" for the first page, "framework" for /framework.
+   * Where the page lives: "home" for the first page, "framework" for /framework. Change it on a published page and, once you publish, the old address sends visitors here.
    */
   slug: string;
   /**
@@ -575,6 +587,64 @@ export interface BandBlock {
   blockType: 'band';
 }
 /**
+ * Addresses visitors asked for that the site has no page at, most visited first. Open one to send its visitors to a page with a redirect.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "missing-pages".
+ */
+export interface MissingPage {
+  id: number;
+  path: string;
+  hits: number;
+  firstSeen: string;
+  firstSeen_tz: 'Asia/Kolkata';
+  lastSeen: string;
+  lastSeen_tz: 'Asia/Kolkata';
+  /**
+   * The site the latest visitor came from, when their browser said: its name only, never the page.
+   */
+  referrerHost?: string | null;
+  /**
+   * Set when a redirect sends this address on to a page.
+   */
+  resolved?: (number | null) | Redirect;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Old addresses and where each one leads now. The site makes one itself when a published page gets a new address.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects".
+ */
+export interface Redirect {
+  id: number;
+  /**
+   * The address visitors ask for, such as /about-us.
+   */
+  from: string;
+  to?: {
+    /**
+     * A page is followed wherever it moves. Choose an address for a page the admin does not hold, or to open one section of a page.
+     */
+    type?: ('reference' | 'custom') | null;
+    reference?: {
+      relationTo: 'pages';
+      value: number | Page;
+    } | null;
+    /**
+     * Such as /about, or /about#contact for a section.
+     */
+    url?: string | null;
+  };
+  /**
+   * Permanent tells search engines to list the new address instead.
+   */
+  type: '308' | '307';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
@@ -657,6 +727,98 @@ export interface PayloadKv {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs".
+ */
+export interface PayloadJob {
+  id: number;
+  /**
+   * Input data provided to the job
+   */
+  input?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  taskStatus?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  completedAt?: string | null;
+  totalTried?: number | null;
+  /**
+   * If hasError is true this job will not be retried
+   */
+  hasError?: boolean | null;
+  /**
+   * If hasError is true, this is the error that caused it
+   */
+  error?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Task execution log
+   */
+  log?:
+    | {
+        executedAt: string;
+        completedAt: string;
+        taskSlug: 'inline' | 'O5-purge-missing-pages';
+        taskID: string;
+        input?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        output?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        state: 'failed' | 'succeeded';
+        error?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  taskSlug?: ('inline' | 'O5-purge-missing-pages') | null;
+  queue?: string | null;
+  waitUntil?: string | null;
+  processing?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -671,12 +833,20 @@ export interface PayloadLockedDocument {
         value: number | Page;
       } | null)
     | ({
+        relationTo: 'missing-pages';
+        value: number | MissingPage;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
       } | null)
     | ({
         relationTo: 'staff-recovery-codes';
         value: number | StaffRecoveryCode;
+      } | null)
+    | ({
+        relationTo: 'redirects';
+        value: number | Redirect;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1022,6 +1192,22 @@ export interface BandBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "missing-pages_select".
+ */
+export interface MissingPagesSelect<T extends boolean = true> {
+  path?: T;
+  hits?: T;
+  firstSeen?: T;
+  firstSeen_tz?: T;
+  lastSeen?: T;
+  lastSeen_tz?: T;
+  referrerHost?: T;
+  resolved?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
@@ -1068,6 +1254,23 @@ export interface AuditLogSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects_select".
+ */
+export interface RedirectsSelect<T extends boolean = true> {
+  from?: T;
+  to?:
+    | T
+    | {
+        type?: T;
+        reference?: T;
+        url?: T;
+      };
+  type?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "totp-attempts_select".
  */
 export interface TotpAttemptsSelect<T extends boolean = true> {
@@ -1082,6 +1285,37 @@ export interface TotpAttemptsSelect<T extends boolean = true> {
 export interface PayloadKvSelect<T extends boolean = true> {
   key?: T;
   data?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs_select".
+ */
+export interface PayloadJobsSelect<T extends boolean = true> {
+  input?: T;
+  taskStatus?: T;
+  completedAt?: T;
+  totalTried?: T;
+  hasError?: T;
+  error?: T;
+  log?:
+    | T
+    | {
+        executedAt?: T;
+        completedAt?: T;
+        taskSlug?: T;
+        taskID?: T;
+        input?: T;
+        output?: T;
+        state?: T;
+        error?: T;
+        id?: T;
+      };
+  taskSlug?: T;
+  queue?: T;
+  waitUntil?: T;
+  processing?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1124,6 +1358,16 @@ export interface CollectionsWidget {
     [k: string]: unknown;
   };
   width: 'full';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO5-purge-missing-pages".
+ */
+export interface TaskO5PurgeMissingPages {
+  input?: unknown;
+  output: {
+    removed: number;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
