@@ -2,6 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import {
+  issueFeedLinkHandler,
+  normaliseConnection,
+  refreshAfterConnectionChange,
+  removeBlocksWithConnection,
+  revokeFeedLinkHandler,
+} from '@/lib/calendar/connectionHooks'
 import { IST_FIELD } from '@/lib/time/ist'
 
 const serverOnly = {
@@ -41,6 +48,18 @@ export const CalendarConnections: CollectionConfig = {
     update: allow(POLICY.calendarConnections.update),
     delete: allow(POLICY.calendarConnections.delete),
   },
+  // src/lib/calendar/connectionHooks.ts: server fields kept true to the calendar named, a
+  // busy-time refresh queued when a calendar starts being read (B14), and the practitioner's
+  // private feed link made or revoked by an owner with their code (D-22).
+  hooks: {
+    beforeChange: [normaliseConnection],
+    afterChange: [refreshAfterConnectionChange],
+    afterDelete: [removeBlocksWithConnection],
+  },
+  endpoints: [
+    { path: '/:id/feed-link', method: 'post', handler: issueFeedLinkHandler },
+    { path: '/:id/feed-link', method: 'delete', handler: revokeFeedLinkHandler },
+  ],
   fields: [
     {
       type: 'row',
