@@ -35,6 +35,18 @@ export const recoverer = {
   totpSecret: EXAMPLE_SECRET,
 }
 
+/**
+ * An editor who publishes and removes the Journal's fake articles (tests/e2e/journal.e2e.spec.ts),
+ * an account of its own so that the admin's tests, which recreate theirs, never sign it out.
+ */
+export const journalEditor = {
+  name: 'Test Journal Editor (fake)',
+  email: 'journal.editor.test@example.invalid',
+  password: 'test-only-password-4',
+  roles: ['editor'] as Role[],
+  totpSecret: EXAMPLE_SECRET,
+}
+
 /** The code an authenticator app would show now for this secret (src/lib/auth/totp.ts). */
 export function totpCode(secret: string): string {
   return new TOTP({
@@ -65,4 +77,18 @@ export async function cleanupTestUsers(): Promise<void> {
   assertLocalDatabase()
   const payload = await getPayload({ config })
   await payload.delete({ collection: 'users', where: { email: { in: EMAILS } } })
+}
+
+/** Creates the Journal's fake editor afresh. */
+export async function seedJournalEditor(): Promise<void> {
+  assertLocalDatabase()
+  const payload = await getPayload({ config })
+  await payload.delete({ collection: 'users', where: { email: { equals: journalEditor.email } } })
+  await payload.create({ collection: 'users', data: journalEditor })
+}
+
+export async function cleanupJournalEditor(): Promise<void> {
+  assertLocalDatabase()
+  const payload = await getPayload({ config })
+  await payload.delete({ collection: 'users', where: { email: { equals: journalEditor.email } } })
 }
