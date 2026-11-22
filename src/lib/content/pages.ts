@@ -5,7 +5,9 @@ import { getPayload } from 'payload'
 import { cache } from 'react'
 
 import { starterAt } from '@/content/starter'
+import { previewer } from '@/lib/preview/session'
 import { redirectFor } from '@/lib/redirects/lookup'
+import type { User } from '@/payload-types'
 import config from '@payload-config'
 
 import { PAGES_TAG, pageTag } from './revalidate'
@@ -65,4 +67,37 @@ export const getPage = cache(async (slug: string): Promise<PageContent | null> =
   const starter = state.publishedBefore ? undefined : starterAt(slug)
   if (!starter || (await redirectFor(pagePath(slug)))) return null
   return starter
+})
+
+/**
+ * The newest version of the page at a slug, draft or published, as the staff member previewing
+ * may read it (the read rule asks for their role and their two-factor code). Never cached: a
+ * draft is read for that request alone.
+ */
+async function findLatestPage(slug: string, user: unknown): Promise<PageContent | null> {
+  const payload = await getPayload({ config })
+  const { docs } = await payload.find({
+    collection: 'pages',
+    where: { slug: { equals: slug } },
+    draft: true,
+    limit: 1,
+    pagination: false,
+    depth: 0,
+    overrideAccess: false,
+    user: user as User,
+    select: { title: true, slug: true, description: true, layout: true, legalReview: true },
+  })
+  return docs[0] ?? null
+}
+
+/**
+ * The page a route draws at a slug: in a preview, the newest version of the page there, draft
+ * or published (docs/15 §5.3, OS-4); for everyone else, and in a preview of an address with no
+ * page in the CMS, what getPage finds. Only the routes that draw a page ask this; the share
+ * images, llms.txt and the sitemap read getPage, so no draft reaches anything cached.
+ */
+export const getPageToShow = cache(async (slug: string): Promise<PageContent | null> => {
+  const user = await previewer('pages')
+  const draft = user ? await findLatestPage(slug, user) : null
+  return draft ?? getPage(slug)
 })

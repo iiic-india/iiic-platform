@@ -5,8 +5,8 @@
  * they import. Styles may be inline: Payload's admin injects <style> tags at runtime
  * (react-select through Emotion) and React renders style attributes; inline styles cannot
  * run code. Third-party origins join with the features that need them: Cloudflare's beacon
- * and Turnstile (M2), Razorpay on the payment
- * step only (M3).
+ * (M2, only where its token is set: src/lib/analytics/beacon.ts), Turnstile (M2), Razorpay on
+ * the payment step only (M3).
  */
 export type CspOptions = {
   nonce: string
@@ -19,9 +19,32 @@ export type CspOptions = {
   https: boolean
   /** Where public images are served from besides this site: the R2 media bucket. */
   imageOrigins?: readonly string[]
+  /**
+   * Scripts from another origin, and where they send what they measure: Cloudflare's beacon
+   * (docs/12 §5, §7). Under 'strict-dynamic' a browser runs a script only by its nonce; the
+   * origin is there for browsers that predate it.
+   */
+  scriptOrigins?: readonly string[]
+  connectOrigins?: readonly string[]
+  /**
+   * Who may frame this response: nobody, except a draft-mode response for staff signed in with
+   * their two-factor code, which the admin's live preview frames (src/lib/preview/frame.ts).
+   */
+  frameAncestors?: "'self'" | "'none'"
+  /** What this page may frame: nothing, except the admin, whose live preview frames the site. */
+  frameSources?: "'self'" | "'none'"
 }
 
-export function buildCsp({ nonce, development, https, imageOrigins = [] }: CspOptions): string {
+export function buildCsp({
+  nonce,
+  development,
+  https,
+  imageOrigins = [],
+  scriptOrigins = [],
+  connectOrigins = [],
+  frameAncestors = "'none'",
+  frameSources = "'none'",
+}: CspOptions): string {
   const directives: [string, ...string[]][] = [
     ['default-src', "'self'"],
     [
@@ -29,17 +52,18 @@ export function buildCsp({ nonce, development, https, imageOrigins = [] }: CspOp
       "'self'",
       `'nonce-${nonce}'`,
       "'strict-dynamic'",
+      ...scriptOrigins,
       ...(development ? ["'unsafe-eval'"] : []),
     ],
     ['style-src', "'self'", "'unsafe-inline'"],
     ['img-src', "'self'", 'data:', 'blob:', ...imageOrigins],
     ['font-src', "'self'"],
-    ['connect-src', "'self'"],
-    ['frame-src', "'none'"],
+    ['connect-src', "'self'", ...connectOrigins],
+    ['frame-src', frameSources],
     ['object-src', "'none'"],
     ['base-uri', "'self'"],
     ['form-action', "'self'"],
-    ['frame-ancestors', "'none'"],
+    ['frame-ancestors', frameAncestors],
   ]
   if (https) directives.push(['upgrade-insecure-requests'])
   return directives.map((directive) => directive.join(' ')).join('; ')

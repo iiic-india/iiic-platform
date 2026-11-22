@@ -38,6 +38,7 @@ import {
   SEARCH_TITLE_MAX,
   withoutPlaceholder,
 } from '@/lib/journal/rules'
+import { BREAKPOINTS, previewUrl } from '@/lib/preview/access'
 import { FOUNDER } from '@/lib/seo/site'
 
 /**
@@ -158,6 +159,10 @@ export const Posts: CollectionConfig = {
     defaultColumns: ['title', 'slug', 'publishedAt', '_status', 'updatedAt'],
     description:
       'The Journal: each article answers one question in IIIC’s words and ends with a question to sit with.',
+    // The article as the site will draw it, beside the editor and in a tab of its own, from its
+    // newest saved version (src/lib/preview/access.ts, OS-4).
+    livePreview: { url: ({ data }) => previewUrl('posts', data?.slug), breakpoints: BREAKPOINTS },
+    preview: (doc) => previewUrl('posts', doc?.slug),
   },
   // src/access/policy.ts (docs/05): anyone reads a published article; owners, operators and
   // editors read drafts and earlier versions, draft and publish; owners and editors delete.

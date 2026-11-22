@@ -59,7 +59,11 @@ const request = vi.hoisted(() => {
   process.env.NEXT_PUBLIC_SITE_URL = 'https://fake.example'
   return { path: '' }
 })
-vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
+// In a test no one previews, so a route draws what getPage finds (src/lib/content/pages.ts).
+vi.mock('@/lib/content/pages', () => {
+  const getPage = vi.fn()
+  return { getPage, getPageToShow: (slug: string) => getPage(slug) }
+})
 // The legal information comes from the settings (tests/unit/settingsLegal.spec.tsx); the routes'
 // metadata and structure do not depend on it.
 vi.mock('@/lib/settings/read', () => ({ legalInformationFor: async () => undefined }))

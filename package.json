@@ -36,6 +36,7 @@
   "dependencies": {
     "@payloadcms/db-postgres": "3.94.0",
     "@payloadcms/email-resend": "3.94.0",
+    "@payloadcms/live-preview-react": "3.94.0",
     "@payloadcms/next": "3.94.0",
     "@payloadcms/plugin-redirects": "3.94.0",
     "@payloadcms/richtext-lexical": "3.94.0",
@@ -45,6 +46,7 @@
     "cross-env": "7.0.3",
     "dotenv": "16.4.7",
     "graphql": "16.15.0",
+    "jose": "5.10.0",
     "libphonenumber-js": "1.13.15",
     "next": "16.4.6",
     "otpauth": "9.6.0",

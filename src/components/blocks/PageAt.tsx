@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { hasQuestions } from '@/blocks/pageBlocks'
 import { JsonLd } from '@/components/seo/JsonLd'
 import { getFaqs } from '@/lib/content/faqs'
-import { getPage } from '@/lib/content/pages'
+import { getPage, getPageToShow } from '@/lib/content/pages'
 import { pagePath } from '@/lib/content/slug'
 import type { FaqItem, PageContent } from '@/lib/content/types'
 import { redirectOrNotFound } from '@/lib/redirects/lookup'
@@ -23,7 +23,7 @@ import { RenderBlocks } from './PageBlocks'
  * none.
  */
 export async function PageAt({ slug }: { slug: string }) {
-  const page = await getPage(slug)
+  const page = await getPageToShow(slug)
   if (!page) return redirectOrNotFound(pagePath(slug))
   const faqs = await faqsFor(slug, page)
   return (
@@ -53,7 +53,7 @@ export async function faqsFor(
 
 /** A page's title and description for the browser tab, search results and shared links. */
 export async function metadataAt(slug: string): Promise<Metadata> {
-  const page = await getPage(slug)
+  const page = await getPageToShow(slug)
   return page ? metadataOf(slug, page) : {}
 }
 

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 
 import { faqsFor, metadataOf, PageJsonLd } from '@/components/blocks/PageAt'
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
-import { getPage } from '@/lib/content/pages'
+import { getPageToShow } from '@/lib/content/pages'
 import { logMissingPage } from '@/lib/redirects/log'
 import { legalInformationFor } from '@/lib/settings/read'
 
@@ -16,12 +16,12 @@ import { legalInformationFor } from '@/lib/settings/read'
  * address to the 404 log first (docs/11 §5.1, item 9; src/lib/redirects/log.ts).
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPage('home')
+  const page = await getPageToShow('home')
   return page ? metadataOf('home', page) : {}
 }
 
 export default async function HomePage() {
-  const page = await getPage('home')
+  const page = await getPageToShow('home')
   if (!page) {
     await logMissingPage()
     notFound()

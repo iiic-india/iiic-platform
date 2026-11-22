@@ -15,9 +15,20 @@ export const SECURITY_HEADERS = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
   // Relaxed to same-origin-allow-popups on the payment step only, if Razorpay needs it (M3).
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
-  // For browsers that predate the CSP's frame-ancestors.
-  { key: 'X-Frame-Options', value: 'DENY' },
 ] as const
+
+/**
+ * X-Frame-Options backs up the CSP's frame-ancestors for older browsers. Where the proxy runs,
+ * it sets the header itself with the policy, because a draft-mode response for staff may be
+ * framed by the admin's live preview (src/proxy.ts, OS-4). These rules send it where the proxy
+ * does not run: the API and Next.js's build assets and images. They never reach a page, so no
+ * response gets two values.
+ */
+export const FRAMING_OUTSIDE_PROXY: HeaderRule[] = [
+  { source: '/api/:path+', headers: [{ key: 'X-Frame-Options', value: 'DENY' }] },
+  { source: '/_next/static/:path*', headers: [{ key: 'X-Frame-Options', value: 'DENY' }] },
+  { source: '/_next/image', headers: [{ key: 'X-Frame-Options', value: 'DENY' }] },
+]
 
 const NOINDEX = { key: 'X-Robots-Tag', value: 'noindex' }
 
@@ -72,7 +83,14 @@ export function headerRules(
   const privateRoutes: HeaderRule[] = indexable
     ? PRIVATE_ROUTES.map((source) => ({ source, headers: [NOINDEX] }))
     : []
-  return [everyRoute, ...privateRoutes, CONTENT_LANGUAGE, STATIC_ASSETS, ...ROUTE_EXCEPTIONS]
+  return [
+    everyRoute,
+    ...privateRoutes,
+    ...FRAMING_OUTSIDE_PROXY,
+    CONTENT_LANGUAGE,
+    STATIC_ASSETS,
+    ...ROUTE_EXCEPTIONS,
+  ]
 }
 
 /**

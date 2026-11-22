@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { Preview } from './Preview'
 import { SiteFooterWithSettings } from './SiteFooterWithSettings'
 import { SiteHeader } from './SiteHeader'
 
@@ -17,6 +18,8 @@ export function SiteFrame({ register, children }: { register?: Register; childre
       <a className="iiic-skip-link" href="#main">
         Skip to content
       </a>
+      {/* Only for staff previewing a draft (docs/15 §5.3, OS-4). */}
+      <Preview />
       <SiteHeader />
       <main id="main" tabIndex={-1}>
         {children}

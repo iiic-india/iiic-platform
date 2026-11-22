@@ -1,13 +1,22 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { beaconSources } from '@/lib/analytics/beacon'
 import { env } from '@/lib/env'
 import { instituteRewrite, parseHosts } from '@/lib/hosts'
+import { framedByAdmin } from '@/lib/preview/frame'
 import { buildCsp, createNonce } from '@/lib/security/csp'
 
 /**
  * Runs before every page and admin view (docs/12 §1 and §5, D-42):
  * - a Content-Security-Policy with a fresh nonce, on the response and on the request, where
  *   Next.js reads it to put the nonce on its scripts while the page renders;
+ * - framing: `frame-ancestors 'none'` and `X-Frame-Options: DENY`, except on a draft-mode
+ *   response to staff signed in with their two-factor code, which the admin's live preview
+ *   frames on the same origin (`'self'`, `SAMEORIGIN`, and noindex; src/lib/preview/frame.ts,
+ *   OS-4). The admin itself may frame this origin and nothing else. The header is set here,
+ *   not in next.config.ts, which sends it only where the proxy does not run;
+ * - Cloudflare's beacon origins, on public pages only and only where its token is set
+ *   (src/lib/analytics/beacon.ts);
  * - `x-pathname` on the request, set here so that no client can supply its own; the TOTP
  *   views in the admin read it (M1, staff two-factor);
  * - host routing: a request on an institute host is served from /institute (src/lib/hosts.ts);
@@ -44,13 +53,21 @@ function decodedPath(pathname: string): string {
 // its own prerendered page, so that path cannot be used).
 const NOT_FOUND_PATH = '/page-not-found'
 
-export function proxy(request: NextRequest) {
+/** The admin's pages: the only ones that may frame this origin (the live preview). */
+const isAdminPath = (pathname: string) => /^\/admin(?:\/|$)/i.test(decodedPath(pathname))
+
+export async function proxy(request: NextRequest) {
   const { nextUrl } = request
+  const admin = isAdminPath(nextUrl.pathname)
+  const framed = !admin && (await framedByAdmin(request.cookies, env().PAYLOAD_SECRET))
   const csp = buildCsp({
     nonce: createNonce(),
     development: process.env.NODE_ENV === 'development',
     https: nextUrl.protocol === 'https:',
     imageOrigins: env().mediaOrigin ? [env().mediaOrigin as string] : [],
+    ...beaconSources(nextUrl.pathname),
+    frameAncestors: framed ? "'self'" : "'none'",
+    frameSources: admin ? "'self'" : "'none'",
   })
   const headers = new Headers(request.headers)
   headers.set('Content-Security-Policy', csp)
@@ -65,6 +82,10 @@ export function proxy(request: NextRequest) {
       })
     : NextResponse.next({ request: { headers } })
   response.headers.set('Content-Security-Policy', csp)
+  // For browsers that predate the CSP's frame-ancestors.
+  response.headers.set('X-Frame-Options', framed ? 'SAMEORIGIN' : 'DENY')
+  // A draft is never indexed, wherever its address points.
+  if (framed) response.headers.set('X-Robots-Tag', 'noindex')
   return response
 }
 
