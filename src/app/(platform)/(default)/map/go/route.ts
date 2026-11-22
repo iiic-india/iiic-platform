@@ -22,7 +22,7 @@ const sendTo = (location: string): Response =>
  * request.
  *
  * Each answer is counted (F1, step 3): a step-0 analytics event with the choice, the page, the
- * day's anonymous session code and the time, and nothing about the person (docs/12 §7, §10;
+ * day's pseudonymous session code and the time, and nothing about the person (docs/12 §7, §10;
  * src/lib/analytics/record.ts). It is written after the response has gone, so the visitor never
  * waits for it, and a failure to write it never changes where they are sent.
  */

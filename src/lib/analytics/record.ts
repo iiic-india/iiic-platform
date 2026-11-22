@@ -12,7 +12,7 @@ import { clientAddress, sessionHash } from './session'
 /**
  * Writes one funnel event (docs/04 `analytics_events`; docs/12 §7). What may be recorded without
  * consent, and nothing more (docs/12 §10): the event, the page, the register, whom it is for
- * where the step asks, the day's anonymous session code and the time. No address, browser,
+ * where the step asks, the day's pseudonymous session code and the time. No address, browser,
  * referrer, query, cookie or identifier is stored, and no event links to a person.
  */
 export async function recordEvent(

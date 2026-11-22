@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { clientAddress, dayKey, sessionHash } from '@/lib/analytics/session'
 
-// The anonymous session code of an analytics event (docs/04 `analytics_events`; docs/12 §7,
+// The pseudonymous session code of an analytics event (docs/04 `analytics_events`; docs/12 §7,
 // §10): the same for one browser at one address through one day in India, another the next day
 // or under another secret, and never the address or the browser itself. Fake addresses from the
 // documentation ranges (RFC 5737, RFC 3849) and a fake secret.

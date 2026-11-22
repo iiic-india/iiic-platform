@@ -8,7 +8,7 @@ import { IST_FIELD } from '@/lib/time/ist'
 /**
  * The funnel's events (docs/04 `analytics_events`, S0; docs/12 §7), written on the server by
  * src/lib/analytics/record.ts and never through the API. No field links to a person, by design:
- * an event holds what happened, where, for whom where the step asks, an anonymous session code
+ * an event holds what happened, where, for whom where the step asks, a pseudonymous session code
  * that changes every day (src/lib/analytics/session.ts) and when. Owners read the raw events;
  * Reports and the weekly report aggregate them (M5, O2). Not in the audit log: nobody's data
  * changes here (docs/08 §2, src/plugins/auditLog.ts).
@@ -46,7 +46,10 @@ export const AnalyticsEvents: CollectionConfig = {
       label: 'Session',
       required: true,
       index: true,
-      admin: { description: 'An anonymous code that changes every day.' },
+      admin: {
+        description:
+          'A code that changes every day, worked out on the server from the address and browser, which are not kept.',
+      },
     },
     {
       name: 'at',

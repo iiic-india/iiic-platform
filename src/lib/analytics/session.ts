@@ -3,7 +3,7 @@ import { createHmac, hkdfSync } from 'node:crypto'
 import { istDay } from '@/lib/time/ist'
 
 /**
- * The anonymous session of an analytics event (docs/04 `analytics_events`; docs/12 §7, §10): a
+ * The pseudonymous session of an analytics event (docs/04 `analytics_events`; docs/12 §7, §10): a
  * code that is the same for one browser at one address through one day in India, so the funnel
  * can follow a visit from step to step, and different the next day. Nothing is stored in the
  * browser and no cookie is set: the code is worked out on the server from the request, and the
@@ -11,7 +11,9 @@ import { istDay } from '@/lib/time/ist'
  *
  * Each day has a key of its own, derived by HKDF from the server's secret and the date, and the
  * code is an HMAC of the address and the browser under that key. Without the secret nobody can
- * work out a code, and one day's codes say nothing about another day's.
+ * work out a code, and one day's codes say nothing about another day's. With it, a past day's code
+ * can be worked out again for a known address and browser: the code is pseudonymous, not
+ * anonymous (docs/08 §3, Children).
  */
 
 const INFO = 'iiic/analytics-session/v1'

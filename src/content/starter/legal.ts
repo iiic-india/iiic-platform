@@ -138,7 +138,12 @@ export const PRIVACY: PageContent = {
           text: 'If you are under 18, a parent or guardian makes the booking and gives the consent.',
         },
         {
-          text: 'IIIC sends no marketing to anyone under 18 and records no analytics events about them.',
+          // docs/08 §3 and docs/12 §10: the age band from a booking or the Map stops analytics
+          // events; the step-0 count is taken before any age is asked (lawyer to confirm, I-22).
+          text: 'IIIC sends no marketing to anyone under 18. Once a booking or the Map tells IIIC that a person is under 18, the site records no analytics events about them.',
+        },
+        {
+          text: '“Find your path” does not ask your age, so the count of its answers is taken before anyone’s age is known.',
         },
       ],
       copyStatus: 'approved',

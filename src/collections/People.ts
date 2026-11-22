@@ -14,7 +14,7 @@ import { IST_FIELD } from '@/lib/time/ist'
 
 /**
  * The age bands a record holds: the one line the law draws (docs/08 §3: under 18, a parent or
- * guardian books and consents; no analytics events and no marketing). Nothing finer is asked
+ * guardian books and consents; no marketing, and no analytics events once the age band says under 18). Nothing finer is asked
  * until a report needs it.
  */
 export const AGE_BANDS = [
