@@ -3,14 +3,7 @@ import { getPayload, type Payload } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { SLOT_BLOCKING_STATUSES } from '@/lib/booking/states'
-import type {
-  Booking,
-  GatewayEvent,
-  Person,
-  Practitioner,
-  Service,
-  User,
-} from '@/payload-types'
+import type { Booking, GatewayEvent, Person, Practitioner, Service, User } from '@/payload-types'
 import config from '@/payload.config'
 
 // The database's double-booking guard (docs/04, Rules the schema enforces; docs/16 §4) and the
