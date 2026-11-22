@@ -294,24 +294,29 @@
 
 /* §4 · On the home page the doors' cards and the steps reveal once, the same way and by the same
    script (RevealChapters.tsx): an 8 px rise and a fade, the cards of one row 60 ms apart. Only
-   an item still below the window is held back, and only once the script runs. */
+   an item still below the window is held back, and only once the script runs. The rise uses
+   the translate property, so the kit's own card transitions (its hover lift, shadow and rule)
+   stay as the kit sets them, and only the reveal waits for its turn. */
 .revealItem[data-reveal='waiting'] {
   opacity: 0;
-  transform: translateY(8px);
+  translate: 0 8px;
 }
 
 .revealItem[data-reveal='in'] {
   transition:
     opacity 320ms var(--iiic-ease),
-    transform 320ms var(--iiic-ease);
+    translate 320ms var(--iiic-ease),
+    transform var(--iiic-motion) var(--iiic-ease),
+    box-shadow var(--iiic-motion) var(--iiic-ease),
+    border-color var(--iiic-motion);
 }
 
 .revealItem[data-reveal='in']:nth-child(3n + 2) {
-  transition-delay: 60ms;
+  transition-delay: 60ms, 60ms, 0s, 0s, 0s;
 }
 
 .revealItem[data-reveal='in']:nth-child(3n + 3) {
-  transition-delay: 120ms;
+  transition-delay: 120ms, 120ms, 0s, 0s, 0s;
 }
 
 /* Forced colours (Windows contrast themes) drop backgrounds and shadows, and with them the bars
@@ -341,10 +346,14 @@
     transition: none;
   }
 
-  .chapter[data-reveal],
-  .revealItem[data-reveal] {
+  .chapter[data-reveal] {
     opacity: 1;
     transform: none;
+  }
+
+  .revealItem[data-reveal] {
+    opacity: 1;
+    translate: none;
   }
 }
 
@@ -360,9 +369,13 @@
     display: block;
   }
 
-  .chapter[data-reveal],
-  .revealItem[data-reveal] {
+  .chapter[data-reveal] {
     opacity: 1;
     transform: none;
+  }
+
+  .revealItem[data-reveal] {
+    opacity: 1;
+    translate: none;
   }
 }
