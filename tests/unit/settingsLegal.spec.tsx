@@ -261,10 +261,12 @@ describe('the footer’s legal row', () => {
       'I-27',
       'I-30',
       'I-33',
-      'I-41',
+      // Find your path's line, then the 404's headline, line and three questions.
+      ...Array<string>(6).fill('I-41'),
     ])
-    // What no setting supplies: the affiliation statement and Find your path's line.
-    expect(filled).toEqual(['I-30', 'I-41'])
+    // What no setting supplies: the affiliation statement, Find your path's line and the 404's
+    // proposals.
+    expect(filled).toEqual(['I-30', ...Array<string>(6).fill('I-41')])
   })
 
   it('uses the words /legal uses for the same facts', () => {

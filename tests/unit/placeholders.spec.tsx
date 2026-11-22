@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import FindYourPathPage from '@/app/(platform)/(default)/map/page'
 import { hasQuestions } from '@/blocks/pageBlocks'
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
+import { NotFoundPage } from '@/components/notFound/NotFoundPage'
 import { SiteFooter } from '@/components/site/SiteFooter'
 import { STARTER_PAGES } from '@/content/starter'
 import {
@@ -236,9 +237,19 @@ describe('a placeholder typed another way', () => {
 })
 
 describe('the placeholders the code draws itself', () => {
-  it('are the footer’s and Find your path’s, as the report lists them', () => {
-    const { footerAffiliation, footerLegalName, footerGstin, footerGrievanceOfficer, mapLine } =
-      FIXED_PLACEHOLDERS
+  it('are the footer’s, Find your path’s and the 404’s, as the report lists them', () => {
+    const {
+      footerAffiliation,
+      footerLegalName,
+      footerGstin,
+      footerGrievanceOfficer,
+      mapLine,
+      notFoundHeadline,
+      notFoundLine,
+      notFoundQuestionFounders,
+      notFoundQuestionLearners,
+      notFoundQuestionGeneral,
+    } = FIXED_PLACEHOLDERS
     const footer = render(<SiteFooter />)
     expect(chips(footer.container)).toEqual(
       asChips([footerAffiliation, footerLegalName, footerGstin, footerGrievanceOfficer]),
@@ -246,12 +257,30 @@ describe('the placeholders the code draws itself', () => {
     cleanup()
     const path = render(<FindYourPathPage />)
     expect(chips(path.container)).toEqual(asChips([mapLine]))
+    cleanup()
+    // The 404 draws its headline, its line and the question of the pool the address belongs to.
+    for (const [address, question] of [
+      ['/no-such-page', notFoundQuestionGeneral],
+      ['/organisations/no-such-page', notFoundQuestionFounders],
+      ['/learn/no-such-page', notFoundQuestionLearners],
+    ] as const) {
+      const notFound = render(<NotFoundPage path={address} />)
+      expect(chips(notFound.container), address).toEqual(
+        asChips([notFoundHeadline, notFoundLine, question]),
+      )
+      cleanup()
+    }
     expect(CODED_PLACEHOLDERS.map(({ id, what, page }) => [id, what, page.path])).toEqual([
       ['I-30', footerAffiliation.what, '/'],
       ['I-26', footerLegalName.what, '/'],
       ['I-05', footerGstin.what, '/'],
       ['I-21', footerGrievanceOfficer.what, '/'],
       ['I-41', mapLine.what, '/map'],
+      ['I-41', notFoundHeadline.what, '/404'],
+      ['I-41', notFoundLine.what, '/404'],
+      ['I-41', notFoundQuestionFounders.what, '/404'],
+      ['I-41', notFoundQuestionLearners.what, '/404'],
+      ['I-41', notFoundQuestionGeneral.what, '/404'],
     ])
   })
 })
@@ -345,7 +374,8 @@ describe('the report', () => {
       'I-32',
       'I-33',
       'I-38',
-      'I-41',
+      // Find your path's line, then the 404's headline, line and three questions.
+      ...Array<string>(6).fill('I-41'),
     ])
     // A placeholder names a decision only where no input can supply what is missing (D-56);
     // the report lists those after the inputs.

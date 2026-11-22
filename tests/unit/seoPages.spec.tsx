@@ -183,8 +183,13 @@ const NOT_FOUND = [
   { file: '(education)/not-found.tsx', Page: EducationNotFound },
 ]
 
-/** The pages that draw themselves, tested one by one below. */
-const OWN = ['(default)/page.tsx', '(default)/[...slug]/page.tsx', '(default)/map/page.tsx']
+/** The pages that draw themselves, tested one by one below; /search in tests/unit/searchPage.spec.tsx. */
+const OWN = [
+  '(default)/page.tsx',
+  '(default)/[...slug]/page.tsx',
+  '(default)/map/page.tsx',
+  '(default)/search/page.tsx',
+]
 
 /** The Journal's pages, which draw themselves too: tests/unit/journalPages.spec.tsx. */
 const JOURNAL = [
