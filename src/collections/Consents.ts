@@ -50,6 +50,9 @@ export const completeEntry: CollectionBeforeValidateHook = async ({ data, operat
   if (data.channel === 'recordDeleted' && req.context?.[RECORD_DELETED] !== true) {
     refuse('channel', MESSAGES.deletedOnly)
   }
+  // A form on the site records its own consents, on the server, with their evidence; staff
+  // record replies that reached IIIC some other way, with where each is kept.
+  if (data.channel === 'web' && req.user) refuse('channel', MESSAGES.webOnly)
 
   const withdrawn = idOf(data.withdraws)
   if (withdrawn !== null) {

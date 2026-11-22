@@ -27,6 +27,7 @@ export const LEDGER_MESSAGES = {
   alreadyWithdrawn: 'This consent has already been withdrawn.',
   givenWithdrawn: 'Record the consent first, then its withdrawal as an entry of its own.',
   deletedOnly: 'This applies only to the consents of a deleted record.',
+  webOnly: 'Choose how the reply reached IIIC: email, WhatsApp, a phone call or paper.',
   future: 'That time has not come yet: enter when it happened.',
   beforeGrant: 'A consent cannot be withdrawn before it was given.',
   notInForce: 'This notice was not in force at that time: choose the one the person saw.',

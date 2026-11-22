@@ -205,6 +205,28 @@ describe('the deleted-record channel', () => {
   })
 })
 
+describe('the channel of a form on the site', () => {
+  it('is only for the server: staff are asked how the reply reached IIIC', async () => {
+    payload.findByID.mockResolvedValue(VERSION)
+    const staffReq = { payload, context: {}, user: { id: 1, roles: ['operator'] } } as never
+    for (const data of [
+      { person: 7, noticeVersion: 3, channel: 'web' },
+      { withdraws: 41, channel: 'web' },
+    ]) {
+      expect(
+        await refusal(run(completeEntry, { data, operation: 'create', req: staffReq })),
+      ).toEqual({ path: 'channel', message: LEDGER_MESSAGES.webOnly })
+    }
+    expect(
+      await run(completeEntry, {
+        data: { person: 7, noticeVersion: 3, channel: 'web' },
+        operation: 'create',
+        req: req(),
+      }),
+    ).toMatchObject({ channel: 'web', purpose: 'marketingEmail' })
+  })
+})
+
 describe('the name of an entry', () => {
   it('is the purpose and when it was given or withdrawn, in India, set as it is created', () => {
     const given = { purpose: 'marketingEmail', grantedAt: '2026-12-01T06:00:00Z' }

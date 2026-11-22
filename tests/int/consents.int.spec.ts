@@ -128,6 +128,31 @@ describe('who may read and record consents (docs/04, docs/05)', () => {
     ).rejects.toThrow()
     await expect(consentOnTheSite(someone)).resolves.toBeTruthy()
   })
+
+  it('leaves "A form on this site" to the server: staff cannot record a consent through it', async () => {
+    await expect(
+      payload.create({
+        collection: 'consents',
+        data: {
+          person: someone.id,
+          noticeVersion: notice.id,
+          channel: 'web',
+          grantedAt: ago(1),
+        } as Consent,
+        user: verified(staff.operator),
+        overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+    const grant = await consentOnTheSite(someone)
+    await expect(
+      payload.create({
+        collection: 'consents',
+        data: { withdraws: grant.id, channel: 'web' } as Consent,
+        user: verified(staff.operator),
+        overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+  })
 })
 
 describe('an entry, once recorded', () => {
