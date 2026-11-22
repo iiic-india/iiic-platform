@@ -112,6 +112,8 @@ test.describe('A redirect made in the admin', () => {
   test.describe.configure({ mode: 'serial' })
 
   const from = `/e2e-old-address-${letters()}`
+  // An address with a space, a comma and an accented letter, as the 404 log keeps it (decoded).
+  const spaced = `/e2e old address, café ${letters()}`
 
   test.beforeAll(async () => {
     const db = await cms()
@@ -121,8 +123,8 @@ test.describe('A redirect made in the admin', () => {
 
   test.afterAll(async () => {
     const db = await cms()
-    await db.delete({ collection: 'redirects', where: { from: { equals: from } } })
-    await db.delete({ collection: 'missing-pages', where: { path: { equals: from } } })
+    await db.delete({ collection: 'redirects', where: { from: { in: [from, spaced] } } })
+    await db.delete({ collection: 'missing-pages', where: { path: { in: [from, spaced] } } })
     await db.delete({ collection: 'users', where: { email: { equals: owner.email } } })
   })
 
@@ -152,5 +154,38 @@ test.describe('A redirect made in the admin', () => {
     const removed = await page.request.delete(`/api/redirects/${doc.id}`, { headers: sameOrigin })
     expect(removed.status()).toBe(200)
     expect((await page.request.get(from, { maxRedirects: 0 })).status()).toBe(404)
+  })
+
+  test('from an address with a space, a comma or an accent, is followed for the encoded request', async ({
+    page,
+  }) => {
+    await login(page, owner)
+    const sameOrigin = { Origin: new URL(page.url()).origin }
+    const encoded = encodeURI(spaced)
+    expect(encoded).toContain('%20')
+
+    // The address is logged decoded, as the redirect's "from" keeps it.
+    expect((await page.request.get(encoded, { maxRedirects: 0 })).status()).toBe(404)
+    const db = await cms()
+    await expect
+      .poll(
+        async () =>
+          (await db.count({ collection: 'missing-pages', where: { path: { equals: spaced } } }))
+            .totalDocs,
+        { timeout: 15_000 },
+      )
+      .toBe(1)
+
+    const created = await page.request.post('/api/redirects', {
+      headers: sameOrigin,
+      data: { from: spaced, to: { type: 'custom', url: '/about' }, type: '308' },
+    })
+    expect(created.status()).toBe(201)
+
+    const followed = await page.request.get(encoded, { maxRedirects: 0 })
+    expect(followed.status()).toBe(308)
+    expect(new URL(followed.headers()['location'] ?? '', 'http://site.invalid').pathname).toBe(
+      '/about',
+    )
   })
 })

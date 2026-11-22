@@ -41,9 +41,18 @@ export function requestPath(pathname: string | null | undefined): string | null 
   }
 }
 
-/** The path a catch-all route was asked for, from its segments, which Next.js has decoded. */
+/**
+ * The path a catch-all route was asked for, from its segments, decoded and cleaned; null if a
+ * segment is malformed. Next.js hands a page its catch-all segments percent-encoded (each one
+ * through encodeURIComponent), so "/old%20page" arrives as "old%20page": decoded here, it is
+ * looked up as "/old page", the form the 404 log and the redirects keep.
+ */
 export function pathOf(...segments: string[]): string | null {
-  return cleanPath(`/${segments.join('/')}`)
+  try {
+    return cleanPath(`/${segments.map((segment) => decodeURIComponent(segment)).join('/')}`)
+  } catch {
+    return null
+  }
 }
 
 /**

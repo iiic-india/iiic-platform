@@ -54,10 +54,18 @@ describe('a request path, as the log and the redirects keep it', () => {
     expect(cleanPath(`${longest}a`)).toBeNull()
   })
 
-  it('is built from a catch-all route’s decoded segments', () => {
+  it('is built from a catch-all route’s segments, decoded as Next.js hands them over encoded', () => {
     expect(pathOf('Old', 'Page.html')).toBe('/Old/Page.html')
     expect(pathOf('organisations', 'fake-service')).toBe('/organisations/fake-service')
-    expect(pathOf('bad?query')).toBeNull()
+    expect(pathOf('old%20page')).toBe('/old page')
+    expect(pathOf('caf%C3%A9')).toBe('/café')
+    expect(pathOf('fake-page%2C')).toBe('/fake-page,')
+    // The same address the 404 log keeps for the same request.
+    expect(pathOf(encodeURIComponent('old page'), encodeURIComponent('“quoted”'))).toBe(
+      requestPath('/old%20page/%E2%80%9Cquoted%E2%80%9D'),
+    )
+    expect(pathOf('%E0%A4%A')).toBeNull()
+    expect(pathOf('bad%3Fquery')).toBeNull()
   })
 })
 
