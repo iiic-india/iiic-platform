@@ -42,6 +42,9 @@ jobs:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/iiic
       # Lets the cookie-inventory test check the owner setup link's cookie (D-41); CI only.
       OWNER_SETUP_TOKEN: ci-only-owner-setup-token-not-used-anywhere-else-0000
+      # The in-memory payment gateway, so the booking flow's end-to-end tests pay through signed
+      # webhooks without Razorpay (docs/16 §11); src/lib/env.ts refuses it on any Vercel deployment.
+      PAYMENT_GATEWAY: fake
     steps:
       - uses: actions/checkout@v4
         with:
