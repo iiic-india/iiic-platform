@@ -102,7 +102,11 @@ export default buildConfig({
       // Recovery codes for staff two-factor (src/lib/auth/recoveryEndpoints.ts).
       beforeDashboard: ['/components/admin/RecoveryCodes#RecoveryCodes'],
       // Content → Placeholders: what the pages still wait for (D-56).
-      afterNavLinks: ['/components/admin/PlaceholdersNavLink#PlaceholdersNavLink'],
+      afterNavLinks: [
+        '/components/admin/PlaceholdersNavLink#PlaceholdersNavLink',
+        // Calendar → Working hours, with the preview of bookable times (docs/05; docs/16 §12).
+        '/components/admin/office/WorkingHoursNavLink#WorkingHoursNavLink',
+      ],
       // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
       // plugin spreads after its own, so these win. One labelled code field each; the verify
       // view also takes a recovery code.
@@ -115,6 +119,12 @@ export default buildConfig({
         placeholders: {
           Component: '/components/admin/PlaceholdersView#PlaceholdersView',
           path: '/placeholders',
+          exact: true,
+        },
+        // The view checks the user, the code and the role itself (CLAUDE.md #6).
+        workingHours: {
+          Component: '/components/admin/office/WorkingHoursView#WorkingHoursView',
+          path: '/working-hours',
           exact: true,
         },
       },
