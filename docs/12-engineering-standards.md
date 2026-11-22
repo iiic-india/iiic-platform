@@ -28,7 +28,7 @@ Measured on Lighthouse CI's throttled mobile profile (a mid-range Android on 4G)
 | Interaction to Next Paint (lab) | ≤ 150 ms; a page load has no interaction, so Lighthouse CI holds Total Blocking Time to 200 ms, Lighthouse's own line for a good TBT (D-59), and INP itself is held in the field (§7, D-59) | ≤ 200 ms | ≤ 300 ms |
 | Cumulative Layout Shift | ≤ 0.05 | ≤ 0.05 | ≤ 0.1 |
 | Time to First Byte from India | ≤ 600 ms (pages render per request in Mumbai, D-42); Lighthouse CI holds the server's response time to it, and the time from India is held in the field (§7, D-59) | ≤ 800 ms | — |
-| JavaScript, gzipped, per page | ≤ 150 KB total; ≤ 6 KB for the experience devices (`11` §7) | ≤ 250 KB (the checkout script loads only on the payment step) | not budgeted, but Payload's admin bundle is not loaded on public routes |
+| JavaScript, gzipped, per page | ≤ 170 KB total, of which React and Next.js's own runtime is about 125 KB (D-79); ≤ 6 KB for the experience devices (`11` §7) | ≤ 250 KB (the checkout script loads only on the payment step) | not budgeted, but Payload's admin bundle is not loaded on public routes |
 | CSS, gzipped | ≤ 40 KB (the kit is ≈ 11 KB) | ≤ 40 KB | — |
 | Fonts on first view | ≤ 120 KB: Manrope (Latin) and Fraunces's upright face preloaded, about 90 KB together; Fraunces's italic is not loaded on the web, because no page sets it and `next/font` preloads every face of a call (D-60); the rest on demand | same | — |
 | Images | AVIF or WebP through `next/image` with `sizes` set; the LCP image (if any) `priority`; hero ≤ 200 KB; no image over 400 KB, and a first view's images ≤ 400 KB together (Lighthouse CI, D-59) | same | — |

@@ -15,7 +15,7 @@ What any choice has to hold to:
 - A laptop and a phone.
 - Every custom view checks the user and the role first.
 - The Content-Security-Policy: scripts run only with the request's nonce (`'strict-dynamic'`, no eval); inline styles are allowed; images, fonts and connections from this site only (`src/lib/security/csp.ts`).
-- Public pages stay inside 150 KB of JavaScript. Admin code must not reach them.
+- Public pages stay inside their JavaScript budget (170 KB since D-79; 150 KB when this was written). Admin code must not reach them.
 - Established, maintained, permissively licensed libraries. No hand-rolled components. Exact version pins.
 
 ## The stack in one table
