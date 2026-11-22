@@ -4,8 +4,10 @@ import {
   type JSXConvertersFunction,
   RichText,
 } from '@payloadcms/richtext-lexical/react'
+import Image from 'next/image'
 import type { ReactNode } from 'react'
 
+import { ARTICLE_IMAGE_SIZES, articleImage, mediaOriginOf } from '@/lib/journal/images'
 import type { PostDetail } from '@/lib/journal/posts'
 
 import styles from './journal.module.css'
@@ -15,7 +17,9 @@ import styles from './journal.module.css'
  * elements the kit's `.iiic-article` styles (src/brand/gallery.html, "Article"). The converters
  * below hold the page to its outline and to the kit: headings are h2 and h3 under the article's
  * one h1, text is bold or italic and nothing else, no alignment or indent is written inline,
- * and a link goes only where it is safe to go. A node the article's editor cannot make
+ * and a link goes only where it is safe to go. An image from the media library is drawn by
+ * next/image at the column's width, with its alt text and its size (src/lib/journal/images.ts);
+ * any other upload draws nothing. A node the article's editor cannot make
  * (src/collections/Posts.ts) shows its text, if it has any, and nothing else.
  */
 
@@ -88,6 +92,21 @@ const converters: JSXConvertersFunction = ({ defaultConverters }) =>
         </a>
       ) : (
         <>{children}</>
+      )
+    },
+    upload: ({ node }) => {
+      const image = articleImage(node, mediaOriginOf(process.env.R2_PUBLIC_BASE_URL))
+      if (!image) return null
+      return (
+        <figure className={styles.figure}>
+          <Image
+            src={image.src}
+            alt={image.alt}
+            width={image.width}
+            height={image.height}
+            sizes={ARTICLE_IMAGE_SIZES}
+          />
+        </figure>
       )
     },
     unknown: ({ node, nodesToJSX }) => {

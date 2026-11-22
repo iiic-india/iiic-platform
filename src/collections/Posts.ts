@@ -10,6 +10,7 @@ import {
   OrderedListFeature,
   ParagraphFeature,
   UnorderedListFeature,
+  UploadFeature,
 } from '@payloadcms/richtext-lexical'
 import type {
   CollectionConfig,
@@ -131,9 +132,11 @@ const countReadingTime: FieldHook = ({ data, originalDoc }) =>
 
 /**
  * What an article's body may hold: paragraphs, two levels of heading under the article's
- * title, bold and italic, lists, quotes, rules and links by address. No images yet: the first
- * page that draws an image from the media library adds the bucket to next/image (docs/12 §4).
- * No links to another document by reference, so that no link points at a draft.
+ * title, bold and italic, lists, quotes, rules, links by address, and images from the media
+ * library, each with the alt text the library requires (src/collections/Media.ts), drawn by
+ * next/image from the public bucket (src/components/journal/ArticleBody.tsx; docs/12 §4). No
+ * upload from any other collection, so nothing from a private bucket. No links to another
+ * document by reference, so that no link points at a draft.
  */
 const articleEditor = lexicalEditor({
   features: [
@@ -146,6 +149,7 @@ const articleEditor = lexicalEditor({
     BlockquoteFeature(),
     HorizontalRuleFeature(),
     LinkFeature({ enabledCollections: [] }),
+    UploadFeature({ enabledCollections: ['media'], maxDepth: 1 }),
     InlineToolbarFeature(),
   ],
 })

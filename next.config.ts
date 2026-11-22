@@ -5,6 +5,7 @@ import { withPayload } from '@payloadcms/next/withPayload'
 import { withSentryConfig } from '@sentry/nextjs/config'
 import type { NextConfig } from 'next'
 
+import { imagesConfig } from './src/lib/media/nextImages'
 import { oldSiteRedirects } from './src/lib/redirects/oldSite'
 import { headerRules, withoutColorSchemeHints } from './src/lib/security/headers'
 import { HTML_LIMITED_BOTS } from './src/lib/seo/bots'
@@ -17,9 +18,9 @@ const nextConfig: NextConfig = {
   // Crawlers that read only <head> get each page in one piece, metadata in its head: Next.js's
   // own list plus the AI crawlers D-61 welcomes (plan A2).
   htmlLimitedBots: HTML_LIMITED_BOTS,
-  images: {
-    localPatterns: [{ pathname: '/api/media/file/**' }],
-  },
+  // The media library through Payload's file route, and the public bucket once R2 is set, kept
+  // for a month (src/lib/media/nextImages.ts; docs/12 §4).
+  images: imagesConfig(process.env.R2_PUBLIC_BASE_URL),
   // Security headers on every route; noindex everywhere but Vercel's production once the site
   // has launched (docs/12 §5, D-50).
   // The Content-Security-Policy is set per request by src/proxy.ts.
