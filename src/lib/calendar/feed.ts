@@ -11,6 +11,7 @@ import { IST } from '@/lib/time/ist'
 
 import { bookingView } from './bookingEvent'
 import { buildFeed, feedEvent } from './ics'
+import { withOwnContext } from './queue'
 import { FEED_TOKEN_BYTES, FeedToken, hashToken, newToken } from './tokens'
 
 /**
@@ -187,13 +188,16 @@ async function setFeedHash(
     req,
   })
   if (!existing) return false
-  await req.payload.update({
-    collection: 'calendar-connections',
-    id: connectionId,
-    data: { feedTokenHash },
-    overrideAccess: true,
-    context: { auditAction },
-    req,
-  })
+  await withOwnContext(req, () =>
+    req.payload.update({
+      collection: 'calendar-connections',
+      id: connectionId,
+      data: { feedTokenHash },
+      overrideAccess: true,
+      // The audit log names what the owner did; the connection hooks leave the feed alone.
+      context: { auditAction, calendarSync: true },
+      req,
+    }),
+  )
   return true
 }

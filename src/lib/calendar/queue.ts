@@ -28,6 +28,21 @@ export const CALENDAR_SUBSCRIPTIONS = {
 /** The server's own writes from the calendar jobs, which the collections' hooks leave alone. */
 export const CALENDAR_SYNC_CONTEXT = { calendarSync: true, auditAction: 'calendar-sync' } as const
 
+/**
+ * Runs one write with its own context, then gives the request its context back. Payload merges
+ * a local call's `context` into the request for good (createLocalReq), so without this a
+ * calendar write would mark every later change on the same request (the rest of a job run) as
+ * the calendar's own.
+ */
+export async function withOwnContext<T>(req: PayloadRequest, run: () => Promise<T>): Promise<T> {
+  const own = req.context
+  try {
+    return await run()
+  } finally {
+    req.context = own
+  }
+}
+
 /** Queues the write, move or removal of a booking's calendar entry (B2, B7). */
 export async function queueBookingCalendarSync(
   req: PayloadRequest,

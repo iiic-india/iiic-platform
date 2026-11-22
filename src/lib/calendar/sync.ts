@@ -20,7 +20,7 @@ import {
 import { busyWindow, longestHorizon, normaliseBusy } from './busy'
 import type { CalendarDeps } from './config'
 import type { CalendarError, CalendarEventRef, CalendarProvider } from './provider'
-import { CALENDAR_SYNC_CONTEXT } from './queue'
+import { CALENDAR_SYNC_CONTEXT, withOwnContext } from './queue'
 import { CHANNEL_TOKEN_BYTES, hashToken, newToken } from './tokens'
 
 /**
@@ -120,14 +120,16 @@ async function noteHealth(
     data.lastError = failure.code
   }
   if (Object.keys(data).length === 0) return
-  await req.payload.update({
-    collection: 'calendar-connections',
-    id: connection.id,
-    data,
-    overrideAccess: true,
-    context: CALENDAR_SYNC_CONTEXT,
-    req,
-  })
+  await withOwnContext(req, () =>
+    req.payload.update({
+      collection: 'calendar-connections',
+      id: connection.id,
+      data,
+      overrideAccess: true,
+      context: CALENDAR_SYNC_CONTEXT,
+      req,
+    }),
+  )
 }
 
 type Predecessor = { practitionerId: number | null; calendarEventId: string | null }
@@ -168,14 +170,16 @@ async function saveOnBooking(
   const sameEvent = (booking.calendarEventId ?? null) === data.calendarEventId
   const sameLink = data.meetingUrl === undefined || (booking.meetingUrl ?? null) === data.meetingUrl
   if (sameEvent && sameLink) return
-  await req.payload.update({
-    collection: 'bookings',
-    id: booking.id,
-    data,
-    overrideAccess: true,
-    context: CALENDAR_SYNC_CONTEXT,
-    req,
-  })
+  await withOwnContext(req, () =>
+    req.payload.update({
+      collection: 'bookings',
+      id: booking.id,
+      data,
+      overrideAccess: true,
+      context: CALENDAR_SYNC_CONTEXT,
+      req,
+    }),
+  )
 }
 
 async function writeEvent(
@@ -414,23 +418,34 @@ export async function renewWatchWith(
     await noteHealth(req, connection, opened.error)
     return opened
   }
-  await req.payload.update({
-    collection: 'calendar-connections',
-    id: connection.id,
-    data: {
-      watch: {
-        channelId: opened.value.channelId,
-        resourceId: opened.value.resourceId,
-        expiresAt: opened.value.expiresAt.toISOString(),
-      },
-      channelTokenHash: hashToken(token),
+  await saveWatch(req, connection.id, {
+    watch: {
+      channelId: opened.value.channelId,
+      resourceId: opened.value.resourceId,
+      expiresAt: opened.value.expiresAt.toISOString(),
     },
-    overrideAccess: true,
-    context: CALENDAR_SYNC_CONTEXT,
-    req,
+    channelTokenHash: hashToken(token),
   })
   await stopChannel(provider, connection)
   return ok('renewed')
+}
+
+/** Keeps a connection's channel, or forgets it, as the calendar's own write. */
+async function saveWatch(
+  req: PayloadRequest,
+  connectionId: number,
+  data: Pick<CalendarConnection, 'watch' | 'channelTokenHash'>,
+): Promise<void> {
+  await withOwnContext(req, () =>
+    req.payload.update({
+      collection: 'calendar-connections',
+      id: connectionId,
+      data,
+      overrideAccess: true,
+      context: CALENDAR_SYNC_CONTEXT,
+      req,
+    }),
+  )
 }
 
 /** Stops a connection's channel, best effort; Google needs the calendar that opened it. */
@@ -471,16 +486,9 @@ export async function sweepCalendarsWith(
     if (!reachable(connection)) {
       if (connection.watch?.channelId) {
         await stopChannel(provider, connection)
-        await req.payload.update({
-          collection: 'calendar-connections',
-          id: connection.id,
-          data: {
-            watch: { channelId: null, resourceId: null, expiresAt: null },
-            channelTokenHash: null,
-          },
-          overrideAccess: true,
-          context: CALENDAR_SYNC_CONTEXT,
-          req,
+        await saveWatch(req, connection.id, {
+          watch: { channelId: null, resourceId: null, expiresAt: null },
+          channelTokenHash: null,
         })
         tally.stopped += 1
       }

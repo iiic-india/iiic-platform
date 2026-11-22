@@ -332,3 +332,25 @@ describe('the calendar connection hooks', () => {
     expect(check('2099-01-05T04:00:00Z', '2099-01-05T05:00:00Z')).toBeTruthy()
   })
 })
+
+describe('withOwnContext', () => {
+  it('gives the request its own context back after a calendar write, even a failed one', async () => {
+    const { withOwnContext, CALENDAR_SYNC_CONTEXT } = await import('@/lib/calendar/queue')
+    const own = { auditAction: 'expire-holds' }
+    const req = { context: own } as unknown as PayloadRequest
+    // Payload merges a local call's context into the request, as createLocalReq does.
+    const write = async () => {
+      req.context = { ...req.context, ...CALENDAR_SYNC_CONTEXT }
+      return 'written'
+    }
+    expect(await withOwnContext(req, write)).toBe('written')
+    expect(req.context).toBe(own)
+    await expect(
+      withOwnContext(req, async () => {
+        await write()
+        throw new Error('fake failure')
+      }),
+    ).rejects.toThrow('fake failure')
+    expect(req.context).toBe(own)
+  })
+})
