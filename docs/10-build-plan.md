@@ -33,6 +33,8 @@ Collections: pages (block-based, using the kit's patterns, with the `facts` arra
 
 Done when: every R1 route renders from the CMS in the right register at 320–1600 px with no horizontal scroll, axe reports no serious issues, editing a page in the admin updates it with a preview and revalidates the live page by tag, the acceptance in `11` §10 passes, Lighthouse CI meets the budgets on the home, framework, founders and counselling pages, and every public claim on a page points to a fact in `09` or `content/sources/`.
 
+- The hardening pass that closes M2: Lighthouse CI's budgets, reported as warnings while the parts were built, become failures again, and the milestone is done only when they pass (D-80).
+
 ### M3 · Booking and payments
 
 Services and prices (all-in, with price history and SAC codes) from the admin, hidden everywhere while `prices_public` is off (D-21); working hours and exceptions; two-way Google Calendar sync (busy blocks in, bookings with Meet links out; D-22); the slot engine (working hours, durations, buffers, notice, horizon, busy blocks) with the exclusion constraint; time requests (D-02); holds; the five-step flow for `session`, `call` and `info` (D-03 applied), with payment at booking or by link (D-24) with separate unticked consents, the counselling scope statement and crisis numbers; Razorpay orders, checkout, signed webhooks, idempotent processing, order-status polling, daily reconciliation; confirmation page; `.ics` and the practitioners' private calendar feeds (D-22); manage-booking links (reschedule and cancel within policy, D-16); refunds from the admin to the original payment method with approval above a threshold; invoices and receipts created in Zoho Books (D-13); proposal PDFs from the print templates (D-09).

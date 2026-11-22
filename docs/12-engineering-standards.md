@@ -22,6 +22,8 @@ Data access is through Payload's local API inside server components and server a
 
 Measured on Lighthouse CI's throttled mobile profile (a mid-range Android on 4G) for the lab numbers, and in the field through Chrome UX Report data in Search Console once there is traffic. The field targets are the requirements in `01` (LCP under 2.5 s, INP under 200 ms at the 75th percentile); the lab budgets below are stricter so the field numbers hold on slower phones. Lighthouse CI runs each page three times and judges every budget on the best run, since noise on a shared CI machine only adds time (D-59).
 
+While a part is being built, Lighthouse CI reports these budgets as warnings and does not fail a run; the hardening pass that closes each milestone makes them failures again, before a release is called ready (D-80).
+
 | Budget | Public pages | Booking and account | Admin |
 | --- | --- | --- | --- |
 | Largest Contentful Paint (lab) | ≤ 2.0 s | ≤ 2.5 s | — |
