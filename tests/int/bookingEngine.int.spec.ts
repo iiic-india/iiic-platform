@@ -45,19 +45,20 @@ const checkoutKey = () => `fake-engine-${Date.now()}-${++keys}`
 
 const fresh = () => createLocalReq({}, payload)
 
+/** Removes this file's data, a run that stopped half-way included, children first. */
 async function removeTestData() {
-  if (person) {
-    await payload.delete({ collection: 'bookings', where: { person: { equals: person.id } } })
-  }
+  await payload.delete({
+    collection: 'bookings',
+    where: { 'person.fullName': { like: TAG } },
+  })
   await payload.delete({
     collection: 'calendar-connections',
     where: { calendarId: { like: TAG } },
   })
-  for (const profile of [practitioner, unconnected]) {
-    if (!profile) continue
+  for (const collection of ['availability-rules', 'availability-exceptions'] as const) {
     await payload.delete({
-      collection: 'availability-rules',
-      where: { practitioner: { equals: profile.id } },
+      collection,
+      where: { 'practitioner.publicName': { like: TAG } },
     })
   }
   await payload.delete({ collection: 'practitioners', where: { publicName: { like: TAG } } })
