@@ -189,3 +189,124 @@ The hero headline choice (I-41) · the five Object/Subject pairs (I-41) · the d
 ## 10. Acceptance (M2)
 
 The home, framework and founders' pages read as one continuous narrative at 375 px with no layout shift (CLS ≤ 0.05), the bar tracks progress, each flip works with a keyboard and reads correctly in VoiceOver, every device degrades without JavaScript, reduced motion removes all movement, a voice stays beside its section on wide screens and follows it on phones without JavaScript, the 404 returns status 404 and logs the path, and the pages meet the budgets in `12-engineering-standards.md` §2 on a throttled mobile profile.
+
+## 11. The motion kit (proposed)
+
+On 22 November 2026 IIIC's owner asked for "the best animations ever" on the website, and for the libraries and skills to make them. This section is the answer, proposed for IIIC to confirm (§11.6). The research behind it, with every source, is `research/motion-2026-11.md`.
+
+Here, the best motion is the motion a reader feels without noticing: the page changes and the header stays where it was, a press is answered at once, the bar shows how far they have read. Every item below shows where something went or what changed. Where this section differs from §2, §4 or §7, those stand until IIIC confirms it.
+
+### 11.1 The stack, in layers
+
+| Layer | What it carries | Why |
+| --- | --- | --- |
+| 1. CSS and the kit | State changes and press feedback (transitions on the kit's roles); things that appear (`@starting-style`); anything tied to the reading position (scroll-driven animations: `animation-timeline` with `scroll()` and `view()`); springs written as `linear()` curves | All of it is in Chrome, Safari and Firefox today, costs no JavaScript, runs off the main thread, needs no nonce, and one media query stops it |
+| 2. The browser's view transitions, through React's `<ViewTransition>` | The change from one page to the next | Next.js 16.4's App Router already runs a React that has it (19.3), so it costs CSS only; links within the site are Transitions and animate without configuration |
+| 3. The small scripts already in the page | The founders' reveal, the insight titles, Flip the line, the reading bar's fallback, and the 404's bar | A few hundred bytes each, inside the 6 KB the devices may use (`12` §2) |
+| 4. A library, only on the page that needs it | Motion (`motion` 14.14, MIT): `animate` from `motion/mini` (3.3 KB) or `motion/react` with `LazyMotion` and `m` (5.5 KB, features loaded on demand), loaded with `next/dynamic` on that page alone | Only for motion a person can interrupt or that follows data, such as the Map's constellation in Release 2. Nothing in the first pass needs it |
+| 5. Out | GSAP and Anime.js (three times the headroom of about 10 KB); Rive, Lottie and dotLottie (46 to 430 KB, and WebAssembly or `eval` against the policy); Three.js and React Three Fiber (over the whole budget); Lenis and every smooth-scroll library (§2 rule 2); NumberFlow (counters are ruled out, §6); Theatre.js (public development paused); AutoAnimate (no list on a public page needs it); the animated component collections (built on Tailwind and their own look; inspiration only) | Each is too heavy, weakens the policy, or does what this document rules out |
+
+### 11.2 The motion language
+
+The kit's roles are the vocabulary; nothing defines a parallel set.
+
+| Role | Value | Used for |
+| --- | --- | --- |
+| `--iiic-motion-fast` | 150 ms | Press feedback, hover, colour, anything leaving, the phone menu arriving |
+| `--iiic-motion-base` | 260 ms | A state change or something arriving: the next page's content, an answer opening, the 404's bar |
+| `--iiic-motion-slow` | 420 ms | The counselling register's own control transitions (the kit's); no device uses it |
+| `--iiic-motion` | the register's role | What the kit's own controls use; 0 ms under reduced motion |
+| `--iiic-ease` | `cubic-bezier(.2, .7, .2, 1)` | Everything that arrives, leaves or changes state. It is an ease-out: it moves at once and settles slowly |
+| `linear` | constant speed | Progress tied to scrolling (the reading bar, the steps' rule), where the scroll itself sets the pace |
+| `--iiic-spring` (new, proposed) | `linear(0, 0.042, 0.134, 0.246, 0.361, 0.469, 0.565, 0.647, 0.717, 0.775, 0.822, 0.86, 0.89, 0.914, 0.933, 0.948, 0.96, 0.969, 0.976, 0.982, 0.986, 0.989, 0.992, 0.994, 0.995, 0.996, 0.997, 0.998, 0.998, 0.999, 0.999, 0.999, 1)` over 480 ms | A mark that travels to a new place (the insight marker, the flip's bar). A critically damped spring (damping 1.0, response 0.3 s, Apple's model), sampled into 33 points: no overshoot, 90% of the way by about 190 ms, settled within 0.1% at 480 ms |
+
+One spring is enough. A second, bouncier preset (damping 0.8: 1.4% overshoot over 450 ms) was generated and left out: overshoot belongs to motion that follows a flick or a throw, and nothing on the public pages is thrown.
+
+How values are chosen:
+
+- `transform` and `opacity` only. `height` only where an answer opens (§11.4, item 6), where there is no transform that does it.
+- Nothing starts from `scale(0)`; press feedback is `scale(.97)` on a button and `scale(.985)` on a card, a larger surface.
+- Leaving is faster than arriving: 150 ms out, 260 ms in.
+- A transition, never a keyframe animation, on anything a person can press twice in a second, so it turns back from where it is.
+- Hover motion only under `@media (hover: hover) and (pointer: fine)`, so a tap on a phone leaves nothing lifted.
+- A stagger is 40 ms a step, on five items at most.
+- Under reduced motion nothing moves, cross-fades included. The kit already stops every transition and animation (`03-components.css`); the view-transition pseudo-elements need their own rule, because the kit's `*` selector does not reach them.
+
+### 11.3 The rules, as a checklist
+
+Every motion change passes all of these before it merges:
+
+- [ ] It shows where something went or what changed, in one sentence. Not decoration.
+- [ ] Nothing loops or plays by itself; nothing moves unless the reader scrolled, pressed or navigated. The kit's skeleton shimmer is never used on a public page.
+- [ ] Native scrolling only: no scroll-jacking, no pinning, no parallax, no smooth-scroll library. In-page links scroll smoothly only under `prefers-reduced-motion: no-preference`, and `<html>` carries `data-scroll-behavior="smooth"` so a route change still jumps to the top.
+- [ ] Nothing delays reading: the hero never animates in; nothing the reader may already see is hidden; a page's content is readable within 260 ms of a navigation.
+- [ ] One moving thing at a time, besides what the reader's own scrolling moves (the reading bar, the steps' rule).
+- [ ] Budgets (`12` §2): JavaScript ≤ 150 KB a page and ≤ 6 KB for the devices; anything beyond CSS is loaded only on the page that uses it; CSS ≤ 40 KB; LCP ≤ 2 s; CLS ≤ 0.05; TBT ≤ 200 ms; Lighthouse performance ≥ 95; no third-party request (no runtime or WebAssembly file from a CDN).
+- [ ] The policy (`12` §5): no script without the request's nonce, no `eval`, no WebAssembly; a `<style>` element added at runtime carries the nonce; styles set from JavaScript are fine.
+- [ ] Without JavaScript the page shows everything; nothing is hidden before a script runs.
+- [ ] Under reduced motion nothing moves, and the page reads the same.
+- [ ] No layout shift: only `transform` and `opacity` move; a change in height follows the reader's own press.
+- [ ] Keyboard and screen reader unchanged: an animation never moves focus or changes what is announced; a moving part that only decorates is `aria-hidden`.
+- [ ] Forced colours: a moving bar takes the system's `Highlight`, as the devices' bars already do.
+- [ ] Print: nothing that moves prints; the content is complete.
+- [ ] Where: no devices on counselling pages, booking flows, the Map, legal pages or error pages (the 404's bar is the one device there, §5.1). The kit's own control feedback (buttons, fields, the phone menu) is not a device and stays everywhere, at the register's speed.
+- [ ] The kit: light only, the yellow only on paper or white, the kit's roles for duration and easing; a change to a kit file is recorded in `decisions.md` first (D-53).
+- [ ] Tested at 320, 375, 768 and 1440 px, with reduced motion on and off, keyboard only, VoiceOver on iOS and NVDA; played at 2 to 5 times its duration to judge the feel; the CSP test and Lighthouse CI pass.
+
+### 11.4 Where motion goes
+
+Found by sweeping the public pages as built (`src/content/starter/*.ts`, `src/components/blocks/`, `src/components/site/`, `src/components/journal/`, `src/components/experience/`, the 404 and Find your path) and judging each candidate in order: should it move at all, for what, with which tool, which properties, which curve and duration, how it is interrupted, how it leaves. Ranked by how much each does for the reader. Pass 1 is the first pull request and fits inside the budgets: about 0.5 KB of JavaScript and about 2 KB of CSS, gzipped, added in all.
+
+| # | Element and page | What moves, and why | Values | Technique, cost | Without JavaScript · reduced motion | LCP · CLS | Pass |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Page to page, between the pages in the motion set: home, `/framework`, `/founders`, `/organisations` and its service pages, `/learn`, `/institute`, `/about`, `/proof`, the Journal, `/search` | The page's content changes while the header, the mark and the bar stay still: the reader sees that the place stayed and the page changed | Leaving content: `opacity` 1 → 0, 150 ms, `--iiic-ease`. Arriving content: `opacity` 0 → 1 and `translate` 0 8px → 0, 260 ms, `--iiic-ease`, no delay. Header named `site-header` and the root: group animation `none`, old snapshot `display: none`, new snapshot not animated. `::view-transition { pointer-events: none }`. Each page in the set wraps its content in `<ViewTransition enter={{ page: 'iiic-page-in', default: 'none' }} exit={{ page: 'iiic-page-out', default: 'none' }} default="none">` (in `PageAt` and the Journal's pages, never a layout); a `<Link>` whose destination is in the set carries `transitionTypes={['page']}` | React's `<ViewTransition>` (same-document view transitions), already in the page; CSS about 0.6 KB; no new JavaScript | A full page load, no animation · nothing moves (`animation: none` on every `::view-transition-*`) | None on first load (a navigation inside the page is not an LCP). No shift. Back and forward do not animate (React skips `popstate`) | 1 |
+| 2 | Everything pressable: buttons and cards that link (the doors, linked cards, Journal entries) on every page, as the kit's control feedback; the flip lines on the narrative pages | A press is answered on the instant the finger or pointer goes down, before the page changes | `:active` `transform: scale(.97)` on `.iiic-btn`, `scale(.985)` on a linked card and a flip line; `transition: transform 150ms var(--iiic-ease)`; release the same. The kit's hover lift (button −1 px, card −3 px) only under `(hover: hover) and (pointer: fine)` and only on cards that are links (`a.iiic-card`); a card that is not a link stops lifting, because a lift says "press me" | CSS, about 0.2 KB; kit change (`03-components.css`, `04-patterns.css`) | Works without JavaScript · nothing moves | None | 1 |
+| 3 | The steps' rule on home §4 and `/framework` ("How Subjective Self works") | A 4 px yellow mark fills the rule between one step and the next as the reader passes the step: the bar again, at the scale of a process | A `<span aria-hidden="true">` per step over the 2 px rule, `background: var(--iiic-mark)`, `transform: scaleY(0 → 1)`, `transform-origin: top`; each step `view-timeline: --iiic-step block`; `animation: iiic-fill linear both; animation-timeline: --iiic-step; animation-range: cover 35% cover 65%` (it fills while the step crosses the middle third of the window; tune by feel); inside `@supports (animation-timeline: view())` and `prefers-reduced-motion: no-preference`; a new device flag in `src/lib/experience/narrative.ts`, so a steps list on a counselling page never fills | CSS scroll-driven animation; CSS about 0.3 KB; no JavaScript | The rule as today, without the mark · the rule as today | None: the mark is drawn over a rule that is already there | 1 |
+| 4 | The insight titles on `/founders` (wide screens, from 1100 px) | One mark glides from the title just read to the next, instead of one shrinking while another grows: the reader sees which card they moved to | One `<span aria-hidden="true">` in the titles' list, 4 px wide and 1 px tall, `transform: translateY(<link's top + 6> px) scaleY(<link's height − 12>)` set on the mark itself from `InsightNav` when the current card changes (and on resize), `transform-origin: top`, `transition: transform 480ms var(--iiic-spring)`; the first placement without a transition | The existing client component; about 0.3 KB more | No mark, titles as plain links (as today) · the mark jumps | None | 1 |
+| 5 | The phone menu (every page's header below 851 px, the kit's breakpoint) | The menu comes down from the header it belongs to instead of appearing | Opening: `opacity` 0 → 1 and `translate` 0 −8px → 0, 150 ms, `--iiic-ease`, by `@starting-style` on `.iiic-nav-toggle[aria-expanded="true"] + .iiic-nav`; closing: at once, so a link followed from the menu is not held up | CSS, about 0.1 KB; kit change (`04-patterns.css`); the kit's control feedback, not a device | (see the note after this table) · nothing moves | The header grows at the reader's own press, which is not counted as a shift | 1 |
+| 6 | The questions on the service pages (`/organisations/*`) and any FAQ outside the counselling register | An answer opens down from its question instead of snapping in | `.iiic-accordion` in the FAQ section: `interpolate-size: allow-keywords`; `::details-content { block-size: 0; overflow: clip; opacity: 0; transition: block-size 260ms var(--iiic-ease), opacity 150ms var(--iiic-ease), content-visibility 260ms allow-discrete }`; `[open]::details-content { block-size: auto; opacity: 1 }`. Animates in Chrome; Safari and Firefox open at once, as today, until they support `interpolate-size` | CSS, about 0.2 KB, in `blocks.module.css` | `<details>` opens without JavaScript · opens at once | A change in height at the reader's press, not counted | 1 |
+| 7 | In-page links: the insight titles, "Show both", the footer's Contact (`/about#contact`), the skip link | The page scrolls to where the link points instead of jumping, so the reader sees which way they went | `html { scroll-behavior: smooth }` under `prefers-reduced-motion: no-preference`; `data-scroll-behavior="smooth"` on `<html>` (Next.js 16 then turns it off for route changes); `scroll-padding-top` stays the kit's 88 px | CSS and one attribute; asked for in §7 and not yet built | The same · jumps (the kit sets `scroll-behavior: auto`) | None | 1 |
+| 8 | Journal articles | The reading bar, which §3.1 already gives them | Add `/journal/<slug>` to the narrative paths in `src/lib/experience/narrative.ts` | The built device; no new code beyond the path test | As §3.1 | As §3.1 | 1 |
+| 9 | Flip the line on `/framework` and home | "Flip all" turns the lines one after another, so the reader sees each line turn; the bar travels like a thing with weight; the cross-fade reads as one line changing, not two lines overlapping | While "Flip all" is pressed the list carries `data-cascade`: `transition-delay` 0, 40, 80, 120, 160 ms on the five lines' faces and bars (a single press clears it). The bar: `transition: transform 480ms var(--iiic-spring)`. The faces: the leaving face also `filter: blur(2px)`, the arriving one from `blur(2px)` to none, within the 200 ms cross-fade; drop the blur if Safari shows a stutter | CSS and about 0.1 KB in `FlipLines` | The table, as today · flips at once | None | 2 |
+| 10 | The current page in the header (wide screens) | During a page change the marked link glides from the old page's name to the new one: where the reader went, in the navigation | First, a wayfinding fix worth making by itself: the header's links carry `aria-current="page"` (the kit already styles it; today nothing sets it), from a small client component reading the path (about 0.4 KB). Then `view-transition-name: iiic-nav-current` on that link only while a `page` transition runs (`:root:active-view-transition-type(page)`), group `animation-duration: 260ms`, `--iiic-ease` | View transitions; CSS about 0.1 KB | The current link marked, no glide · no glide | None | 2 |
+| 11 | The Journal's topics | On a change of topic the filled chip slides to the chosen one | `view-transition-name: iiic-topic-current` on `.topics a[aria-current]`, 260 ms, `--iiic-ease` | View transitions; CSS only | As today · no slide | None | 2 |
+| 12 | The 404 page (built with the full page in M2, §5.1) | The bar under "Your line" grows with the words written | `transform: scaleX(min(words / 12, 1))` set on the bar from the field's input handler, once a frame; `transition: transform 260ms var(--iiic-ease)`, so each word turns it from where it is; `aria-hidden`; not on the plain counselling 404 | Inside the 404's own script | The field works, the bar stays at zero · the bar does not grow | None | With the 404 |
+| 13 | Voices beside the text and "In their words" (§3.8, §4 row 6) | As already specified: each voice reveals once | As §3.8: opacity and an 8 px rise, 320 ms, `--iiic-ease`, held back only when wholly below the window, as the founders' chapters are | The founders' reveal, reused | Shown · shown | None | With the reviews |
+| 14 | The Map's constellation (Release 2, §3.7) | Points settle into place as the person's answers place them | Points move with `--iiic-spring`; drawn once, in the order answered; SVG first; Motion's mini `animate` or the Web Animations API, loaded only on the result page; OGL only if SVG cannot draw it | Layer 4, its own page | A drawn image · drawn complete, nothing moves | Its own budget check | Release 2 |
+
+On item 5: without JavaScript the phone menu does not open at all today, because the kit shows the menu only when the button says it is open, and the button needs a script. That is outside motion and is noted for the build plan: the footer's links are the way round it for now.
+
+**Page-to-page navigation: yes, as a quiet cross-fade inside the page.** It is the one motion a visitor meets on every visit, and the one that answers "where am I": the header, the mark and the bar hold still while the content changes under them. It is done with React's `<ViewTransition>`, which the App Router already ships, so it costs about 0.6 KB of CSS and no JavaScript. It runs only between pages in the motion set. A link into a counselling page, a booking flow, the Map, a legal page or an error page carries no type, so nothing moves; a counselling page has no wrapper, so leaving it moves nothing on it either. No slides: the site has no forward and back of its own, the browser's back button would not animate anyway, and a slide across the whole window is the motion most likely to make someone unwell. The cross-document rule (`@view-transition`) is not used: Next.js's links change the page inside the document, so it would almost never run, and Firefox does not support it.
+
+**The doors: still when they arrive, answering when pressed, no morph.** The doors are the page's main choice, and on a wide screen they are often already in view when the page loads; a reveal would hide or replay the very thing the reader came to choose, so §4's "Cards reveal once (stagger 60 ms)" is struck. They keep the kit's 3 px lift on a fine pointer (§3.4's "2 px" is corrected to the kit's value) and gain the press in item 2. The page a door opens arrives with the site's cross-fade, except the counselling door, which opens with no motion at all. A door that grows into its page was considered and rejected: one of the three doors leads to counselling, where nothing may move, and a card's sentence stretching into a different heading reads as distortion, not continuity.
+
+### 11.5 What does not move, and why
+
+| Candidate | Why not |
+| --- | --- |
+| Any hero entrance (a fade, a rise, text split into words or letters) | The hero is the page's LCP and the first thing read; animating it in delays both |
+| Sections that fade up as they scroll in, on every page | It hides what is there, replays on every page and reads as a template. §3.5 and §3.8 keep reveals for the founders' chapters and the voices |
+| §4's "Steps reveal once" | Replaced by the steps' rule filling (item 3), which hides nothing |
+| A door growing into its page | See the verdict on the doors |
+| Slides between pages, forward and back | No forward and back of the site's own; the back button would not animate; the strongest trigger of motion sickness |
+| The bar on each marked heading drawing itself in | Decoration, a dozen times a page, competing with the reading bar |
+| The logo drawing itself in the header (Q9) | Stays optional and IIIC's call; the header is the one thing that stays still across a page change, and the mark is an image, not lines that can be drawn |
+| Figures counting up (NumberFlow) | §6 rules it out; the rupee figures never animate |
+| Parallax, pinning, smooth-scroll libraries (Lenis) | §2 rule 2 |
+| Find your path's choice cards | Step 0 of the Map, which carries no devices; choosing should register at once. The kit's own 150 ms border and dot transitions stay |
+| "Take it with you" reading "Copied" | The change of words is the confirmation, announced to screen readers; motion would add nothing |
+| Search results changing as a person types | Changes many times a second; motion would slow reading |
+| The Journal's list entering with a stagger | It would replay on every list page; the page's cross-fade is enough |
+| A WebGL or gradient visual, cursor effects | No hero artwork, no gradients (§2 rule 4, the platform plan); over the budget |
+
+### 11.6 Proposed decisions
+
+For IIIC to confirm in `decisions.md`:
+
+1. **The motion kit's layers (§11.1).** CSS first, view transitions through React, and a library only on the page that needs it, named by a decision; §7's "No animation library" becomes "no animation library on a page unless that page needs it and a decision names it". Reason: the platform now does what the libraries were for, at no cost to the budget.
+2. **React 19.3.** Move the pin from 19.2.x to 19.3.x (stable since 9 September 2026), with its types, on a branch with the full test suite. Reason: the App Router already runs Next.js's React 19.3 build, and `<ViewTransition>` is typed only in 19.3.
+3. **Page transitions (§11.4 item 1 and its verdict).** A cross-fade inside the page between the pages of the motion set, the header still, nothing to or from counselling, booking, the Map, legal or error pages; no cross-document rule. Reason: it shows that the place stayed and the page changed, for 0.6 KB of CSS.
+4. **Kit changes (D-53).** `--iiic-spring` added to `01-tokens.css`; button press `scale(.97)` in `03-components.css`; card lift only on linked cards and fine pointers, card press `scale(.985)` and the phone menu's entrance in `04-patterns.css`. Reason: press feedback and honest hover belong to every page that uses the kit, not to one stylesheet.
+5. **Corrections to this document.** §2 rule 3's "durations 200–400 ms" becomes the kit's roles (150, 260 and 420 ms); §3.4's lift is the kit's 3 px; §4 loses the doors' reveal and the steps' reveal, and gains the steps' rule (item 3). Reason: the kit is the design system, and the struck reveals hide what the reader came for.
+6. **Smooth in-page scrolling (§11.4 item 7)** with `data-scroll-behavior="smooth"` on `<html>`. Reason: §7 asks for it, and Next.js 16 needs the attribute to keep route changes instant.
+7. **Not to be proposed again without new facts:** GSAP, Anime.js, Rive, Lottie and dotLottie, Three.js and React Three Fiber, Lenis, NumberFlow, Theatre.js, and the animated component collections. Reason: `research/motion-2026-11.md` §2 measured each against the budgets and the policy.
