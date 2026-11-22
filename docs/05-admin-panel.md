@@ -143,7 +143,7 @@ Legal information (proprietor's legal name, trade name, address, GSTIN or regist
 
 The implementation approach (which admin framework, which screens are generated and which are custom) is decided in `07-stack-and-integrations.md`.
 
-## The component stack (proposed)
+## The component stack (D-78)
 
 Proposed on 22 November 2026, after IIIC's owner asked for the console to be built from "the best components available". It becomes a decision when IIIC confirms it in `decisions.md`. The comparison, the sources, what was rejected and what could not be checked are in `research/admin-ui-kit-2026-11.md`. Versions are the latest on that date, pinned exactly. Every library is MIT, ISC or Apache-2.0; nothing is paid for.
 

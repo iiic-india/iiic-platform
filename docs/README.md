@@ -34,8 +34,8 @@ Everything needed to build the IIIC platform with Claude Code: what the product 
 | 14 | `14-technical-direction.md` | The CTO's brief: direction, registers, what to monitor, what to grow, the next 90 days, risks | The CTO, monthly |
 | 15 | `15-operating-system.md` | Every system IIIC runs on, beyond the website: what each does for the business, what is live, what comes next, the tool for each job checked in November 2026, the AI concept (parked), the roadmap by phase, the review cadence, decisions to propose | Planning a phase; the monthly review |
 | — | `content/` | `copy-architecture.md` (every page, section by section) and `sources/` (IIIC's texts, brochures, feedback, the copy system, the old site, verbatim) | M2 |
-| — | `decisions.md` | D-A to D-C and D-01 to D-70 with status | Every milestone |
-| — | `research/` | The four research reports behind `07` and `08` (messaging, architecture, compliance, payments), verbatim, with sources, October 2026 | When a choice is questioned |
+| — | `decisions.md` | D-A to D-C and D-01 to D-78 with status | Every milestone |
+| — | `research/` | The four research reports behind `07` and `08` (messaging, architecture, compliance, payments), verbatim, with sources, October 2026; and the research behind the admin console's components (D-78), November 2026 | When a choice is questioned |
 | — | `prototype-prompt.md` | Optional: a clickable HTML prototype to test the flows with real people before M3 | Before M1 (optional) |
 
 ## The brand kit
