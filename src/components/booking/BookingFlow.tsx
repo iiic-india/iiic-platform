@@ -145,12 +145,11 @@ export function BookingFlow({
   const [sending, setSending] = useState(false)
 
   const heading = useRef<HTMLHeadingElement>(null)
-  const firstRender = useRef(true)
+  // The new step's heading takes the focus; the first step's does not, on arrival.
+  const shownStep = useRef<Step>(step)
   useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false
-      return
-    }
+    if (shownStep.current === step) return
+    shownStep.current = step
     heading.current?.focus()
   }, [step])
 

@@ -82,10 +82,12 @@ test.describe('Booking', () => {
     } else {
       await page.getByLabel('Company').fill('Fake Company')
     }
-    const consent = page.getByRole('checkbox', { name: FAKE.consentText })
-    await expect(consent).not.toBeChecked()
-    await page.getByText(FAKE.consentText).click()
-    await expect(consent).toBeChecked()
+    // Booking messages come first; the text is the one in force (the seed's, unless a newer one).
+    const consents = page.getByRole('group', { name: 'Your consent' })
+    const boxes = consents.getByRole('checkbox')
+    for (const box of await boxes.all()) await expect(box).not.toBeChecked()
+    await consents.locator('label.iiic-check').first().click()
+    await expect(boxes.first()).toBeChecked()
   }
 
   /** A session up to its payment step; returns the reference and the start. */
