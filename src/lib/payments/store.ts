@@ -97,7 +97,7 @@ export async function slotTakenByAnother(
     sql`SELECT 1 FROM "bookings"
         WHERE "practitioner_id" = ${practitioner} AND "id" <> ${booking.id}
           AND "starts_at" IS NOT NULL AND "ends_at" IS NOT NULL
-          AND "status"::text = ANY(${[...SLOT_BLOCKING_STATUSES]}::text[])
+          AND "status"::text IN ${[...SLOT_BLOCKING_STATUSES]}
           AND tstzrange("starts_at", "ends_at", '[)')
               && tstzrange(${booking.startsAt}::timestamptz, ${booking.endsAt}::timestamptz, '[)')
         LIMIT 1`,
