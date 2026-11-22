@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 
+import styles from '@/components/search/search.module.css'
 import { SearchForm } from '@/components/search/SearchForm'
 import { SearchResults } from '@/components/search/SearchResults'
-import styles from '@/components/search/search.module.css'
 import { MainLinks } from '@/components/site/MainLinks'
 import { SEARCH_COPY } from '@/lib/search/copy'
 import { countNoResults, searchSite } from '@/lib/search/query'
