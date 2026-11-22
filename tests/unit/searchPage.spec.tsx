@@ -89,7 +89,14 @@ describe('/search', () => {
     await draw('self', found('self'))
     expect(searchSite).toHaveBeenCalledWith('self')
     expect(screen.getByLabelText(SEARCH_COPY.label).getAttribute('value')).toBe('self')
-    expect(screen.getByText(/2 results for/).textContent).toBe('2 results for “self”')
+    expect(screen.getByText(/results for/).textContent).toBe('Two results for “self”')
+    // One to nine in words, 10 and up in figures (VOICE.md).
+    expect([1, 9, 10, 12].map(SEARCH_COPY.found)).toEqual([
+      'One result for',
+      'Nine results for',
+      '10 results for',
+      '12 results for',
+    ])
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
     expect(headings).toEqual(['Pages', 'Questions and answers'])
     const pages = screen.getByRole('region', { name: 'Pages' })
