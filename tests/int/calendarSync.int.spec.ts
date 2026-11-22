@@ -13,6 +13,8 @@ import type {
 } from '@/payload-types'
 import config from '@/payload.config'
 
+import { removeQueuedJobs } from '../helpers/queuedJobs'
+
 // The calendar slice against the real database (D-22, B2, B7, B14; docs/16 §7, §11), with the
 // in-memory FakeCalendar in Google's place: a booking's entry written once, moved on a
 // reschedule, moved across practitioners, removed on cancellation; busy times merged, clipped
@@ -54,11 +56,21 @@ const at = (minutes: number) => new Date(Date.UTC(2099, 2, 2, 4, 30) + minutes *
 const server = { overrideAccess: true, context: { calendarSync: true } } as const
 
 async function removeTestData() {
+  const { docs: bookings } = await payload.find({
+    collection: 'bookings',
+    where: { reference: { like: REF } },
+    pagination: false,
+    depth: 0,
+  })
   await payload.delete({ collection: 'bookings', where: { reference: { like: REF } }, ...server })
   const { docs: profiles } = await payload.find({
     collection: 'practitioners',
     where: { publicName: { like: TAG } },
     pagination: false,
+  })
+  await removeQueuedJobs(payload, {
+    bookingIds: bookings.map((booking) => booking.id),
+    practitionerIds: profiles.map((profile) => profile.id),
   })
   for (const profile of profiles) {
     await payload.delete({

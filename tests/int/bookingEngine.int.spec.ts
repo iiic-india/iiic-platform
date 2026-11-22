@@ -12,6 +12,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Booking, Person, Practitioner, Service, User } from '@/payload-types'
 import config from '@/payload.config'
 
+import { removeQueuedJobs } from '../helpers/queuedJobs'
+
 vi.mock('server-only', () => ({}))
 
 const api = await import('@/lib/booking/api')
@@ -47,6 +49,24 @@ const fresh = () => createLocalReq({}, payload)
 
 /** Removes this file's data, a run that stopped half-way included, children first. */
 async function removeTestData() {
+  const [bookings, profiles] = await Promise.all([
+    payload.find({
+      collection: 'bookings',
+      where: { 'person.fullName': { like: TAG } },
+      pagination: false,
+      depth: 0,
+    }),
+    payload.find({
+      collection: 'practitioners',
+      where: { publicName: { like: TAG } },
+      pagination: false,
+      depth: 0,
+    }),
+  ])
+  await removeQueuedJobs(payload, {
+    bookingIds: bookings.docs.map((booking) => booking.id),
+    practitionerIds: profiles.docs.map((profile) => profile.id),
+  })
   await payload.delete({
     collection: 'bookings',
     where: { 'person.fullName': { like: TAG } },

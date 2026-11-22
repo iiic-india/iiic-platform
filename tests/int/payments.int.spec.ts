@@ -21,6 +21,8 @@ import type {
 } from '@/payload-types'
 import config from '@/payload.config'
 
+import { removeQueuedJobs } from '../helpers/queuedJobs'
+
 vi.mock('server-only', () => ({}))
 
 // The payments module against the real Postgres (docs/16 §5, §11): each gateway event processed
@@ -69,11 +71,16 @@ async function removeTestData() {
     depth: 0,
   })
   const bookingIds = bookings.map((booking) => booking.id)
-  for (const id of bookingIds) {
-    await payload.db.drizzle.execute(
-      sql`DELETE FROM "payload_jobs" WHERE "input"->>'bookingId' = ${String(id)}`,
-    )
-  }
+  const { docs: profiles } = await payload.find({
+    collection: 'practitioners',
+    where: { publicName: { like: TAG } },
+    pagination: false,
+    depth: 0,
+  })
+  await removeQueuedJobs(payload, {
+    bookingIds,
+    practitionerIds: profiles.map((profile) => profile.id),
+  })
   await payload.delete({ collection: 'gateway-events', where: { eventId: { like: 'fake' } } })
   if (bookingIds.length) {
     await payload.delete({ collection: 'refunds', where: { booking: { in: bookingIds } } })
@@ -91,7 +98,8 @@ function book(status: Booking['status'], from: number, extra: Partial<Booking> =
   return payload.create({
     collection: 'bookings',
     data: {
-      reference: `${REF}${Date.now()}-${++made}`,
+      // Within the field's 20 characters, as the IIIC-S-24117 form is (src/lib/booking/reference.ts).
+      reference: `${REF}${(Date.now() % 1_000_000).toString(36)}-${++made}`,
       type: 'session',
       status,
       paymentStatus: 'unpaid',

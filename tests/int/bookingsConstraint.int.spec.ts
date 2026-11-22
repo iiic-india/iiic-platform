@@ -41,7 +41,8 @@ function book(
   return payload.create({
     collection: 'bookings',
     data: {
-      reference: `${REF}${Date.now()}-${++made}`,
+      // Within the field's 20 characters, as the IIIC-S-24117 form is (src/lib/booking/reference.ts).
+      reference: `${REF}${(Date.now() % 1_000_000).toString(36)}-${++made}`,
       type: 'session',
       status,
       service: service.id,
@@ -72,6 +73,17 @@ async function rawInsert(practitioner: Practitioner, from: number, to: number, s
 beforeAll(async () => {
   payload = await getPayload({ config })
   await removeTestData()
+  // An owner first: on an empty table the first account becomes the owner, and a profile's staff
+  // account must be a practitioner's (src/collections/Practitioners.ts).
+  await payload.create({
+    collection: 'users',
+    data: {
+      name: 'Fake owner',
+      email: `${TAG}.owner@example.invalid`,
+      password: 'test-only-password-bookings',
+      roles: ['owner'],
+    },
+  })
   practitionerUser = await payload.create({
     collection: 'users',
     data: {

@@ -336,8 +336,9 @@ describe('the 404 log', () => {
     await db().execute(
       sql`UPDATE "missing_pages" SET "last_seen" = now() - interval '181 days' WHERE "path" = ${stale}`,
     )
-    await payload.jobs.queue({ task: 'O5-purge-missing-pages', input: {} })
-    await payload.jobs.run()
+    // This job only: the queue may hold other files' jobs, which are not what this test runs.
+    const job = await payload.jobs.queue({ task: 'O5-purge-missing-pages', input: {} })
+    await payload.jobs.runByID({ id: job.id })
     expect(await entry(stale)).toBeUndefined()
     expect(await entry(fresh)).toBeDefined()
     // Run again, it finds nothing more to remove.
