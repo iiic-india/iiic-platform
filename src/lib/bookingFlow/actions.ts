@@ -74,6 +74,8 @@ function fromBooking(error: { code: string; reason?: string }): ActionError {
       return { code: error.code }
     case 'not-allowed':
       return { code: 'not-allowed', reason: error.reason }
+    case 'started':
+      return { code: 'not-allowed', reason: 'started' }
     case 'invalid-input':
       return { code: 'invalid-input', fields: [] }
     default:

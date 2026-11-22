@@ -9,8 +9,8 @@ import { emit } from '@/lib/booking/emit'
 import { inTransaction, keepOk } from '@/lib/booking/guard'
 import { newManageToken } from '@/lib/booking/tokens'
 import { createBooking } from '@/lib/booking/write'
-import { err, ok, type Result } from '@/lib/result'
 import { execute } from '@/lib/payments/store'
+import { err, ok, type Result } from '@/lib/result'
 
 /**
  * A place at an info session (docs/03 F3, `info`; F6): a fixed-time session with a capacity, free,

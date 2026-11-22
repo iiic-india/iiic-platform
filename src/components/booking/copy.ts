@@ -150,6 +150,7 @@ export const PAY_COPY = {
   heading: 'Pay for your session',
   held: (time: string) => `Your time is held for ${time}.`,
   heldHelp: 'If the time runs out before you pay, it is released for someone else.',
+  lastMinute: 'One minute is left to pay before the time is released.',
   total: 'Total',
   pay: (amount: string) => `Pay ${amount}`,
   opening: 'Opening payment…',

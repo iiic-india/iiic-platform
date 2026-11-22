@@ -57,21 +57,20 @@ export function PayStep({
   const [phase, setPhase] = useState<Phase>('ready')
   const [holdEnd, setHoldEnd] = useState(initialHoldEnd)
   const [left, setLeft] = useState(() => holdSecondsLeft(initialHoldEnd, new Date()))
-  const [announce, setAnnounce] = useState('')
   const polling = useRef(false)
   const message = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const tick = () => setLeft(holdSecondsLeft(holdEnd, new Date()))
-    tick()
-    const timer = window.setInterval(tick, 1000)
+    const timer = window.setInterval(() => setLeft(holdSecondsLeft(holdEnd, new Date())), 1000)
     return () => window.clearInterval(timer)
   }, [holdEnd])
 
-  // A screen reader hears the hold twice, not every second: at one minute and at its end.
-  useEffect(() => {
-    if (left === 60) setAnnounce(PAY_COPY.held('1:00'))
-  }, [left])
+  // A screen reader hears the hold once more, not every second: in its last minute; its end is
+  // the expiry alert.
+  const announce = left > 0 && left <= 60 ? PAY_COPY.lastMinute : ''
+  // A hold that has run out ends the chance to pay, whatever the page was showing.
+  const shown: Phase =
+    left === 0 && (phase === 'ready' || phase === 'failed' || phase === 'down') ? 'expired' : phase
 
   const settle = useCallback(
     (state: BookingState): boolean => {
@@ -113,15 +112,10 @@ export function PayStep({
     [reference, settle],
   )
 
+  // The message that replaces the pay button takes the focus, so the person hears it.
   useEffect(() => {
-    if (phase !== 'failed' && phase !== 'down' && phase !== 'lost') message.current?.focus()
-  }, [phase])
-
-  useEffect(() => {
-    if (left === 0 && (phase === 'ready' || phase === 'failed' || phase === 'down')) {
-      setPhase('expired')
-    }
-  }, [left, phase])
+    if (shown !== 'ready' && shown !== 'opening' && shown !== 'fake') message.current?.focus()
+  }, [shown])
 
   async function pay() {
     setPhase('opening')
@@ -174,7 +168,7 @@ export function PayStep({
     void poll(true)
   }
 
-  const canPay = left > 0 && (phase === 'ready' || phase === 'failed' || phase === 'down')
+  const canPay = left > 0 && (shown === 'ready' || shown === 'failed' || shown === 'down')
 
   return (
     <div className="iiic-panel">
@@ -195,19 +189,19 @@ export function PayStep({
       ) : null}
 
       <div ref={message} tabIndex={-1}>
-        {phase === 'waiting' ? <p role="status">{PAY_COPY.waiting}</p> : null}
-        {phase === 'opening' ? <p role="status">{PAY_COPY.opening}</p> : null}
-        {phase === 'failed' ? (
+        {shown === 'waiting' ? <p role="status">{PAY_COPY.waiting}</p> : null}
+        {shown === 'opening' ? <p role="status">{PAY_COPY.opening}</p> : null}
+        {shown === 'failed' ? (
           <div className="iiic-alert iiic-alert-yellow" role="alert">
             {PAY_COPY.failed}
           </div>
         ) : null}
-        {phase === 'down' ? (
+        {shown === 'down' ? (
           <div className="iiic-alert iiic-alert-yellow" role="alert">
             {PAY_COPY.gatewayDown}
           </div>
         ) : null}
-        {phase === 'expired' ? (
+        {shown === 'expired' ? (
           <div className="iiic-alert iiic-alert-yellow" role="alert">
             <p>{PAY_COPY.expired}</p>
             <a className="iiic-btn iiic-btn-primary" href={startAgainHref}>
@@ -215,7 +209,7 @@ export function PayStep({
             </a>
           </div>
         ) : null}
-        {phase === 'lost' ? (
+        {shown === 'lost' ? (
           <div className="iiic-alert iiic-alert-yellow" role="alert">
             <p>{PAY_COPY.slotLost}</p>
             <a className="iiic-btn iiic-btn-primary" href={startAgainHref}>
@@ -228,12 +222,12 @@ export function PayStep({
       {canPay ? (
         <div className="iiic-row">
           <button className="iiic-btn iiic-btn-primary" type="button" onClick={pay}>
-            {phase === 'ready' ? PAY_COPY.pay(amount ?? '') : PAY_COPY.tryAgain}
+            {shown === 'ready' ? PAY_COPY.pay(amount ?? '') : PAY_COPY.tryAgain}
           </button>
         </div>
       ) : null}
 
-      {phase === 'fake' ? (
+      {shown === 'fake' ? (
         <fieldset className="iiic-fieldset">
           <legend>{PAY_COPY.testGateway}</legend>
           <div className="iiic-row">
