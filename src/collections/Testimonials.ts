@@ -56,7 +56,7 @@ const merged = (data: Data | undefined, originalDoc: unknown): Data =>
  * (docs/04); a review without a chosen name form takes the default, initials for counselling
  * (D-37).
  */
-export const prepareReview: CollectionBeforeValidateHook = ({ data, originalDoc }) => {
+export const prepareReview: CollectionBeforeValidateHook = async ({ data, originalDoc }) => {
   const review = merged(data as Data, originalDoc)
   if ((originalDoc as Data | undefined)?.status === 'withdrawn' && review.status !== 'withdrawn') {
     refuse([{ path: 'status', message: REVIEW_MESSAGES.withdrawnStays }])
@@ -128,7 +128,8 @@ export const checkReview: CollectionBeforeChangeHook = async ({
   } else if (status === 'published' && before !== 'published' && !owner) {
     problems.push({ path: 'status', message: REVIEW_MESSAGES.ownerPublishes })
   }
-  if (reached(status, 'approved')) {
+  const unlinked = problems.some(({ path }) => path === 'person' || path === 'consent')
+  if (reached(status, 'approved') && !unlinked) {
     const problem = await consentProblem(req, review)
     if (problem) problems.push(problem)
   }

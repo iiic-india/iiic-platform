@@ -16,6 +16,7 @@ import { Posts } from '@/collections/Posts'
 import { Practitioners } from '@/collections/Practitioners'
 import { redirects } from '@/collections/Redirects'
 import { Services } from '@/collections/Services'
+import { Testimonials } from '@/collections/Testimonials'
 import { Topics } from '@/collections/Topics'
 import { Users } from '@/collections/Users'
 import { Settings } from '@/globals/Settings'
@@ -39,7 +40,7 @@ vi.mock('@/lib/content/revalidate', async (importOriginal) => ({
 // documents only, never a draft; `not in force` means only consent texts not yet in force;
 // `active` means active documents only (a service offered now, a practitioner's profile shown on
 // the site).
-type Outcome = 'all' | 'self' | 'published' | 'not in force' | 'active' | 'none'
+type Outcome = 'all' | 'self' | 'published' | 'not in force' | 'active' | 'shown' | 'none'
 type Requester = Role | 'anonymous' | 'deactivated owner'
 type Expected = Record<string, Record<Requester, Outcome>>
 
@@ -174,6 +175,18 @@ const EXPECTED: Record<keyof typeof COLLECTIONS, Expected> = {
     update: row({ owner: 'all', staff: 'none' }),
     delete: row({ owner: 'none', staff: 'none' }),
   },
+  // Reviews (docs/05, Proof): the operator moderates, owners publish (the collection checks who
+  // publishes); a visitor, and every other role, reads a published review's card only.
+  testimonials: {
+    read: {
+      ...row({ owner: 'all', staff: 'shown', operator: 'all' }),
+      anonymous: 'shown',
+      'deactivated owner': 'shown',
+    },
+    create: row({ owner: 'all', staff: 'none', operator: 'all' }),
+    update: row({ owner: 'all', staff: 'none', operator: 'all' }),
+    delete: row({ owner: 'all', staff: 'none' }),
+  },
 }
 
 /** The collection the redirects plugin adds (src/collections/Redirects.ts). */
@@ -225,6 +238,11 @@ async function outcome(access: Access | undefined, user: ReturnType<typeof reque
     expect(result).toEqual({ active: { equals: true } })
     return 'active'
   }
+  if ('status' in result) {
+    // A review's own status, not a draft's: the published reviews only.
+    expect(result).toEqual({ status: { equals: 'published' } })
+    return 'shown'
+  }
   expect(result).toEqual({ id: { equals: USER_ID } })
   return 'self'
 }
@@ -244,6 +262,7 @@ const COLLECTIONS = {
   services: Services,
   posts: Posts,
   topics: Topics,
+  testimonials: Testimonials,
 } as const
 
 describe('access by role (docs/05)', () => {
@@ -438,6 +457,61 @@ describe('the fields a visitor never reads (docs/04, docs/05)', () => {
     // The public profile's fields stay public.
     for (const name of ['publicName', 'photo', 'credentials', 'bio', 'services', 'active']) {
       expect(accessOf(practitioners.get(name)), name).toBeUndefined()
+    }
+  })
+
+  const testimonials = fieldsOf(Testimonials.fields)
+
+  it('testimonials: the record behind the card is the moderating staff’s, never a visitor’s', async () => {
+    for (const name of [
+      'person',
+      'intakeRef',
+      'themes',
+      'translator',
+      'source',
+      'receivedOn',
+      'originalReference',
+      'screening',
+      'consent',
+      'notes',
+    ]) {
+      const field = testimonials.get(name)
+      expect(field, name).toBeDefined()
+      for (const who of [...ROLES, 'anonymous', 'deactivated owner'] as const) {
+        const user = requester(who)
+        const staff = ['owner', 'operator'].includes(who)
+        expect(await fieldAllows(accessOf(field)?.read, user), `${name}: ${who} reads`).toBe(staff)
+        expect(await fieldAllows(accessOf(field)?.update, user), `${name}: ${who}`).toBe(staff)
+      }
+      expect(await fieldAllows(accessOf(field)?.read, requester('owner', 'local-jwt'))).toBe(false)
+    }
+  })
+
+  it('testimonials: the organisation, translation, excerpt, photograph and link show only when agreed', async () => {
+    const reads = (name: string, doc: Record<string, unknown>) =>
+      accessOf(testimonials.get(name))?.read?.({ req: { user: null }, doc } as never)
+    for (const [name, flag] of [
+      ['organisation', 'showOrganisation'],
+      ['translation', 'translationApproved'],
+      ['excerpt', 'excerptApproved'],
+      ['photo', 'photoAgreed'],
+      ['profileLink', 'profileLinkAgreed'],
+    ] as const) {
+      expect(await reads(name, { [flag]: false }), name).toBe(false)
+      expect(await reads(name, {}), name).toBe(false)
+      expect(await reads(name, { [flag]: true }), name).toBe(true)
+    }
+    // The card's own fields stay public.
+    for (const name of [
+      'shownName',
+      'designation',
+      'place',
+      'programme',
+      'year',
+      'text',
+      'doors',
+    ]) {
+      expect(accessOf(testimonials.get(name))?.read, name).toBeUndefined()
     }
   })
 })
