@@ -1,39 +1,28 @@
 import { z } from 'zod'
 
-import type { ConsentPurpose } from '@/lib/privacy/purposes'
 import { toE164 } from '@/lib/phone'
+import type { ConsentPurpose } from '@/lib/privacy/purposes'
+
+import { AGE_BAND_VALUES, consentsOffered, WHO_FOR_VALUES } from './options'
+
+export {
+  AGE_BAND_VALUES,
+  consentsOffered,
+  FLOW_TYPES,
+  isFlowType,
+  REQUIRED_CONSENT,
+  suggestEmail,
+  WHO_FOR_VALUES,
+  type AgeBand,
+  type FlowType,
+} from './options'
 
 /**
  * Step 3 of the booking flow (docs/03 F3, "Details"), checked on the server before anything is
- * stored (CLAUDE.md #4, #8): what each kind of booking asks, the mobile number in E.164, an email
- * with a likely typo named, and one unticked box per consent, never bundled (docs/08 §3, §5).
- * Pure, so the rules are tested without a database; the server action calls `parseDetails`.
+ * stored (CLAUDE.md #4, #8): what each kind of booking asks, the mobile number in E.164, and one
+ * unticked box per consent, never bundled (docs/08 §3, §5). Pure, so the rules are tested without
+ * a database; the server action calls `parseDetails`.
  */
-
-export const FLOW_TYPES = ['session', 'call', 'info'] as const
-export type FlowType = (typeof FLOW_TYPES)[number]
-
-export function isFlowType(value: unknown): value is FlowType {
-  return typeof value === 'string' && (FLOW_TYPES as readonly string[]).includes(value)
-}
-
-/**
- * The consents each kind of booking offers, each a box of its own. Booking messages are the one
- * the booking needs (the confirmation, the reminders and the manage link travel by them); the
- * others are optional, and a booking never waits on them (docs/08 §5, "Forced action"). A
- * counselling booking offers no marketing consent, and nobody under 18 is offered one (docs/08
- * §3), so nothing from a counselling booking ever feeds a promotion (CLAUDE.md #3).
- */
-export const REQUIRED_CONSENT: ConsentPurpose = 'bookingCommunications'
-
-export function consentsOffered(type: FlowType, ageBand?: AgeBand | null): ConsentPurpose[] {
-  if (type === 'session' || ageBand === 'under18') return [REQUIRED_CONSENT]
-  return [REQUIRED_CONSENT, 'marketingEmail', 'marketingWhatsapp']
-}
-
-export const AGE_BAND_VALUES = ['under18', 'adult'] as const
-export type AgeBand = (typeof AGE_BAND_VALUES)[number]
-export const WHO_FOR_VALUES = ['yourself', 'family'] as const
 
 /** What a person sees when a field needs fixing: each one says what to do (docs/03 F3). */
 export const DETAIL_MESSAGES = {
@@ -49,51 +38,18 @@ export const DETAIL_MESSAGES = {
     'Tick the box about booking messages: we need it to send your confirmation and reminders.',
 } as const
 
-/**
- * Domains people often mistype, and what they meant. A suggestion only: the address is kept as
- * typed unless the person changes it.
- */
-const DOMAIN_TYPOS: Record<string, string> = {
-  'gmial.com': 'gmail.com',
-  'gmai.com': 'gmail.com',
-  'gmail.co': 'gmail.com',
-  'gmail.con': 'gmail.com',
-  'gamil.com': 'gmail.com',
-  'gnail.com': 'gmail.com',
-  'gmail.in': 'gmail.com',
-  'yaho.com': 'yahoo.com',
-  'yahoo.co': 'yahoo.com',
-  'yahooo.com': 'yahoo.com',
-  'hotmial.com': 'hotmail.com',
-  'hotmail.co': 'hotmail.com',
-  'outlok.com': 'outlook.com',
-  'outlook.co': 'outlook.com',
-  'rediffmai.com': 'rediffmail.com',
-  'redifmail.com': 'rediffmail.com',
-  'iclod.com': 'icloud.com',
-}
-
-/** The address the person probably meant, when its domain is a common typo; else null. */
-export function suggestEmail(email: string): string | null {
-  const at = email.lastIndexOf('@')
-  if (at < 1) return null
-  const domain = email.slice(at + 1).toLowerCase()
-  const meant = DOMAIN_TYPOS[domain]
-  return meant ? `${email.slice(0, at)}@${meant}` : null
-}
-
 const text = (max: number) => z.string().trim().max(max)
 const required = (max: number, message: string) => text(max).min(1, message)
 
 const Email = z
-  .string()
+  .string(DETAIL_MESSAGES.email)
   .trim()
   .toLowerCase()
   .max(254, DETAIL_MESSAGES.email)
   .pipe(z.email(DETAIL_MESSAGES.email))
 
 const Mobile = z
-  .string()
+  .string(DETAIL_MESSAGES.mobile)
   .trim()
   .max(30, DETAIL_MESSAGES.mobile)
   .transform((value, context) => {
@@ -111,15 +67,19 @@ const Tick = z
   .optional()
   .transform((value) => value !== undefined)
 
+const isTick = (value: unknown) => value === 'on' || value === true || value === 'true'
+
 const Consents = z.object({
   bookingCommunications: Tick,
   marketingEmail: Tick,
   marketingWhatsapp: Tick,
 })
 
+const Name = required(200, DETAIL_MESSAGES.fullName)
+
 const SessionDetails = z.object({
   type: z.literal('session'),
-  fullName: required(200, DETAIL_MESSAGES.fullName),
+  fullName: Name,
   mobile: Mobile,
   email: Email,
   whoFor: z.enum(WHO_FOR_VALUES, DETAIL_MESSAGES.whoFor),
@@ -130,7 +90,7 @@ const SessionDetails = z.object({
 
 const CallDetails = z.object({
   type: z.literal('call'),
-  fullName: required(200, DETAIL_MESSAGES.fullName),
+  fullName: Name,
   mobile: Mobile,
   email: Email,
   company: required(200, DETAIL_MESSAGES.company),
@@ -142,7 +102,7 @@ const CallDetails = z.object({
 
 const InfoDetails = z.object({
   type: z.literal('info'),
-  fullName: required(200, DETAIL_MESSAGES.fullName),
+  fullName: Name,
   mobile: Mobile,
   email: Email,
   consents: Consents,
@@ -176,21 +136,23 @@ export function parseDetails(
         field: issue.path.join('.') || 'type',
         message: issue.message,
       }))
-  if (parsed.success) {
-    const details = parsed.data
-    if (details.type === 'session' && details.ageBand === 'under18' && !details.guardian) {
-      errors.push({ field: 'guardian', message: DETAIL_MESSAGES.guardian })
-    }
-    if (!details.consents.bookingCommunications) {
-      errors.push({
-        field: 'consents.bookingCommunications',
-        message: DETAIL_MESSAGES.bookingCommunications,
-      })
-    }
+  const given = raw as
+    { ageBand?: unknown; guardian?: unknown; consents?: Record<string, unknown> } | null
+  if (given?.ageBand === 'under18' && !isTick(given.guardian) && (raw as { type?: unknown }).type === 'session') {
+    errors.push({ field: 'guardian', message: DETAIL_MESSAGES.guardian })
+  }
+  if (!isTick(given?.consents?.bookingCommunications)) {
+    errors.push({
+      field: 'consents.bookingCommunications',
+      message: DETAIL_MESSAGES.bookingCommunications,
+    })
   }
   if (errors.length || !parsed.success) {
     const seen = new Set<string>()
-    return { ok: false, errors: errors.filter((e) => !seen.has(e.field) && seen.add(e.field)) }
+    return {
+      ok: false,
+      errors: errors.filter((error) => !seen.has(error.field) && Boolean(seen.add(error.field))),
+    }
   }
   return { ok: true, value: parsed.data }
 }
