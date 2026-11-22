@@ -3,6 +3,8 @@ import { z } from 'zod'
 import type { ServerEnv } from '@/lib/env'
 import { err, ok, type Result } from '@/lib/result'
 
+import type { CalendarProvider } from './provider'
+
 /**
  * Whether the platform may reach Google Calendar, from the settings src/lib/env.ts validated
  * (D-22, D-23; docs/16 §7): a Workspace service account with domain-wide delegation limited to
@@ -81,6 +83,18 @@ export function googleCalendarConfig(env: CalendarEnv): Result<GoogleCalendarCon
     workspaceDomain: workspaceDomain.data,
     webhooksOn: Boolean(env.GOOGLE_CALENDAR_WEBHOOK_TOKEN),
   })
+}
+
+/**
+ * What the calendar module runs with: the calendar, or why there is none, the platform's origin
+ * (the host in UIDs and event ids, the feed links' address) and where Google posts change
+ * notifications (none without the webhook token, or on a plain http origin). The server's own is
+ * built in calendarFor.ts; tests pass a FakeCalendar.
+ */
+export type CalendarDeps = {
+  provider: Result<CalendarProvider, CalendarOff>
+  siteUrl: string
+  webhookAddress: string | null
 }
 
 const Address = z.email()

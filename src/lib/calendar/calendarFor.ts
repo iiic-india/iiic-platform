@@ -1,28 +1,20 @@
 import 'server-only'
 
-import { env } from '@/lib/env'
-import type { Result } from '@/lib/result'
-import { err, ok } from '@/lib/result'
+import type { PayloadRequest } from 'payload'
 
-import { googleCalendarConfig, webhookAddress, type CalendarOff } from './config'
+import { env } from '@/lib/env'
+import { err, ok, type Result } from '@/lib/result'
+
+import { googleCalendarConfig, webhookAddress, type CalendarDeps, type CalendarOff } from './config'
 import { GoogleCalendar } from './google'
-import type { CalendarProvider } from './provider'
+import type { CalendarProvider, RefreshBusyBlocks, SyncBookingEvent } from './provider'
+import { refreshBusyBlocksWith, sweepCalendarsWith, syncBookingEventWith } from './sync'
 
 /**
- * What the calendar module runs with on this server: Google Calendar when src/lib/env.ts holds
- * its settings (config.ts), and nothing otherwise, in which case every calendar step answers
- * `not-configured` and a booking goes on without it. Tests pass a FakeCalendar to the functions
- * in sync.ts and feed.ts instead of reading this.
+ * The calendar this server runs with: Google Calendar when src/lib/env.ts holds its settings
+ * (config.ts), and none otherwise, in which case every calendar step answers `not-configured`
+ * and bookings go on without it. Read once per server.
  */
-export type CalendarDeps = {
-  /** The calendar, or why there is none. */
-  provider: Result<CalendarProvider, CalendarOff>
-  /** The platform's origin: the host in UIDs and event ids, and the feed links' address. */
-  siteUrl: string
-  /** Where Google posts change notifications, or none (no token, or not https). */
-  webhookAddress: string | null
-}
-
 let cached: CalendarDeps | undefined
 
 export function calendarDeps(): CalendarDeps {
@@ -39,3 +31,13 @@ export function calendarDeps(): CalendarDeps {
   }
   return cached
 }
+
+/** The contracts in provider.ts, on this server's calendar. */
+export const syncBookingEvent: SyncBookingEvent = (req, input) =>
+  syncBookingEventWith(calendarDeps(), req, input)
+
+export const refreshBusyBlocks: RefreshBusyBlocks = (req, input) =>
+  refreshBusyBlocksWith(calendarDeps(), req, input)
+
+export const sweepCalendars = (req: PayloadRequest, now: Date) =>
+  sweepCalendarsWith(calendarDeps(), req, now)
