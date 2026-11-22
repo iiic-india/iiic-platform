@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { busyBlockInOrder } from '@/lib/calendar/connectionHooks'
 import { IST_FIELD } from '@/lib/time/ist'
 
 /**
@@ -26,6 +27,8 @@ export const BusyBlocks: CollectionConfig = {
     update: allow(POLICY.busyBlocks.update),
     delete: allow(POLICY.busyBlocks.delete),
   },
+  // The server writes them from free/busy (src/lib/calendar/sync.ts); each ends after it starts.
+  hooks: { beforeChange: [busyBlockInOrder] },
   defaultSort: 'startsAt',
   disableBulkEdit: true,
   lockDocuments: false,
