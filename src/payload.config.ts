@@ -23,6 +23,7 @@ import { Practitioners } from './collections/Practitioners'
 import { redirects } from './collections/Redirects'
 import { Services } from './collections/Services'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
+import { Testimonials } from './collections/Testimonials'
 import { Topics } from './collections/Topics'
 import { Users } from './collections/Users'
 import { Settings } from './globals/Settings'
@@ -126,6 +127,8 @@ export default buildConfig({
     Consents,
     ConsentVersions,
     AnalyticsEvents,
+    // Proof (docs/04 `testimonials`; D-37): reviews, published only with consent.
+    Testimonials,
   ],
   globals: [Settings],
   // Automations (src/jobs/index.ts): never run on their own here.
