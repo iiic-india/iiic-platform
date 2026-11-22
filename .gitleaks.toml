@@ -13,4 +13,7 @@ regexes = [
   # The alphabet and the digits: a made-up token one test used (commit ed9e7cd) before it took the
   # test-only- form. It stays in the history, so it is named here.
   '''abcdefghijklmnopqrstuvwxyz0123456789ABCD''',
+  # The hex digits in order, twice: the made-up Cloudflare Web Analytics token in the beacon's
+  # tests (commits eb939f1 and ce88f0e). The real token is public by design: it ships in the page.
+  '''0123456789abcdef0123456789abcdef''',
 ]
