@@ -113,8 +113,14 @@ const EXPECTED: [CollectionConfig, Record<string, Record<Requester, Outcome>>][]
       delete: row({ owner: 'all', staff: 'none' }),
     },
   ],
-  [PriceHistory, { read: row({ owner: 'all', staff: 'none', operator: 'all', finance: 'all' }), ...SERVER_ONLY }],
-  [Payments, { read: row({ owner: 'all', staff: 'none', operator: 'all', finance: 'all' }), ...SERVER_ONLY }],
+  [
+    PriceHistory,
+    { read: row({ owner: 'all', staff: 'none', operator: 'all', finance: 'all' }), ...SERVER_ONLY },
+  ],
+  [
+    Payments,
+    { read: row({ owner: 'all', staff: 'none', operator: 'all', finance: 'all' }), ...SERVER_ONLY },
+  ],
   [GatewayEvents, { read: row({ owner: 'all', staff: 'none', finance: 'all' }), ...SERVER_ONLY }],
   [
     Refunds,

@@ -1,7 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
-import { hasRole } from '@/access/roles'
 import { wholeNumber } from '@/fields/numbers'
 import { BOOKING_FORMATS } from '@/lib/booking/states'
 import { IST_FIELD } from '@/lib/time/ist'

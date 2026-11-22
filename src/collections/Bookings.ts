@@ -2,6 +2,7 @@ import type { CollectionConfig, Field } from 'payload'
 
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { AGE_BANDS } from '@/collections/People'
 import { istDayField } from '@/fields/istDay'
 import { basisPointsField, paiseField, wholeNumber } from '@/fields/numbers'
 import {
@@ -11,7 +12,6 @@ import {
   BOOKING_STATUSES,
   BOOKING_TYPES,
 } from '@/lib/booking/states'
-import { AGE_BANDS } from '@/collections/People'
 import { IST_FIELD } from '@/lib/time/ist'
 
 const money = {
@@ -275,10 +275,7 @@ export const Bookings: CollectionConfig = {
         condition: (data) =>
           data?.status === 'cancelledByClient' || data?.status === 'cancelledByIiic',
       },
-      fields: [
-        instant('at', 'Cancelled'),
-        { name: 'reason', type: 'textarea', maxLength: 1000 },
-      ],
+      fields: [instant('at', 'Cancelled'), { name: 'reason', type: 'textarea', maxLength: 1000 }],
     },
     {
       // The call's company details (docs/03 F3, step 3 for a call), until organisations and

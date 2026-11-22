@@ -60,7 +60,10 @@ export interface CalendarProvider {
     calendarId: string,
     channel: { channelId: string; token: string; address: string },
   ): Promise<Result<CalendarWatch, CalendarError>>
-  stopWatch(channel: { channelId: string; resourceId: string }): Promise<Result<void, CalendarError>>
+  stopWatch(channel: {
+    channelId: string
+    resourceId: string
+  }): Promise<Result<void, CalendarError>>
 }
 
 /**

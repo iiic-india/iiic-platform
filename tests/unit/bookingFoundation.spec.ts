@@ -33,7 +33,12 @@ const MIGRATIONS = path.resolve(process.cwd(), 'src/migrations')
 const valuesOf = (options: readonly { value: string }[]) => options.map((option) => option.value)
 
 function selectOptions(fields: readonly unknown[], name: string): string[] {
-  for (const field of fields as { name?: string; type?: string; fields?: unknown[]; options?: { value: string }[] }[]) {
+  for (const field of fields as {
+    name?: string
+    type?: string
+    fields?: unknown[]
+    options?: { value: string }[]
+  }[]) {
     if (field.name === name && field.type === 'select') return valuesOf(field.options ?? [])
     if (field.fields) {
       const inner = selectOptions(field.fields, name)
@@ -57,7 +62,13 @@ describe('the booking states (docs/16 §3)', () => {
   })
 
   it('leaves the final states final', () => {
-    for (const state of ['completed', 'noShow', 'cancelledByClient', 'cancelledByIiic', 'rescheduled']) {
+    for (const state of [
+      'completed',
+      'noShow',
+      'cancelledByClient',
+      'cancelledByIiic',
+      'rescheduled',
+    ]) {
       expect(Object.keys(BOOKING_MOVES)).not.toContain(state)
     }
   })
@@ -85,7 +96,8 @@ describe('the payment and refund states (docs/16 §3)', () => {
   ] as const)('%s move only between known states', (_, moves, statuses, collection) => {
     for (const [from, targets] of Object.entries(moves)) {
       expect(statuses, from).toContain(from)
-      for (const to of targets as readonly string[]) expect(statuses, `${from} → ${to}`).toContain(to)
+      for (const to of targets as readonly string[])
+        expect(statuses, `${from} → ${to}`).toContain(to)
     }
     expect(selectOptions(collection.fields, 'status')).toEqual(statuses)
   })
@@ -117,9 +129,9 @@ describe('the fake gateway (docs/16 §11)', () => {
       false,
     )
     expect(gateway.verifyWebhook(webhook.rawBody, 'not-a-signature')).toBe(false)
-    expect(new FakeGateway('another-secret').verifyWebhook(webhook.rawBody, webhook.signature)).toBe(
-      false,
-    )
+    expect(
+      new FakeGateway('another-secret').verifyWebhook(webhook.rawBody, webhook.signature),
+    ).toBe(false)
   })
 
   it('makes one order per receipt, and refunds only a captured payment', async () => {

@@ -1,7 +1,7 @@
 import type { PayloadRequest } from 'payload'
 
-import type { Booking } from '@/payload-types'
 import type { Result } from '@/lib/result'
+import type { Booking } from '@/payload-types'
 
 import type { IstDay } from './types'
 

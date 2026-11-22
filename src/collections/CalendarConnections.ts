@@ -83,7 +83,9 @@ export const CalendarConnections: CollectionConfig = {
             { label: 'Connected', value: 'connected' },
             { label: 'Failing', value: 'failing' },
           ],
-          admin: { description: 'Paused until an owner has checked the calendar is the right one.' },
+          admin: {
+            description: 'Paused until an owner has checked the calendar is the right one.',
+          },
         },
         instant('lastSyncedAt', 'Busy times last read'),
         {

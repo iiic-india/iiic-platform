@@ -1,7 +1,7 @@
 import type { PayloadRequest } from 'payload'
 
-import type { Payment, Refund } from '@/payload-types'
 import type { Result } from '@/lib/result'
+import type { Payment, Refund } from '@/payload-types'
 
 import type { GatewayError } from './gateway'
 import type { Paise } from './money'
@@ -73,9 +73,7 @@ export type ProcessGatewayEvent = (
   req: PayloadRequest,
   event: VerifiedGatewayEvent,
   source: 'webhook' | 'poll' | 'reconciliation',
-) => Promise<
-  Result<{ outcome: 'processed' | 'ignored' | 'flagged' | 'replay' }, PaymentError>
->
+) => Promise<Result<{ outcome: 'processed' | 'ignored' | 'flagged' | 'replay' }, PaymentError>>
 
 /**
  * Asks the gateway for the payments on orders still pending (the order-status poll, docs/07),

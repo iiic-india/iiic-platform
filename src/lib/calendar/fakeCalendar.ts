@@ -72,7 +72,9 @@ export class FakeCalendar implements CalendarProvider {
     const list = this.events.get(calendarId) ?? []
     const index = list.findIndex((stored) => stored.eventId === eventId)
     if (index < 0) return err({ code: 'not-found' })
-    const meetUrl = event.meet ? (list[index]?.meetUrl ?? `https://meet.example.invalid/${eventId}`) : null
+    const meetUrl = event.meet
+      ? (list[index]?.meetUrl ?? `https://meet.example.invalid/${eventId}`)
+      : null
     list[index] = { ...event, eventId, meetUrl }
     return ok({ eventId, meetUrl })
   }
@@ -101,7 +103,11 @@ export class FakeCalendar implements CalendarProvider {
       token: channel.token,
     }
     this.watches.set(channel.channelId, watch)
-    return ok({ channelId: watch.channelId, resourceId: watch.resourceId, expiresAt: watch.expiresAt })
+    return ok({
+      channelId: watch.channelId,
+      resourceId: watch.resourceId,
+      expiresAt: watch.expiresAt,
+    })
   }
 
   async stopWatch(channel: {

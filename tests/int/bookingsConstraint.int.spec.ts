@@ -3,7 +3,14 @@ import { getPayload, type Payload } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { SLOT_BLOCKING_STATUSES } from '@/lib/booking/states'
-import type { Booking, Person, Practitioner, Service, User } from '@/payload-types'
+import type {
+  Booking,
+  GatewayEvent,
+  Person,
+  Practitioner,
+  Service,
+  User,
+} from '@/payload-types'
 import config from '@/payload.config'
 
 // The database's double-booking guard (docs/04, Rules the schema enforces; docs/16 §4) and the
@@ -226,13 +233,13 @@ describe('who reads bookings (docs/05)', () => {
 describe('gateway events, each once (docs/16 §5)', () => {
   it('refuses the same event id from the same gateway twice', async () => {
     const event = {
-      gateway: 'razorpay' as const,
+      gateway: 'razorpay',
       eventId: `evt_int${Date.now()}`,
       type: 'payment.captured',
-      source: 'webhook' as const,
+      source: 'webhook',
       receivedAt: new Date().toISOString(),
-      outcome: 'processed' as const,
-    }
+      outcome: 'processed',
+    } as GatewayEvent
     await payload.create({ collection: 'gateway-events', data: event })
     await expect(payload.create({ collection: 'gateway-events', data: event })).rejects.toThrow()
     const refused = await payload.db.drizzle
