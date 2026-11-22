@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 
-import { faqsFor, metadataOf, PageJsonLd } from '@/components/blocks/PageAt'
+import { faqsFor, metadataOf, PageJsonLd, voicesFor } from '@/components/blocks/PageAt'
 import { RenderBlocks } from '@/components/blocks/PageBlocks'
-import { getPage } from '@/lib/content/pages'
+import { getPageToShow } from '@/lib/content/pages'
 import { PAGE_SLUG } from '@/lib/content/slug'
 import type { PageContent } from '@/lib/content/types'
 import { redirectOrNotFound } from '@/lib/redirects/lookup'
@@ -24,7 +24,7 @@ async function pageAt(
 ): Promise<{ slug: string; page: PageContent } | null> {
   const slug = (await params).slug.join('/')
   if (slug === 'home' || !PAGE_SLUG.test(slug)) return null
-  const page = await getPage(slug)
+  const page = await getPageToShow(slug)
   return page ? { slug, page } : null
 }
 
@@ -46,6 +46,7 @@ export default async function CmsPage({ params }: Props) {
         slug={found.slug}
         legal={await legalInformationFor(found.page.layout)}
         faqs={faqs}
+        voices={await voicesFor(found.slug)}
       />
     </>
   )

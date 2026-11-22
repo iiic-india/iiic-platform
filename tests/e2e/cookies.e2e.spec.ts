@@ -2,9 +2,10 @@ import { expect, test } from '@playwright/test'
 
 // The cookie inventory (docs/12 §10). A cookie that is not listed there fails these tests
 // until the inventory and the privacy notice's cookie section list it. Signing in to the admin
-// is covered in admin.e2e.spec.ts, which owns the test account.
+// is covered in admin.e2e.spec.ts, which owns the test account; the draft-mode cookie a staff
+// preview sets, and its removal, in journal.e2e.spec.ts.
 
-test('a page in every route group, Find your path, the 404 and the admin sign-in page set no cookie', async ({
+test('a page in every route group, Find your path, the 404, the feed, a visitor’s preview link and the admin sign-in page set no cookie', async ({
   page,
   context,
 }) => {
@@ -20,6 +21,9 @@ test('a page in every route group, Find your path, the 404 and the admin sign-in
     '/counselling',
     '/learn',
     '/no-such-page',
+    // The Journal's feed, and the preview link, which turns on draft mode for staff only (OS-4).
+    '/journal/feed.xml',
+    '/api/preview?collection=pages&slug=framework',
     '/admin/login',
   ]) {
     await page.goto(path)

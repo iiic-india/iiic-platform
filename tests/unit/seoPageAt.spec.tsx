@@ -9,6 +9,7 @@ import { STARTER_PAGES, starterAt } from '@/content/starter'
 import { getFaqs } from '@/lib/content/faqs'
 import { getPage } from '@/lib/content/pages'
 import type { FaqItem, PageContent } from '@/lib/content/types'
+import { getPageVoices } from '@/lib/proof/read'
 import { redirectOrNotFound } from '@/lib/redirects/lookup'
 import { buildMetadata } from '@/lib/seo/metadata'
 import type { JsonLdGraph, JsonLdNode } from '@/lib/seo/schema'
@@ -16,8 +17,15 @@ import { HOME_TITLE } from '@/lib/seo/site'
 
 // How a route gets a page's metadata and structured data (src/components/blocks/PageAt.tsx).
 // The CMS is faked: getPage answers with the starter pages and the fake pages below.
-vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
+// In a test no one previews, so a route draws what getPage finds (src/lib/content/pages.ts).
+vi.mock('@/lib/content/pages', () => {
+  const getPage = vi.fn()
+  return { getPage, getPageToShow: (slug: string) => getPage(slug) }
+})
 vi.mock('@/lib/content/faqs', () => ({ getFaqs: vi.fn() }))
+vi.mock('@/lib/proof/read', () => ({
+  getPageVoices: vi.fn(async () => ({ first: null, bySection: {} })),
+}))
 // The legal information comes from the settings (tests/unit/settingsLegal.spec.tsx).
 vi.mock('@/lib/settings/read', () => ({ legalInformationFor: async () => undefined }))
 // No redirect leads from any address here (src/lib/redirects/lookup.ts): an address without a
@@ -83,6 +91,7 @@ beforeEach(() => {
   )
   vi.mocked(getFaqs).mockReset()
   vi.mocked(getFaqs).mockResolvedValue([])
+  vi.mocked(getPageVoices).mockClear()
 })
 
 afterEach(() => {
@@ -148,9 +157,11 @@ describe('PageAt', () => {
       legalReview: 'draft',
       slug: 'privacy',
       faqs: [],
+      voices: { first: null, bySection: {} },
     })
-    // A page without a questions section asks for none.
+    // A page without a questions section asks for none, and a legal page for no voices.
     expect(getFaqs).not.toHaveBeenCalled()
+    expect(getPageVoices).not.toHaveBeenCalled()
   })
 
   it('hands the questions published for a page to its blocks and to its structured data', async () => {
@@ -162,6 +173,16 @@ describe('PageAt', () => {
     expect(getFaqs).toHaveBeenCalledWith(ASKED.slug)
     expect(data?.props.faqs).toBe(FAKE_FAQS)
     expect(blocks?.props.faqs).toBe(FAKE_FAQS)
+  })
+
+  it('hands the reviews pinned to a page that takes voices to its blocks (docs/11 §3.8)', async () => {
+    const voices = { first: null, bySection: { 'what-changes': [] } }
+    vi.mocked(getPageVoices).mockResolvedValueOnce(voices)
+    const drawn = (await PageAt({ slug: 'framework' })) as ReactElement<{
+      children: ReactElement<{ voices?: unknown }>[]
+    }>
+    expect(getPageVoices).toHaveBeenCalledWith('framework')
+    expect(drawn.props.children[1]?.props.voices).toBe(voices)
   })
 })
 

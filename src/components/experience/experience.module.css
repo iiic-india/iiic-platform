@@ -47,6 +47,20 @@
   }
 }
 
+/* On a Journal article the bar is drawn only while the article asks for it with
+   data-reading-bar (Article.tsx), which an article that leads to counselling never does (docs/11
+   §2, principle 6). The stylesheet decides before any script runs, and a browser that cannot
+   read :has() draws no bar on any article rather than one on a counselling surface. */
+.onRequest {
+  display: none;
+}
+
+@media screen {
+  :global(.iiic-site):has(main [data-reading-bar]) .onRequest {
+    display: block;
+  }
+}
+
 /* 3.2 · Flip the line. The lines and their buttons are drawn when the browser runs scripts;
    without scripts, and on paper, the plain table stands in their place. "Show both" opens the
    table under the lines: by its address (:target) as soon as the page is there, and by the
@@ -278,6 +292,33 @@
     transform 320ms var(--iiic-ease);
 }
 
+/* §4 · On the home page the doors' cards and the steps reveal once, the same way and by the same
+   script (RevealChapters.tsx): an 8 px rise and a fade, the cards of one row 60 ms apart. Only
+   an item still below the window is held back, and only once the script runs. The rise uses
+   the translate property, so the kit's own card transitions (its hover lift, shadow and rule)
+   stay as the kit sets them, and only the reveal waits for its turn. */
+.revealItem[data-reveal='waiting'] {
+  opacity: 0;
+  translate: 0 8px;
+}
+
+.revealItem[data-reveal='in'] {
+  transition:
+    opacity 320ms var(--iiic-ease),
+    translate 320ms var(--iiic-ease),
+    transform var(--iiic-motion) var(--iiic-ease),
+    box-shadow var(--iiic-motion) var(--iiic-ease),
+    border-color var(--iiic-motion);
+}
+
+.revealItem[data-reveal='in']:nth-child(3n + 2) {
+  transition-delay: 60ms, 60ms, 0s, 0s, 0s;
+}
+
+.revealItem[data-reveal='in']:nth-child(3n + 3) {
+  transition-delay: 120ms, 120ms, 0s, 0s, 0s;
+}
+
 /* Forced colours (Windows contrast themes) drop backgrounds and shadows, and with them the bars
    and the pressed ring. The bars take the system's highlight, as the kit's own marks do
    (03-components.css), and a pressed "Flip all" is filled with it, so its state shows beside
@@ -300,13 +341,19 @@
   .face,
   .flipBar::after,
   .insightLink::before,
-  .chapter[data-reveal] {
+  .chapter[data-reveal],
+  .revealItem[data-reveal] {
     transition: none;
   }
 
   .chapter[data-reveal] {
     opacity: 1;
     transform: none;
+  }
+
+  .revealItem[data-reveal] {
+    opacity: 1;
+    translate: none;
   }
 }
 
@@ -325,5 +372,10 @@
   .chapter[data-reveal] {
     opacity: 1;
     transform: none;
+  }
+
+  .revealItem[data-reveal] {
+    opacity: 1;
+    translate: none;
   }
 }

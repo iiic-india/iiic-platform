@@ -23,6 +23,7 @@ import { Practitioners } from './collections/Practitioners'
 import { redirects } from './collections/Redirects'
 import { Services } from './collections/Services'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
+import { Testimonials } from './collections/Testimonials'
 import { Topics } from './collections/Topics'
 import { Users } from './collections/Users'
 import { Settings } from './globals/Settings'
@@ -31,6 +32,7 @@ import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
 import { reportServerError, reportTestError } from './lib/monitoring/sentry'
 import { auditLog } from './plugins/auditLog'
+import { searchIndex } from './plugins/searchIndex'
 import { totpCopy } from './plugins/totpCopy'
 import { totpSecretAtRest } from './plugins/totpSecretAtRest'
 
@@ -126,6 +128,8 @@ export default buildConfig({
     Consents,
     ConsentVersions,
     AnalyticsEvents,
+    // Proof (docs/04 `testimonials`; D-37): reviews, published only with consent.
+    Testimonials,
   ],
   globals: [Settings],
   // Automations (src/jobs/index.ts): never run on their own here.
@@ -190,6 +194,9 @@ export default buildConfig({
         },
       },
     }),
+    // Site search's index (docs/11 §5.3, D-34): Payload's search plugin over the published
+    // pages, services, articles and questions. Before payload-totp, for the same reason.
+    searchIndex(),
     // Old addresses and where they lead (docs/12 §3). Before payload-totp, so that its access
     // rules wait for the two-factor code like every other collection's.
     redirects,

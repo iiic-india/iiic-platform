@@ -10,6 +10,7 @@ import {
   OrderedListFeature,
   ParagraphFeature,
   UnorderedListFeature,
+  UploadFeature,
 } from '@payloadcms/richtext-lexical'
 import type {
   CollectionConfig,
@@ -38,6 +39,7 @@ import {
   SEARCH_TITLE_MAX,
   withoutPlaceholder,
 } from '@/lib/journal/rules'
+import { BREAKPOINTS, previewUrl } from '@/lib/preview/access'
 import { FOUNDER } from '@/lib/seo/site'
 
 /**
@@ -130,9 +132,11 @@ const countReadingTime: FieldHook = ({ data, originalDoc }) =>
 
 /**
  * What an article's body may hold: paragraphs, two levels of heading under the article's
- * title, bold and italic, lists, quotes, rules and links by address. No images yet: the first
- * page that draws an image from the media library adds the bucket to next/image (docs/12 §4).
- * No links to another document by reference, so that no link points at a draft.
+ * title, bold and italic, lists, quotes, rules, links by address, and images from the media
+ * library, each with the alt text the library requires (src/collections/Media.ts), drawn by
+ * next/image from the public bucket (src/components/journal/ArticleBody.tsx; docs/12 §4). No
+ * upload from any other collection, so nothing from a private bucket. No links to another
+ * document by reference, so that no link points at a draft.
  */
 const articleEditor = lexicalEditor({
   features: [
@@ -145,6 +149,7 @@ const articleEditor = lexicalEditor({
     BlockquoteFeature(),
     HorizontalRuleFeature(),
     LinkFeature({ enabledCollections: [] }),
+    UploadFeature({ enabledCollections: ['media'], maxDepth: 1 }),
     InlineToolbarFeature(),
   ],
 })
@@ -158,6 +163,10 @@ export const Posts: CollectionConfig = {
     defaultColumns: ['title', 'slug', 'publishedAt', '_status', 'updatedAt'],
     description:
       'The Journal: each article answers one question in IIIC’s words and ends with a question to sit with.',
+    // The article as the site will draw it, beside the editor and in a tab of its own, from its
+    // newest saved version (src/lib/preview/access.ts, OS-4).
+    livePreview: { url: ({ data }) => previewUrl('posts', data?.slug), breakpoints: BREAKPOINTS },
+    preview: (doc) => previewUrl('posts', doc?.slug),
   },
   // src/access/policy.ts (docs/05): anyone reads a published article; owners, operators and
   // editors read drafts and earlier versions, draft and publish; owners and editors delete.

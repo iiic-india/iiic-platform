@@ -82,6 +82,8 @@ export interface Config {
     consents: Consent;
     'consent-versions': ConsentVersion;
     'analytics-events': AnalyticsEvent;
+    testimonials: Testimonial;
+    'search-index': SearchIndex;
     redirects: Redirect;
     'totp-attempts': TotpAttempt;
     'payload-kv': PayloadKv;
@@ -114,6 +116,8 @@ export interface Config {
     consents: ConsentsSelect<false> | ConsentsSelect<true>;
     'consent-versions': ConsentVersionsSelect<false> | ConsentVersionsSelect<true>;
     'analytics-events': AnalyticsEventsSelect<false> | AnalyticsEventsSelect<true>;
+    testimonials: TestimonialsSelect<false> | TestimonialsSelect<true>;
+    'search-index': SearchIndexSelect<false> | SearchIndexSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -1234,6 +1238,220 @@ export interface AnalyticsEvent {
   at_tz: 'Asia/Kolkata';
 }
 /**
+ * Reviews of Gaurang Mistry’s programmes: received, screened, sent for consent, approved by the writer, published by an owner.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "testimonials".
+ */
+export interface Testimonial {
+  id: number;
+  /**
+   * Named by the platform.
+   */
+  title?: string | null;
+  /**
+   * Received → screened → consent requested → approved (the writer said yes) → published (an owner). Withdrawn removes the words at once.
+   */
+  status: 'received' | 'screened' | 'consentRequested' | 'approved' | 'published' | 'declined' | 'withdrawn';
+  publishedAt?: string | null;
+  publishedAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * The owner who published it.
+   */
+  approvedBy?: (number | null) | User;
+  /**
+   * The Ref column of the reviews intake sheet, for a review imported from it.
+   */
+  intakeRef?: string | null;
+  /**
+   * Reviews added here are from earlier programmes; the feedback form adds its own.
+   */
+  origin: 'earlierProgramme' | 'platformFeedback';
+  /**
+   * Who wrote it. Their contact details never leave the admin.
+   */
+  person?: (number | null) | Person;
+  /**
+   * The form the person chose. Counselling reviews start with initials; under 18, initials only.
+   */
+  displayForm: 'full' | 'firstNameInitial' | 'initials';
+  /**
+   * From the person’s name, in the form chosen.
+   */
+  shownName?: string | null;
+  designation?: string | null;
+  /**
+   * City; state or country.
+   */
+  place?: string | null;
+  organisation?: string | null;
+  /**
+   * Only if the person agreed.
+   */
+  showOrganisation?: boolean | null;
+  /**
+   * Disclosed on the card when there is one (docs/08 §6). Leave empty until known.
+   */
+  connection?: ('none' | 'friend' | 'relative' | 'worksWith' | 'workedWith') | null;
+  /**
+   * A discount, a free session or a gift given for this review, in a few words; disclosed on the card (docs/08 §6). Never offer one.
+   */
+  incentive?: string | null;
+  /**
+   * As it was called.
+   */
+  programme?: string | null;
+  /**
+   * Today’s equivalent, if there is one.
+   */
+  service?: (number | null) | Service;
+  year?: number | null;
+  /**
+   * If known, 1 to 12.
+   */
+  month?: number | null;
+  /**
+   * The doors it speaks to: Proof filters by these.
+   */
+  doors?: ('consultancy' | 'education' | 'counselling' | 'framework')[] | null;
+  /**
+   * Outcome themes from docs/content/outcomes-map.md, for choosing which voice sits beside which section. Never shown.
+   */
+  themes?: string[] | null;
+  /**
+   * Paste it as written, spelling and language included. Never correct it.
+   */
+  text?: string | null;
+  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  translation?: string | null;
+  translator?: string | null;
+  translationApproved?: boolean | null;
+  /**
+   * The part shown beside a section, in the review’s own words, with an ellipsis (…) where words are left out.
+   */
+  excerpt?: string | null;
+  excerptApproved?: boolean | null;
+  /**
+   * Only with the person’s agreement to a photograph.
+   */
+  photo?: (number | null) | Media;
+  photoAgreed?: boolean | null;
+  profileLink?: string | null;
+  profileLinkAgreed?: boolean | null;
+  source?:
+    | (
+        | 'letter'
+        | 'email'
+        | 'whatsapp'
+        | 'feedbackForm'
+        | 'brochure'
+        | 'googleReview'
+        | 'linkedin'
+        | 'instagram'
+        | 'video'
+        | 'inPerson'
+        | 'other'
+      )
+    | null;
+  receivedOn?: string | null;
+  receivedOn_tz?: 'Asia/Kolkata' | null;
+  /**
+   * In IIIC’s own storage, such as Reviews/Originals/R-001.jpg. The file itself is kept here once the private documents bucket exists.
+   */
+  originalReference?: string | null;
+  /**
+   * The eight tests (copy architecture §6), before any consent request.
+   */
+  screening?: {
+    result?: ('notScreened' | 'passes' | 'needsInformation' | 'notPublishable') | null;
+    tests?: {
+      original?: boolean | null;
+      programmeAndYear?: boolean | null;
+      ownExperience?: boolean | null;
+      noClinicalClaim?: boolean | null;
+      noOtherPerson?: boolean | null;
+      adultConsents?: boolean | null;
+      notAnkvishwa?: boolean | null;
+      excerptKeepsMeaning?: boolean | null;
+    };
+    /**
+     * For a review that does not pass: which test, and why.
+     */
+    reason?: string | null;
+  };
+  /**
+   * The person’s consent to publish a testimonial, recorded under Privacy → Consent log with their reply as evidence.
+   */
+  consent?: (number | null) | Consent;
+  /**
+   * For the office. Never shown.
+   */
+  notes?: string | null;
+  /**
+   * Where the review is pinned: a page and the link name of the section it sits beside, or first-voice under the home page’s hero. One review beside a section; up to three on the counselling page.
+   */
+  placements?:
+    | {
+        /**
+         * The page’s address without the slash: home, framework, learn…
+         */
+        page: string;
+        /**
+         * The section’s link name.
+         */
+        section: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * What /search finds: an entry for each published page, offered service, published article and published question, kept up to date as they are published, changed and unpublished. "Reindex" builds a kind again from what is published.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "search-index".
+ */
+export interface SearchIndex {
+  id: number;
+  title?: string | null;
+  /**
+   * Higher comes first among its kind on /search. Pages start at 40, services at 30, articles at 20 and questions at 10.
+   */
+  priority?: number | null;
+  doc:
+    | {
+        relationTo: 'pages';
+        value: number | Page;
+      }
+    | {
+        relationTo: 'services';
+        value: number | Service;
+      }
+    | {
+        relationTo: 'posts';
+        value: number | Post;
+      }
+    | {
+        relationTo: 'faqs';
+        value: number | Faq;
+      };
+  /**
+   * Where the result leads on the site.
+   */
+  url?: string | null;
+  /**
+   * Shown under the title when no sentence of the text matches.
+   */
+  excerpt?: string | null;
+  /**
+   * The words a search is matched against, as visitors read them on the site.
+   */
+  content?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "totp-attempts".
  */
@@ -1409,6 +1627,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'consent-versions';
         value: number | ConsentVersion;
+      } | null)
+    | ({
+        relationTo: 'testimonials';
+        value: number | Testimonial;
+      } | null)
+    | ({
+        relationTo: 'search-index';
+        value: number | SearchIndex;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -2043,6 +2269,92 @@ export interface AnalyticsEventsSelect<T extends boolean = true> {
   sessionHash?: T;
   at?: T;
   at_tz?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "testimonials_select".
+ */
+export interface TestimonialsSelect<T extends boolean = true> {
+  title?: T;
+  status?: T;
+  publishedAt?: T;
+  publishedAt_tz?: T;
+  approvedBy?: T;
+  intakeRef?: T;
+  origin?: T;
+  person?: T;
+  displayForm?: T;
+  shownName?: T;
+  designation?: T;
+  place?: T;
+  organisation?: T;
+  showOrganisation?: T;
+  connection?: T;
+  incentive?: T;
+  programme?: T;
+  service?: T;
+  year?: T;
+  month?: T;
+  doors?: T;
+  themes?: T;
+  text?: T;
+  language?: T;
+  translation?: T;
+  translator?: T;
+  translationApproved?: T;
+  excerpt?: T;
+  excerptApproved?: T;
+  photo?: T;
+  photoAgreed?: T;
+  profileLink?: T;
+  profileLinkAgreed?: T;
+  source?: T;
+  receivedOn?: T;
+  receivedOn_tz?: T;
+  originalReference?: T;
+  screening?:
+    | T
+    | {
+        result?: T;
+        tests?:
+          | T
+          | {
+              original?: T;
+              programmeAndYear?: T;
+              ownExperience?: T;
+              noClinicalClaim?: T;
+              noOtherPerson?: T;
+              adultConsents?: T;
+              notAnkvishwa?: T;
+              excerptKeepsMeaning?: T;
+            };
+        reason?: T;
+      };
+  consent?: T;
+  notes?: T;
+  placements?:
+    | T
+    | {
+        page?: T;
+        section?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "search-index_select".
+ */
+export interface SearchIndexSelect<T extends boolean = true> {
+  title?: T;
+  priority?: T;
+  doc?: T;
+  url?: T;
+  excerpt?: T;
+  content?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

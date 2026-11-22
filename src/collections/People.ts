@@ -9,6 +9,7 @@ import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { phoneField } from '@/lib/phone'
 import { withdrawOnDeletion } from '@/lib/privacy/consents'
+import { deleteReviewsOnDeletion } from '@/lib/proof/ledger'
 import { DEFAULT_LANGUAGE, LANGUAGES } from '@/lib/site/languages'
 import { IST_FIELD } from '@/lib/time/ist'
 
@@ -112,7 +113,9 @@ export const People: CollectionConfig = {
   },
   hooks: {
     beforeChange: [oneVerifiedPerson],
-    beforeDelete: [withdrawConsentsOnDeletion],
+    // First the consents, whose withdrawal takes the person's reviews down; then the reviews
+    // themselves, which go with the person (docs/04).
+    beforeDelete: [withdrawConsentsOnDeletion, deleteReviewsOnDeletion],
   },
   fields: [
     { name: 'fullName', type: 'text', label: 'Full name', required: true, maxLength: 200 },

@@ -3,9 +3,16 @@ import type { Metadata } from 'next'
 import { JOURNAL_PAGE } from '@/lib/seo/appPages'
 import { articleImage, buildMetadata } from '@/lib/seo/metadata'
 import { articleGraph, type JsonLdGraph, pageGraph, type PageGraphInput } from '@/lib/seo/schema'
-import { fact, FOUNDER, siteOrigin } from '@/lib/seo/site'
+import { fact, FOUNDER, siteOrigin, TITLE_SUFFIX } from '@/lib/seo/site'
 
-import { articlePath, JOURNAL_CRUMB, JOURNAL_PATH, listPath, listTitle } from './addresses'
+import {
+  articlePath,
+  FEED_PATH,
+  JOURNAL_CRUMB,
+  JOURNAL_PATH,
+  listPath,
+  listTitle,
+} from './addresses'
 import type { PostDetail, TopicSummary } from './posts'
 import { searchTitleOf } from './rules'
 
@@ -56,9 +63,23 @@ export function listPage(topic: TopicSummary | null, page: number): PageGraphInp
   }
 }
 
+/** The Journal's feed's title, as the Journal's browser tab gives it (src/lib/journal/feed.ts). */
+export const FEED_TITLE = `${JOURNAL_PAGE.title}${TITLE_SUFFIX}`
+
+/** The feed's link for a page's head: rel="alternate", which feed readers look for. */
+export const FEED_ALTERNATE = { 'application/rss+xml': [{ url: FEED_PATH, title: FEED_TITLE }] }
+
+/**
+ * A page of the Journal's with its link to the feed (rel="alternate"), which feed readers look
+ * for in the page's head (src/lib/journal/feed.ts).
+ */
+function withFeed(metadata: Metadata): Metadata {
+  return { ...metadata, alternates: { ...metadata.alternates, types: FEED_ALTERNATE } }
+}
+
 export function listMetadata(topic: TopicSummary | null, page: number): Metadata {
   const { path, title, description } = listPage(topic, page)
-  return buildMetadata({ path, title, description })
+  return withFeed(buildMetadata({ path, title, description }))
 }
 
 export function listGraph(topic: TopicSummary | null, page: number): JsonLdGraph {
@@ -82,19 +103,21 @@ function articlePage(post: PostDetail): PageGraphInput {
 /** An article's metadata: og:type article, its dates, author and topic, and its own image. */
 export function articleMetadata(post: PostDetail): Metadata {
   const { path, title, description } = articlePage(post)
-  return buildMetadata({
-    path,
-    title,
-    description,
-    type: 'article',
-    article: {
-      headline: post.title,
-      author: authorOf(post).name,
-      publishedTime: post.publishedAt,
-      modifiedTime: post.updatedAt,
-      section: post.topics[0]?.name,
-    },
-  })
+  return withFeed(
+    buildMetadata({
+      path,
+      title,
+      description,
+      type: 'article',
+      article: {
+        headline: post.title,
+        author: authorOf(post).name,
+        publishedTime: post.publishedAt,
+        modifiedTime: post.updatedAt,
+        section: post.topics[0]?.name,
+      },
+    }),
+  )
 }
 
 /** An article's structured data (D-62): its page, the way down to it, and the Article. */

@@ -15,6 +15,7 @@ import { copyStarterPage } from '@/lib/content/copyStarter'
 import { mistypedPlaceholders } from '@/lib/content/placeholders'
 import { revalidatePages } from '@/lib/content/revalidate'
 import { PAGE_SLUG } from '@/lib/content/slug'
+import { BREAKPOINTS, previewUrl } from '@/lib/preview/access'
 import { noteAddressChange, redirectOldAddress } from '@/lib/redirects/pageMoves'
 
 /**
@@ -53,6 +54,10 @@ export const Pages: CollectionConfig = {
     defaultColumns: ['title', 'slug', '_status', 'updatedAt'],
     // Above the list: the starter pages that are not here yet, each with a way in (D-54).
     components: { beforeListTable: ['/components/admin/StarterPages#StarterPages'] },
+    // The page as the site will draw it, beside the editor and in a tab of its own, from its
+    // newest saved version (src/lib/preview/access.ts, OS-4).
+    livePreview: { url: ({ data }) => previewUrl('pages', data?.slug), breakpoints: BREAKPOINTS },
+    preview: (doc) => previewUrl('pages', doc?.slug),
   },
   // src/access/policy.ts (docs/05): anyone reads a published page; owners, operators and
   // editors read drafts and earlier versions, draft and publish; owners and editors delete.

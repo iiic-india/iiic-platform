@@ -3,6 +3,8 @@ import {
   type PlaintextConverters,
 } from '@payloadcms/richtext-lexical/plaintext'
 
+import { wordCount } from '@/lib/text/words'
+
 /**
  * An article's reading time, from its body (docs/content/copy-architecture.md §4.8: article
  * pages carry the reading time). The body's text comes from Payload's own Lexical converter and
@@ -38,14 +40,8 @@ export function bodyText(body: unknown): string {
     : ''
 }
 
-/** The words in a text, as the platform's word segmentation finds them. */
-export function wordCount(text: string): number {
-  let words = 0
-  for (const segment of new Intl.Segmenter('en-IN', { granularity: 'word' }).segment(text)) {
-    if (segment.isWordLike) words += 1
-  }
-  return words
-}
+/** The words in a text, as the platform's word segmentation finds them (src/lib/text/words.ts). */
+export { wordCount }
 
 /** The minutes an article's body takes to read: none for an empty body, else at least one. */
 export function readingMinutes(body: unknown): number {

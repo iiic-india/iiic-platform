@@ -19,6 +19,8 @@ import * as migration_20261121_185417_redirects_and_missing_pages from './202611
 import * as migration_20261122_082807_trust_layer from './20261122_082807_trust_layer';
 import * as migration_20261122_083110_services_practitioners_faqs from './20261122_083110_services_practitioners_faqs';
 import * as migration_20261122_083335_journal from './20261122_083335_journal';
+import * as migration_20261122_095120_search_index from './20261122_095120_search_index';
+import * as migration_20261122_095224_testimonials from './20261122_095224_testimonials';
 
 export const migrations = [
   {
@@ -124,6 +126,16 @@ export const migrations = [
   {
     up: migration_20261122_083335_journal.up,
     down: migration_20261122_083335_journal.down,
-    name: '20261122_083335_journal'
+    name: '20261122_083335_journal',
+  },
+  {
+    up: migration_20261122_095120_search_index.up,
+    down: migration_20261122_095120_search_index.down,
+    name: '20261122_095120_search_index',
+  },
+  {
+    up: migration_20261122_095224_testimonials.up,
+    down: migration_20261122_095224_testimonials.down,
+    name: '20261122_095224_testimonials'
   },
 ];

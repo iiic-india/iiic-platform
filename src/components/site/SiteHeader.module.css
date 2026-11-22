@@ -1,0 +1,13 @@
+/* The header's search link (docs/11 §5.3) is drawn on wide screens only. From 1200 px the header
+   holds the brand's full name, the five links, this one and Find your path on one line; below
+   that the kit already tightens the header (04-patterns.css), and the phone menu keeps its
+   links. The kit's nav styles the link itself. */
+.search {
+  display: none;
+}
+
+@media (min-width: 1200px) {
+  .search {
+    display: inline-block;
+  }
+}

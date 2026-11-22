@@ -67,6 +67,39 @@ describe('buildCsp', () => {
     expect(directives(plain).has('upgrade-insecure-requests')).toBe(false)
   })
 
+  it('lets the admin frame a draft-mode page and the admin frame this origin, when asked (OS-4)', () => {
+    const framed = directives(
+      buildCsp({ nonce: 'n', development: false, https: true, frameAncestors: "'self'" }),
+    )
+    expect(framed.get('frame-ancestors')).toEqual(["'self'"])
+    expect(framed.get('frame-src')).toEqual(["'none'"])
+    const admin = directives(
+      buildCsp({ nonce: 'n', development: false, https: true, frameSources: "'self'" }),
+    )
+    expect(admin.get('frame-src')).toEqual(["'self'"])
+    expect(admin.get('frame-ancestors')).toEqual(["'none'"])
+  })
+
+  it('adds a third-party script and where it reports only when given (the beacon)', () => {
+    const beacon = directives(
+      buildCsp({
+        nonce: 'n',
+        development: false,
+        https: true,
+        scriptOrigins: ['https://static.cloudflareinsights.com'],
+        connectOrigins: ['https://cloudflareinsights.com'],
+      }),
+    )
+    expect(beacon.get('script-src')).toEqual([
+      "'self'",
+      "'nonce-n'",
+      "'strict-dynamic'",
+      'https://static.cloudflareinsights.com',
+    ])
+    expect(beacon.get('connect-src')).toEqual(["'self'", 'https://cloudflareinsights.com'])
+    expect(beacon.get('img-src')).toEqual(["'self'", 'data:', 'blob:'])
+  })
+
   it('adds eval for next dev only', () => {
     const dev = buildCsp({ nonce: 'n', development: true, https: false })
     expect(directives(dev).get('script-src')).toContain("'unsafe-eval'")

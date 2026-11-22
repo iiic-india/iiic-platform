@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef } from 'react'
 
-import { isNarrativePath } from '@/lib/experience/narrative'
+import { isArticlePath, isNarrativePath, READING_BAR_ATTRIBUTE } from '@/lib/experience/narrative'
 
 import styles from './experience.module.css'
 
@@ -17,19 +17,26 @@ function reducedMotion(): boolean {
 }
 
 /**
- * The bar (docs/11 §3.1): the reader's progress down a narrative page, on the header's lower
- * rule. It is decoration, hidden from assistive technology: the page's headings carry its
- * structure. Where the browser has no scroll-driven animations, a passive scroll listener sets
- * the progress once a frame; under reduced motion nothing listens and the bar stands still at
- * full width. On any other page, booking and counselling above all, there is no bar.
+ * The bar (docs/11 §3.1): the reader's progress down a narrative page or a Journal article, on
+ * the header's lower rule. It is decoration, hidden from assistive technology: the page's
+ * headings carry its structure. Where the browser has no scroll-driven animations, a passive
+ * scroll listener sets the progress once a frame; under reduced motion nothing listens and the
+ * bar stands still at full width. On an article's address it is drawn only while the article
+ * asks for it (READING_BAR_ATTRIBUTE), which one that leads to counselling never does; its
+ * stylesheet hides it otherwise, before and without any script. On any other page, booking and
+ * counselling above all, there is no bar.
  */
 export function ReadingBar() {
-  const narrative = isNarrativePath(usePathname())
+  const pathname = usePathname()
+  const narrative = isNarrativePath(pathname)
+  const article = isArticlePath(pathname)
   const bar = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     const element = bar.current
     if (!element || drawnByCss() || reducedMotion()) return
+    // An article that does not ask for the bar gets no listener either.
+    if (article && !document.querySelector(`main [${READING_BAR_ATTRIBUTE}]`)) return
     let frame = 0
     const draw = () => {
       frame = 0
@@ -48,7 +55,15 @@ export function ReadingBar() {
       window.removeEventListener('resize', schedule)
       cancelAnimationFrame(frame)
     }
-  }, [narrative])
+  }, [narrative, article, pathname])
 
-  return narrative ? <span ref={bar} className={styles.readingBar} aria-hidden="true" /> : null
+  if (!narrative && !article) return null
+  return (
+    <span
+      ref={bar}
+      className={article ? `${styles.readingBar} ${styles.onRequest}` : styles.readingBar}
+      aria-hidden="true"
+      data-device="reading-bar"
+    />
+  )
 }

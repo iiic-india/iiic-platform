@@ -1,6 +1,7 @@
 import { CERTIFICATE_HEADING } from '@/lib/certificates/statement'
 import { SCOPE_HEADING } from '@/lib/counselling/scope'
 import { STEP_ZERO_QUESTION } from '@/lib/map/stepZero'
+import { NOT_FOUND_LINES, NOT_FOUND_QUESTIONS, type QuestionPool } from '@/lib/notFound/copy'
 import {
   footerLegal,
   LEGAL_INFORMATION_HEADING,
@@ -41,6 +42,23 @@ export const FIXED_PLACEHOLDERS = {
   contactAddress: LEGAL_PLACEHOLDERS.address,
   founderPhoto: { id: 'I-10', what: 'the founder’s photograph, as he wants it published' },
   mapLine: { id: 'I-41', what: 'approval of the line under the question' },
+  // The 404 (docs/11 §5.1): its headline, its line and its questions are proposals until IIIC
+  // approves them (src/lib/notFound/copy.ts); one question per pool, by where the visitor was
+  // headed.
+  notFoundHeadline: { id: 'I-41', what: 'approval of the 404 page’s headline' },
+  notFoundLine: { id: 'I-41', what: 'approval of the line that owns the broken link' },
+  notFoundQuestionFounders: {
+    id: 'I-41',
+    what: 'an approved question for someone headed for /organisations or /founders',
+  },
+  notFoundQuestionLearners: {
+    id: 'I-41',
+    what: 'an approved question for someone headed for /learn',
+  },
+  notFoundQuestionGeneral: {
+    id: 'I-41',
+    what: 'an approved question for someone headed anywhere else',
+  },
 } as const
 
 /** The inputs the approvals wait on: IIIC's sign-off on copy, and the lawyer's review. */
@@ -162,8 +180,8 @@ export function legalItems(page: Pick<PageContent, 'layout' | 'legalReview'>): s
 const EVERY_PAGE: PageRef = { title: 'Every page', path: '/', href: '/', inAdmin: false }
 
 /**
- * The placeholders that belong to no page's data: the footer's, and Find your path's. The
- * footer draws its legal details' placeholders only while the settings lack them.
+ * The placeholders that belong to no page's data: the footer's, Find your path's and the 404's.
+ * The footer draws its legal details' placeholders only while the settings lack them.
  */
 export function codedPlaceholders(
   legal: LegalInformation = NO_LEGAL_INFORMATION,
@@ -184,8 +202,39 @@ export function codedPlaceholders(
       section: STEP_ZERO_QUESTION,
       page: { title: 'Find your path', path: '/map', href: '/map', inAdmin: false },
     },
+    ...NOT_FOUND_ROWS.map(([placeholder, section]) => ({
+      ...placeholder,
+      section,
+      page: NOT_FOUND_PAGE,
+    })),
   ]
 }
+
+/** The 404, which the proxy also serves at /404 (src/proxy.ts). */
+const NOT_FOUND_PAGE: PageRef = {
+  title: 'Page not found',
+  path: '/404',
+  href: '/404',
+  inAdmin: false,
+}
+
+/** The placeholder the 404 draws for each pool's question while the pool has none (I-41). */
+export const NOT_FOUND_QUESTION_PLACEHOLDERS: Record<QuestionPool, { id: string; what: string }> = {
+  founders: FIXED_PLACEHOLDERS.notFoundQuestionFounders,
+  learners: FIXED_PLACEHOLDERS.notFoundQuestionLearners,
+  general: FIXED_PLACEHOLDERS.notFoundQuestionGeneral,
+}
+
+type Row = [placeholder: { id: string; what: string }, section: string]
+
+/** The 404's placeholders: each line and pool IIIC has not approved yet (docs/11 §5.1, I-41). */
+const NOT_FOUND_ROWS: Row[] = [
+  ...(NOT_FOUND_LINES.headline ? [] : [[FIXED_PLACEHOLDERS.notFoundHeadline, 'Headline'] as Row]),
+  ...(NOT_FOUND_LINES.line ? [] : [[FIXED_PLACEHOLDERS.notFoundLine, 'Line'] as Row]),
+  ...(Object.keys(NOT_FOUND_QUESTIONS) as QuestionPool[])
+    .filter((pool) => NOT_FOUND_QUESTIONS[pool].length === 0)
+    .map((pool): Row => [NOT_FOUND_QUESTION_PLACEHOLDERS[pool], 'Question']),
+]
 
 /** The code's own placeholders while the settings hold no legal information. */
 export const CODED_PLACEHOLDERS: Report['missing'] = codedPlaceholders()

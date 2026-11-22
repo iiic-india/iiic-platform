@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import OrganisationsSubPage, {
@@ -11,7 +11,10 @@ import NotFound from '@/app/(platform)/(default)/not-found'
 import InstituteSubPage, {
   generateMetadata as instituteMetadata,
 } from '@/app/(platform)/(education)/institute/[...slug]/page'
+import { MAIN_LINKS } from '@/components/site/MainLinks'
+import { FIXED_PLACEHOLDERS, NOT_FOUND_QUESTION_PLACEHOLDERS } from '@/lib/content/placeholders'
 import { CRISIS_LINES, SCOPE_HEADING } from '@/lib/counselling/scope'
+import { NOT_FOUND_COPY, notFoundVariant, poolFor, questionFor } from '@/lib/notFound/copy'
 import { logMissingPage } from '@/lib/redirects/log'
 import { redirectOrNotFound } from '@/lib/redirects/lookup'
 
@@ -74,15 +77,102 @@ describe('the 404', () => {
     },
   )
 
-  it('is headed "Page not found" and leads home, whatever the path', async () => {
+  it('says "404 · Page not found" before its headline and leads home, whatever the path', async () => {
     for (const path of ['/no-such-page', '/book/session']) {
-      await draw(path)
-      expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Page not found')
-      expect(screen.getByRole('link', { name: 'Go to the home page' }).getAttribute('href')).toBe(
-        '/',
+      const { container } = await draw(path)
+      const kicker = container.querySelector('.iiic-kicker')
+      expect(kicker?.textContent).toBe(NOT_FOUND_COPY.kicker)
+      // The kicker comes first, then the headline: a proposal, so its placeholder (I-41).
+      expect(kicker?.nextElementSibling?.tagName).toBe('H1')
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+        `[[TODO: ${FIXED_PLACEHOLDERS.notFoundHeadline.what}, I-41]]`,
       )
+      expect(screen.getByRole('link', { name: 'Home' }).getAttribute('href')).toBe('/')
       cleanup()
     }
+  })
+
+  it.each([
+    ['/no-such-page', 'general'],
+    ['/organisations/x', 'founders'],
+    ['/founders/x', 'founders'],
+    ['/Organisations', 'founders'],
+    ['/learn/x', 'learners'],
+    ['/learning', 'general'],
+    ['/institute/x', 'general'],
+    ['/journal/x', 'general'],
+  ] as const)(
+    'on %s asks the %s question, then offers the line, the way on, search and the links',
+    async (path, pool) => {
+      const { container } = await draw(path)
+      // The question of the pool for where the visitor was headed: none is approved yet.
+      expect(poolFor(path)).toBe(pool)
+      const question = container.querySelector('[data-nosnippet]')
+      expect(question?.textContent).toBe(
+        `[[TODO: ${NOT_FOUND_QUESTION_PLACEHOLDERS[pool].what}, I-41]]`,
+      )
+      expect(screen.getByRole('link', { name: 'Why a question?' }).getAttribute('href')).toBe(
+        '/framework',
+      )
+      // The line: a plain field in no form, with no name, and the promise under it.
+      const field = screen.getByLabelText('Your line (optional)')
+      expect(field.tagName).toBe('TEXTAREA')
+      expect(field.getAttribute('name')).toBeNull()
+      expect(field.closest('form')).toBeNull()
+      expect(field.hasAttribute('autofocus')).toBe(false)
+      expect(screen.getByText('Nothing you write here is stored or sent.').id).toBe(
+        field.getAttribute('aria-describedby'),
+      )
+      expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull()
+      expect(screen.getByRole('link', { name: 'Find your path' }).getAttribute('href')).toBe('/map')
+      // Then search, by GET to /search, and the eight main links, in that order.
+      const search = screen.getByRole('search')
+      expect(search.getAttribute('action')).toBe('/search')
+      expect(search.getAttribute('method')).toBe('get')
+      expect(screen.getByLabelText('Where were you headed?').getAttribute('name')).toBe('q')
+      const links = within(screen.getByRole('navigation', { name: 'Pages to start from' }))
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href'))
+      expect(links).toEqual(MAIN_LINKS.map((link) => link.href))
+      const order = [field, screen.getByRole('link', { name: 'Find your path' }), search]
+      for (let index = 1; index < order.length; index += 1) {
+        expect(
+          order[index - 1]!.compareDocumentPosition(order[index]!) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+      }
+    },
+  )
+
+  it('on a counselling path is the plain page: no question, no line, no device', async () => {
+    for (const path of ['/counselling/x', '/book/session']) {
+      const { container } = await draw(path)
+      expect(notFoundVariant(path)).toBe('plain')
+      expect(container.querySelector('[data-nosnippet]')).toBeNull()
+      expect(container.querySelector('textarea')).toBeNull()
+      expect(container.querySelector('[aria-hidden="true"]')).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Why a question?' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Find your path' })).toBeNull()
+      // Still the headline, the line, search and the links, then the scope statement.
+      expect(screen.getByRole('search')).not.toBeNull()
+      expect(screen.getByRole('navigation', { name: 'Pages to start from' })).not.toBeNull()
+      cleanup()
+    }
+  })
+
+  it('shows an approved question, the same one for the same address, and marks a candidate', () => {
+    const pools = {
+      founders: [{ text: 'Fake founders question?' }],
+      learners: [],
+      general: [{ text: 'Fake first question?' }, { text: 'Fake second question?' }],
+    }
+    expect(questionFor('/learn/x', pools)).toBeNull()
+    expect(questionFor('/organisations/x', pools)).toEqual({ text: 'Fake founders question?' })
+    const asked = new Set(
+      ['/a', '/b', '/c', '/d', '/e', '/f'].map((path) => questionFor(path, pools)?.text),
+    )
+    expect(asked).toEqual(new Set(['Fake first question?', 'Fake second question?']))
+    expect(questionFor('/Same-Address', pools)).toEqual(questionFor('/same-address', pools))
   })
 
   it('writes nothing to the 404 log: Next.js draws it on every page view, served or not', async () => {

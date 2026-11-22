@@ -30,8 +30,8 @@ const source = (held: Partial<SitemapSource> = {}): SitemapSource => ({
   ...held,
 })
 
-/** The pages the app draws itself, after the CMS's: Find your path and the Journal. */
-const APP = ['/map', '/journal']
+/** The pages the app draws itself, after the CMS's: Find your path, the Journal and Proof. */
+const APP = ['/map', '/journal', '/proof']
 
 /** Two published articles, newest first, and the topic that holds them. Obviously fake. */
 const JOURNAL: Pick<SitemapSource, 'posts' | 'topics'> = {
@@ -125,6 +125,7 @@ describe('the sitemap', () => {
       { url: `${ORIGIN}/fake-page` },
       { url: `${ORIGIN}/map` },
       { url: `${ORIGIN}/journal` },
+      { url: `${ORIGIN}/proof` },
     ])
   })
 
@@ -258,6 +259,9 @@ describe('the sitemap', () => {
         '<url>',
         `<loc>${ORIGIN}/journal</loc>`,
         '</url>',
+        '<url>',
+        `<loc>${ORIGIN}/proof</loc>`,
+        '</url>',
         '</urlset>',
         '',
       ].join('\n'),
@@ -369,6 +373,7 @@ describe('the route /sitemap.xml', () => {
       { url: `${ORIGIN}/about`, lastModified: '2026-11-20T10:00:00.000Z' },
       { url: `${ORIGIN}/map` },
       { url: `${ORIGIN}/journal` },
+      { url: `${ORIGIN}/proof` },
     ])
     // Rendered per request (D-42), so a page published in the admin is listed at once.
     expect(connection).toHaveBeenCalledTimes(1)

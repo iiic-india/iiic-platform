@@ -6,6 +6,7 @@ Everything the platform does on its own. Each automation is an event or a schedu
 
 - **Event-driven, idempotent.** Domain events (`booking.confirmed`, `payment.captured`, `lead.created`, …) enqueue jobs with an idempotency key, so a retried webhook or a double click never sends twice.
 - **Scheduled jobs** (reminders, digests, retention) are enqueued at a computed `run_at` and recomputed when the underlying booking changes (a reschedule cancels and re-plans its reminders).
+- **Scheduled publishing** of pages and Journal articles is Payload's own (`versions.drafts.schedulePublish`), which runs on the same jobs queue: it is switched on with the cron runner (M6), not before, since nothing would run the scheduled job until then.
 - **Retries.** Three attempts with backoff (1 min, 10 min, 1 h); then the job fails visibly on Today and in the log.
 - **Quiet hours.** No WhatsApp or SMS between 21:00 and 08:00 IST (setting); messages due in that window are sent at 08:00, except a reminder that would then arrive after the session, which is dropped. The window is in Settings → Platform settings (M2), read with `readQuietHours` and tested with `inQuietHours` (`src/lib/settings/`).
 - **Consent.** Transactional messages (confirmations, reminders, receipts, login codes) go to anyone who booked. Anything promotional (bridges, follow-up offers, newsletters, nudges) needs the matching consent and stops the moment it is withdrawn.
@@ -79,7 +80,7 @@ Channels: E = email · W = WhatsApp · A = admin (Today, digest) · C = calendar
 | ID | Trigger | Timing | Action | Channels |
 | --- | --- | --- | --- | --- |
 | V1 | An operator sends a consent request for a review (imported or added by hand) | At once; one reminder after 5 days if there is no reply; nothing after that | Show the person the exact text (or the excerpt and any translation proposed) and how it will appear (name in the form they choose, designation, place, programme, year), with three answers: publish as shown · publish with initials · do not publish; ask them to confirm they still stand by it; record the reply as a consent with its evidence; move the review to approved or declined | E; W only inside a 24-hour window the person opened |
-| V2 | Consent to publish a review or story withdrawn (a reply, the withdraw link, or recorded by the operator) | At once | Unpublish, revalidate every page that showed it, confirm to the person, record the withdrawal; covers every review and story (Release 2's stories use it too) | E, A |
+| V2 | Consent to publish a review or story withdrawn (a reply, the withdraw link, or recorded by the operator) | At once | Unpublish, revalidate every page that showed it, confirm to the person, record the withdrawal; covers every review and story (Release 2's stories use it too). As built (M2): not a job but a hook of the consent ledger (`src/lib/proof/ledger.ts`): a withdrawal of the consent to publish a testimonial, once the purpose is no longer in force for the person, withdraws every review of theirs still in play in the same transaction (words, translation, excerpt, photograph, link and placements removed; the consent entries stay) and marks Proof and the voices stale; the confirmation to the person comes with the messaging (M6) | E, A |
 
 ### Certificates (R1, D-39)
 

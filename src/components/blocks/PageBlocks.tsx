@@ -4,6 +4,8 @@ import experience from '@/components/experience/experience.module.css'
 import { FlipLines } from '@/components/experience/FlipLines'
 import { InsightNav } from '@/components/experience/InsightNav'
 import { RevealChapters } from '@/components/experience/RevealChapters'
+import { ArticleMeta } from '@/components/journal/ArticleMeta'
+import { FirstVoice, PlainVoices, WithVoice } from '@/components/proof/Voices'
 import { Todo } from '@/components/Todo'
 import {
   CERTIFICATE_AWAITS,
@@ -14,6 +16,11 @@ import { LEGAL_REVIEW_AWAITS } from '@/lib/content/legalReview'
 import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
 import type { FaqItem, PageBlock, PageContent } from '@/lib/content/types'
 import { type Devices, devicesAt } from '@/lib/experience/narrative'
+import { articlePath, JOURNAL_PATH } from '@/lib/journal/addresses'
+import type { PostSummary } from '@/lib/journal/posts'
+import { JOURNAL_TEASER_HEADING } from '@/lib/journal/teaser'
+import { isCounsellingPage } from '@/lib/proof/reviews'
+import { NO_VOICES, type PageVoices } from '@/lib/proof/voices'
 import {
   LEGAL_INFORMATION_COLUMNS,
   LEGAL_INFORMATION_HEADING,
@@ -48,7 +55,7 @@ import { renderText } from './text'
  */
 
 /** Marks a block whose wording IIIC has not approved yet (I-41). It goes when the copy is approved. */
-function CandidateMark({ status }: { status?: 'approved' | 'candidate' | null }) {
+export function CandidateMark({ status }: { status?: 'approved' | 'candidate' | null }) {
   if (status !== 'candidate') return null
   return (
     <div className={styles.candidate}>
@@ -120,7 +127,16 @@ function SectionHead({
   )
 }
 
-function Hero({ block, draft }: { block: HeroBlock; draft: boolean }) {
+function Hero({
+  block,
+  draft,
+  firstVoice = null,
+}: {
+  block: HeroBlock
+  draft: boolean
+  /** The home page's first voice, under the actions (docs/11 §3.8). */
+  firstVoice?: PageVoices['first']
+}) {
   return (
     <section className={`iiic-hero ${styles.heroSolo}`}>
       <div>
@@ -136,19 +152,33 @@ function Hero({ block, draft }: { block: HeroBlock; draft: boolean }) {
         {block.note ? (
           <div className={`iiic-type-small ${styles.heroNote}`}>{renderText(block.note)}</div>
         ) : null}
+        <FirstVoice voice={firstVoice} />
       </div>
     </section>
   )
 }
 
-function Doors({ block }: { block: DoorsBlock }) {
+/**
+ * What an item that reveals once carries (docs/11 §4, §7): the reveal's attribute, empty as
+ * drawn, so that nothing is held back until the script runs (RevealChapters.tsx).
+ */
+function revealing(reveal: boolean): { 'data-reveal'?: '' } {
+  return reveal ? { 'data-reveal': '' } : {}
+}
+
+function Doors({ block, reveal }: { block: DoorsBlock; reveal: boolean }) {
   return (
     <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
       <SectionHead kicker={block.kicker} heading={block.heading} intro={block.intro} />
       <div className="iiic-doors">
         {block.doors.map((door) => (
-          <Link className="iiic-card iiic-card-door" href={door.href} key={door.id ?? door.href}>
+          <Link
+            className={`iiic-card iiic-card-door${reveal ? ` ${experience.revealItem}` : ''}`}
+            href={door.href}
+            key={door.id ?? door.href}
+            {...revealing(reveal)}
+          >
             {door.glyph ? (
               <div className="iiic-door-glyph" aria-hidden="true">
                 {door.glyph}
@@ -189,7 +219,7 @@ function Statement({ block }: { block: StatementBlock }) {
   )
 }
 
-function Steps({ block }: { block: StepsBlock }) {
+function Steps({ block, reveal }: { block: StepsBlock; reveal: boolean }) {
   return (
     <section className="iiic-section" id={block.anchor ?? undefined}>
       <CandidateMark status={block.copyStatus} />
@@ -199,7 +229,11 @@ function Steps({ block }: { block: StepsBlock }) {
       ) : null}
       <ol className="iiic-steps">
         {block.steps.map((step, index) => (
-          <li key={step.id ?? index}>
+          <li
+            className={reveal ? experience.revealItem : undefined}
+            key={step.id ?? index}
+            {...revealing(reveal)}
+          >
             <strong>{renderText(step.title)}</strong>
             {step.text ? <p>{renderText(step.text)}</p> : null}
           </li>
@@ -393,6 +427,45 @@ function Cards({ block }: { block: CardsBlock }) {
             </article>
           )
         })}
+      </div>
+    </section>
+  )
+}
+
+// The heading of the home page's Journal section is in src/lib/journal/teaser.ts; it is passed
+// on from here for the files that already read it with the blocks.
+export { JOURNAL_TEASER_HEADING }
+
+/** The link from that section to the whole Journal, in the words its topic list uses. */
+export const JOURNAL_TEASER_LINK = 'All articles'
+
+/**
+ * The newest published articles, on the home page before its closing band (docs/11 §4, row 8:
+ * nothing moves). Drawn only while at least one article is published; each card is a door to
+ * its article, with its first topic, its excerpt, its date and its reading time.
+ */
+function JournalTeaser({ posts }: { posts: readonly PostSummary[] }) {
+  const span = cardSpan(posts.length)
+  return (
+    <section className="iiic-section" aria-labelledby="journal-teaser">
+      <CandidateMark status="candidate" />
+      <SectionHead heading={JOURNAL_TEASER_HEADING} headingId="journal-teaser" />
+      <div className="iiic-grid">
+        {posts.map((post) => (
+          <article className={`iiic-card ${span}`} key={post.id}>
+            {post.topics[0] ? <div className="iiic-kicker">{post.topics[0].name}</div> : null}
+            <h3>
+              <Link href={articlePath(post.slug)}>{post.title}</Link>
+            </h3>
+            <p>{post.excerpt}</p>
+            <ArticleMeta publishedAt={post.publishedAt} readingTime={post.readingTime} />
+          </article>
+        ))}
+      </div>
+      <div className={`iiic-row ${styles.actions}`}>
+        <Link className="iiic-btn iiic-btn-secondary" href={JOURNAL_PATH}>
+          {JOURNAL_TEASER_LINK}
+        </Link>
       </div>
     </section>
   )
@@ -618,6 +691,7 @@ function Section({
   index,
   legal,
   faqs,
+  firstVoice,
 }: {
   block: Exclude<PageBlock, BandBlock>
   draft: boolean
@@ -626,16 +700,17 @@ function Section({
   index: number
   legal: LegalInformation
   faqs: readonly FaqItem[]
+  firstVoice: PageVoices['first']
 }) {
   switch (block.blockType) {
     case 'hero':
-      return <Hero block={block} draft={draft} />
+      return <Hero block={block} draft={draft} firstVoice={firstVoice} />
     case 'doors':
-      return <Doors block={block} />
+      return <Doors block={block} reveal={devices.reveals === true} />
     case 'statement':
       return <Statement block={block} />
     case 'steps':
-      return <Steps block={block} />
+      return <Steps block={block} reveal={devices.reveals === true} />
     case 'comparison':
       return <Comparison block={block} flip={devices.flip === true} index={index} />
     case 'points':
@@ -672,6 +747,12 @@ function Section({
  * information section draws what the settings hold (the route reads it,
  * src/lib/settings/read.ts); without it, every detail is its placeholder. The questions section
  * shows the questions given, which PageAt reads for the page (src/lib/content/faqs.ts).
+ *
+ * The reviews pinned to the page are its voices (docs/11 §3.8; src/lib/proof/read.ts): the
+ * home page's first voice under its hero, and one beside each section that has one, by the
+ * section's link name; on the counselling page up to three plain cards in the section's text
+ * instead. Where nothing is pinned nothing is drawn. A voice reveals once as it comes into view,
+ * except inside a chapter, which reveals as a whole, and on counselling, where nothing moves.
  */
 export function RenderBlocks({
   layout,
@@ -679,23 +760,35 @@ export function RenderBlocks({
   slug,
   legal = NO_LEGAL_INFORMATION,
   faqs = [],
+  voices = NO_VOICES,
+  journal = [],
 }: {
   layout: PageContent['layout']
   legalReview?: PageContent['legalReview']
   slug?: string
   legal?: LegalInformation
   faqs?: readonly FaqItem[]
+  voices?: PageVoices
+  /** The newest published articles, which the home page shows before its band (docs/11 §4). */
+  journal?: readonly PostSummary[]
 }) {
   const devices = devicesAt(slug)
+  const counselling = isCounsellingPage(slug)
   const band = layout.find((block): block is BandBlock => block.blockType === 'band')
   const sections = layout.filter(
     (block): block is Exclude<PageBlock, BandBlock> => block.blockType !== 'band',
   )
+  const voicesOf = (block: Exclude<PageBlock, BandBlock>) => {
+    const anchor = 'anchor' in block ? block.anchor : null
+    return anchor ? voices.bySection[anchor] : undefined
+  }
+  const revealsVoices =
+    !counselling && !devices.chapters && sections.some((block) => voicesOf(block)?.length)
   return (
     <>
       <div className={`iiic-page ${styles.page}`}>
         {sections.map((block, index) => {
-          const section = (
+          const drawn = (
             <Section
               block={block}
               draft={legalReview === 'draft'}
@@ -703,6 +796,16 @@ export function RenderBlocks({
               index={index}
               legal={legal}
               faqs={faqs}
+              firstVoice={slug === 'home' ? voices.first : null}
+            />
+          )
+          const section = counselling ? (
+            <PlainVoices section={drawn} voices={voicesOf(block)} key={block.id ?? index} />
+          ) : (
+            <WithVoice
+              section={drawn}
+              voice={voicesOf(block)?.[0]}
+              reveal={!devices.chapters}
               key={block.id ?? index}
             />
           )
@@ -714,7 +817,8 @@ export function RenderBlocks({
             section
           )
         })}
-        {devices.chapters ? <RevealChapters /> : null}
+        {journal.length > 0 ? <JournalTeaser posts={journal} /> : null}
+        {devices.chapters || devices.reveals || revealsVoices ? <RevealChapters /> : null}
         {band?.copyStatus === 'candidate' ? (
           <div className={styles.band}>
             <CandidateMark status={band.copyStatus} />

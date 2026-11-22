@@ -20,7 +20,11 @@ import { CONTACT } from '@/lib/site/contact'
 // and getPage.
 vi.mock('next/server', () => ({ connection: vi.fn(async () => undefined) }))
 vi.mock('@/lib/seo/sitemapSource', () => ({ sitemapSource: vi.fn() }))
-vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
+// In a test no one previews, so a route draws what getPage finds (src/lib/content/pages.ts).
+vi.mock('@/lib/content/pages', () => {
+  const getPage = vi.fn()
+  return { getPage, getPageToShow: (slug: string) => getPage(slug) }
+})
 
 const ORIGIN = 'https://fake.example'
 const STARTERS = Object.keys(STARTER_PAGES)

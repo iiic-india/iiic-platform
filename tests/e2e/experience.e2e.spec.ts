@@ -301,6 +301,28 @@ test.describe('Chapters (docs/11 §3.5)', () => {
   })
 })
 
+test.describe('The home page’s reveals (docs/11 §4)', () => {
+  test('a step below the window waits, and comes in once, when it is reached', async ({ page }) => {
+    await page.goto('/')
+    const last = page.locator('main .iiic-steps > li').last()
+    await expect(last).toHaveAttribute('data-reveal', 'waiting')
+    await expect(last).toHaveCSS('opacity', '0')
+    await last.scrollIntoViewIfNeeded()
+    await expect(last).toHaveAttribute('data-reveal', 'in')
+    await expect(last).toHaveCSS('opacity', '1')
+  })
+
+  test('the doors’ cards and the steps are the only things that reveal', async ({ page }) => {
+    await page.goto('/')
+    const revealing = page.locator('main [data-reveal]')
+    const cards = await page.locator('main .iiic-doors > .iiic-card').count()
+    const steps = await page.locator('main .iiic-steps > li').count()
+    expect(cards).toBeGreaterThan(0)
+    expect(steps).toBeGreaterThan(0)
+    await expect(revealing).toHaveCount(cards + steps)
+  })
+})
+
 test.describe('Without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
 
@@ -353,6 +375,18 @@ test.describe('Under reduced motion', () => {
       return getComputedStyle(subject).opacity
     })
     expect(opacity).toBe('1')
+  })
+
+  test('no card or step on the home page is ever held back', async ({ page }) => {
+    await page.goto('/')
+    await hydrated(page.locator('header.iiic-header a').first())
+    for (const share of [0, 0.5, 1]) {
+      await scrollToShare(page, share)
+      for (const item of await page.locator('main [data-reveal]').all()) {
+        await expect(item).toHaveAttribute('data-reveal', '')
+        await expect(item).toHaveCSS('opacity', '1')
+      }
+    }
   })
 
   test('no chapter is ever held back', async ({ page }) => {

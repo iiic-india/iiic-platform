@@ -13,6 +13,9 @@ import { hasRole, isActive, ROLES, type MaybeStaff, type Role } from './roles'
  *   the two-factor code;
  * - `active`: no sign-in needed for an active document (a service, a practitioner's profile);
  *   inactive ones stay with `roles`, after the two-factor code.
+ * - `statusPublished`: no sign-in needed for a document whose own status says published (a
+ *   review, which has its own life rather than drafts); the rest stay with `roles`, after the
+ *   two-factor code.
  * A deactivated account is refused everything (src/access/roles.ts).
  */
 export type Rule = {
@@ -21,6 +24,7 @@ export type Rule = {
   anyone?: true
   published?: true
   active?: true
+  statusPublished?: true
 }
 
 export const POLICY = {
@@ -116,6 +120,17 @@ export const POLICY = {
     update: { roles: ['owner', 'editor'] },
     delete: { roles: ['owner', 'editor'] },
   },
+  // The search index (docs/04 `search_index`; src/plugins/searchIndex.ts): a copy of what is
+  // published, so anyone reads it, as /search does. Only the server adds entries, as documents
+  // are published, changed and unpublished. The staff who edit content may change an entry's
+  // priority; owners and editors, who remove content (docs/05), may also rebuild the index with
+  // the admin's "Reindex", which needs both.
+  searchIndex: {
+    read: { anyone: true },
+    create: {},
+    update: { roles: ['owner', 'operator', 'editor'] },
+    delete: { roles: ['owner', 'editor'] },
+  },
   // Written by the server only, never through the API (docs/04, docs/12 §7). Owners read the
   // raw events until Reports aggregates them (M5).
   analyticsEvents: {
@@ -159,6 +174,17 @@ export const POLICY = {
     create: { roles: ['owner'] },
     update: { roles: ['owner'] },
     delete: {},
+  },
+  // Reviews (docs/04 `testimonials`, S2 until published; docs/05, Proof): the operator moderates
+  // (imports, screens, records the writer's reply, pins, withdraws) and owners publish, which
+  // the collection checks itself (src/collections/Testimonials.ts). Anyone reads a published
+  // review, and only its published fields (FIELD_POLICY). Editors write pages, not client
+  // records (docs/05), so they read reviews as a visitor does. Only an owner deletes one.
+  testimonials: {
+    read: { roles: ['owner', 'operator'], statusPublished: true },
+    create: { roles: ['owner', 'operator'] },
+    update: { roles: ['owner', 'operator'] },
+    delete: { roles: ['owner'] },
   },
 } as const satisfies Record<string, Record<string, Rule>>
 
@@ -212,6 +238,13 @@ export const FIELD_POLICY = {
     read: { roles: ['owner', 'operator', 'editor'] },
     write: { roles: ['owner'] },
   },
+  // A review's record behind the card (S2, docs/04): who wrote it, where it came from and where
+  // the original is kept, the screening, the consent, notes. The staff who moderate reviews; a
+  // visitor reads the published card only.
+  testimonialRecord: {
+    read: { roles: ['owner', 'operator'] },
+    write: { roles: ['owner', 'operator'] },
+  },
 } as const satisfies Record<string, { read: FieldRule; write: FieldRule }>
 
 /** Whether a session has entered its two-factor code (payload-totp's strategy). */
@@ -226,7 +259,7 @@ export function allow(rule: Rule): Access {
     // A rule that also serves visitors runs without payload-totp's wrapper (Pages.ts), so
     // its staff branch asks for the two-factor code itself; any other session gets the
     // visitors' filter.
-    const servesVisitors = Boolean(rule.published || rule.active)
+    const servesVisitors = Boolean(rule.published || rule.active || rule.statusPublished)
     if (
       rule.roles?.length &&
       hasRole(user, ...rule.roles) &&
@@ -237,6 +270,7 @@ export function allow(rule: Rule): Access {
     if (rule.self && user && isActive(user)) return { id: { equals: user.id } }
     if (rule.published) return { _status: { equals: 'published' } }
     if (rule.active) return { active: { equals: true } }
+    if (rule.statusPublished) return { status: { equals: 'published' } }
     return false
   }
 }

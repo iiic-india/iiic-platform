@@ -8,10 +8,12 @@ import {
 } from '@playwright/test'
 
 import { COPIED, LABEL } from '../../src/components/experience/TakeItWithYou'
+import { PREVIEW_COPY } from '../../src/components/site/previewCopy'
 import { CRISIS_HEADING, SCOPE_HEADING } from '../../src/lib/counselling/scope'
+import { JOURNAL_TEASER_HEADING } from '../../src/lib/journal/teaser'
 import { JOURNAL_PAGE } from '../../src/lib/seo/appPages'
 import { canonicalUrl, siteOrigin, TITLE_SUFFIX } from '../../src/lib/seo/site'
-import { login } from '../helpers/login'
+import { login, signIn } from '../helpers/login'
 import { cleanupJournalEditor, journalEditor, seedJournalEditor } from '../helpers/seedUser'
 
 // The Journal on the running site (docs/02; docs/content/copy-architecture.md §4.8). CI serves
@@ -47,6 +49,11 @@ test.describe('The Journal while no article is published', () => {
     await expect(page.locator('main')).not.toContainText('[[')
   })
 
+  test('the home page shows no Journal section while nothing is published', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: JOURNAL_TEASER_HEADING })).toHaveCount(0)
+  })
+
   test('the footer’s Journal link leads there', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('contentinfo').getByRole('link', { name: 'Journal', exact: true }).click()
@@ -65,7 +72,7 @@ test.describe('The Journal while no article is published', () => {
     }) => {
       const response = await page.goto(path)
       expect(response?.status()).toBe(404)
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
+      await expect(page.getByText('404 · Page not found', { exact: true })).toBeVisible()
       await expect(page.locator('.iiic-site')).toHaveAttribute('data-register', 'education')
       await expect(page.locator('link[rel="canonical"]')).toHaveCount(0)
       await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(0)
@@ -84,6 +91,33 @@ test.describe('The Journal’s addresses, as requests', () => {
     const response = await request.get('/journal/page/1', { maxRedirects: 0 })
     expect(response.status()).toBe(308)
     expect(new URL(response.headers()['location'] ?? '', ORIGIN).pathname).toBe('/journal')
+  })
+
+  test('the feed is valid RSS with no article, cached as llms.txt is (docs/12 §3)', async ({
+    request,
+  }) => {
+    const response = await request.get('/journal/feed.xml')
+    expect(response.status()).toBe(200)
+    expect(response.headers()['content-type']).toBe('application/rss+xml; charset=utf-8')
+    expect(response.headers()['cache-control']).toBe(
+      'public, max-age=0, s-maxage=86400, stale-while-revalidate=86400',
+    )
+    const xml = await response.text()
+    expect(xml).toContain('<rss version="2.0"')
+    expect(xml).not.toContain('<item>')
+  })
+
+  test('a visitor’s preview link is a plain 404 that sets no cookie (OS-4)', async ({
+    request,
+  }) => {
+    for (const query of [
+      'collection=posts&slug=no-such-article',
+      'collection=pages&slug=framework',
+    ]) {
+      const response = await request.get(`/api/preview?${query}`, { maxRedirects: 0 })
+      expect(response.status(), query).toBe(404)
+      expect(response.headers()['set-cookie'], query).toBeUndefined()
+    }
   })
 
   test('an article that is not published has no share image either', async ({ request }) => {
@@ -160,6 +194,12 @@ async function removeFakes(api: APIRequestContext): Promise<void> {
   expect((await api.delete(`/api/posts?${posts}`, asEditor)).ok()).toBe(true)
   expect((await api.delete(`/api/topics?${topics}`, asEditor)).ok()).toBe(true)
 }
+
+/** The header's bar (docs/11 §3.1): its one span, hidden from assistive technology. */
+const barOn = (page: Page) => page.locator('header.iiic-header > span[aria-hidden="true"]')
+
+/** A draft title saved over a published article, which only a preview shows. Obviously fake. */
+const DRAFT_TITLE = 'A fake draft title, not yet published?'
 
 /** Serious and critical axe findings on the page as it is now. */
 async function blockingViolations(page: Page): Promise<string[]> {
@@ -296,6 +336,56 @@ test.describe('The Journal once articles are published', () => {
     await expect(page.getByRole('button', { name: LABEL })).toHaveCount(0)
   })
 
+  test('the bar tracks the reader of an article, and never of one that leads to counselling', async ({
+    page,
+  }) => {
+    await page.goto('/journal/fake-e2e-article')
+    await expect(barOn(page)).toHaveCount(1)
+    await expect(barOn(page)).toHaveCSS('display', 'block')
+    await page.goto('/journal/fake-e2e-counselling-article')
+    await expect(barOn(page)).not.toHaveCSS('display', 'block')
+    // Moving from one to the other inside the site keeps to each article's own rule.
+    await page.goto('/journal/fake-e2e-article')
+    await page.getByRole('link', { name: 'Journal', exact: true }).first().click()
+    await page.getByRole('link', { name: FAKE_POSTS[1].title, exact: true }).click()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(FAKE_POSTS[1].title)
+    await expect(barOn(page)).not.toHaveCSS('display', 'block')
+  })
+
+  test('the feed lists the published articles at their absolute addresses', async ({ page }) => {
+    const response = await page.request.get('/journal/feed.xml')
+    expect(response.status()).toBe(200)
+    const xml = await response.text()
+    for (const post of FAKE_POSTS) {
+      expect(xml).toContain(`<link>${canonicalUrl(`/journal/${post.slug}`, ORIGIN)}</link>`)
+    }
+    expect(xml).toContain('<pubDate>')
+    // Every page of the Journal points feed readers at it.
+    for (const path of ['/journal', '/journal/topic/fake-e2e-topic', '/journal/fake-e2e-article']) {
+      await page.goto(path)
+      const link = page.locator('link[rel="alternate"][type="application/rss+xml"]')
+      await expect(link, path).toHaveCount(1)
+      expect(new URL((await link.getAttribute('href')) ?? '', ORIGIN).pathname, path).toBe(
+        '/journal/feed.xml',
+      )
+    }
+  })
+
+  test('the home page shows the newest articles before its closing band', async ({ page }) => {
+    await page.goto('/')
+    const section = page.locator('section', {
+      has: page.getByRole('heading', { name: JOURNAL_TEASER_HEADING }),
+    })
+    await expect(section).toBeVisible()
+    for (const post of FAKE_POSTS) {
+      await expect(section.getByRole('link', { name: post.title, exact: true })).toHaveAttribute(
+        'href',
+        `/journal/${post.slug}`,
+      )
+    }
+    expect(await blockingViolations(page)).toEqual([])
+  })
+
   test('an unpublished article leaves the site at the next request', async ({ page }) => {
     const response = await editor.request.patch(`/api/posts/${postIds['fake-e2e-article']}`, {
       ...asEditor,
@@ -306,5 +396,119 @@ test.describe('The Journal once articles are published', () => {
     await page.goto('/journal')
     await expect(page.getByRole('link', { name: FAKE_POSTS[0].title, exact: true })).toHaveCount(0)
     await expect(page.getByRole('link', { name: FAKE_POSTS[1].title, exact: true })).toBeVisible()
+  })
+
+  // The live preview (docs/15 §5.3, OS-4). The first article is a draft now, and the second gets
+  // a draft title saved over its published version.
+  const previewLink = (slug: string) => `/api/preview?collection=posts&slug=${slug}`
+
+  test('staff with their code see the draft as the site draws it, framed by the admin', async () => {
+    const saved = await editor.request.patch(
+      `/api/posts/${postIds['fake-e2e-counselling-article']}?draft=true`,
+      { ...asEditor, data: { title: DRAFT_TITLE } },
+    )
+    expect(saved.ok()).toBe(true)
+
+    const opened = await editor.goto(previewLink('fake-e2e-article'))
+    expect(opened?.status()).toBe(200)
+    expect(new URL(editor.url()).pathname).toBe('/journal/fake-e2e-article')
+    await expect(editor.getByRole('heading', { level: 1 })).toHaveText(FAKE_POSTS[0].title)
+    await expect(editor.locator('.iiic-site')).toHaveAttribute('data-register', 'education')
+    await expect(editor.getByRole('status').filter({ hasText: PREVIEW_COPY.line })).toBeVisible()
+    // Only this response may be framed, by the admin on the same origin, and it is never indexed.
+    const headers = opened?.headers() ?? {}
+    expect(headers['x-frame-options']).toBe('SAMEORIGIN')
+    expect(headers['content-security-policy']).toContain("frame-ancestors 'self'")
+    expect(headers['x-robots-tag']).toContain('noindex')
+    // The draft-mode cookie (docs/12 §10): a session cookie, HttpOnly, beside the staff session's two.
+    const cookies = await editor.context().cookies()
+    expect(cookies.map((cookie) => cookie.name).sort()).toEqual([
+      '__prerender_bypass',
+      'payload-token',
+      'payload-totp',
+    ])
+    expect(cookies.find((cookie) => cookie.name === '__prerender_bypass')).toMatchObject({
+      httpOnly: true,
+      expires: -1,
+    })
+
+    // A draft saved over a published article shows in the preview, the published one elsewhere.
+    await editor.goto(previewLink('fake-e2e-counselling-article'))
+    await expect(editor.getByRole('heading', { level: 1 })).toHaveText(DRAFT_TITLE)
+    // Still a counselling surface: no bar, the scope statement.
+    await expect(barOn(editor)).not.toHaveCSS('display', 'block')
+    await expect(editor.getByRole('heading', { name: SCOPE_HEADING })).toBeVisible()
+
+    // The admin frames the draft, as its live preview does.
+    await editor.goto('/admin')
+    const framed = await editor.evaluate(async (path) => {
+      const frame = document.createElement('iframe')
+      frame.src = path
+      const loaded = new Promise((resolve) => frame.addEventListener('load', resolve))
+      document.body.append(frame)
+      await loaded
+      try {
+        return frame.contentDocument?.querySelector('h1')?.textContent ?? null
+      } catch {
+        return null
+      }
+    }, '/journal/fake-e2e-article')
+    expect(framed).toBe(FAKE_POSTS[0].title)
+  })
+
+  test('a visitor, or staff without their code, get the published page or the 404, never a draft', async ({
+    page,
+    browser,
+  }, testInfo) => {
+    const draftCookie = (await editor.context().cookies()).find(
+      (cookie) => cookie.name === '__prerender_bypass',
+    )
+    expect(draftCookie).toBeDefined()
+    if (!draftCookie) return
+
+    /** What a browser holding the draft-mode cookie is shown at the two addresses. */
+    const expectPublishedOnly = async (viewer: Page) => {
+      expect((await viewer.goto('/journal/fake-e2e-article'))?.status()).toBe(404)
+      const published = await viewer.goto('/journal/fake-e2e-counselling-article')
+      expect(published?.status()).toBe(200)
+      await expect(viewer.getByRole('heading', { level: 1 })).toHaveText(FAKE_POSTS[1].title)
+      await expect(viewer.getByText(PREVIEW_COPY.line)).toHaveCount(0)
+      expect(published?.headers()['x-frame-options']).toBe('DENY')
+      expect(published?.headers()['content-security-policy']).toContain("frame-ancestors 'none'")
+    }
+
+    // A visitor: the preview link refuses them, and the cookie, should they hold it, shows nothing.
+    expect((await page.goto(previewLink('fake-e2e-article')))?.status()).toBe(404)
+    expect(await page.context().cookies()).toEqual([])
+    await page.context().addCookies([draftCookie])
+    await expectPublishedOnly(page)
+
+    // Staff signed in who have not entered their code.
+    const context = await browser.newContext({ baseURL: testInfo.project.use.baseURL })
+    try {
+      const uncoded = await context.newPage()
+      await signIn(uncoded, { email: journalEditor.email, password: journalEditor.password })
+      await uncoded.waitForURL(/\/admin\/verify-totp/)
+      expect((await uncoded.goto(previewLink('fake-e2e-article')))?.status()).toBe(404)
+      expect((await context.cookies()).map((cookie) => cookie.name)).not.toContain(
+        '__prerender_bypass',
+      )
+      await context.addCookies([draftCookie])
+      await expectPublishedOnly(uncoded)
+    } finally {
+      await context.close()
+    }
+  })
+
+  test('leaving preview clears its cookie and shows the published page again', async () => {
+    await editor.goto('/journal/fake-e2e-counselling-article')
+    await expect(editor.getByRole('heading', { level: 1 })).toHaveText(DRAFT_TITLE)
+    await editor.getByRole('link', { name: PREVIEW_COPY.leave }).click()
+    await expect(editor).toHaveURL(/\/journal\/fake-e2e-counselling-article$/)
+    await expect(editor.getByRole('heading', { level: 1 })).toHaveText(FAKE_POSTS[1].title)
+    await expect(editor.getByText(PREVIEW_COPY.line)).toHaveCount(0)
+    expect((await editor.context().cookies()).map((cookie) => cookie.name)).not.toContain(
+      '__prerender_bypass',
+    )
   })
 })

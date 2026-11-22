@@ -39,14 +39,17 @@ async function entriesOf(
 
 /**
  * Where a person stands on one purpose (src/lib/privacy/consentLedger.ts): a promotional message
- * goes out only while this says "granted" (docs/06, Engine rules: Consent).
+ * goes out only while this says "granted" (docs/06, Engine rules: Consent), and a review is
+ * published only while it does for publishing a testimonial (D-37). A hook passes its request,
+ * so the answer includes what its own transaction has recorded.
  */
 export async function consentFor(
   payload: Payload,
   personId: number | string,
   purpose: ConsentPurpose,
+  req?: PayloadRequest,
 ): Promise<ConsentState> {
-  return consentState(await entriesOf(payload, personId), purpose)
+  return consentState(await entriesOf(payload, personId, req), purpose)
 }
 
 /**

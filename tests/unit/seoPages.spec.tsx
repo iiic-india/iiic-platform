@@ -59,12 +59,21 @@ const request = vi.hoisted(() => {
   process.env.NEXT_PUBLIC_SITE_URL = 'https://fake.example'
   return { path: '' }
 })
-vi.mock('@/lib/content/pages', () => ({ getPage: vi.fn() }))
+// In a test no one previews, so a route draws what getPage finds (src/lib/content/pages.ts).
+vi.mock('@/lib/content/pages', () => {
+  const getPage = vi.fn()
+  return { getPage, getPageToShow: (slug: string) => getPage(slug) }
+})
+// No article is published: the home page shows no Journal section (tests/unit/journalTeaser.spec.tsx).
+vi.mock('@/lib/journal/posts', () => ({ latestPosts: vi.fn(async () => []) }))
 // The legal information comes from the settings (tests/unit/settingsLegal.spec.tsx); the routes'
 // metadata and structure do not depend on it.
 vi.mock('@/lib/settings/read', () => ({ legalInformationFor: async () => undefined }))
 // No question is published: the questions sections draw nothing.
 vi.mock('@/lib/content/faqs', () => ({ getFaqs: vi.fn(async () => []) }))
+vi.mock('@/lib/proof/read', () => ({
+  getPageVoices: vi.fn(async () => ({ first: null, bySection: {} })),
+}))
 vi.mock('next/headers', () => ({
   headers: async () => new Headers({ 'x-pathname': request.path }),
 }))
@@ -183,8 +192,16 @@ const NOT_FOUND = [
   { file: '(education)/not-found.tsx', Page: EducationNotFound },
 ]
 
-/** The pages that draw themselves, tested one by one below. */
-const OWN = ['(default)/page.tsx', '(default)/[...slug]/page.tsx', '(default)/map/page.tsx']
+/** The pages that draw themselves, tested one by one below; /search in tests/unit/searchPage.spec.tsx. */
+const OWN = [
+  '(default)/page.tsx',
+  '(default)/[...slug]/page.tsx',
+  '(default)/map/page.tsx',
+  '(default)/search/page.tsx',
+]
+
+/** Proof, which draws itself too: tests/unit/proofPage.spec.tsx. */
+const PROOF = ['(default)/proof/page.tsx']
 
 /** The Journal's pages, which draw themselves too: tests/unit/journalPages.spec.tsx. */
 const JOURNAL = [
@@ -214,7 +231,7 @@ describe('the pages under src/app/(platform)', () => {
       .map((file) => file.replaceAll('\\', '/'))
       .filter((file) => /(?:^|\/)(?:page|not-found)\.tsx$/.test(file))
     expect(found.sort()).toEqual(
-      [...OWN, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND]
+      [...OWN, ...PROOF, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND]
         .map((entry) => (typeof entry === 'string' ? entry : entry.file))
         .sort(),
     )

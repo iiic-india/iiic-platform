@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import styles from '@/components/experience/experience.module.css'
 import { ReadingBar } from '@/components/experience/ReadingBar'
+import { isArticlePath, READING_BAR_ATTRIBUTE } from '@/lib/experience/narrative'
 
 import { prefersReducedMotion } from '../helpers/browser'
 
@@ -117,5 +118,72 @@ describe('the bar (docs/11 §3.1)', () => {
     expect(barIn(container)).toBeNull()
     scrollTo(1000)
     expect(frames).toHaveLength(0)
+  })
+})
+
+describe('the bar on a Journal article (docs/11 §3.1)', () => {
+  const ON_REQUEST = styles.onRequest ?? ''
+
+  /** The article's page as the route draws it: with the bar's request, or without. */
+  const article = (asks: boolean) => {
+    const main = document.createElement('main')
+    const element = document.createElement('article')
+    if (asks) element.setAttribute(READING_BAR_ATTRIBUTE, '')
+    main.append(element)
+    document.body.append(main)
+    return main
+  }
+
+  afterEach(() => {
+    document.querySelectorAll('main').forEach((main) => main.remove())
+  })
+
+  it('is an article’s address, and no list’s, topic’s or other page’s', () => {
+    for (const path of ['/journal/fake-article', '/journal/a1-b2']) {
+      expect(isArticlePath(path), path).toBe(true)
+    }
+    for (const path of [
+      '/journal',
+      '/journal/',
+      '/journal/page/2',
+      '/journal/topic/fake-topic',
+      '/journal/page',
+      '/journal/topic',
+      '/journal/Fake',
+      '/journal/fake/extra',
+      '/counselling/fake',
+      null,
+    ]) {
+      expect(isArticlePath(path), String(path)).toBe(false)
+    }
+  })
+
+  it('is drawn on an article only on the article’s request, hidden by the stylesheet otherwise', () => {
+    nav.pathname = '/journal/fake-article'
+    article(true)
+    const { container } = render(<ReadingBar />)
+    const bar = barIn(container)
+    expect(bar?.classList.contains(ON_REQUEST)).toBe(true)
+    expect(bar?.getAttribute('aria-hidden')).toBe('true')
+    runFrames()
+    scrollTo(1000)
+    expect(bar?.style.getPropertyValue('--progress')).toBe('0.5')
+  })
+
+  it('listens to nothing on an article that does not ask for it (one that leads to counselling)', () => {
+    const listen = vi.spyOn(window, 'addEventListener')
+    nav.pathname = '/journal/fake-counselling-article'
+    article(false)
+    const { container } = render(<ReadingBar />)
+    expect(barIn(container)?.classList.contains(ON_REQUEST)).toBe(true)
+    scrollTo(1000)
+    expect(frames).toHaveLength(0)
+    expect(listen).not.toHaveBeenCalledWith('scroll', expect.any(Function), { passive: true })
+  })
+
+  it('keeps the narrative pages’ bar unconditional', () => {
+    nav.pathname = '/framework'
+    const { container } = render(<ReadingBar />)
+    expect(barIn(container)?.classList.contains(ON_REQUEST)).toBe(false)
   })
 })

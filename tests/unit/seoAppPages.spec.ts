@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { starterAt } from '@/content/starter'
 import { JOURNAL_PATH } from '@/lib/journal/addresses'
 import { STEP_ZERO_CHOICES, STEP_ZERO_QUESTION } from '@/lib/map/stepZero'
-import { APP_PAGES, JOURNAL_PAGE, MAP_PAGE } from '@/lib/seo/appPages'
+import { APP_PAGES, JOURNAL_PAGE, MAP_PAGE, PROOF_PAGE } from '@/lib/seo/appPages'
 import { isNoindexPath, pageSlugOf } from '@/lib/seo/paths'
 import { canonicalPath, hasPlaceholder, SITE_NAME } from '@/lib/seo/site'
 
@@ -76,8 +76,18 @@ describe.each(APP_PAGES.map((page) => [page.path, page] as const))(
   },
 )
 
+describe('Proof, in search', () => {
+  it('takes the keyword map’s title, and claims no count or outcome (D-37, D-65)', () => {
+    expect(PROOF_PAGE.path).toBe('/proof')
+    // docs/content/keyword-map.md, "Proof, Journal, Map and the rest".
+    expect(PROOF_PAGE.title).toBe('IIIC reviews: Gaurang Mistry’s programmes')
+    expect(PROOF_PAGE.description).toContain(`${SITE_NAME} (IIIC), Ahmedabad`)
+    expect(PROOF_PAGE.description).not.toMatch(/\d/)
+  })
+})
+
 describe('the app’s own pages', () => {
-  it('are Find your path and the Journal, for now', () => {
-    expect(APP_PAGES.map((page) => page.path)).toEqual(['/map', '/journal'])
+  it('are Find your path, the Journal and Proof, for now', () => {
+    expect(APP_PAGES.map((page) => page.path)).toEqual(['/map', '/journal', '/proof'])
   })
 })

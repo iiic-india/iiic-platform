@@ -22,7 +22,21 @@ const canCopy = () => typeof navigator.clipboard?.writeText === 'function'
 /** The server renders no button: it cannot know what the reader's browser offers. */
 const onServer = () => false
 
-export function TakeItWithYou({ question, className }: { question: string; className?: string }) {
+/**
+ * The 404's "Take the line with you" (docs/11 §5.1, item 6) is the same button with its own
+ * label, over the line the visitor wrote, and disabled while there is nothing to take.
+ */
+export function TakeItWithYou({
+  question,
+  className,
+  label = LABEL,
+  disabled = false,
+}: {
+  question: string
+  className?: string
+  label?: string
+  disabled?: boolean
+}) {
   const available = useSyncExternalStore(subscribe, canCopy, onServer)
   // Each copy has its own moment, so a second press restarts the two seconds.
   const [copiedAt, setCopiedAt] = useState<number | null>(null)
@@ -52,8 +66,9 @@ export function TakeItWithYou({ question, className }: { question: string; class
         type="button"
         className={`iiic-btn iiic-btn-outline${className ? ` ${className}` : ''}`}
         onClick={copy}
+        disabled={disabled}
       >
-        {copied ? COPIED : LABEL}
+        {copied ? COPIED : label}
       </button>
       <span className="iiic-sr-only" role="status">
         {copied ? COPIED : ''}

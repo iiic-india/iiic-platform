@@ -5,7 +5,8 @@ import { getPayload, type Where } from 'payload'
 import { cache } from 'react'
 
 import { POSTS_TAG, postTag, TOPICS_TAG } from '@/lib/content/revalidate'
-import type { Post, Topic } from '@/payload-types'
+import { previewer } from '@/lib/preview/session'
+import type { Post, Topic, User } from '@/payload-types'
 import config from '@payload-config'
 
 import { isArticleSlug, PAGE_SIZE } from './addresses'
@@ -51,6 +52,17 @@ const SUMMARY_FIELDS = {
   publishedAt: true,
   readingTime: true,
   topics: true,
+} as const
+
+const DETAIL_FIELDS = {
+  ...SUMMARY_FIELDS,
+  body: true,
+  question: true,
+  author: true,
+  authorName: true,
+  searchTitle: true,
+  description: true,
+  updatedAt: true,
 } as const
 
 /** Newest first; articles published at the same moment in the order they were made. */
@@ -152,16 +164,7 @@ export const getPost = cache(async (slug: string): Promise<PostDetail | null> =>
         pagination: false,
         depth: 1,
         overrideAccess: false,
-        select: {
-          ...SUMMARY_FIELDS,
-          body: true,
-          question: true,
-          author: true,
-          authorName: true,
-          searchTitle: true,
-          description: true,
-          updatedAt: true,
-        },
+        select: DETAIL_FIELDS,
         populate: { topics: TOPIC_FIELDS },
       })
       const post = docs[0] as unknown as Record<string, unknown> | undefined
@@ -169,6 +172,61 @@ export const getPost = cache(async (slug: string): Promise<PostDetail | null> =>
     },
     ['journal-post', slug],
     { tags: [POSTS_TAG, TOPICS_TAG, postTag(slug)] },
+  )
+  return cached()
+})
+
+/**
+ * The article a route draws at an address: in a preview, the newest version of the article
+ * there, draft or published, as the staff member previewing may read it (docs/15 §5.3, OS-4);
+ * for everyone else, the published article (getPost). Never cached: a draft is read for that
+ * request alone. The share images, the feed and the lists read published articles only.
+ */
+export const getPostToShow = cache(async (slug: string): Promise<PostDetail | null> => {
+  if (!isArticleSlug(slug)) return null
+  const user = await previewer('posts')
+  if (!user) return getPost(slug)
+  const payload = await getPayload({ config })
+  const { docs } = await payload.find({
+    collection: 'posts',
+    where: { slug: { equals: slug } },
+    draft: true,
+    limit: 1,
+    pagination: false,
+    depth: 1,
+    overrideAccess: false,
+    user: user as User,
+    select: DETAIL_FIELDS,
+    populate: { topics: TOPIC_FIELDS },
+  })
+  const post = docs[0] as unknown as Record<string, unknown> | undefined
+  return post ? ({ ...post, topics: topicsOf(post.topics) } as PostDetail) : getPost(slug)
+})
+
+/**
+ * The newest published articles, for the Journal's three on the home page (docs/11 §4, row 8;
+ * docs/content/copy-architecture.md §4.1): none while nothing is published, and the home page
+ * then draws no Journal section.
+ */
+export const latestPosts = cache(async (count: number): Promise<PostSummary[]> => {
+  const cached = unstable_cache(
+    async () => {
+      const payload = await getPayload({ config })
+      const found = await payload.find({
+        collection: 'posts',
+        where: PUBLISHED,
+        sort: NEWEST_FIRST,
+        limit: count,
+        pagination: false,
+        depth: 1,
+        overrideAccess: false,
+        select: SUMMARY_FIELDS,
+        populate: { topics: TOPIC_FIELDS },
+      })
+      return found.docs.map((post) => summaryOf(post as unknown as Record<string, unknown>))
+    },
+    ['journal-latest', String(count)],
+    { tags: [POSTS_TAG, TOPICS_TAG], revalidate: LIST_REVALIDATE_SECONDS },
   )
   return cached()
 })

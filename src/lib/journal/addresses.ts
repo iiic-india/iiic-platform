@@ -13,6 +13,9 @@ export const JOURNAL_PATH = '/journal'
 export const JOURNAL_NAME = 'The Journal'
 export const JOURNAL_CRUMB = 'Journal'
 
+/** The Journal's RSS feed (src/lib/journal/feed.ts): not an article's address, which has no dot. */
+export const FEED_PATH = '/journal/feed.xml'
+
 /** Articles on one page of a list, newest first. */
 export const PAGE_SIZE = 10
 

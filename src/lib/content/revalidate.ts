@@ -59,3 +59,14 @@ export function revalidatePosts(...slugs: (string | null | undefined)[]): void {
 export function revalidateTopics(): void {
   expire([TOPICS_TAG, POSTS_TAG])
 }
+
+/** The cache tag of the published reviews: Proof and every voice beside a section (docs/11 §3.8). */
+export const REVIEWS_TAG = 'testimonials'
+
+/**
+ * Marks the published reviews stale: Proof and every page that shows a voice read them anew
+ * when a review is published, changed, withdrawn or deleted (docs/06 V2: at once).
+ */
+export function revalidateReviews(): void {
+  expire([REVIEWS_TAG])
+}
