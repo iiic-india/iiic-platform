@@ -216,7 +216,10 @@ export class ZohoBooksClient implements ZohoBooks {
           ? candidate.tax_type === 'tax' && candidate.tax_specific_type === 'igst'
           : candidate.tax_type === 'tax_group'),
     )
-    return tax ? ok(tax.tax_id) : err({ code: 'tax-missing' })
+    if (tax) return ok(tax.tax_id)
+    // The list is read again next time, so a tax the accountant adds is found without a restart.
+    this.taxes = null
+    return err({ code: 'tax-missing' })
   }
 
   private async lineItems(
