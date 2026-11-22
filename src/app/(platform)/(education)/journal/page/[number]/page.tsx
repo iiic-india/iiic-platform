@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
-import { notFound, permanentRedirect } from 'next/navigation'
+import { permanentRedirect } from 'next/navigation'
 
 import { JournalList, journalListMetadata } from '@/components/journal/JournalList'
 import { listPath, pageNumber } from '@/lib/journal/addresses'
+import { redirectOrNotFound } from '@/lib/redirects/lookup'
+import { pathOf } from '@/lib/redirects/paths'
 
 type Props = { params: Promise<{ number: string }> }
 
@@ -17,8 +19,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function JournalLaterPage({ params }: Props) {
-  const page = pageNumber((await params).number)
+  const { number } = await params
+  const page = pageNumber(number)
   if (page === 1) permanentRedirect(listPath())
-  if (!page) notFound()
+  if (!page) return redirectOrNotFound(pathOf('journal', 'page', number))
   return <JournalList page={page} />
 }

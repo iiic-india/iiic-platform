@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 
 import { Article } from '@/components/journal/Article'
 import { getPost } from '@/lib/journal/posts'
 import { articleMetadata } from '@/lib/journal/seo'
+import { redirectOrNotFound } from '@/lib/redirects/lookup'
+import { pathOf } from '@/lib/redirects/paths'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -17,7 +18,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function JournalArticlePage({ params }: Props) {
-  const post = await getPost((await params).slug)
-  if (!post) notFound()
+  const { slug } = await params
+  const post = await getPost(slug)
+  if (!post) return redirectOrNotFound(pathOf('journal', slug))
   return <Article post={post} />
 }

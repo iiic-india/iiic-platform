@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 
 import { Scope } from '@/components/blocks/PageBlocks'
 import { JsonLd } from '@/components/seo/JsonLd'
@@ -20,6 +19,7 @@ import {
   type TopicSummary,
 } from '@/lib/journal/posts'
 import { listGraph, listMetadata } from '@/lib/journal/seo'
+import { redirectOrNotFound } from '@/lib/redirects/lookup'
 
 import { ArticleMeta } from './ArticleMeta'
 import styles from './journal.module.css'
@@ -147,7 +147,7 @@ function NothingYet() {
 
 export async function JournalList(props: ListProps) {
   const found = await find(props)
-  if (!found) notFound()
+  if (!found) return redirectOrNotFound(listPath(props.topic, props.page))
   const { topics, topic, list } = found
   const page = props.page ?? 1
   return (

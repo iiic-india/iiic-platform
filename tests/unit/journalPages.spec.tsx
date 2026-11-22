@@ -50,6 +50,12 @@ vi.mock('@/components/seo/JsonLd', async () => {
       }),
   }
 })
+// What a route answers where it has no page (src/lib/redirects/lookup.ts): no redirect here.
+vi.mock('@/lib/redirects/lookup', () => ({
+  redirectOrNotFound: vi.fn(async () => {
+    throw new Error('fake not found')
+  }),
+}))
 vi.mock('next/navigation', () => ({
   notFound: () => {
     throw new Error('fake not found')

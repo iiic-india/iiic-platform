@@ -35,6 +35,8 @@ export default defineConfig([
   },
   globalIgnores([
     '.next/**',
+    // Claude Code's parallel checkouts, which are not part of this repository's tree.
+    '.claude/**',
     'node_modules/**',
     'src/brand/**',
     'src/payload-types.ts',
