@@ -215,13 +215,14 @@ export function makeOfficeActions(deps: OfficeDeps) {
           if (refundPaise !== shown) return changed
           if (refundPaise === 0) return ok({ booking, refunds: [] })
 
-          const payments = await capturedPayments(req, booking)
-          const refundable = await Promise.all(
-            payments.map(async (payment) => ({
+          // One query at a time: they share the transaction's one connection.
+          const refundable = []
+          for (const payment of await capturedPayments(req, booking)) {
+            refundable.push({
               paymentId: payment.id,
               refundablePaise: await refundablePaise(req, payment),
-            })),
-          )
+            })
+          }
           const parts = splitRefund(refundPaise, refundable)
           if (!parts.ok) return parts
           const refunds: Refund[] = []
