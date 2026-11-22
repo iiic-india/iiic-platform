@@ -67,7 +67,8 @@ test.describe('Requests only', () => {
     for (const [who, door] of [
       ['yourself', '/counselling'],
       ['family', '/counselling'],
-      ['organisation', '/organisations'],
+      // An organisation's door is the Team Map's page (docs/03 F1; src/lib/map/stepZero.ts).
+      ['organisation', '/organisations/team-map'],
     ] as const) {
       const response = await request.post('/map/go', {
         form: { who },

@@ -146,7 +146,8 @@ describe('Find your path: counting the answers (docs/03 F1, step 3)', () => {
   it('sends the visitor to the same door whether or not the count is written', async () => {
     record.mockRejectedValueOnce(new Error('fake: the database is down'))
     const response = await go('who=organisation')
-    expect(response.headers.get('Location')).toBe('/organisations')
+    // The organisation's door is the Team Map's page (src/lib/map/stepZero.ts).
+    expect(response.headers.get('Location')).toBe('/organisations/team-map')
     // The count runs after the answer has gone; what happens to it cannot change the answer.
     await expect(afterResponse()).rejects.toThrow('fake')
     expect(response.status).toBe(303)
