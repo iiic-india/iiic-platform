@@ -190,6 +190,9 @@ describe('a withdrawal', () => {
       grantedAt: grant.grantedAt,
     })
     expect(withdrawal.withdrawnAt).toBeTruthy()
+    // Named by purpose and time, so the "Withdraws" picker and the log are readable.
+    expect(grant.title).toMatch(/^Marketing email, given \d{1,2} \w+ \d{4} at /)
+    expect(withdrawal.title).toMatch(/^Marketing email, withdrawn \d{1,2} \w+ \d{4} at /)
     expect(typeof withdrawal.person === 'object' ? withdrawal.person?.id : withdrawal.person).toBe(
       person.id,
     )

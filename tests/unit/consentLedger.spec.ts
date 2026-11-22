@@ -63,10 +63,26 @@ describe('where a person stands on a purpose', () => {
     expect(consentState([newsletter, asText], 'marketingEmail')).toBe('withdrawn')
   })
 
-  it('breaks a tie of the same time by the entry recorded later', () => {
+  it('is withdrawn by a withdrawal that names an older consent, whichever consent came last', () => {
+    // Two consents at the same time: withdrawing the first ends the purpose.
     const second = grant(10, 'marketingEmail', newsletter.grantedAt)
     const endedFirst = withdrawal(11, newsletter, '2026-12-05T06:00:00Z')
-    expect(consentState([newsletter, second, endedFirst], 'marketingEmail')).toBe('granted')
+    expect(consentState([newsletter, second, endedFirst], 'marketingEmail')).toBe('withdrawn')
+    // Given twice, at different times; the withdrawal names the older one and came after both.
+    const later = grant(12, 'marketingEmail', '2026-12-03T06:00:00Z')
+    expect(consentState([newsletter, later, endedFirst], 'marketingEmail')).toBe('withdrawn')
+    // A withdrawal for another purpose ends nothing here.
+    const endedBookings = withdrawal(13, bookings, '2026-12-05T06:00:00Z')
+    expect(consentState([newsletter, later, endedBookings], 'marketingEmail')).toBe('granted')
+  })
+
+  it('is not brought back by a consent staff record from a reply older than a withdrawal', () => {
+    const ended = withdrawal(3, newsletter, '2026-12-05T06:00:00Z')
+    const olderReply = grant(14, 'marketingEmail', '2026-12-03T06:00:00Z')
+    expect(consentState([newsletter, ended, olderReply], 'marketingEmail')).toBe('withdrawn')
+    // A consent given after the withdrawal is in force again.
+    const newer = grant(15, 'marketingEmail', '2026-12-06T06:00:00Z')
+    expect(consentState([newsletter, ended, olderReply, newer], 'marketingEmail')).toBe('granted')
   })
 })
 

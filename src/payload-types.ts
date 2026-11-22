@@ -719,6 +719,10 @@ export interface Person {
 export interface Consent {
   id: number;
   /**
+   * Named by the platform.
+   */
+  title?: string | null;
+  /**
    * To record a withdrawal, choose the consent it ends. Leave empty to record a consent.
    */
   withdraws?: (number | null) | Consent;
@@ -1348,6 +1352,7 @@ export interface PeopleSelect<T extends boolean = true> {
  * via the `definition` "consents_select".
  */
 export interface ConsentsSelect<T extends boolean = true> {
+  title?: T;
   withdraws?: T;
   person?: T;
   noticeVersion?: T;

@@ -36,6 +36,13 @@ const LONG_DATE = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric',
 })
 
+const TIME = new Intl.DateTimeFormat('en-US', {
+  timeZone: IST,
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+})
+
 /** The calendar day in India, as YYYY-MM-DD. */
 export function istDay(instant: Date): string {
   return DAY.format(instant)
@@ -51,4 +58,13 @@ export function istMinutes(instant: Date): number {
 /** A date as src/brand/VOICE.md writes it, in India: 30 October 2026. */
 export function formatIstDate(instant: Date): string {
   return LONG_DATE.format(instant)
+}
+
+/** A time as src/brand/VOICE.md writes it, in India: 10 AM, 3:30 PM. */
+export function formatIstTime(instant: Date): string {
+  const parts = TIME.formatToParts(instant)
+  const read = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? ''
+  const minute = read('minute')
+  return `${read('hour')}${minute === '00' ? '' : `:${minute}`} ${read('dayPeriod').toUpperCase()}`
 }

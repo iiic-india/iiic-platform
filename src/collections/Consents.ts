@@ -24,9 +24,9 @@ import {
   needsEvidence,
 } from '@/lib/privacy/consentLedger'
 import { RECORD_DELETED } from '@/lib/privacy/consents'
-import { CONSENT_CHANNELS, CONSENT_PURPOSES } from '@/lib/privacy/purposes'
+import { CONSENT_CHANNELS, CONSENT_PURPOSES, purposeLabel } from '@/lib/privacy/purposes'
 import { LANGUAGES } from '@/lib/site/languages'
-import { IST_FIELD } from '@/lib/time/ist'
+import { formatIstDate, formatIstTime, IST_FIELD } from '@/lib/time/ist'
 
 type Data = Record<string, unknown>
 
@@ -111,6 +111,22 @@ export const neverChange: CollectionBeforeChangeHook = ({ data, operation }) => 
   return data
 }
 
+/**
+ * The name the admin lists an entry by, and the "Withdraws" picker shows: the purpose and when
+ * the consent was given, or when it was withdrawn, in India. No name of a person: an erasure
+ * leaves the entry, and the title with it.
+ */
+export function entryTitle(data: Data): string {
+  const withdrawn = isWithdrawal({ withdraws: data.withdraws })
+  const at = new Date(String(withdrawn ? data.withdrawnAt : data.grantedAt))
+  const when = Number.isNaN(at.getTime()) ? '' : ` ${formatIstDate(at)} at ${formatIstTime(at)}`
+  return `${purposeLabel(data.purpose)}, ${withdrawn ? 'withdrawn' : 'given'}${when}`
+}
+
+/** Names an entry as it is created; an entry never changes after that (neverChange). */
+export const nameEntry: CollectionBeforeChangeHook = ({ data, operation }) =>
+  operation === 'create' ? { ...data, title: entryTitle(data) } : data
+
 /** Append-only (docs/04): nothing deletes an entry, even with access overridden. */
 export const neverDelete: CollectionBeforeDeleteHook = () => {
   throw new APIError(MESSAGES.deleted, 403)
@@ -167,7 +183,8 @@ export const Consents: CollectionConfig = {
   labels: { singular: 'Consent', plural: 'Consent log' },
   admin: {
     group: 'Privacy',
-    defaultColumns: ['person', 'purpose', 'grantedAt', 'withdrawnAt', 'channel'],
+    useAsTitle: 'title',
+    defaultColumns: ['title', 'person', 'channel'],
     hidden: ({ user }) => !hasRole(user, ...POLICY.consents.read.roles),
     description:
       'Every consent, and every withdrawal as an entry of its own. Entries are never changed or deleted.',
@@ -182,10 +199,15 @@ export const Consents: CollectionConfig = {
   disableBulkEdit: true,
   hooks: {
     beforeValidate: [completeEntry],
-    beforeChange: [neverChange],
+    beforeChange: [neverChange, nameEntry],
     beforeDelete: [neverDelete],
   },
   fields: [
+    {
+      name: 'title',
+      type: 'text',
+      admin: { readOnly: true, position: 'sidebar', description: 'Named by the platform.' },
+    },
     {
       name: 'withdraws',
       type: 'relationship',

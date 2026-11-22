@@ -66,9 +66,11 @@ export function activeGrants<T extends LedgerEntry>(entries: T[]): T[] {
 }
 
 /**
- * Where a person stands on one purpose: the consent they gave last decides, and it counts only
- * while no entry withdraws it. An earlier consent that a later one replaced (given again under a
- * newer notice) is superseded, not still in force.
+ * Where a person stands on one purpose, decided by time: the consent they gave last counts only
+ * while no withdrawal for the purpose came at or after it, whichever consent that withdrawal
+ * named. An earlier consent that a later one replaced (given again under a newer notice) is
+ * superseded, so a withdrawal that names it still ends the purpose; and a consent staff record
+ * from a reply older than a withdrawal does not bring the purpose back.
  */
 export function consentState(entries: LedgerEntry[], purpose: string): ConsentState {
   const grants = entries
@@ -80,7 +82,16 @@ export function consentState(entries: LedgerEntry[], purpose: string): ConsentSt
     )
   const newest = grants[0]
   if (!newest) return 'none'
-  return entries.some((entry) => sameId(entry.withdraws, newest.id)) ? 'withdrawn' : 'granted'
+  const given = Date.parse(newest.grantedAt)
+  const ended = entries.some(
+    (entry) =>
+      sameId(entry.withdraws, newest.id) ||
+      (entry.purpose === purpose &&
+        isWithdrawal(entry) &&
+        typeof entry.withdrawnAt === 'string' &&
+        Date.parse(entry.withdrawnAt) >= given),
+  )
+  return ended ? 'withdrawn' : 'granted'
 }
 
 /** A time staff or a form gave, as a date; null when there is none or it is not a date. */

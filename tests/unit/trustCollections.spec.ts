@@ -2,7 +2,13 @@
 import { APIError, ValidationError } from 'payload'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { completeEntry, neverChange, neverDelete } from '@/collections/Consents'
+import {
+  completeEntry,
+  entryTitle,
+  nameEntry,
+  neverChange,
+  neverDelete,
+} from '@/collections/Consents'
 import {
   isInForce,
   keepInForce,
@@ -196,6 +202,19 @@ describe('the deleted-record channel', () => {
     expect(
       await run(completeEntry, { data, operation: 'create', req: req({ [RECORD_DELETED]: true }) }),
     ).toMatchObject({ withdraws: 41, person: 7 })
+  })
+})
+
+describe('the name of an entry', () => {
+  it('is the purpose and when it was given or withdrawn, in India, set as it is created', () => {
+    const given = { purpose: 'marketingEmail', grantedAt: '2026-12-01T06:00:00Z' }
+    expect(entryTitle(given)).toBe('Marketing email, given 1 December 2026 at 11:30 AM')
+    const ended = { ...given, withdraws: 41, withdrawnAt: '2026-12-05T09:30:00Z' }
+    expect(entryTitle(ended)).toBe('Marketing email, withdrawn 5 December 2026 at 3 PM')
+    expect(run(nameEntry, { data: given, operation: 'create' })).toMatchObject({
+      title: 'Marketing email, given 1 December 2026 at 11:30 AM',
+    })
+    expect(run(nameEntry, { data: given, operation: 'update' })).toBe(given)
   })
 })
 

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { DEFAULT_QUIET_HOURS, inQuietHours, minutesOf } from '@/lib/settings/quietHours'
-import { formatIstDate, istDay, istMinutes } from '@/lib/time/ist'
+import { formatIstDate, formatIstTime, istDay, istMinutes } from '@/lib/time/ist'
 
 // Quiet hours (docs/06, Engine rules; docs/04 `settings`): 21:00 to 08:00 India time by default,
 // read in India whatever the server's own zone (CLAUDE.md #8). India is UTC+05:30 all year.
@@ -22,6 +22,9 @@ describe('India time', () => {
 
   it('writes a date as VOICE.md does', () => {
     expect(formatIstDate(new Date('2027-01-04T20:00:00Z'))).toBe('5 January 2027')
+    expect(formatIstTime(new Date('2027-01-04T04:30:00Z'))).toBe('10 AM')
+    expect(formatIstTime(new Date('2027-01-04T10:00:00Z'))).toBe('3:30 PM')
+    expect(formatIstTime(new Date('2027-01-04T18:30:00Z'))).toBe('12 AM')
   })
 })
 
