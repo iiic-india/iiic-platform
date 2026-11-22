@@ -5,8 +5,8 @@ import { getPayload } from 'payload'
 
 import { STARTER_PAGES } from '@/content/starter'
 import { PAGES_TAG } from '@/lib/content/revalidate'
-import { redirectTable } from '@/lib/redirects/lookup'
 import { journalIndex } from '@/lib/journal/posts'
+import { redirectTable } from '@/lib/redirects/lookup'
 import config from '@payload-config'
 
 import type { SitemapSource } from './sitemap'
