@@ -1,8 +1,8 @@
-import config from '@payload-config'
 import { createLocalReq, getPayload } from 'payload'
 
 import { calendarDeps } from '@/lib/calendar/calendarFor'
 import { handleChangeNotificationWith, readNotification } from '@/lib/calendar/notifications'
+import config from '@payload-config'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'

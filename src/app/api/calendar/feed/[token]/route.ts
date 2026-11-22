@@ -1,9 +1,9 @@
-import config from '@payload-config'
 import { createLocalReq, getPayload } from 'payload'
 
 import { practitionerFeed } from '@/lib/calendar/feed'
 import { FeedToken } from '@/lib/calendar/tokens'
 import { env } from '@/lib/env'
+import config from '@payload-config'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
