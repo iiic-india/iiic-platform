@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { buildEditorState } from '@payloadcms/richtext-lexical'
 import type { Metadata } from 'next'
-import type { ReactElement } from 'react'
+import { isValidElement, type ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -21,7 +21,7 @@ import JournalTopicLaterPage, {
   generateMetadata as topicLaterMetadata,
 } from '@/app/(platform)/(education)/journal/topic/[topic]/page/[number]/page'
 import { Scope } from '@/components/blocks/PageBlocks'
-import { LABEL } from '@/components/experience/TakeItWithYou'
+import { LABEL, TakeItWithYou } from '@/components/experience/TakeItWithYou'
 import { Article, QUESTION_HEADING } from '@/components/journal/Article'
 import { JournalList } from '@/components/journal/JournalList'
 import { CRISIS_HEADING, SCOPE_HEADING } from '@/lib/counselling/scope'
@@ -130,6 +130,14 @@ function graphOf(html: string): { '@type': string; [key: string]: unknown }[] {
 }
 
 const canonical = (metadata: Metadata) => metadata.alternates?.canonical
+
+/** Whether a drawn element holds a component anywhere among its children, before rendering. */
+function holds(node: unknown, component: unknown): boolean {
+  if (Array.isArray(node)) return node.some((child) => holds(child, component))
+  if (!isValidElement(node)) return false
+  if (node.type === component) return true
+  return holds((node.props as { children?: unknown }).children, component)
+}
 
 beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_SITE_URL', ORIGIN)
@@ -255,6 +263,17 @@ describe('a topic', () => {
     )
     expect(html).toContain('<a aria-current="true" href="/journal/topic/fake-topic">Fake topic</a>')
     expect(vi.mocked(listPosts)).toHaveBeenCalledWith(7, 1)
+    expect(html).not.toContain(SCOPE_HEADING)
+  })
+
+  it('ends with the scope statement and the crisis numbers where the topic leads to counselling', async () => {
+    journalHolds({ topics: [TOPIC, COUNSELLING_TOPIC], posts: [POST], totalPages: 1 })
+    const html = await drawList(await JournalTopicPage(params({ topic: 'fake-counselling' })))
+    expect(html).toContain('<h1>Fake counselling topic</h1>')
+    expect(html).toContain(renderToStaticMarkup(<Scope />))
+    expect(html).toContain(CRISIS_HEADING)
+    // The whole Journal, which lists every topic's articles, is not a counselling surface.
+    expect(await drawList(JournalPage())).not.toContain(SCOPE_HEADING)
   })
 
   it('is the 404 where no topic holds a published article, or no topic could be', async () => {
@@ -329,6 +348,26 @@ describe('an article', () => {
     expect(html).toContain(renderToStaticMarkup(<Scope />))
     expect(html).toContain(SCOPE_HEADING)
     expect(html).toContain(CRISIS_HEADING)
+  })
+
+  it('is a counselling surface when any of its topics leads to counselling: the statement, and no copy button', () => {
+    const later = Article({ post: { ...POST, topics: [TOPIC, COUNSELLING_TOPIC] } }) as ReactElement
+    const html = renderToStaticMarkup(later)
+    // Its door is still its first topic's; the statement comes with the later topic.
+    expect(html).toContain(`href="/framework">${DOORS.framework.link}</a>`)
+    expect(html).toContain(SCOPE_HEADING)
+    expect(html).toContain(CRISIS_HEADING)
+    // No experience device on a counselling surface (docs/11 §2 item 6, §6): the question stays.
+    expect(holds(later, TakeItWithYou)).toBe(false)
+    expect(html).toContain(`${POST.question}</p>`)
+    const first = Article({ post: { ...POST, topics: [COUNSELLING_TOPIC] } }) as ReactElement
+    expect(holds(first, TakeItWithYou)).toBe(false)
+  })
+
+  it('offers the copy button, and no statement, where no topic leads to counselling', () => {
+    const element = Article({ post: POST }) as ReactElement
+    expect(holds(element, TakeItWithYou)).toBe(true)
+    expect(renderToStaticMarkup(element)).not.toContain(SCOPE_HEADING)
   })
 
   it('carries its structured data: the page, the way down to it, the Article and its author', async () => {

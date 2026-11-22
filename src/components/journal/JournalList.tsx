@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { Scope } from '@/components/blocks/PageBlocks'
 import { JsonLd } from '@/components/seo/JsonLd'
 import {
   articlePath,
@@ -10,6 +11,7 @@ import {
   JOURNAL_PATH,
   listPath,
 } from '@/lib/journal/addresses'
+import { leadsToCounselling } from '@/lib/journal/doors'
 import {
   getTopics,
   listPosts,
@@ -27,6 +29,8 @@ import styles from './journal.module.css'
  * register its route group sets: the published articles, newest first, ten to a page, which
  * the topics filter. While no article is published it says so, honestly, and lists nothing
  * (I-19). A topic that holds no published article, and a page past the last, are the 404.
+ * The list of a topic that leads to counselling is a counselling surface: it ends with the
+ * scope statement and the crisis numbers (leadsToCounselling; docs/08 §7).
  */
 
 type ListProps = { topic?: string; page?: number }
@@ -176,6 +180,7 @@ export async function JournalList(props: ListProps) {
         </ol>
       )}
       <Pages topic={topic?.slug} page={page} total={list.totalPages} />
+      {topic && leadsToCounselling([topic]) ? <Scope /> : null}
     </div>
   )
 }

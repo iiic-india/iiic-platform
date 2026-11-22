@@ -36,6 +36,15 @@ export const DOOR_OPTIONS = (Object.keys(DOORS) as Door[]).map((door) => ({
   value: door,
 }))
 
+/**
+ * Whether a Journal page is a counselling surface (CLAUDE.md #9; docs/08 §7): an article any of
+ * whose topics leads to counselling, or the list of a topic that does. Such a page carries the
+ * scope statement and the crisis numbers, and no experience device (docs/11 §2 item 6, §6).
+ */
+export function leadsToCounselling(topics: readonly { door?: unknown }[]): boolean {
+  return topics.some((topic) => topic.door === 'counselling')
+}
+
 /** The door of a value read from the CMS, or none for a value no door has. */
 export function doorOf(value: unknown): (typeof DOORS)[Door] | undefined {
   return typeof value === 'string' && Object.hasOwn(DOORS, value) ? DOORS[value as Door] : undefined

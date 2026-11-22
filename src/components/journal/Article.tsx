@@ -4,7 +4,7 @@ import { Scope } from '@/components/blocks/PageBlocks'
 import { TakeItWithYou } from '@/components/experience/TakeItWithYou'
 import { JsonLd } from '@/components/seo/JsonLd'
 import { JOURNAL_CRUMB, JOURNAL_PATH, listPath } from '@/lib/journal/addresses'
-import { doorOf } from '@/lib/journal/doors'
+import { doorOf, leadsToCounselling } from '@/lib/journal/doors'
 import type { PostDetail } from '@/lib/journal/posts'
 import { articleGraphOf, authorOf } from '@/lib/journal/seo'
 
@@ -20,13 +20,15 @@ export const QUESTION_HEADING = 'A question to sit with'
  * education register its route group sets: the way back to the Journal and its topic, the
  * title, the author, the date and the reading time, the body, and nothing inside the text but
  * the text (no bridges). It ends with its question in the kit's paper panel, which the reader
- * can copy, then a link to its first topic's door. An article that leads to counselling also
- * carries the counselling scope statement and the crisis numbers, as every counselling surface
- * does (CLAUDE.md #9).
+ * can copy, then a link to its first topic's door. An article any of whose topics leads to
+ * counselling is a counselling surface (leadsToCounselling): it carries the scope statement and
+ * the crisis numbers (CLAUDE.md #9) and no experience device, so its question has no copy
+ * button and stays on the page to read (docs/11 §2 item 6, §6).
  */
 export function Article({ post }: { post: PostDetail }) {
   const topic = post.topics[0]
   const door = doorOf(topic?.door)
+  const counselling = leadsToCounselling(post.topics)
   return (
     <>
       <JsonLd graph={articleGraphOf(post)} />
@@ -58,7 +60,7 @@ export function Article({ post }: { post: PostDetail }) {
             {QUESTION_HEADING}
           </h2>
           <p className={styles.questionText}>{post.question}</p>
-          <TakeItWithYou question={post.question} className={styles.take} />
+          {counselling ? null : <TakeItWithYou question={post.question} className={styles.take} />}
         </section>
         {door ? (
           <p className={styles.door}>
@@ -67,7 +69,7 @@ export function Article({ post }: { post: PostDetail }) {
             </Link>
           </p>
         ) : null}
-        {topic?.door === 'counselling' ? <Scope /> : null}
+        {counselling ? <Scope /> : null}
       </article>
     </>
   )
