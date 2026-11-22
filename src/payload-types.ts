@@ -167,6 +167,10 @@ export interface Config {
     tasks: {
       'O5-purge-missing-pages': TaskO5PurgeMissingPages;
       'B4-expire-holds': TaskB4ExpireHolds;
+      'B2-poll-pending-orders': TaskB2PollPendingOrders;
+      'B11-reconcile': TaskB11Reconcile;
+      'B2-B7-sync-calendar-event': TaskB2B7SyncCalendarEvent;
+      'B14-refresh-busy-times': TaskB14RefreshBusyTimes;
       inline: {
         input: unknown;
         output: unknown;
@@ -1960,7 +1964,14 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'O5-purge-missing-pages' | 'B4-expire-holds';
+        taskSlug:
+          | 'inline'
+          | 'O5-purge-missing-pages'
+          | 'B4-expire-holds'
+          | 'B2-poll-pending-orders'
+          | 'B11-reconcile'
+          | 'B2-B7-sync-calendar-event'
+          | 'B14-refresh-busy-times';
         taskID: string;
         input?:
           | {
@@ -1993,7 +2004,17 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'O5-purge-missing-pages' | 'B4-expire-holds') | null;
+  taskSlug?:
+    | (
+        | 'inline'
+        | 'O5-purge-missing-pages'
+        | 'B4-expire-holds'
+        | 'B2-poll-pending-orders'
+        | 'B11-reconcile'
+        | 'B2-B7-sync-calendar-event'
+        | 'B14-refresh-busy-times'
+      )
+    | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -3519,6 +3540,59 @@ export interface TaskB4ExpireHolds {
   input?: unknown;
   output: {
     expired: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB2-poll-pending-orders".
+ */
+export interface TaskB2PollPendingOrders {
+  input?: unknown;
+  output: {
+    checked: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB11-reconcile".
+ */
+export interface TaskB11Reconcile {
+  input: {
+    /**
+     * A day in India as YYYY-MM-DD; empty for the last 26 hours.
+     */
+    day?: string | null;
+  };
+  output: {
+    checked: number;
+    flagged: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB2-B7-sync-calendar-event".
+ */
+export interface TaskB2B7SyncCalendarEvent {
+  input: {
+    bookingId: number;
+  };
+  output: {
+    outcome: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB14-refresh-busy-times".
+ */
+export interface TaskB14RefreshBusyTimes {
+  input: {
+    practitionerId?: number | null;
+  };
+  output: {
+    outcome: string;
+    refreshed: number;
+    failed: number;
+    renewed: number;
   };
 }
 /**

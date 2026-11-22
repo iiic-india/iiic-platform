@@ -23,6 +23,7 @@ import * as migration_20261122_095120_search_index from './20261122_095120_searc
 import * as migration_20261122_095224_testimonials from './20261122_095224_testimonials';
 import * as migration_20261122_150424_m3_foundation from './20261122_150424_m3_foundation';
 import * as migration_20261122_150505_bookings_no_overlap from './20261122_150505_bookings_no_overlap';
+import * as migration_20261122_161212_m3_job_tasks from './20261122_161212_m3_job_tasks';
 
 export const migrations = [
   {
@@ -148,6 +149,11 @@ export const migrations = [
   {
     up: migration_20261122_150505_bookings_no_overlap.up,
     down: migration_20261122_150505_bookings_no_overlap.down,
-    name: '20261122_150505_bookings_no_overlap'
+    name: '20261122_150505_bookings_no_overlap',
+  },
+  {
+    up: migration_20261122_161212_m3_job_tasks.up,
+    down: migration_20261122_161212_m3_job_tasks.down,
+    name: '20261122_161212_m3_job_tasks'
   },
 ];
