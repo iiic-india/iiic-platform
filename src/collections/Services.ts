@@ -9,6 +9,10 @@ import { number, text } from 'payload/shared'
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { factsField } from '@/fields/facts'
 import { basisPointsField } from '@/fields/numbers'
+import {
+  recordPriceHistoryAfterChange,
+  removePriceHistoryBeforeDelete,
+} from '@/lib/payments/prices'
 
 /**
  * What IIIC offers to book (docs/04 `services`; docs/05, Settings → services and prices): the
@@ -112,6 +116,12 @@ export const Services: CollectionConfig = {
   // needs a verified code.
   custom: { totp: { disableAccessWrapper: { read: true } } },
   defaultSort: 'name',
+  // Every save brings the price history in line: a changed price closes the old row and opens a
+  // new one, so the open row is the price in force (src/lib/payments/prices.ts, docs/16 §5).
+  hooks: {
+    afterChange: [recordPriceHistoryAfterChange],
+    beforeDelete: [removePriceHistoryBeforeDelete],
+  },
   fields: [
     {
       name: 'name',

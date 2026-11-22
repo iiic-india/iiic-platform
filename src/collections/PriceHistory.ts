@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { basisPointsField, paiseField, wholeNumber } from '@/fields/numbers'
+import { priceHistoryRules } from '@/lib/payments/hooks'
 import { IST_FIELD } from '@/lib/time/ist'
 
 /**
@@ -30,6 +31,8 @@ export const PriceHistory: CollectionConfig = {
   disableBulkEdit: true,
   timestamps: false,
   indexes: [{ fields: ['service', 'serviceOption', 'validFrom'], unique: true }],
+  // A row's price never changes; it is only closed, once (src/lib/payments/hooks.ts).
+  hooks: { beforeChange: [priceHistoryRules] },
   fields: [
     {
       type: 'row',

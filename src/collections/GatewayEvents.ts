@@ -3,6 +3,7 @@ import type { CollectionConfig, Field } from 'payload'
 import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { paiseField } from '@/fields/numbers'
+import { gatewayEventRules } from '@/lib/payments/hooks'
 import { GATEWAY_EVENT_OUTCOMES, GATEWAY_EVENT_SOURCES, GATEWAYS } from '@/lib/payments/states'
 import { IST_FIELD } from '@/lib/time/ist'
 
@@ -46,6 +47,8 @@ export const GatewayEvents: CollectionConfig = {
   lockDocuments: false,
   timestamps: false,
   indexes: [{ fields: ['gateway', 'eventId'], unique: true }],
+  // What came stays as it came; only the outcome is written after (src/lib/payments/hooks.ts).
+  hooks: { beforeChange: [gatewayEventRules] },
   fields: [
     {
       type: 'row',
