@@ -16,7 +16,9 @@ import { recordAudit } from '@/lib/audit/record'
  * code (src/lib/auth/recoveryEndpoints.ts), and the analytics events, which the server writes
  * for visitors' steps and which hold nobody's data (S0: docs/08 §2 audits publishing only).
  * The search index is left out too: its entries are copies the server makes of what was
- * published, and the publishing itself is in the log (src/plugins/searchIndex.ts).
+ * published, and the publishing itself is in the log (src/plugins/searchIndex.ts). So are the
+ * busy times copied from practitioners' calendars every 15 minutes: start and end only, nobody's
+ * details, and the connection they come from is logged (src/collections/BusyBlocks.ts).
  */
 const NOT_AUDITED = new Set([
   'audit-log',
@@ -31,6 +33,7 @@ const NOT_AUDITED = new Set([
   'staff-recovery-codes',
   'analytics-events',
   'search-index',
+  'busy-blocks',
 ])
 
 /** Globals that hold no one's change: Payload's own job statistics. */

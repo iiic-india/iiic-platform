@@ -8,6 +8,7 @@ import { number, text } from 'payload/shared'
 
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { factsField } from '@/fields/facts'
+import { basisPointsField } from '@/fields/numbers'
 
 /**
  * What IIIC offers to book (docs/04 `services`; docs/05, Settings → services and prices): the
@@ -19,8 +20,9 @@ import { factsField } from '@/fields/facts'
  * (M3) and shown nowhere while prices_public is off (D-21): no page draws them, and a read
  * without a staff sign-in never returns them, nor the GST flag, the SAC code or the booking
  * rules (FIELD_POLICY), so the public API holds a service's name, kind, register, format and
- * option lengths only. The price history the reduced-price rule needs from 1 January 2027
- * (docs/04 `price_history`) comes with the booking flow (docs/10, M3).
+ * option lengths only. The price history the reduced-price rule needs from 1 January 2027 is
+ * kept in `price-history` (src/collections/PriceHistory.ts), written by the server when a price
+ * changes (M3, docs/16).
  */
 
 /** A single address segment: small letters, numbers and hyphens, such as one-to-one-session. */
@@ -240,6 +242,20 @@ export const Services: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: 'For GST invoices, as the CA classifies the service (I-29).',
+      },
+    },
+    {
+      ...basisPointsField(
+        'gstRateBasisPoints',
+        'GST rate (basis points)',
+        'The rate the CA sets for this SAC code, in hundredths of a percent: 18% is 1800, exempt is 0 (I-29). The booking’s tax is worked out from it on the server.',
+      ),
+      access: prices,
+      admin: {
+        position: 'sidebar',
+        step: 1,
+        description:
+          'The rate the CA sets for this SAC code, in hundredths of a percent: 18% is 1800, exempt is 0 (I-29).',
       },
     },
     {
