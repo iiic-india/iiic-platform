@@ -106,10 +106,11 @@ describe('POST /api/webhooks/google-calendar', () => {
   })
 
   it('refuses a wrong token or another resource, and changes nothing', async () => {
-    for (const headers of [
+    const refusals: Record<string, string>[] = [
       { 'X-Goog-Channel-Token': 'fake-wrong-token' },
       { 'X-Goog-Resource-ID': 'another-resource' },
-    ]) {
+    ]
+    for (const headers of refusals) {
       const response = await notify(notification(headers))
       expect(response.status).toBe(401)
     }
