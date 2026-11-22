@@ -25,3 +25,14 @@ it('sends the header rules of src/lib/security/headers.ts, the page language amo
   expect(rules).toEqual(headerRules(process.env.VERCEL_ENV, process.env.SEARCH_INDEXING))
   expect(rules).toContainEqual(CONTENT_LANGUAGE)
 })
+
+it('ships the files the PDF renderer reads with the functions that run jobs (D-09)', async () => {
+  const { existsSync } = await import('node:fs')
+  const { default: config } = await import('../../next.config')
+  const includes = config.outputFileTracingIncludes?.['/api/**'] ?? []
+  expect(includes).toContain('./src/brand/templates/print/*.html')
+  for (const pattern of includes) {
+    // Each pattern's folder is there, so a moved kit file fails here rather than in a PDF job.
+    expect(existsSync(pattern.slice(0, pattern.lastIndexOf('/'))), pattern).toBe(true)
+  }
+})
