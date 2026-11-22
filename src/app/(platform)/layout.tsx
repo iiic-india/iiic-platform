@@ -5,6 +5,7 @@ import { connection } from 'next/server'
 import type { ReactNode } from 'react'
 
 import appleIcon from '@/brand/logo/png/apple-touch-icon-180.png'
+import { AnalyticsBeacon } from '@/components/site/AnalyticsBeacon'
 import { env } from '@/lib/env'
 import { SHARE_IMAGE_SIZE, shareImagePath } from '@/lib/seo/metadata'
 import {
@@ -56,7 +57,11 @@ export default async function PlatformRootLayout({ children }: { children: React
   await connection()
   return (
     <html lang="en-IN" className={`${manrope.variable} ${fraunces.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Cloudflare's cookieless beacon, only where its token is set (docs/12 §7). */}
+        <AnalyticsBeacon />
+      </body>
     </html>
   )
 }

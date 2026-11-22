@@ -69,6 +69,11 @@ export function buildCsp({
   return directives.map((directive) => directive.join(' ')).join('; ')
 }
 
+/** The nonce in a policy, as the proxy hands it to the page (the request's CSP header). */
+export function nonceFrom(csp: string | null | undefined): string | undefined {
+  return csp?.match(/'nonce-([A-Za-z0-9+/=]+)'/)?.[1]
+}
+
 /** 128 random bits, base64: a new value for every response. */
 export function createNonce(): string {
   return Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64')
