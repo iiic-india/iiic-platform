@@ -12,17 +12,26 @@ import { Media } from '@/collections/Media'
 import { MissingPages } from '@/collections/MissingPages'
 import { Pages } from '@/collections/Pages'
 import { People } from '@/collections/People'
+import { Posts } from '@/collections/Posts'
 import { Practitioners } from '@/collections/Practitioners'
 import { redirects } from '@/collections/Redirects'
 import { Services } from '@/collections/Services'
+import { Topics } from '@/collections/Topics'
 import { Users } from '@/collections/Users'
 import { Settings } from '@/globals/Settings'
-import { revalidateFaqs, revalidatePages } from '@/lib/content/revalidate'
+import {
+  revalidateFaqs,
+  revalidatePages,
+  revalidatePosts,
+  revalidateTopics,
+} from '@/lib/content/revalidate'
 
 vi.mock('@/lib/content/revalidate', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/content/revalidate')>()),
   revalidatePages: vi.fn(),
   revalidateFaqs: vi.fn(),
+  revalidatePosts: vi.fn(),
+  revalidateTopics: vi.fn(),
 }))
 
 // Every role held to docs/05 ("Who uses it"), through the access functions the collections
@@ -33,6 +42,20 @@ vi.mock('@/lib/content/revalidate', async (importOriginal) => ({
 type Outcome = 'all' | 'self' | 'published' | 'not in force' | 'active' | 'none'
 type Requester = Role | 'anonymous' | 'deactivated owner'
 type Expected = Record<string, Record<Requester, Outcome>>
+
+/** Published content: the staff who edit content read drafts, everyone else what is published. */
+const PUBLISHED_CONTENT: Expected = {
+  read: {
+    ...row({ owner: 'all', staff: 'published', operator: 'all', editor: 'all' }),
+    anonymous: 'published',
+    'deactivated owner': 'published',
+  },
+  // Earlier versions hold every draft, so they go to the same staff.
+  readVersions: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
+  create: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
+  update: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
+  delete: row({ owner: 'all', staff: 'none', editor: 'all' }),
+}
 
 const EXPECTED: Record<keyof typeof COLLECTIONS, Expected> = {
   users: {
@@ -58,6 +81,15 @@ const EXPECTED: Record<keyof typeof COLLECTIONS, Expected> = {
     },
     // Earlier versions hold every draft, so they go to the same staff.
     readVersions: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
+    create: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
+    update: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
+    delete: row({ owner: 'all', staff: 'none', editor: 'all' }),
+  },
+  // The Journal's articles, as pages (docs/05: editors hold pages, posts, FAQs and media).
+  posts: PUBLISHED_CONTENT,
+  // Topics have no drafts: anyone reads them; the staff who edit content write them.
+  topics: {
+    read: { ...row({ owner: 'all', staff: 'all' }), anonymous: 'all', 'deactivated owner': 'all' },
     create: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
     update: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
     delete: row({ owner: 'all', staff: 'none', editor: 'all' }),
@@ -210,6 +242,8 @@ const COLLECTIONS = {
   faqs: Faqs,
   practitioners: Practitioners,
   services: Services,
+  posts: Posts,
+  topics: Topics,
 } as const
 
 describe('access by role (docs/05)', () => {
@@ -264,15 +298,18 @@ describe('access by role (docs/05)', () => {
     }
   })
 
-  it('gives a session that has not entered its two-factor code the published pages only', async () => {
-    // Pages.read runs without payload-totp's wrapper, so visitors can read; a password alone,
-    // or a new account with no authenticator yet, must not open the drafts (docs/08 §9).
-    for (const role of ['owner', 'operator', 'editor'] as const) {
-      for (const strategy of ['local-jwt', null]) {
-        expect(
-          await outcome(Pages.access?.read, requester(role, strategy)),
-          `${role} with ${strategy ?? 'no strategy'}`,
-        ).toBe('published')
+  it('gives a session that has not entered its two-factor code the published pages and articles only', async () => {
+    // Pages.read and Posts.read run without payload-totp's wrapper, so visitors can read; a
+    // password alone, or a new account with no authenticator yet, must not open the drafts
+    // (docs/08 §9).
+    for (const collection of [Pages, Posts]) {
+      for (const role of ['owner', 'operator', 'editor'] as const) {
+        for (const strategy of ['local-jwt', null]) {
+          expect(
+            await outcome(collection.access?.read, requester(role, strategy)),
+            `${collection.slug}: ${role} with ${strategy ?? 'no strategy'}`,
+          ).toBe('published')
+        }
       }
     }
   })
@@ -293,6 +330,14 @@ describe('access by role (docs/05)', () => {
     for (const collection of [Faqs, Practitioners, Services]) {
       expect(collection.custom?.totp, collection.slug).toEqual({
         disableAccessWrapper: { read: true },
+      })
+    }
+  })
+
+  it('keeps payload-totp’s wrapper off reading alone, for the collections visitors read', () => {
+    for (const collection of [Pages, Posts, Topics, Media]) {
+      expect(collection.custom, collection.slug).toEqual({
+        totp: { disableAccessWrapper: { read: true } },
       })
     }
   })
@@ -414,6 +459,32 @@ describe('the FAQs collection', () => {
   it('marks a deleted question’s page stale', async () => {
     await Faqs.hooks?.afterDelete?.[0]?.({ doc: { page: 'counselling' } } as never)
     expect(revalidate.mock.calls).toEqual([['counselling']])
+  })
+})
+
+describe('the Journal’s collections', () => {
+  beforeEach(() => {
+    vi.mocked(revalidatePosts).mockClear()
+    vi.mocked(revalidateTopics).mockClear()
+  })
+
+  it('marks a changed article stale at its new and its old address, and a deleted one', async () => {
+    await Posts.hooks?.afterChange?.[0]?.({
+      doc: { slug: 'fake-new' },
+      previousDoc: { slug: 'fake-old' },
+    } as never)
+    await Posts.hooks?.afterDelete?.[0]?.({ doc: { slug: 'fake-gone' } } as never)
+    expect(vi.mocked(revalidatePosts).mock.calls).toEqual([['fake-new', 'fake-old'], ['fake-gone']])
+  })
+
+  it('marks the topics stale, and the articles that show them, when a topic changes or goes', async () => {
+    await Topics.hooks?.afterChange?.[0]?.({ doc: { slug: 'fake-topic' } } as never)
+    await Topics.hooks?.afterDelete?.[0]?.({ doc: { slug: 'fake-topic' } } as never)
+    expect(vi.mocked(revalidateTopics)).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps drafts and versions for articles, as for pages', () => {
+    expect(Posts.versions).toEqual(Pages.versions)
   })
 })
 

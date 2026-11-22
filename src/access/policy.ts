@@ -48,6 +48,23 @@ export const POLICY = {
     update: { roles: ['owner', 'operator', 'editor'] },
     delete: { roles: ['owner', 'editor'] },
   },
+  // The Journal's articles, as pages: anyone reads a published article, the staff who edit
+  // content read drafts and earlier versions once they have entered their code; operators edit
+  // content, editors own it (docs/05: editors hold "pages, posts, FAQs, media").
+  posts: {
+    read: { roles: ['owner', 'operator', 'editor'], published: true },
+    readVersions: { roles: ['owner', 'operator', 'editor'] },
+    create: { roles: ['owner', 'operator', 'editor'] },
+    update: { roles: ['owner', 'operator', 'editor'] },
+    delete: { roles: ['owner', 'editor'] },
+  },
+  // The Journal's topics have no drafts: a topic's name and door are public, as on the site.
+  topics: {
+    read: { anyone: true },
+    create: { roles: ['owner', 'operator', 'editor'] },
+    update: { roles: ['owner', 'operator', 'editor'] },
+    delete: { roles: ['owner', 'editor'] },
+  },
   // Redirects are content: the staff who edit pages make and change them, and owners and
   // editors remove them (docs/05, Content). Visitors never read them through the API; the
   // site reads them on the server to answer an old address (src/lib/redirects/lookup.ts).

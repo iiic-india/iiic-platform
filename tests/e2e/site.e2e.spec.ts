@@ -6,15 +6,17 @@ import { pagePath } from '../../src/lib/content/slug'
 import { CONSULTANCY_SERVICES, TEAM_MAP } from '../../src/lib/site/consultancy'
 
 // Every page the site shows, the 404 in each register included: the accessibility page says
-// each has passed these checks. The starter pages are the pages built so far (docs/02), and
-// /map asks Find your path's question. The 404 is what links to pages not built yet (Proof,
-// Journal, the footer's Verify a certificate) reach today; on a counselling path, where "Book a
-// session" leads for now, it carries the scope statement and the crisis numbers (docs/11
-// §5.1, item 8). Under /institute/, /organisations/ and /counselling/ it takes that section's
-// register (docs/02).
+// each has passed these checks. The starter pages are the pages built so far (docs/02), /map
+// asks Find your path's question, and /journal is the Journal, empty in CI's database. The 404
+// is what links to pages not built yet (Proof, the footer's Verify a certificate) reach today;
+// on a counselling path, where "Book a session" leads for now, it carries the scope statement
+// and the crisis numbers (docs/11 §5.1, item 8). Under /institute/, /organisations/,
+// /counselling/ and /journal/ it takes that section's register (docs/02).
 const PAGES = [
   ...Object.keys(STARTER_PAGES).map(pagePath),
   '/map',
+  '/journal',
+  '/journal/no-such-article',
   '/no-such-page',
   '/book/session',
   '/institute/verify',

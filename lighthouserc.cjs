@@ -20,6 +20,7 @@ module.exports = {
         'http://localhost:3000/counselling',
         'http://localhost:3000/learn',
         'http://localhost:3000/map',
+        'http://localhost:3000/journal',
         'http://localhost:3000/about',
         'http://localhost:3000/institute',
         'http://localhost:3000/legal',

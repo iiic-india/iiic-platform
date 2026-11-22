@@ -186,6 +186,15 @@ const NOT_FOUND = [
 /** The pages that draw themselves, tested one by one below. */
 const OWN = ['(default)/page.tsx', '(default)/[...slug]/page.tsx', '(default)/map/page.tsx']
 
+/** The Journal's pages, which draw themselves too: tests/unit/journalPages.spec.tsx. */
+const JOURNAL = [
+  '(education)/journal/page.tsx',
+  '(education)/journal/page/[number]/page.tsx',
+  '(education)/journal/[slug]/page.tsx',
+  '(education)/journal/topic/[topic]/page.tsx',
+  '(education)/journal/topic/[topic]/page/[number]/page.tsx',
+]
+
 beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_SITE_URL', ORIGIN)
   request.path = ''
@@ -205,7 +214,7 @@ describe('the pages under src/app/(platform)', () => {
       .map((file) => file.replaceAll('\\', '/'))
       .filter((file) => /(?:^|\/)(?:page|not-found)\.tsx$/.test(file))
     expect(found.sort()).toEqual(
-      [...OWN, ...DOORS, ...SECTIONS, ...NOT_FOUND]
+      [...OWN, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND]
         .map((entry) => (typeof entry === 'string' ? entry : entry.file))
         .sort(),
     )

@@ -9,6 +9,14 @@ export const FAQS_TAG = 'faqs'
 export const faqsTag = (slug: string) => `faqs:${slug}`
 
 /**
+ * The tags of the Journal's data: every list and article carries the first, one article its
+ * own too, and whatever shows a topic the topics' (docs/12 §1: revalidated on publish).
+ */
+export const POSTS_TAG = 'posts'
+export const postTag = (slug: string) => `post:${slug}`
+export const TOPICS_TAG = 'topics'
+
+/**
  * Marks cached data stale, so that an editor's change is on the site at the next request, with
  * no rebuild (docs/12 §4). Outside a request (a script, a test, a migration) there is no cache
  * to mark; Next.js says so by throwing, and that is not an error here.
@@ -37,4 +45,17 @@ export function revalidatePages(...slugs: (string | null | undefined)[]): void {
  */
 export function revalidateFaqs(...slugs: (string | null | undefined)[]): void {
   expire([FAQS_TAG, ...named(slugs).map(faqsTag)])
+}
+
+/**
+ * Marks the Journal's lists and each named article stale: an article published, changed,
+ * unpublished or deleted, at its new address and its old one.
+ */
+export function revalidatePosts(...slugs: (string | null | undefined)[]): void {
+  expire([POSTS_TAG, ...named(slugs).map(postTag)])
+}
+
+/** Marks the topics stale, and the lists and articles that show their names and doors. */
+export function revalidateTopics(): void {
+  expire([TOPICS_TAG, POSTS_TAG])
 }

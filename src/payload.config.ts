@@ -18,10 +18,12 @@ import { Media } from './collections/Media'
 import { MissingPages } from './collections/MissingPages'
 import { Pages } from './collections/Pages'
 import { People } from './collections/People'
+import { Posts } from './collections/Posts'
 import { Practitioners } from './collections/Practitioners'
 import { redirects } from './collections/Redirects'
 import { Services } from './collections/Services'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
+import { Topics } from './collections/Topics'
 import { Users } from './collections/Users'
 import { Settings } from './globals/Settings'
 import { jobs } from './jobs'
@@ -109,6 +111,8 @@ export default buildConfig({
   collections: [
     Users,
     Pages,
+    Posts,
+    Topics,
     Faqs,
     MissingPages,
     Media,

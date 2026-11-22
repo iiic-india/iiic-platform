@@ -369,6 +369,60 @@ export function pageGraph(input: PageGraphInput, origin: string = siteOrigin()):
   }
 }
 
+/** What a Journal article's graph is built from: its page, and the article itself. */
+export type ArticleGraphInput = PageGraphInput & {
+  /** The article's own title; its search title, the page's name, may be shorter. */
+  headline: string
+  datePublished?: string | null
+  dateModified?: string | null
+  /** The founder, given by his @id (D-64), or someone else by the name the article shows. */
+  author: { founder: true } | { founder: false; name?: string | null }
+  /** The article's first topic. */
+  section?: string | null
+  /** The absolute address of the article's share image. */
+  image?: string
+}
+
+/**
+ * A Journal article (D-62; docs/12 §3): its headline, its dates, its author and IIIC as its
+ * publisher, both by @id where the graph knows them. An author who is not the founder is a
+ * Person with the name the article shows and nothing more; no name, no author.
+ */
+export function articleNode(input: ArticleGraphInput, origin: string = siteOrigin()): JsonLdNode {
+  const id = ids(origin)
+  const url = canonicalUrl(input.path, origin)
+  const name = input.author.founder ? undefined : fact(input.author.name)
+  return {
+    '@type': 'Article',
+    '@id': `${url}#article`,
+    headline: fact(input.headline) ?? fact(input.title) ?? SITE_NAME,
+    description: fact(input.description),
+    url,
+    mainEntityOfPage: ref(`${url}#webpage`),
+    inLanguage: SITE_LANGUAGE,
+    datePublished: input.datePublished ?? undefined,
+    dateModified: input.dateModified ?? input.datePublished ?? undefined,
+    author: input.author.founder ? ref(id.founder) : name ? { '@type': 'Person', name } : undefined,
+    publisher: ref(id.organization),
+    articleSection: fact(input.section),
+    image: input.image,
+  }
+}
+
+/**
+ * An article page's whole graph: its page and the way down to it (pageGraph), then the
+ * article, and the founder's own node when he wrote it, so that the author it points at is
+ * described on the page as on the home and About pages (D-64).
+ */
+export function articleGraph(input: ArticleGraphInput, origin: string = siteOrigin()): JsonLdGraph {
+  const page = pageGraph(input, origin)
+  const nodes = [articleNode(input, origin), ...(input.author.founder ? [founderNode(origin)] : [])]
+  return {
+    ...page,
+    '@graph': [...page['@graph'], ...nodes.map((node) => compact(node) as JsonLdNode)],
+  }
+}
+
 /** The graph as the text of a <script> element: "<" escaped so the data cannot end it. */
 export function serializeJsonLd(graph: JsonLdGraph): string {
   return JSON.stringify(graph).replace(/</g, '\\u003c')

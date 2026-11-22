@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import sitemap, { maxDuration, runtime } from '@/app/sitemap'
 import { STARTER_PAGES } from '@/content/starter'
 import { pagePath } from '@/lib/content/slug'
+import { JOURNAL_PAGE } from '@/lib/seo/appPages'
 import { isNoindexPath } from '@/lib/seo/paths'
 import { servedPages, sitemapEntries, type SitemapSource } from '@/lib/seo/sitemap'
 import { sitemapSource } from '@/lib/seo/sitemapSource'
@@ -24,8 +25,34 @@ const source = (held: Partial<SitemapSource> = {}): SitemapSource => ({
   starterSlugs: STARTERS,
   published: [],
   everPublished: [],
+  posts: [],
+  topics: [],
   ...held,
 })
+
+/** The pages the app draws itself, after the CMS's: Find your path and the Journal. */
+const APP = ['/map', '/journal']
+
+/** Two published articles, newest first, and the topic that holds them. Obviously fake. */
+const JOURNAL: Pick<SitemapSource, 'posts' | 'topics'> = {
+  posts: [
+    {
+      slug: 'fake-newer-article',
+      title: 'A fake newer article?',
+      excerpt: 'A fake excerpt.',
+      publishedAt: '2026-11-21T08:30:00.000Z',
+      updatedAt: '2026-11-22T09:00:00.000Z',
+    },
+    {
+      slug: 'fake-older-article',
+      title: 'A fake older article?',
+      excerpt: 'Another fake excerpt.',
+      publishedAt: '2026-10-30T08:30:00.000Z',
+      updatedAt: '2026-10-30T08:30:00.000Z',
+    },
+  ],
+  topics: [{ slug: 'fake-topic', name: 'Fake topic' }],
+}
 
 const urls = (held: Partial<SitemapSource> = {}) =>
   sitemapEntries(source(held), ORIGIN).map((entry) => entry.url)
@@ -40,10 +67,10 @@ afterEach(() => {
 })
 
 describe('the sitemap', () => {
-  it('lists every starter page and Find your path while the CMS holds nothing, with no date', () => {
+  it('lists every starter page, Find your path and the Journal while the CMS holds nothing, with no date', () => {
     const entries = sitemapEntries(source(), ORIGIN)
     expect(entries).toEqual(
-      [...STARTERS.map(pagePath), '/map'].map((path) => ({
+      [...STARTERS.map(pagePath), ...APP].map((path) => ({
         url: path === '/' ? `${ORIGIN}/` : `${ORIGIN}${path}`,
       })),
     )
@@ -70,7 +97,7 @@ describe('the sitemap', () => {
       lastModified: '2026-11-20T10:00:00.000Z',
     })
     // Every other starter page is still served, and still has no date.
-    expect(entries).toHaveLength(STARTERS.length + 1)
+    expect(entries).toHaveLength(STARTERS.length + APP.length)
     expect(entries.filter((entry) => 'lastModified' in entry)).toHaveLength(1)
   })
 
@@ -79,7 +106,7 @@ describe('the sitemap', () => {
     expect(listed).not.toContain(`${ORIGIN}/framework`)
     expect(listed).not.toContain(`${ORIGIN}/`)
     expect(listed).toContain(`${ORIGIN}/about`)
-    expect(listed).toHaveLength(STARTERS.length - 1)
+    expect(listed).toHaveLength(STARTERS.length - 2 + APP.length)
   })
 
   it('lists a published page that has no starter file, after the starter pages', () => {
@@ -97,7 +124,44 @@ describe('the sitemap', () => {
       { url: `${ORIGIN}/organisations/fake-service`, lastModified: '2026-11-21T08:30:00.000Z' },
       { url: `${ORIGIN}/fake-page` },
       { url: `${ORIGIN}/map` },
+      { url: `${ORIGIN}/journal` },
     ])
+  })
+
+  it('lists the Journal’s topics that hold an article, then its articles, newest first, each with the date it last changed', () => {
+    const entries = sitemapEntries(source(JOURNAL), ORIGIN)
+    expect(entries.slice(STARTERS.length + APP.length)).toEqual([
+      { url: `${ORIGIN}/journal/topic/fake-topic` },
+      { url: `${ORIGIN}/journal/fake-newer-article`, lastModified: '2026-11-22T09:00:00.000Z' },
+      { url: `${ORIGIN}/journal/fake-older-article`, lastModified: '2026-10-30T08:30:00.000Z' },
+    ])
+    // The Journal's later pages are reached by its links, not listed.
+    expect(entries.map(({ url }) => url).filter((url) => url.includes('/page/'))).toEqual([])
+  })
+
+  it('leaves the Journal’s addresses to the Journal: a page published there is never shown', () => {
+    const listed = urls({
+      published: [
+        { slug: 'journal', updatedAt: '2026-11-20T10:00:00.000Z' },
+        { slug: 'journal/fake-page', updatedAt: '2026-11-20T10:00:00.000Z' },
+        { slug: 'journal/topic/fake', updatedAt: '2026-11-20T10:00:00.000Z' },
+      ],
+      everPublished: ['journal', 'journal/fake-page', 'journal/topic/fake'],
+    })
+    expect(listed).toEqual(urls())
+    expect(listed.filter((url) => url === `${ORIGIN}/journal`)).toHaveLength(1)
+  })
+
+  it('leaves out an article or a topic whose address the Journal could not serve', () => {
+    const listed = urls({
+      posts: [
+        { slug: 'page', title: 'Fake reserved address' },
+        { slug: 'topic', title: 'Another fake reserved address' },
+        { slug: 'Fake Spaces', title: 'A fake address with spaces' },
+      ],
+      topics: [{ slug: 'Fake/Topic', name: 'Fake topic' }],
+    })
+    expect(listed).toEqual(urls())
   })
 
   it('leaves out every route that is never indexed, published there or not (D-67)', () => {
@@ -191,6 +255,9 @@ describe('the sitemap', () => {
         '<url>',
         `<loc>${ORIGIN}/map</loc>`,
         '</url>',
+        '<url>',
+        `<loc>${ORIGIN}/journal</loc>`,
+        '</url>',
         '</urlset>',
         '',
       ].join('\n'),
@@ -223,11 +290,67 @@ describe('the pages the site serves', () => {
     expect(served.map(({ path }) => path)).toEqual([
       ...STARTERS.filter((slug) => slug !== 'learn').map(pagePath),
       '/fake-page',
-      '/map',
+      ...APP,
     ])
-    // The app's own page has no slug: no page in the CMS stands behind it.
-    expect(served.at(-1)).toEqual({ path: '/map' })
-    expect(served.filter(({ slug }) => slug === undefined)).toHaveLength(1)
+    // The app's own pages have no slug: no page in the CMS stands behind them.
+    expect(served.slice(-APP.length)).toEqual(APP.map((path) => ({ path })))
+    expect(served.filter(({ slug }) => slug === undefined)).toHaveLength(APP.length)
+  })
+
+  it('give the Journal’s topics and articles their own words, and each article its date', () => {
+    const served = servedPages(
+      source({
+        posts: [
+          {
+            slug: 'fake-article',
+            title: 'A fake article whose title is far too long for a browser tab to hold?',
+            searchTitle: 'A fake search title',
+            excerpt: 'A fake excerpt.',
+            publishedAt: '2026-11-21T08:30:00.000Z',
+            updatedAt: '2026-11-22T09:00:00.000Z',
+          },
+          {
+            slug: 'fake-described-article',
+            title: 'A fake short title?',
+            excerpt: 'A fake excerpt.',
+            description: 'A fake description.',
+            publishedAt: '2026-11-20T08:30:00.000Z',
+          },
+        ],
+        topics: [
+          { slug: 'fake-topic', name: 'Fake topic' },
+          { slug: 'fake-described-topic', name: 'Fake', description: 'A fake topic description.' },
+        ],
+      }),
+    )
+    expect(served.slice(STARTERS.length + APP.length)).toEqual([
+      {
+        path: '/journal/topic/fake-topic',
+        journal: { title: 'The Journal: Fake topic', description: JOURNAL_PAGE.description },
+      },
+      {
+        path: '/journal/topic/fake-described-topic',
+        journal: { title: 'The Journal: Fake', description: 'A fake topic description.' },
+      },
+      {
+        path: '/journal/fake-article',
+        updatedAt: '2026-11-22T09:00:00.000Z',
+        journal: {
+          title: 'A fake search title',
+          description: 'A fake excerpt.',
+          publishedAt: '2026-11-21T08:30:00.000Z',
+        },
+      },
+      {
+        path: '/journal/fake-described-article',
+        updatedAt: null,
+        journal: {
+          title: 'A fake short title?',
+          description: 'A fake description.',
+          publishedAt: '2026-11-20T08:30:00.000Z',
+        },
+      },
+    ])
   })
 })
 
@@ -245,6 +368,7 @@ describe('the route /sitemap.xml', () => {
       { url: `${ORIGIN}/` },
       { url: `${ORIGIN}/about`, lastModified: '2026-11-20T10:00:00.000Z' },
       { url: `${ORIGIN}/map` },
+      { url: `${ORIGIN}/journal` },
     ])
     // Rendered per request (D-42), so a page published in the admin is listed at once.
     expect(connection).toHaveBeenCalledTimes(1)
