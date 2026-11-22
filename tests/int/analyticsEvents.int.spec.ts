@@ -11,7 +11,11 @@ import config from '@/payload.config'
 // nothing about the person. The address is from a documentation range (RFC 5737). Events hold
 // nobody's data and stay; the retention job will clear them (M6).
 vi.mock('server-only', () => ({}))
-vi.mock('@/lib/monitoring/sentry', () => ({ reportError: async () => false }))
+// Nothing is reported from a test; the config's own error hook (reportServerError) stays real.
+vi.mock('@/lib/monitoring/sentry', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/monitoring/sentry')>()),
+  reportError: async () => false,
+}))
 
 let payload: Payload
 const email = (label: string) => `int.analytics.${label}@example.invalid`

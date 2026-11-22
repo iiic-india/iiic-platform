@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { CollectionConfig, Config } from 'payload'
+import type { CollectionConfig, Config, Field } from 'payload'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Settings } from '@/globals/Settings'
@@ -37,6 +37,23 @@ describe('changedFields', () => {
 
   it('has nothing to compare on a creation', () => {
     expect(changedFields({ id: 1, name: 'Fake' }, undefined)).toEqual([])
+  })
+
+  it('never counts a join, which lists other documents, as this document’s change', () => {
+    // A person's consents are a join (src/collections/People.ts): read with its documents
+    // after a write and without them before it, whatever the write changed.
+    const fields: Field[] = [
+      { name: 'city', type: 'text' },
+      {
+        type: 'row',
+        fields: [{ name: 'consents', type: 'join', collection: 'consents', on: 'person' }],
+      },
+    ]
+    const before = { city: 'Fake city', consents: { docs: [], hasNextPage: false } }
+    const after = { city: 'Another fake city', consents: { docs: [1, 2], hasNextPage: false } }
+    expect(changedFields(after, before, { fields })).toEqual(['city'])
+    // A field of the same name that is not a join is compared as any other.
+    expect(changedFields(after, before)).toEqual(['city', 'consents'])
   })
 
   it('names a field inside a named group by both names, however the admin lays them out', () => {

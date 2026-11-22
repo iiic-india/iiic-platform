@@ -69,6 +69,30 @@ function groupsOf(fields: Field[] = []): Groups {
   return groups
 }
 
+/**
+ * The joins among some fields, by name. A join lists other documents that point at this one
+ * (a person's consents); it is read differently before and after a write, and it is never this
+ * document's own change.
+ */
+function joinsOf(fields: Field[] = []): Set<string> {
+  const names = new Set<string>()
+  const merge = (inner: Set<string>) => inner.forEach((name) => names.add(name))
+  for (const field of fields) {
+    if (field.type === 'join') {
+      names.add(field.name)
+    } else if (field.type === 'row' || field.type === 'collapsible') {
+      merge(joinsOf(field.fields))
+    } else if (field.type === 'group' && !('name' in field && field.name)) {
+      merge(joinsOf(field.fields))
+    } else if (field.type === 'tabs') {
+      for (const tab of field.tabs) {
+        if (!('name' in tab && tab.name)) merge(joinsOf(tab.fields))
+      }
+    }
+  }
+  return names
+}
+
 const isObject = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 
@@ -84,6 +108,7 @@ export function changedFields(
   { fields, missingIsEmpty = false }: { fields?: Field[]; missingIsEmpty?: boolean } = {},
 ): string[] {
   if (!previous) return []
+  const joins = joinsOf(fields)
   const compare = (
     after: Record<string, unknown>,
     before: Record<string, unknown>,
@@ -95,6 +120,7 @@ export function changedFields(
       : Object.keys(after).filter((key) => key in before)
     return keys
       .filter((key) => !BOOKKEEPING.has(key) && key !== 'id')
+      .filter((key) => !(prefix === '' && joins.has(key)))
       .flatMap((key) => {
         const inner = groups.get(key)
         const [now, then] = [after[key], before[key]]
