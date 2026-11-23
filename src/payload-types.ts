@@ -191,6 +191,17 @@ export interface Config {
       'B7-issue-credit-note': TaskB7IssueCreditNote;
       'messages-dispatch': TaskMessagesDispatch;
       'O3-failure-alert': TaskO3FailureAlert;
+      'B2-confirmation': TaskB2Confirmation;
+      'B3-receipt': TaskB3Receipt;
+      'B3a-consent-receipt': TaskB3AConsentReceipt;
+      'B5-reminder-24h': TaskB5Reminder24H;
+      'B6-reminder-2h': TaskB6Reminder2H;
+      'B7-change-notice': TaskB7ChangeNotice;
+      'B8-feedback-request': TaskB8FeedbackRequest;
+      'B9-no-show': TaskB9NoShow;
+      'B10-slot-lost': TaskB10SlotLost;
+      'B12-time-request-ack': TaskB12TimeRequestAck;
+      'B13-payment-link': TaskB13PaymentLink;
       inline: {
         input: unknown;
         output: unknown;
@@ -1786,6 +1797,7 @@ export interface Payment {
   gatewayOrderId?: string | null;
   gatewayPaymentLinkId?: string | null;
   gatewayPaymentId?: string | null;
+  linkUrl?: string | null;
   method?: string | null;
   failureCode?: string | null;
   capturedAt?: string | null;
@@ -2418,7 +2430,18 @@ export interface PayloadJob {
           | 'B3-issue-invoice'
           | 'B7-issue-credit-note'
           | 'messages-dispatch'
-          | 'O3-failure-alert';
+          | 'O3-failure-alert'
+          | 'B2-confirmation'
+          | 'B3-receipt'
+          | 'B3a-consent-receipt'
+          | 'B5-reminder-24h'
+          | 'B6-reminder-2h'
+          | 'B7-change-notice'
+          | 'B8-feedback-request'
+          | 'B9-no-show'
+          | 'B10-slot-lost'
+          | 'B12-time-request-ack'
+          | 'B13-payment-link';
         taskID: string;
         input?:
           | {
@@ -2464,6 +2487,17 @@ export interface PayloadJob {
         | 'B7-issue-credit-note'
         | 'messages-dispatch'
         | 'O3-failure-alert'
+        | 'B2-confirmation'
+        | 'B3-receipt'
+        | 'B3a-consent-receipt'
+        | 'B5-reminder-24h'
+        | 'B6-reminder-2h'
+        | 'B7-change-notice'
+        | 'B8-feedback-request'
+        | 'B9-no-show'
+        | 'B10-slot-lost'
+        | 'B12-time-request-ack'
+        | 'B13-payment-link'
       )
     | null;
   queue?: string | null;
@@ -3529,6 +3563,7 @@ export interface PaymentsSelect<T extends boolean = true> {
   gatewayOrderId?: T;
   gatewayPaymentLinkId?: T;
   gatewayPaymentId?: T;
+  linkUrl?: T;
   method?: T;
   failureCode?: T;
   capturedAt?: T;
@@ -4321,6 +4356,160 @@ export interface TaskO3FailureAlert {
   output: {
     failures: number;
     alerted: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB2-confirmation".
+ */
+export interface TaskB2Confirmation {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB3-receipt".
+ */
+export interface TaskB3Receipt {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB3a-consent-receipt".
+ */
+export interface TaskB3AConsentReceipt {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB5-reminder-24h".
+ */
+export interface TaskB5Reminder24H {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB6-reminder-2h".
+ */
+export interface TaskB6Reminder2H {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB7-change-notice".
+ */
+export interface TaskB7ChangeNotice {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB8-feedback-request".
+ */
+export interface TaskB8FeedbackRequest {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB9-no-show".
+ */
+export interface TaskB9NoShow {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB10-slot-lost".
+ */
+export interface TaskB10SlotLost {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB12-time-request-ack".
+ */
+export interface TaskB12TimeRequestAck {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB13-payment-link".
+ */
+export interface TaskB13PaymentLink {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
   };
 }
 /**

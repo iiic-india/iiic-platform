@@ -113,6 +113,14 @@ export const Payments: CollectionConfig = {
       ],
     },
     {
+      // The payment link's page (Razorpay's short URL), which B13's message carries (docs/19 §7):
+      // the gateway's own SMS and email are off, and the gateway is not asked for it again.
+      name: 'linkUrl',
+      type: 'text',
+      maxLength: 200,
+      admin: { readOnly: true, condition: (data) => data?.kind === 'paymentLink' },
+    },
+    {
       type: 'row',
       fields: [
         {
