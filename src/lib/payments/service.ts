@@ -8,7 +8,12 @@ import { makeCloseOpenLinks, makeSendPaymentLink } from './links'
 import { makePollPendingOrders } from './poll'
 import { quotePrice } from './prices'
 import { makeReconcileDay } from './reconcile'
-import { makeDecideRefund, makeRequestRefund, makeSendRefund } from './refunds'
+import {
+  makeDecideRefund,
+  makeRequestRefund,
+  makeSendRefund,
+  makeSettleStuckRefund,
+} from './refunds'
 import { makeProcessGatewayEvent } from './webhook'
 
 /**
@@ -54,7 +59,12 @@ export function makePayments(deps: PaymentsDeps) {
     decideRefund: makeDecideRefund(deps),
     sendRefund,
     sendRefunds,
-    pollPendingOrders: makePollPendingOrders(deps, processGatewayEvent, sendRefunds),
+    pollPendingOrders: makePollPendingOrders(
+      deps,
+      processGatewayEvent,
+      sendRefunds,
+      makeSettleStuckRefund(deps),
+    ),
     reconcileDay: makeReconcileDay(deps),
   }
 }

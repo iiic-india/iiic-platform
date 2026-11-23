@@ -8,6 +8,7 @@ import {
   refundRules,
 } from '@/lib/payments/hooks'
 import { findingFor, istDayWindow } from '@/lib/payments/reconcile'
+import { stuckRefundOutcome } from '@/lib/payments/refunds'
 import {
   REFUND_KEY,
   refundableState,
@@ -257,5 +258,41 @@ describe('B11’s findings', () => {
       from: new Date('2026-11-30T18:30:00.000Z'),
       to: new Date('2026-12-01T18:30:00.000Z'),
     })
+  })
+})
+
+describe('a refund sent without an answer (docs/16 §5)', () => {
+  const made = (status: 'pending' | 'processed' | 'failed', receipt: string | null) => ({
+    refundId: 'rfnd_fake1',
+    paymentId: 'pay_fake1',
+    amountPaise: 10_000,
+    status,
+    receipt,
+  })
+
+  it('records what the gateway made under its receipt', () => {
+    expect(stuckRefundOutcome('fake:key', [made('processed', 'fake:key')])).toEqual({
+      kind: 'complete',
+      refundId: 'rfnd_fake1',
+    })
+    expect(stuckRefundOutcome('fake:key', [made('pending', 'fake:key')])).toEqual({
+      kind: 'pending',
+      refundId: 'rfnd_fake1',
+    })
+    expect(stuckRefundOutcome('fake:key', [made('failed', 'fake:key')])).toEqual({
+      kind: 'failed',
+      refundId: 'rfnd_fake1',
+      failureCode: 'gateway-failed',
+    })
+  })
+
+  it('fails one the gateway never made, so the office can send it again', () => {
+    for (const found of [[], [made('processed', 'fake:other')], [made('processed', null)]]) {
+      expect(stuckRefundOutcome('fake:key', found)).toEqual({
+        kind: 'failed',
+        refundId: null,
+        failureCode: 'not-sent',
+      })
+    }
   })
 })

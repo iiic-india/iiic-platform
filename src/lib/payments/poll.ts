@@ -15,7 +15,9 @@ import type { ProcessGatewayEventWith } from './webhook'
  * of its own, so a capture is acted on once whether the webhook, the return from checkout or
  * the poll reports it first. It also sends refunds left `approved` (a send interrupted, or one an
  * owner approved in the admin), which is how an approval reaches the gateway until the admin's
- * own action does (wave 2).
+ * own action does (wave 2). And it settles refunds left `processing` with no gateway id (a send
+ * whose gateway call failed or never finished), by asking the gateway for the payment's refunds:
+ * one it made is recorded, one it never made is `failed`, for the office to send again.
  *
  * The two windows are the engineering's, not IIIC's: a payment is left alone for its first
  * minutes, while its webhook is on the way, and not asked about after two days, by when
@@ -27,11 +29,14 @@ const GIVE_UP_MS = 48 * 60 * 60 * 1000
 const BATCH = 100
 /** An approved refund is left this long for the request that approved it to send it. */
 const SEND_AFTER_MS = 2 * 60 * 1000
+/** A refund sent without an answer is left this long, far past any call's time-out, before it is settled. */
+const STUCK_AFTER_MS = 15 * 60 * 1000
 
 export function makePollPendingOrders(
   deps: PaymentsDeps,
   processGatewayEvent: ProcessGatewayEventWith,
   sendRefunds: (payload: Payload, refundIds: number[]) => Promise<void>,
+  settleStuckRefund: (payload: Payload, refundId: number) => Promise<{ ok: boolean }>,
 ): PollPendingOrders {
   return async (req, now) => {
     const gateway = deps.gateway()
@@ -99,6 +104,32 @@ export function makePollPendingOrders(
       payload,
       approved.map((refund) => refund.id),
     )
+
+    const { docs: stuck } = await payload.find({
+      collection: 'refunds',
+      where: {
+        and: [
+          { status: { equals: 'processing' } },
+          { gatewayRefundId: { exists: false } },
+          { updatedAt: { less_than: new Date(now.getTime() - STUCK_AFTER_MS).toISOString() } },
+        ],
+      },
+      sort: 'updatedAt',
+      limit: BATCH,
+      depth: 0,
+      overrideAccess: true,
+      req: read,
+    })
+    for (const refund of stuck) {
+      try {
+        const settled = await settleStuckRefund(payload, refund.id)
+        if (!settled.ok) payload.logger.warn(`Refund ${refund.id} not settled yet.`)
+      } catch (error) {
+        payload.logger.error(
+          `Refund ${refund.id} not settled (${error instanceof Error ? error.name : 'unknown error'}).`,
+        )
+      }
+    }
     return { checked: pending.length }
   }
 }

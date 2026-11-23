@@ -8,6 +8,7 @@ import { err, ok, type Result } from '@/lib/result'
 import type { Payment, Refund } from '@/payload-types'
 
 import type { PaymentsDeps } from './deps'
+import type { GatewayRefundFound } from './gateway'
 import { paymentMove, paymentStatusAfterRefund, refundMove } from './moves'
 import type { DecideRefund, PaymentError, RequestRefund } from './operations'
 import {
@@ -268,3 +269,72 @@ export function makeSendRefund(deps: PaymentsDeps) {
 }
 
 export type SendRefund = ReturnType<typeof makeSendRefund>
+
+/**
+ * What a refund left `processing` with no gateway id has become at the gateway, found among the
+ * payment's refunds by its receipt (the refund's key): pure, so the rule is tested alone.
+ * - Found and processed: complete it here. Found and pending: keep its id, the event completes
+ *   it. Found and failed: `failed`, for the office to send again.
+ * - Not found: the gateway never made it (it did not answer, or the send stopped before the
+ *   call), so it is `failed` too, and the office sends it again (docs/16 §3).
+ */
+export type StuckRefundOutcome =
+  | { kind: 'complete'; refundId: string }
+  | { kind: 'pending'; refundId: string }
+  | { kind: 'failed'; refundId: string | null; failureCode: 'gateway-failed' | 'not-sent' }
+
+export function stuckRefundOutcome(
+  receipt: string,
+  found: readonly GatewayRefundFound[],
+): StuckRefundOutcome {
+  const match = found.find((refund) => refund.receipt === receipt)
+  if (!match) return { kind: 'failed', refundId: null, failureCode: 'not-sent' }
+  if (match.status === 'processed') return { kind: 'complete', refundId: match.refundId }
+  if (match.status === 'pending') return { kind: 'pending', refundId: match.refundId }
+  return { kind: 'failed', refundId: match.refundId, failureCode: 'gateway-failed' }
+}
+
+/**
+ * Settles a refund the poll found `processing` with no gateway id for a while (a send whose
+ * gateway call failed or never finished): asks the gateway for the payment's refunds, then
+ * records what it found under the payment's and the refund's locks, unless something else
+ * settled it meanwhile. A gateway that does not answer leaves it for the next run.
+ */
+export function makeSettleStuckRefund(deps: PaymentsDeps) {
+  return async (payload: Payload, refundId: number): Promise<Result<Refund, PaymentError>> => {
+    const gateway = deps.gateway()
+    if (!gateway.ok) return gateway
+    const read = await freshRequest(payload)
+    const refund = await refundById(read, refundId)
+    const paymentDocId = refund ? idOf(refund.payment) : null
+    const payment = paymentDocId === null ? null : await paymentById(read, paymentDocId)
+    if (!refund || !payment?.gatewayPaymentId) return err({ code: 'not-found' })
+    const found = await gateway.value.fetchRefunds(payment.gatewayPaymentId)
+    if (!found.ok) return found
+    const outcome = stuckRefundOutcome(refund.idempotencyKey, found.value)
+
+    const record = await freshRequest(payload)
+    return inTransaction(record, async () => {
+      if (!(await lockRow(record, 'payments', payment.id))) return err({ code: 'not-found' })
+      await lockRow(record, 'refunds', refund.id)
+      const current = await refundById(record, refund.id)
+      if (!current) return err({ code: 'not-found' })
+      if (current.status !== 'processing' || current.gatewayRefundId) return ok(current)
+      if (outcome.kind === 'pending') {
+        return ok(await updateRefund(record, current.id, { gatewayRefundId: outcome.refundId }))
+      }
+      if (outcome.kind === 'failed') {
+        return ok(
+          await updateRefund(record, current.id, {
+            status: 'failed',
+            failureCode: outcome.failureCode,
+            ...(outcome.refundId ? { gatewayRefundId: outcome.refundId } : {}),
+          }),
+        )
+      }
+      const latest = await paymentById(record, payment.id)
+      if (!latest) return err({ code: 'not-found' })
+      return completeRefund(record, deps, current, latest, outcome.refundId)
+    })
+  }
+}
