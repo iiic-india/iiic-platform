@@ -9,27 +9,13 @@ import type { PageContent } from '@/lib/content/types'
 import config from '@payload-config'
 
 import { signDrawn } from './guards'
-import type { NoticeShown } from './state'
-import type { EnquiryFormKind } from './strings'
+import { type NoticeShown, NO_FORMS, type PageForms } from './state'
 import { turnstileKeys } from './turnstile'
 
 /**
- * What a page needs to draw its form (docs/17 §6), read on the server when the page is drawn:
- * the consent text in force for `enquiryReplies` (none, and the form is not shown), the signed
- * time the form is drawn at, Turnstile's site key where both its keys are set, and the page's
- * own address, which the form sends back and which its acknowledgement leaves the person on.
+ * What a page needs to draw its forms (docs/17 §6; FormSetup in ./state.ts), read on the server
+ * when the page is drawn, and only for a page that carries one.
  */
-export type FormSetup = {
-  notice: NoticeShown | null
-  drawn: string
-  turnstileSiteKey: string | null
-  page: string
-}
-
-/** The forms a page carries, by kind; a page without one has none. */
-export type PageForms = Partial<Record<EnquiryFormKind, FormSetup>>
-
-export const NO_FORMS: PageForms = {}
 
 const BLOCK_KINDS = { teamMapRequest: 'teamMap', partnershipEnquiry: 'partnership' } as const
 

@@ -33,7 +33,11 @@ export type FormField = {
   /** Across the grid's two columns. */
   full?: boolean
   maxLength: number
+  /** A line under the field on how to answer it. */
+  help?: string
 }
+
+const PHONE_HELP = 'A number outside India needs its country code, such as +44.'
 
 const optional = (label: string) => `${label} (optional)`
 
@@ -80,6 +84,7 @@ export const TEAM_MAP_FIELDS: readonly FormField[] = [
     required: true,
     autoComplete: 'tel',
     maxLength: 30,
+    help: PHONE_HELP,
   },
   {
     name: 'prompt',
@@ -111,7 +116,15 @@ export const PARTNERSHIP_FIELDS: readonly FormField[] = [
     maxLength: 100,
   },
   { name: 'email', label: 'Email', type: 'email', required: true, autoComplete: 'email', maxLength: 254 },
-  { name: 'phone', label: 'Phone number', type: 'tel', required: true, autoComplete: 'tel', maxLength: 30 },
+  {
+    name: 'phone',
+    label: 'Phone number',
+    type: 'tel',
+    required: true,
+    autoComplete: 'tel',
+    maxLength: 30,
+    help: PHONE_HELP,
+  },
   {
     name: 'nature',
     label: 'What the partnership would be about',
@@ -138,7 +151,7 @@ export const FORM_COPY = {
         'The office will call or write to you within two working days.',
       ],
       /** The proposal call can be booked meanwhile (docs/17 §6). */
-      callLine: 'If you would rather talk sooner, book a proposal call now.',
+      callLine: 'You can book the proposal call now, before the office replies.',
     },
   },
   partnership: {
@@ -166,6 +179,9 @@ export function checkAnswers(count: number): string {
   return `Check ${count} ${count === 1 ? 'answer' : 'answers'}`
 }
 
+/** The error summary's heading when the form was not taken for a reason other than an answer. */
+export const NOT_SENT = 'The form was not sent'
+
 /** Why a form that was filled in correctly was not taken, in the person's terms. */
 export const REFUSALS = {
   turnstile: 'The spam check did not go through. Send the form again.',
@@ -180,9 +196,6 @@ export type Refusal = keyof typeof REFUSALS
 
 /** Beside Turnstile's widget, for a browser that runs no script. */
 export const TURNSTILE_NOSCRIPT = `The spam check on this form needs JavaScript. Without it, write to ${OFFICE_EMAIL}.`
-
-/** The consent box's label, before the notice's words, for a screen reader. */
-export const CONSENT_LEGEND = 'Consent'
 
 /** The trap field's label: nobody sees it, and anything typed in it marks a robot. */
 export const TRAP_LABEL = 'Leave this empty'

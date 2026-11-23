@@ -1,4 +1,4 @@
-import type { Refusal } from './strings'
+import type { EnquiryFormKind, Refusal } from './strings'
 
 /**
  * What a form's server action hands back to the form (docs/17 §6), and so what the form draws
@@ -10,6 +10,31 @@ import type { Refusal } from './strings'
 
 /** A consent text as the form shows it beside the box. */
 export type NoticeShown = { version: number; text: string }
+
+/**
+ * What a page needs to draw its form, read on the server when the page is drawn
+ * (src/lib/enquiryForms/setup.ts): the consent text in force for `enquiryReplies` (none, and the
+ * form is not shown), the signed time the form is drawn at, Turnstile's site key where both its
+ * keys are set, and the page's own address, which the form sends back and which its
+ * acknowledgement leaves the person on.
+ */
+export type FormSetup = {
+  notice: NoticeShown | null
+  drawn: string
+  turnstileSiteKey: string | null
+  page: string
+}
+
+/** The forms a page carries, by kind; a page without one has none. */
+export type PageForms = Partial<Record<EnquiryFormKind, FormSetup>>
+
+export const NO_FORMS: PageForms = {}
+
+/** A form's server action, as the page hands it to the form. */
+export type EnquiryFormAction = (
+  previous: EnquiryFormState,
+  form: FormData,
+) => Promise<EnquiryFormState>
 
 export type EnquiryFormState = {
   status: 'idle' | 'invalid' | 'refused' | 'received'

@@ -26,4 +26,5 @@ Branch m4/forms from m4/foundation. Design: docs/17 §6, §12 B.
 1 notes  2 blocks+types  3 lib/enquiryForms core + tests  4 components  5 render + PageAt  6 CSP/proxy  7 starter pages + tests  8 e2e  9 checks
 
 ## Progress
-- [x] 1
+- [x] 1 notes  - [x] 2 blocks+types  - [x] 3 lib/enquiryForms core (guards, limits, setup, state, strings, submit, turnstile, register, wiring, actions) committed; tests pending
+- run 3 (resumed): components next, then render, CSP, starter, tests

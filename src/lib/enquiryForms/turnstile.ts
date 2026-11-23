@@ -1,5 +1,9 @@
 import { z } from 'zod'
 
+import { TURNSTILE_ORIGIN } from './turnstileOrigin'
+
+export { TURNSTILE_ORIGIN, TURNSTILE_SCRIPT_URL } from './turnstileOrigin'
+
 /**
  * Cloudflare Turnstile on the public forms (docs/08 §9; docs/17 §6), only where both its keys
  * are set (src/lib/env.ts). The widget's token is checked on the server with Cloudflare's
@@ -9,8 +13,6 @@ import { z } from 'zod'
  * origins, which are no secret; the check itself runs only in the forms' server action.
  */
 
-export const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com'
-export const TURNSTILE_SCRIPT_URL = `${TURNSTILE_ORIGIN}/turnstile/v0/api.js?render=explicit`
 const SITEVERIFY_URL = `${TURNSTILE_ORIGIN}/turnstile/v0/siteverify`
 
 /** Turnstile's keys, when both are set; null otherwise. */
