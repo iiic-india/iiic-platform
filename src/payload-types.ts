@@ -186,6 +186,27 @@ export interface Config {
       'B11-reconcile': TaskB11Reconcile;
       'B2-B7-sync-calendar-event': TaskB2B7SyncCalendarEvent;
       'B14-refresh-busy-times': TaskB14RefreshBusyTimes;
+      'O1-daily-digest': TaskO1DailyDigest;
+      'O2-weekly-report': TaskO2WeeklyReport;
+      'O5-retention': TaskO5Retention;
+      'O6-backup-check': TaskO6BackupCheck;
+      'O9-bounce-complaint': TaskO9BounceComplaint;
+      'V1-review-consent-request': TaskV1ReviewConsentRequest;
+      'V2-withdrawal-confirmation': TaskV2WithdrawalConfirmation;
+      'P1-team-map-ack': TaskP1TeamMapAck;
+      'P2-call-booked': TaskP2CallBooked;
+      'P3-P4-lead-ages': TaskP3P4LeadAges;
+      'P5-proposal-sent': TaskP5ProposalSent;
+      'P6-proposal-follow-up': TaskP6ProposalFollowUp;
+      'P7-partnership-ack': TaskP7PartnershipAck;
+      'O4-data-request': TaskO4DataRequest;
+      'O7-complaint': TaskO7Complaint;
+      'O8-incident-timers': TaskO8IncidentTimers;
+      'C5-certificate-email': TaskC5CertificateEmail;
+      'N1-confirm-signup': TaskN1ConfirmSignup;
+      'N2-welcome': TaskN2Welcome;
+      'N3-unsubscribe': TaskN3Unsubscribe;
+      'N4-send-issue': TaskN4SendIssue;
       inline: {
         input: unknown;
         output: unknown;
@@ -2401,7 +2422,28 @@ export interface PayloadJob {
           | 'B2-poll-pending-orders'
           | 'B11-reconcile'
           | 'B2-B7-sync-calendar-event'
-          | 'B14-refresh-busy-times';
+          | 'B14-refresh-busy-times'
+          | 'O1-daily-digest'
+          | 'O2-weekly-report'
+          | 'O5-retention'
+          | 'O6-backup-check'
+          | 'O9-bounce-complaint'
+          | 'V1-review-consent-request'
+          | 'V2-withdrawal-confirmation'
+          | 'P1-team-map-ack'
+          | 'P2-call-booked'
+          | 'P3-P4-lead-ages'
+          | 'P5-proposal-sent'
+          | 'P6-proposal-follow-up'
+          | 'P7-partnership-ack'
+          | 'O4-data-request'
+          | 'O7-complaint'
+          | 'O8-incident-timers'
+          | 'C5-certificate-email'
+          | 'N1-confirm-signup'
+          | 'N2-welcome'
+          | 'N3-unsubscribe'
+          | 'N4-send-issue';
         taskID: string;
         input?:
           | {
@@ -2443,6 +2485,27 @@ export interface PayloadJob {
         | 'B11-reconcile'
         | 'B2-B7-sync-calendar-event'
         | 'B14-refresh-busy-times'
+        | 'O1-daily-digest'
+        | 'O2-weekly-report'
+        | 'O5-retention'
+        | 'O6-backup-check'
+        | 'O9-bounce-complaint'
+        | 'V1-review-consent-request'
+        | 'V2-withdrawal-confirmation'
+        | 'P1-team-map-ack'
+        | 'P2-call-booked'
+        | 'P3-P4-lead-ages'
+        | 'P5-proposal-sent'
+        | 'P6-proposal-follow-up'
+        | 'P7-partnership-ack'
+        | 'O4-data-request'
+        | 'O7-complaint'
+        | 'O8-incident-timers'
+        | 'C5-certificate-email'
+        | 'N1-confirm-signup'
+        | 'N2-welcome'
+        | 'N3-unsubscribe'
+        | 'N4-send-issue'
       )
     | null;
   queue?: string | null;
@@ -4242,6 +4305,237 @@ export interface TaskB14RefreshBusyTimes {
     refreshed: number;
     failed: number;
     renewed: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO1-daily-digest".
+ */
+export interface TaskO1DailyDigest {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO2-weekly-report".
+ */
+export interface TaskO2WeeklyReport {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO5-retention".
+ */
+export interface TaskO5Retention {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO6-backup-check".
+ */
+export interface TaskO6BackupCheck {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO9-bounce-complaint".
+ */
+export interface TaskO9BounceComplaint {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskV1-review-consent-request".
+ */
+export interface TaskV1ReviewConsentRequest {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskV2-withdrawal-confirmation".
+ */
+export interface TaskV2WithdrawalConfirmation {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP1-team-map-ack".
+ */
+export interface TaskP1TeamMapAck {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP2-call-booked".
+ */
+export interface TaskP2CallBooked {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP3-P4-lead-ages".
+ */
+export interface TaskP3P4LeadAges {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP5-proposal-sent".
+ */
+export interface TaskP5ProposalSent {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP6-proposal-follow-up".
+ */
+export interface TaskP6ProposalFollowUp {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP7-partnership-ack".
+ */
+export interface TaskP7PartnershipAck {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO4-data-request".
+ */
+export interface TaskO4DataRequest {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO7-complaint".
+ */
+export interface TaskO7Complaint {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO8-incident-timers".
+ */
+export interface TaskO8IncidentTimers {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskC5-certificate-email".
+ */
+export interface TaskC5CertificateEmail {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskN1-confirm-signup".
+ */
+export interface TaskN1ConfirmSignup {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskN2-welcome".
+ */
+export interface TaskN2Welcome {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskN3-unsubscribe".
+ */
+export interface TaskN3Unsubscribe {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskN4-send-issue".
+ */
+export interface TaskN4SendIssue {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
   };
 }
 /**
