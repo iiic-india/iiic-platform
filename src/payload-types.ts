@@ -186,6 +186,8 @@ export interface Config {
       'B11-reconcile': TaskB11Reconcile;
       'B2-B7-sync-calendar-event': TaskB2B7SyncCalendarEvent;
       'B14-refresh-busy-times': TaskB14RefreshBusyTimes;
+      'messages-dispatch': TaskMessagesDispatch;
+      'O3-failure-alert': TaskO3FailureAlert;
       inline: {
         input: unknown;
         output: unknown;
@@ -2401,7 +2403,9 @@ export interface PayloadJob {
           | 'B2-poll-pending-orders'
           | 'B11-reconcile'
           | 'B2-B7-sync-calendar-event'
-          | 'B14-refresh-busy-times';
+          | 'B14-refresh-busy-times'
+          | 'messages-dispatch'
+          | 'O3-failure-alert';
         taskID: string;
         input?:
           | {
@@ -2443,6 +2447,8 @@ export interface PayloadJob {
         | 'B11-reconcile'
         | 'B2-B7-sync-calendar-event'
         | 'B14-refresh-busy-times'
+        | 'messages-dispatch'
+        | 'O3-failure-alert'
       )
     | null;
   queue?: string | null;
@@ -4242,6 +4248,37 @@ export interface TaskB14RefreshBusyTimes {
     refreshed: number;
     failed: number;
     renewed: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskMessages-dispatch".
+ */
+export interface TaskMessagesDispatch {
+  input?: unknown;
+  output: {
+    sent: number;
+    deferred: number;
+    skipped: number;
+    failed: number;
+    retried: number;
+    unknown: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO3-failure-alert".
+ */
+export interface TaskO3FailureAlert {
+  input: {
+    name?: string | null;
+    key?: string | null;
+    messageId?: number | null;
+    jobId?: number | null;
+  };
+  output: {
+    failures: number;
+    alerted: number;
   };
 }
 /**

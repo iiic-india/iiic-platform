@@ -31,10 +31,18 @@ Working notes for a resumed run. Removed in the last commit.
 ## Order of work
 
 1. NOTES (this). 2. runner.ts + cron route + unit tests. 3. channelsFor/resend/aisensy + tests.
-4. suppress, recipients, rows, deliver, try, dispatch + unit tests with fakes. 5. webhooks (resend, whatsapp)
-+ tests. 6. links + withdrawals. 7. jobs/messaging.ts + failures + O3 + core template. 8. requeue endpoint,
-hooks. 9. int tests. 10. checks; remove NOTES.
+2. suppress, recipients, rows, deliver, try, dispatch + unit tests with fakes. 5. webhooks (resend, whatsapp)
+
+- tests. 6. links + withdrawals. 7. jobs/messaging.ts + failures + O3 + core template. 8. requeue endpoint,
+  hooks. 9. int tests. 10. checks; remove NOTES.
 
 ## Progress
 
-- (update after each commit)
+- Done (committed): 1-6. runner + cron route; senders; store/outbox/suppress/recipients/rows; try,
+  deliver (+cancelQueued), dispatch (sweep: stale email back to queued, stale WhatsApp unknown);
+  report.ts (applyReport, planFor), inbound.ts (pure webhook handlers, svix 2 verify returns void),
+  conversation.ts (inbound WhatsApp: window, STOP), body.ts, both webhook routes, Suppressions hook
+  (afterChange create emits message.suppressed); tests/unit/messagingWebhooks.spec.ts.
+- Next: 7 jobs/messaging.ts + failures.ts + O3 + emails/core failure-alert; 8 requeue endpoint;
+  9 int tests (tests/int/messaging*.int.spec.ts; clear payload_jobs my tests queue); 10 checks.
+- Note: taskSlug is a Postgres enum of registered tasks; O9/N3/V2 tasks are builder C's.
