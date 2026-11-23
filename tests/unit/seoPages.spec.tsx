@@ -75,6 +75,9 @@ vi.mock('@/lib/content/faqs', () => ({ getFaqs: vi.fn(async () => []) }))
 vi.mock('@/lib/proof/read', () => ({
   getPageVoices: vi.fn(async () => ({ first: null, bySection: {} })),
 }))
+// A page with a form reads its setup from the database (src/lib/enquiryForms/setup.ts); here
+// none is in force, and each form shows its placeholder (tests/unit/enquiryFormsRender.spec.tsx).
+vi.mock('@/lib/enquiryForms/setup', () => ({ formsFor: async () => ({}) }))
 vi.mock('next/headers', () => ({
   headers: async () => new Headers({ 'x-pathname': request.path }),
 }))

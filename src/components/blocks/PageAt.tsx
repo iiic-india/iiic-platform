@@ -6,6 +6,7 @@ import { getFaqs } from '@/lib/content/faqs'
 import { getPage, getPageToShow } from '@/lib/content/pages'
 import { pagePath } from '@/lib/content/slug'
 import type { FaqItem, PageContent } from '@/lib/content/types'
+import { formsOn } from '@/lib/enquiryForms/pageForms'
 import { getPageVoices } from '@/lib/proof/read'
 import { takesVoices } from '@/lib/proof/reviews'
 import { NO_VOICES, type PageVoices } from '@/lib/proof/voices'
@@ -39,6 +40,7 @@ export async function PageAt({ slug }: { slug: string }) {
         legal={await legalInformationFor(page.layout)}
         faqs={faqs}
         voices={await voicesFor(slug)}
+        forms={await formsOn(page.layout, pagePath(slug))}
       />
     </>
   )

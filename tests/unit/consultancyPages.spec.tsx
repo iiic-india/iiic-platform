@@ -92,19 +92,21 @@ describe('the pages under /organisations/', () => {
       expect(placeholdersIn(page).map((placeholder) => placeholder.id)).toEqual(['I-11'])
     }
     expect(new Set(placeholdersIn(TEAM_MAP_PAGE).map((placeholder) => placeholder.id))).toEqual(
-      new Set(['I-12']),
+      new Set(['I-12', 'I-22']),
     )
+    // The request form waits only on its consent text (I-22): once one is in force, it is drawn.
+    const withNotice = placeholdersIn(TEAM_MAP_PAGE, undefined, true)
+    expect(new Set(withNotice.map((placeholder) => placeholder.id))).toEqual(new Set(['I-12']))
   })
 
-  it('lead from the Team Map’s hero to where its request will be made', () => {
+  it('lead from the Team Map’s hero to its request form (docs/17 §6)', () => {
     const hero = TEAM_MAP_PAGE.layout[0]
     expect(hero && 'primary' in hero ? hero.primary : null).toEqual({
       label: 'Request a Team Map',
-      href: '/organisations/team-map#request',
+      href: '/organisations/team-map#team-map-request',
     })
-    expect(
-      TEAM_MAP_PAGE.layout.some((block) => 'anchor' in block && block.anchor === 'request'),
-    ).toBe(true)
+    // The form's block carries that id itself (src/components/blocks/PageBlocks.tsx).
+    expect(TEAM_MAP_PAGE.layout.some((block) => block.blockType === 'teamMapRequest')).toBe(true)
   })
 
   it('each have a questions section, drawn only once IIIC publishes a question', () => {

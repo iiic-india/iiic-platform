@@ -158,6 +158,8 @@ describe('PageAt', () => {
       slug: 'privacy',
       faqs: [],
       voices: { first: null, bySection: {} },
+      // A page without a form asks for no form's setup (src/lib/enquiryForms/pageForms.ts).
+      forms: {},
     })
     // A page without a questions section asks for none, and a legal page for no voices.
     expect(getFaqs).not.toHaveBeenCalled()

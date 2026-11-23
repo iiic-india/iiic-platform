@@ -1,3 +1,4 @@
+import { FORM_ANCHORS } from '@/blocks/pageBlocks'
 import type { PageContent } from '@/lib/content/types'
 
 import { PDEU_WORKSHOP } from './learn'
@@ -38,7 +39,11 @@ export const ABOUT_IIIC_LINES = {
 
 const LINES = ABOUT_IIIC_LINES
 const CONTACT = { label: 'Contact', href: '/about#contact' }
-const PARTNER = { label: 'Partner with IIIC', href: '/institute' }
+// The partnership enquiry, on the institute page (docs/17 §6).
+const PARTNER = {
+  label: 'Partner with IIIC',
+  href: `/institute#${FORM_ANCHORS.partnershipEnquiry}`,
+}
 /** IIIC's public workshop, as its site records it (docs/09). */
 export const PUBLIC_WORKSHOP =
   'Subjective Self: a public workshop, Cafe Venture Studio, Commerce Six Roads, Ahmedabad, 8–9 July 2023.'
