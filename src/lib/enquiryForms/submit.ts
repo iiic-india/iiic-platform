@@ -48,7 +48,9 @@ export type SubmitWorld = {
   noticeInForce: () => Promise<NoticeShown | null>
   receive: (
     input: ReceivedEnquiry,
-  ) => Promise<Result<{ enquiryId: number; leadId: number; outcome: EnquiryOutcome }, PipelineError>>
+  ) => Promise<
+    Result<{ enquiryId: number; leadId: number; outcome: EnquiryOutcome }, PipelineError>
+  >
   /** Records `request_submitted` after the response; never fails the request. */
   recordSubmitted: (page: string) => void
   reportFault: (error: unknown) => void
@@ -210,7 +212,9 @@ export async function submitEnquiry(
       if (result.error.code === 'no-notice') return refuse('no-notice')
       if (result.error.code === 'notice-changed') {
         const now = await world.noticeInForce()
-        return now ? refuse('notice-changed', { notice: now, values: unticked }) : refuse('no-notice')
+        return now
+          ? refuse('notice-changed', { notice: now, values: unticked })
+          : refuse('no-notice')
       }
       return refuse('failed')
     }

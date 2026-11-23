@@ -10,8 +10,10 @@ import { PDEU_WORKSHOP } from './learn'
  * partnership is described exactly as it happened, the certificate's statement is on the
  * page, and everything IIIC has yet to supply is a placeholder.
  *
- * Certificate verification opens with the certificates (D-39, M5) and the partnership enquiry
- * with the pipeline (docs/03 F12, M4); until then the page leads to the contact details.
+ * Certificate verification opens with the certificates (D-39, M5). The partnership enquiry
+ * (docs/03 F12; docs/17 §6) follows the Partnerships section, at /institute#partnership-enquiry,
+ * where the about and course pages' Partner with IIIC leads; it shows its placeholder until the
+ * consent text for replies to an enquiry is in force (I-22).
  */
 
 /** IIIC's own line on this page, exactly as the source has it. */
@@ -71,9 +73,9 @@ export const INSTITUTE: PageContent = {
       // The section's name is the plan's; the workshop is on IIIC's site.
       heading: 'Partnerships',
       paragraphs: [{ text: PDEU_WORKSHOP }],
-      action: CONTACT,
       copyStatus: 'candidate',
     },
+    { blockType: 'partnershipEnquiry' },
     {
       blockType: 'statement',
       // The section's name is the plan's (docs/00, institute pages).

@@ -53,7 +53,10 @@ export function buildCsp({
   const frames: [string, ...string[]] =
     frameOrigins.length === 0
       ? [frameSources]
-      : [...(frameSources === "'self'" ? ["'self'"] : []), ...frameOrigins] as [string, ...string[]]
+      : ([...(frameSources === "'self'" ? ["'self'"] : []), ...frameOrigins] as [
+          string,
+          ...string[],
+        ])
   const directives: [string, ...string[]][] = [
     ['default-src', "'self'"],
     [

@@ -85,5 +85,7 @@ export function submitterHashesWithin(
   windowMs: number,
 ): string[] {
   const earlier = new Date(now.getTime() - windowMs)
-  return [...new Set([submitterHash(secret, address, now), submitterHash(secret, address, earlier)])]
+  return [
+    ...new Set([submitterHash(secret, address, now), submitterHash(secret, address, earlier)]),
+  ]
 }

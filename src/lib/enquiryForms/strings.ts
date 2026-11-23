@@ -60,7 +60,14 @@ export const TEAM_MAP_FIELDS: readonly FormField[] = [
   },
   { name: 'teamSizeBand', label: 'Team size', type: 'select', required: true, maxLength: 20 },
   { name: 'sector', label: 'Sector', type: 'text', required: true, maxLength: 100 },
-  { name: 'name', label: 'Your name', type: 'text', required: true, autoComplete: 'name', maxLength: 200 },
+  {
+    name: 'name',
+    label: 'Your name',
+    type: 'text',
+    required: true,
+    autoComplete: 'name',
+    maxLength: 200,
+  },
   {
     name: 'role',
     label: 'Your role',
@@ -106,7 +113,14 @@ export const PARTNERSHIP_FIELDS: readonly FormField[] = [
     full: true,
     maxLength: 200,
   },
-  { name: 'name', label: 'Your name', type: 'text', required: true, autoComplete: 'name', maxLength: 200 },
+  {
+    name: 'name',
+    label: 'Your name',
+    type: 'text',
+    required: true,
+    autoComplete: 'name',
+    maxLength: 200,
+  },
   {
     name: 'role',
     label: 'Your role',
@@ -115,7 +129,14 @@ export const PARTNERSHIP_FIELDS: readonly FormField[] = [
     autoComplete: 'organization-title',
     maxLength: 100,
   },
-  { name: 'email', label: 'Email', type: 'email', required: true, autoComplete: 'email', maxLength: 254 },
+  {
+    name: 'email',
+    label: 'Email',
+    type: 'email',
+    required: true,
+    autoComplete: 'email',
+    maxLength: 254,
+  },
   {
     name: 'phone',
     label: 'Phone number',

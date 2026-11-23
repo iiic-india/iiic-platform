@@ -176,7 +176,9 @@ function Summary({ kind, state }: { kind: EnquiryFormKind; state: EnquiryFormSta
   }
   if (state.status !== 'invalid') return null
   const items = summaryItems(kind, state)
-  return items.length > 0 ? <ErrorSummary heading={checkAnswers(items.length)} items={items} /> : null
+  return items.length > 0 ? (
+    <ErrorSummary heading={checkAnswers(items.length)} items={items} />
+  ) : null
 }
 
 export function EnquiryForm({
