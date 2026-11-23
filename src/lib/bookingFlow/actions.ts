@@ -466,16 +466,28 @@ export async function rescheduleAction(
 ): Promise<Answer<{ ref: string; startsAt: string | null; manageToken: string | null }>> {
   const input = RescheduleInput.safeParse(raw)
   if (!input.success) return fail({ code: 'invalid-input', fields: [] })
-  const moved = await reschedule(await flowRequest(), input.data)
-  if (!moved.ok) return fail(fromBooking(moved.error))
-  return {
-    ok: true,
-    value: {
-      ref: moved.value.booking.reference,
-      startsAt: moved.value.booking.startsAt,
-      manageToken: moved.value.manageToken,
+  const req = await flowRequest()
+  return inTransaction(
+    req,
+    async (): Promise<
+      Answer<{ ref: string; startsAt: string | null; manageToken: string | null }>
+    > => {
+      const moved = await reschedule(req, input.data)
+      if (!moved.ok) return fail(fromBooking(moved.error))
+      // The old booking's payment link would pay for a booking that moved (docs/16 §5).
+      const closed = await payments().closeOpenLinks(req, moved.value.booking.id)
+      if (!closed.ok) return fail({ code: 'failed' })
+      return {
+        ok: true,
+        value: {
+          ref: moved.value.booking.reference,
+          startsAt: moved.value.booking.startsAt,
+          manageToken: moved.value.manageToken,
+        },
+      }
     },
-  }
+    keepOk,
+  )
 }
 
 const CancelInput = z.strictObject({
@@ -508,6 +520,9 @@ export async function cancelAction(raw: unknown): Promise<Answer<Cancelled>> {
     > => {
       const cancelled = await cancel(req, input.data, now)
       if (!cancelled.ok) return fail(fromBooking(cancelled.error))
+      // No payment link is left to pay for a booking that has ended (docs/16 §5).
+      const closed = await payments().closeOpenLinks(req, cancelled.value.booking.id)
+      if (!closed.ok) return fail({ code: 'failed' })
       const booking = await loadBooking(req, cancelled.value.booking.id)
       if (!booking) return fail({ code: 'not-found' })
       const refund = await requestClientRefund(req, {

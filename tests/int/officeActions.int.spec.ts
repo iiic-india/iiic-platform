@@ -556,3 +556,88 @@ describe('moving, confirming and asking for payment', () => {
     })
   })
 })
+
+describe('a payment link and the booking’s chain (docs/16 §5, B13)', () => {
+  const LINK_DAY = '2099-05-25'
+  const linkOf = async (bookingId: number) => {
+    const { docs } = await payload.find({
+      collection: 'payments',
+      where: { and: [{ booking: { equals: bookingId } }, { kind: { equals: 'paymentLink' } }] },
+      depth: 0,
+    })
+    return docs[0]
+  }
+
+  it('closes the link of a booking that moves, and leaves the new one unpaid', async () => {
+    const booking = await book('confirmed', '10:00', {}, LINK_DAY)
+    const sent = await office.paymentLink(await as(staff.operator), booking.id, {})
+    if (!sent.ok) throw new Error(sent.error.code)
+    const linkId = sent.value.payment.gatewayPaymentLinkId as string
+    const moved = await office.reschedule(await as(staff.operator), booking.id, {
+      startsAt: field('11:00', LINK_DAY),
+    })
+    expect(moved.ok).toBe(true)
+    if (!moved.ok) return
+    expect(moved.value.paymentStatus).toBe('unpaid')
+    expect((await linkOf(booking.id))?.status).toBe('cancelled')
+    expect(gateway.links.get(linkId)?.status).toBe('cancelled')
+
+    // A new link for the new booking is the chain's only open one.
+    const again = await office.paymentLink(await as(staff.operator), moved.value.id, {})
+    expect(again.ok).toBe(true)
+  })
+
+  it('closes the link of a booking that is cancelled', async () => {
+    const booking = await book('confirmed', '12:00', {}, LINK_DAY)
+    const sent = await office.paymentLink(await as(staff.operator), booking.id, {})
+    if (!sent.ok) throw new Error(sent.error.code)
+    const done = await office.cancel(await as(staff.operator), booking.id, {
+      by: 'client',
+      reason: 'Fake reason',
+      shownClientPaise: 0,
+      shownIiicPaise: 0,
+    })
+    expect(done.ok).toBe(true)
+    expect((await linkOf(booking.id))?.status).toBe('cancelled')
+    expect(gateway.links.get(sent.value.payment.gatewayPaymentLinkId as string)?.status).toBe(
+      'cancelled',
+    )
+    expect((await reread(booking.id)).paymentStatus).toBe('unpaid')
+  })
+
+  it('keeps the booking as it was when its link cannot be closed', async () => {
+    const booking = await book('confirmed', '12:30', {}, LINK_DAY)
+    const sent = await office.paymentLink(await as(staff.operator), booking.id, {})
+    if (!sent.ok) throw new Error(sent.error.code)
+    // A link the gateway no longer knows cannot be closed: nothing changes here.
+    gateway.links.delete(sent.value.payment.gatewayPaymentLinkId as string)
+    const done = await office.cancel(await as(staff.operator), booking.id, {
+      by: 'client',
+      reason: 'Fake reason',
+      shownClientPaise: 0,
+      shownIiicPaise: 0,
+    })
+    expect(done.ok).toBe(false)
+    const kept = await reread(booking.id)
+    expect(kept.status).toBe('confirmed')
+    expect(kept.paymentStatus).toBe('linkSent')
+  })
+
+  it('sends no link for a booking whose chain is already paid', async () => {
+    const booking = await paidBooking('11:30', '2099-05-26')
+    const moved = await office.reschedule(await as(staff.operator), booking.id, {
+      startsAt: field('12:00', '2099-05-26'),
+    })
+    if (!moved.ok) throw new Error(moved.error.code)
+    // Even were the new booking's own state wrong, the payment on the first counts.
+    await payload.update({
+      collection: 'bookings',
+      id: moved.value.id,
+      data: { paymentStatus: 'unpaid' },
+    })
+    expect(await office.paymentLink(await as(staff.operator), moved.value.id, {})).toEqual({
+      ok: false,
+      error: { code: 'bad-move', from: 'captured', to: 'linkSent' },
+    })
+  })
+})
