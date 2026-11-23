@@ -1,5 +1,3 @@
-import 'server-only'
-
 import type { IstDay } from '@/lib/booking/types'
 import { err, ok } from '@/lib/result'
 import { IST, istDay } from '@/lib/time/ist'

@@ -1,5 +1,3 @@
-import 'server-only'
-
 import type { PayloadRequest } from 'payload'
 
 import { env } from '@/lib/env'
@@ -33,6 +31,9 @@ import { makeProposals, type Proposals } from './service'
  *
  * Until then the stand-in printer prints a PDF only where no Vercel deployment runs it (local
  * and CI), as the fake payment gateway does, so no client can receive its copy.
+ *
+ * The collections' endpoints reach this module, so it is not marked `server-only`: the Payload
+ * CLI loads the config outside Next.js (src/lib/env.ts says why). It reads no secret itself.
  */
 
 let instance: Proposals | undefined
