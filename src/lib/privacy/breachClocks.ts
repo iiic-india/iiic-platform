@@ -38,7 +38,7 @@ export function clockState(
   const left = dueAt.getTime() - now.getTime()
   return left > 0
     ? { state: 'running', dueAt, hoursLeft: Math.floor(left / HOUR_MS) }
-    : { state: 'overdue', dueAt, hoursLate: Math.ceil(-left / HOUR_MS) }
+    : { state: 'overdue', dueAt, hoursLate: Math.ceil((now.getTime() - dueAt.getTime()) / HOUR_MS) }
 }
 
 /** What a privacy request's clocks read from (the stored document's fields). */
