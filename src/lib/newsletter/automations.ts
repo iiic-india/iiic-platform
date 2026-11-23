@@ -9,6 +9,7 @@ import { done, RecordId, type Outcome } from '@/lib/automations/operations/outco
 import { idOf } from '@/lib/privacy/consentLedger'
 import type { Subscriber } from '@/payload-types'
 
+import { NEWSLETTER_SEND_CONTEXT } from './hooks'
 import { linkLive } from './rules'
 import { unsubscribe, withdrawMarketingEmail } from './subscriptions'
 import { confirmationVariant } from './tokens'
@@ -100,7 +101,9 @@ export async function runN3(req: PayloadRequest, input: unknown, now: Date): Pro
     if (personId === null) return done(0, 'no-person')
     const { docs } = await req.payload.find({
       collection: 'subscribers',
-      where: { and: [{ person: { equals: personId } }, { status: { not_equals: 'unsubscribed' } }] },
+      where: {
+        and: [{ person: { equals: personId } }, { status: { not_equals: 'unsubscribed' } }],
+      },
       pagination: false,
       depth: 0,
       overrideAccess: true,
@@ -179,7 +182,12 @@ export async function runN4(req: PayloadRequest, input: unknown, now: Date): Pro
     if (at) return done(0, 'early')
     await (req.payload.jobs.queue as unknown as Queue)({
       task: 'N4-send-issue',
-      input: { name: 'newsletter.issueScheduled', issueId, at: due.toISOString(), key: `newsletter.issueScheduled:${issueId}@${due.toISOString()}` },
+      input: {
+        name: 'newsletter.issueScheduled',
+        issueId,
+        at: due.toISOString(),
+        key: `newsletter.issueScheduled:${issueId}@${due.toISOString()}`,
+      },
       waitUntil: due,
       req,
     })
@@ -192,7 +200,7 @@ export async function runN4(req: PayloadRequest, input: unknown, now: Date): Pro
       id: issueId,
       data: { status: 'sending' },
       overrideAccess: true,
-      context: { newsletterSend: true },
+      context: { [NEWSLETTER_SEND_CONTEXT]: true },
       req,
     })
   }
@@ -236,7 +244,7 @@ export async function runN4(req: PayloadRequest, input: unknown, now: Date): Pro
     id: issueId,
     data: { status: 'sent', sentAt: now.toISOString(), recipientCount: recipients },
     overrideAccess: true,
-    context: { newsletterSend: true },
+    context: { [NEWSLETTER_SEND_CONTEXT]: true },
     req,
   })
   return done(planned)

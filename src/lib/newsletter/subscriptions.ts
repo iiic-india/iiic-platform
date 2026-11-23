@@ -96,10 +96,7 @@ export type ConfirmError = { code: 'invalid' } | { code: 'expired' }
 export type FormEvidence = { ip: string; userAgent: string }
 
 /** A pending entry by its link, without changing anything (the page before the button). */
-export async function findByToken(
-  req: PayloadRequest,
-  token: string,
-): Promise<Subscriber | null> {
+export async function findByToken(req: PayloadRequest, token: string): Promise<Subscriber | null> {
   if (!isToken(token)) return null
   const { docs } = await req.payload.find({
     collection: 'subscribers',
@@ -192,7 +189,8 @@ export async function unsubscribe(
   if (!entry) return err({ code: 'not-found' })
   return inTransaction(req, async () => {
     const personId = idOf(entry.person)
-    const withdrawn = personId === null ? 0 : await withdrawMarketingEmail(req, personId, channel, now)
+    const withdrawn =
+      personId === null ? 0 : await withdrawMarketingEmail(req, personId, channel, now)
     if (entry.status !== 'unsubscribed') {
       await req.payload.update({
         collection: 'subscribers',
