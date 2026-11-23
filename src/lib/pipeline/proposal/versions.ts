@@ -1,7 +1,8 @@
-import { err, ok } from '@/lib/result'
+import { err, ok, type Result } from '@/lib/result'
 import { istDay } from '@/lib/time/ist'
+import type { ProposalVersion } from '@/payload-types'
 
-import type { CreateVersion } from '../proposals'
+import type { CreateVersion, ProposalError } from '../proposals'
 
 import { PROPOSAL_ACTIVITY } from './copy'
 import type { ProposalDeps } from './deps'
@@ -24,7 +25,7 @@ export function makeCreateVersion(deps: ProposalDeps): CreateVersion {
     const user = officeUser(req)
     if (!user) return err({ code: 'not-allowed' })
     const now = deps.now()
-    return inTransaction(req, async () => {
+    return inTransaction(req, async (): Promise<Result<ProposalVersion, ProposalError>> => {
       const found = await findProposal(req, proposalId)
       if (!found) return err({ code: 'not-found' })
       const proposal = await expireIfDue(req, found, now, deps)

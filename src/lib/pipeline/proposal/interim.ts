@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { IstDay } from '@/lib/booking/types'
 import { err, ok } from '@/lib/result'
-import { istDay } from '@/lib/time/ist'
+import { IST, istDay } from '@/lib/time/ist'
 
 import type { EmitPipelineEvent } from '../events'
 import type { LogActivity, MoveLead } from '../leads'
@@ -69,6 +69,7 @@ export const interimLogActivity: LogActivity = async (req, input) => {
       lead: input.leadId,
       type: input.type,
       at: at.toISOString(),
+      at_tz: IST,
       body: input.body,
       by: input.by,
       enquiry: input.about?.enquiryId,
@@ -170,6 +171,7 @@ export const interimMoveLead: MoveLead = async (req, input) => {
       lead: lead.id,
       type: 'stageChange',
       at: now,
+      at_tz: IST,
       by: input.by,
       fromStage: lead.stage,
       toStage: input.to,

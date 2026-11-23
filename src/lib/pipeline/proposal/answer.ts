@@ -23,7 +23,7 @@ export function makeRecordAnswer(deps: ProposalDeps): RecordAnswer {
     const user = officeUser(req)
     if (!user || user.id !== by) return err({ code: 'not-allowed' })
     const now = deps.now()
-    return inTransaction(req, async () => {
+    return inTransaction(req, async (): Promise<Result<{ proposalId: number }, ProposalError>> => {
       const found = await findProposal(req, proposalId)
       if (!found) return err({ code: 'not-found' })
       const proposal = await expireIfDue(req, found, now, deps)
@@ -79,7 +79,7 @@ export type WithdrawLink = (
 export function makeWithdrawLink(deps: Pick<ProposalDeps, 'now'>): WithdrawLink {
   return async (req, { versionId }) => {
     if (!officeUser(req)) return err({ code: 'not-allowed' })
-    return inTransaction(req, async () => {
+    return inTransaction(req, async (): Promise<Result<{ versionId: number }, ProposalError>> => {
       const version = await findVersion(req, versionId)
       if (!version) return err({ code: 'not-found' })
       if (!version.sending?.sentAt) return err({ code: 'not-sent' })
