@@ -59,3 +59,22 @@ export async function onFail(
   const { emitAutomationEvent } = await import('./emit')
   await emitAutomationEvent(args.req, { name: 'automation.failed', jobId })
 }
+
+type AnyTask = TaskConfig<never>
+
+/** The tries a task's config allows: Payload's `retries` is a count or `{ attempts }`. */
+export function attemptsOf(retries: AnyTask['retries']): number {
+  if (typeof retries === 'number') return retries
+  return retries?.attempts ?? 0
+}
+
+/**
+ * Gives a task without an `onFail` of its own the shared one, counted against the tries its own
+ * config allows (src/jobs/index.ts applies it to every task, M3's included), so a job that spends
+ * its retries is counted and raises `automation.failed` for O3 wherever it was written.
+ */
+export function withFailurePath<T extends { onFail?: unknown; retries?: unknown }>(task: T): T {
+  if (task.onFail) return task
+  const attempts = attemptsOf(task.retries as AnyTask['retries'])
+  return { ...task, onFail: (args: TaskCallbackArgs) => onFail(args, { attempts }) }
+}

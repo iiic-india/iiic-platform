@@ -9,7 +9,7 @@ import { removeQueuedJobs } from '../helpers/queuedJobs'
 
 vi.mock('server-only', () => ({}))
 
-const { ok } = await import('@/lib/result')
+const { err, ok } = await import('@/lib/result')
 const { runBookingTask, CoreNotWired } = await import('@/lib/automations/booking/tasks')
 const { FakeMessagingCore } = await import('@/lib/automations/booking/fakeCore')
 const { emitterFor } = await import('@/lib/booking/emit')
@@ -212,16 +212,17 @@ describe('fires once', () => {
     await removeQueuedJobs(payload, { bookingIds: [booking.id] })
   })
 
-  it('refuses an input that is not an event, and fails visibly while the core is not wired', async () => {
+  it('refuses an input that is not an event, and fails visibly when no core answers', async () => {
     expect(await run('B2-confirmation', { name: 'booking.confirmed' })).toMatchObject({
       outcome: 'bad-input',
       planned: 0,
     })
     const booking = await confirmed(at('2099-06-01', '11:00'))
     const event = { name: 'booking.confirmed', bookingId: booking.id, cause: 'staff' }
-    await expect(runBookingTask('B2-confirmation', event, await fresh())).rejects.toBeInstanceOf(
-      CoreNotWired,
-    )
+    const missing = async () => err({ code: 'core-not-wired' as const })
+    await expect(
+      runBookingTask('B2-confirmation', event, await fresh(), { core: missing }),
+    ).rejects.toBeInstanceOf(CoreNotWired)
   })
 })
 

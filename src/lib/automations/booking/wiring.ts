@@ -1,16 +1,16 @@
 import 'server-only'
 
-import { err } from '@/lib/result'
+import { ok } from '@/lib/result'
 
 import type { CoreProvider } from './core'
 
 /**
- * Where the B-series tasks find the messaging core (docs/19 §3, §12). Builder A writes `deliver`
- * and `cancelQueued` in `src/lib/messaging/`; until the branches are joined they are not here, so
- * a task answers `core-not-wired` and its job fails visibly instead of losing a message in
- * silence. At the join the lead replaces the body with A's two functions:
- *
- *   const { deliver, cancelQueued } = await import('@/lib/messaging/deliver')
- *   return ok({ deliver, cancelQueued })
+ * Where the B-series tasks find the messaging core (docs/19 §3, §12): builder A's `deliver` and
+ * `cancelQueued` (src/lib/messaging/deliver.ts), joined at the M6 merge. They are loaded when a
+ * task runs, never when the jobs config loads, because they are server-only and the Payload CLI
+ * reads the config too. Tests pass their own core through the task's deps.
  */
-export const messagingCore: CoreProvider = async () => err({ code: 'core-not-wired' })
+export const messagingCore: CoreProvider = async () => {
+  const { deliver, cancelQueued } = await import('@/lib/messaging/deliver')
+  return ok({ deliver, cancelQueued })
+}
