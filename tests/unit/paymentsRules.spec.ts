@@ -240,6 +240,18 @@ describe('B11’s findings', () => {
     expect(findingFor({ ...found, status: 'failed' }, null, null)).toBeNull()
   })
 
+  it('names a second capture on an order whose first the platform recorded', () => {
+    const first = {
+      status: 'captured' as const,
+      amountPaise: 50_000,
+      gatewayPaymentId: 'pay_fakefirst',
+    }
+    expect(findingFor({ ...found, paymentId: 'pay_fakesecond' }, first, 'paid')).toBe(
+      'second-capture',
+    )
+    expect(findingFor({ ...found, paymentId: 'pay_fakefirst' }, first, 'paid')).toBeNull()
+  })
+
   it('reads a day in India from its midnight to the next', () => {
     expect(istDayWindow('2026-12-01')).toEqual({
       from: new Date('2026-11-30T18:30:00.000Z'),
