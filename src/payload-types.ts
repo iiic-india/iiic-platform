@@ -301,6 +301,8 @@ export interface Page {
     | FounderNoteBlock
     | ContactBlock
     | LegalBlock
+    | TeamMapRequestBlock
+    | PartnershipEnquiryBlock
     | FaqBlock
     | BandBlock
   )[];
@@ -652,6 +654,24 @@ export interface LegalBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'legal';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TeamMapRequestBlock".
+ */
+export interface TeamMapRequestBlock {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'teamMapRequest';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PartnershipEnquiryBlock".
+ */
+export interface PartnershipEnquiryBlock {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'partnershipEnquiry';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2689,6 +2709,8 @@ export interface PagesSelect<T extends boolean = true> {
         founderNote?: T | FounderNoteBlockSelect<T>;
         contact?: T | ContactBlockSelect<T>;
         legal?: T | LegalBlockSelect<T>;
+        teamMapRequest?: T | TeamMapRequestBlockSelect<T>;
+        partnershipEnquiry?: T | PartnershipEnquiryBlockSelect<T>;
         faq?: T | FaqBlockSelect<T>;
         band?: T | BandBlockSelect<T>;
       };
@@ -2922,6 +2944,22 @@ export interface ContactBlockSelect<T extends boolean = true> {
  * via the `definition` "LegalBlock_select".
  */
 export interface LegalBlockSelect<T extends boolean = true> {
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TeamMapRequestBlock_select".
+ */
+export interface TeamMapRequestBlockSelect<T extends boolean = true> {
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PartnershipEnquiryBlock_select".
+ */
+export interface PartnershipEnquiryBlockSelect<T extends boolean = true> {
   id?: T;
   blockName?: T;
 }
