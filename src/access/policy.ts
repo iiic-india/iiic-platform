@@ -294,6 +294,60 @@ export const POLICY = {
     update: {},
     delete: {},
   },
+
+  // ---- Automations and messaging (M6; docs/19-automations-and-messaging-design.md) ----
+
+  // The outbox and log of every message (docs/04 `message_log`, S2; docs/05 Messages → Log): the
+  // office and the owners read it. Only the server writes it; staff queue a failed message again
+  // through the core's own endpoint, which checks the role and the code first. Finance does not
+  // read messages (docs/05), and practitioners see none (counselling stays private, CLAUDE.md #3).
+  messages: {
+    read: { roles: ['owner', 'operator'] },
+    create: {},
+    update: {},
+    delete: {},
+  },
+  // The wording of every automated message (docs/05 Messages → Templates; docs/13 §4): content the
+  // office, the editors and the owners keep; only an owner approves one (FIELD_POLICY) or deletes.
+  messageTemplates: {
+    read: { roles: ['owner', 'operator', 'editor'] },
+    create: { roles: ['owner', 'operator', 'editor'] },
+    update: { roles: ['owner', 'operator', 'editor'] },
+    delete: { roles: ['owner'] },
+  },
+  // Each automation's switch and counters (docs/05: "each automation can be paused"): the office
+  // and the owners pause and resume one; the rows and counters are the server's.
+  automations: {
+    read: { roles: ['owner', 'operator'] },
+    create: {},
+    update: { roles: ['owner', 'operator'] },
+    delete: {},
+  },
+  // The newsletter list (docs/04 `subscribers`, S2): signups, confirmations and unsubscribes come
+  // from the person through the server; the office and the owners read it; only an owner deletes
+  // an entry (an erasure). Editors write the issue and see counts, not addresses.
+  subscribers: {
+    read: { roles: ['owner', 'operator'] },
+    create: {},
+    update: {},
+    delete: { roles: ['owner'] },
+  },
+  // The newsletter's issues (docs/13 §4, §5: written and edited by a person): editors and owners
+  // write and schedule them; the office reads them.
+  newsletterIssues: {
+    read: { roles: ['owner', 'operator', 'editor'] },
+    create: { roles: ['owner', 'editor'] },
+    update: { roles: ['owner', 'editor'] },
+    delete: { roles: ['owner', 'editor'] },
+  },
+  // Addresses nothing is sent to (docs/13 §6, §7): the server adds bounces, complaints and STOPs;
+  // the office records a request that came another way; only an owner lifts one.
+  suppressions: {
+    read: { roles: ['owner', 'operator'] },
+    create: { roles: ['owner', 'operator'] },
+    update: {},
+    delete: { roles: ['owner'] },
+  },
 } as const satisfies Record<string, Record<string, Rule>>
 
 /**
@@ -378,6 +432,13 @@ export const FIELD_POLICY = {
   eventJoinLink: {
     read: { roles: ['owner', 'operator', 'practitioner'] },
     write: { roles: ['owner', 'operator'] },
+  },
+  // A message template's approval (docs/13 §4: every template has an owner and a review date):
+  // the staff who keep templates read it; only an owner approves wording or records Meta's
+  // decision on a WhatsApp template.
+  messageApproval: {
+    read: { roles: ['owner', 'operator', 'editor'] },
+    write: { roles: ['owner'] },
   },
 } as const satisfies Record<string, { read: FieldRule; write: FieldRule }>
 

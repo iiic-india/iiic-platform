@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { PayloadRequest } from 'payload'
 
+import { withAutomationListeners } from '@/lib/automations/listeners'
 import { CALENDAR_SUBSCRIPTIONS } from '@/lib/calendar/queue'
 import { DOCUMENT_SUBSCRIPTIONS } from '@/lib/invoicing/queue'
 
@@ -88,5 +89,8 @@ export function emitterFor(listeners: Listeners): EmitDomainEvent {
   }
 }
 
-/** Queues the event's listeners inside the request's transaction. */
-export const emit: EmitDomainEvent = emitterFor(LISTENERS)
+/**
+ * Queues the event's listeners inside the request's transaction: M3's first, then M6's messages
+ * (src/lib/automations/listeners.ts, read from the automation catalogue; docs/19 §2).
+ */
+export const emit: EmitDomainEvent = emitterFor(withAutomationListeners(LISTENERS))

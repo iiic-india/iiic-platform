@@ -11,6 +11,7 @@ import sharp from 'sharp'
 
 import { AnalyticsEvents } from './collections/AnalyticsEvents'
 import { AuditLog } from './collections/AuditLog'
+import { Automations } from './collections/Automations'
 import { AvailabilityExceptions } from './collections/AvailabilityExceptions'
 import { AvailabilityRules } from './collections/AvailabilityRules'
 import { Bookings } from './collections/Bookings'
@@ -23,7 +24,10 @@ import { Faqs } from './collections/Faqs'
 import { GatewayEvents } from './collections/GatewayEvents'
 import { Invoices } from './collections/Invoices'
 import { Media } from './collections/Media'
+import { Messages } from './collections/Messages'
+import { MessageTemplates } from './collections/MessageTemplates'
 import { MissingPages } from './collections/MissingPages'
+import { NewsletterIssues } from './collections/NewsletterIssues'
 import { Pages } from './collections/Pages'
 import { Payments } from './collections/Payments'
 import { People } from './collections/People'
@@ -34,6 +38,8 @@ import { redirects } from './collections/Redirects'
 import { Refunds } from './collections/Refunds'
 import { Services } from './collections/Services'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
+import { Subscribers } from './collections/Subscribers'
+import { Suppressions } from './collections/Suppressions'
 import { Testimonials } from './collections/Testimonials'
 import { Topics } from './collections/Topics'
 import { Users } from './collections/Users'
@@ -163,6 +169,13 @@ export default buildConfig({
     GatewayEvents,
     Refunds,
     Invoices,
+    // Automations and messaging (M6; docs/19-automations-and-messaging-design.md).
+    Messages,
+    MessageTemplates,
+    Automations,
+    Suppressions,
+    Subscribers,
+    NewsletterIssues,
   ],
   globals: [Settings],
   // Automations (src/jobs/index.ts): never run on their own here.
