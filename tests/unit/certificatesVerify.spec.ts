@@ -62,7 +62,11 @@ describe('what a verify page shows', () => {
       row({ status: 'revoked', revocation: { at: '2099-02-01T10:00:00.000Z' } }),
       { by: 'token', replacedBy: replacement },
     )
-    expect(view).toMatchObject({ status: 'revoked', revokedOn: '2099-02-01', replacedBy: replacement })
+    expect(view).toMatchObject({
+      status: 'revoked',
+      revokedOn: '2099-02-01',
+      replacedBy: replacement,
+    })
   })
 
   it('shows the initials only for a typed ID', () => {

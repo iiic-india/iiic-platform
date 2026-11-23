@@ -55,7 +55,14 @@ describe('the certificate page', () => {
       .replace(escapeHtml(STATEMENT_TEXT), '')
       .replace(/<[^>]+>/g, ' ')
       .toLowerCase()
-    for (const word of ['degree', 'diploma', 'university', 'accredited', 'recognised', 'approved']) {
+    for (const word of [
+      'degree',
+      'diploma',
+      'university',
+      'accredited',
+      'recognised',
+      'approved',
+    ]) {
       expect(text).not.toContain(word)
     }
   })
