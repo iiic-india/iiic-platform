@@ -198,6 +198,7 @@ export interface Config {
       'B11-reconcile': TaskB11Reconcile;
       'B2-B7-sync-calendar-event': TaskB2B7SyncCalendarEvent;
       'B14-refresh-busy-times': TaskB14RefreshBusyTimes;
+      'P8-expire-proposals': TaskP8ExpireProposals;
       inline: {
         input: unknown;
         output: unknown;
@@ -2408,7 +2409,8 @@ export interface PayloadJob {
           | 'B2-poll-pending-orders'
           | 'B11-reconcile'
           | 'B2-B7-sync-calendar-event'
-          | 'B14-refresh-busy-times';
+          | 'B14-refresh-busy-times'
+          | 'P8-expire-proposals';
         taskID: string;
         input?:
           | {
@@ -2450,6 +2452,7 @@ export interface PayloadJob {
         | 'B11-reconcile'
         | 'B2-B7-sync-calendar-event'
         | 'B14-refresh-busy-times'
+        | 'P8-expire-proposals'
       )
     | null;
   queue?: string | null;
@@ -4313,6 +4316,16 @@ export interface TaskB14RefreshBusyTimes {
     refreshed: number;
     failed: number;
     renewed: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP8-expire-proposals".
+ */
+export interface TaskP8ExpireProposals {
+  input?: unknown;
+  output: {
+    expired: number;
   };
 }
 /**
