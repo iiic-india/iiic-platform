@@ -94,6 +94,13 @@ export interface Config {
     'gateway-events': GatewayEvent;
     refunds: Refund;
     invoices: Invoice;
+    organisations: Organisation;
+    leads: Lead;
+    'lead-activities': LeadActivity;
+    tasks: Task;
+    enquiries: Enquiry;
+    proposals: Proposal;
+    'proposal-versions': ProposalVersion;
     'search-index': SearchIndex;
     redirects: Redirect;
     'totp-attempts': TotpAttempt;
@@ -109,6 +116,19 @@ export interface Config {
     };
     consents: {
       withdrawal: 'consents';
+    };
+    organisations: {
+      people: 'people';
+      leads: 'leads';
+    };
+    leads: {
+      activities: 'lead-activities';
+      tasks: 'tasks';
+      proposals: 'proposals';
+      enquiries: 'enquiries';
+    };
+    proposals: {
+      versions: 'proposal-versions';
     };
   };
   collectionsSelect: {
@@ -139,6 +159,13 @@ export interface Config {
     'gateway-events': GatewayEventsSelect<false> | GatewayEventsSelect<true>;
     refunds: RefundsSelect<false> | RefundsSelect<true>;
     invoices: InvoicesSelect<false> | InvoicesSelect<true>;
+    organisations: OrganisationsSelect<false> | OrganisationsSelect<true>;
+    leads: LeadsSelect<false> | LeadsSelect<true>;
+    'lead-activities': LeadActivitiesSelect<false> | LeadActivitiesSelect<true>;
+    tasks: TasksSelect<false> | TasksSelect<true>;
+    enquiries: EnquiriesSelect<false> | EnquiriesSelect<true>;
+    proposals: ProposalsSelect<false> | ProposalsSelect<true>;
+    'proposal-versions': ProposalVersionsSelect<false> | ProposalVersionsSelect<true>;
     'search-index': SearchIndexSelect<false> | SearchIndexSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
@@ -1091,6 +1118,8 @@ export interface Person {
    */
   ageBand?: ('under18' | 'adult') | null;
   city?: string | null;
+  organisation?: (number | null) | Organisation;
+  jobTitle?: string | null;
   /**
    * How the person first reached IIIC, such as a booking or a referral.
    */
@@ -1117,6 +1146,298 @@ export interface Person {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "organisations".
+ */
+export interface Organisation {
+  id: number;
+  name: string;
+  type: 'business' | 'institution';
+  /**
+   * Its address, such as example.com.
+   */
+  website?: string | null;
+  sector?: string | null;
+  teamSizeBand?: ('upTo10' | 'from11to50' | 'from51to200' | 'from201to500' | 'over500') | null;
+  city?: string | null;
+  billing?: {
+    gstin?: string | null;
+    line1?: string | null;
+    line2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+  };
+  /**
+   * The website’s host, for matching requests.
+   */
+  domain?: string | null;
+  /**
+   * The name as matching compares it.
+   */
+  nameKey?: string | null;
+  people?: {
+    docs?: (number | Person)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  leads?: {
+    docs?: (number | Lead)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "leads".
+ */
+export interface Lead {
+  id: number;
+  /**
+   * Named by the platform.
+   */
+  title?: string | null;
+  kind: 'consultancy' | 'partnership';
+  stage:
+    | 'new'
+    | 'contacted'
+    | 'teamMapScheduled'
+    | 'teamMapDone'
+    | 'debriefHeld'
+    | 'proposalSent'
+    | 'won'
+    | 'lost'
+    | 'inConversation'
+    | 'mouDrafted'
+    | 'signed'
+    | 'closed';
+  stageChangedAt?: string | null;
+  stageChangedAt_tz?: 'Asia/Kolkata' | null;
+  organisation?: (number | null) | Organisation;
+  person?: (number | null) | Person;
+  /**
+   * Who on the staff looks after it.
+   */
+  owner?: (number | null) | User;
+  nextAction?: string | null;
+  /**
+   * The day in India, as YYYY-MM-DD.
+   */
+  dueOn?: string | null;
+  source: 'teamMapForm' | 'partnershipForm' | 'proposalCall' | 'office';
+  /**
+   * Who referred them, or where they heard of IIIC. Optional.
+   */
+  sourceNote?: string | null;
+  /**
+   * The campaign tags on the link the request came from, if any.
+   */
+  utm?: {
+    source?: string | null;
+    medium?: string | null;
+    campaign?: string | null;
+    term?: string | null;
+    content?: string | null;
+  };
+  /**
+   * What it might be worth, in paise, if the office wants to note it. Optional.
+   */
+  valueEstimatePaise?: number | null;
+  /**
+   * Required when it is lost or closed. Kept for the won-and-lost report.
+   */
+  endReason?: string | null;
+  calls?: (number | Booking)[] | null;
+  previousLead?: (number | null) | Lead;
+  /**
+   * When someone on the staff first acted on it.
+   */
+  touchedAt?: string | null;
+  touchedAt_tz?: 'Asia/Kolkata' | null;
+  lastActivityAt?: string | null;
+  lastActivityAt_tz?: 'Asia/Kolkata' | null;
+  closedAt?: string | null;
+  closedAt_tz?: 'Asia/Kolkata' | null;
+  alerts?: {
+    untouched?: ('amber' | 'red') | null;
+    /**
+     * The last activity a stale alert was raised for.
+     */
+    staleFor?: string | null;
+    staleFor_tz?: 'Asia/Kolkata' | null;
+  };
+  activities?: {
+    docs?: (number | LeadActivity)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  tasks?: {
+    docs?: (number | Task)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  proposals?: {
+    docs?: (number | Proposal)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  enquiries?: {
+    docs?: (number | Enquiry)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookings".
+ */
+export interface Booking {
+  id: number;
+  /**
+   * Such as IIIC-S-24117.
+   */
+  reference: string;
+  type: 'session' | 'call' | 'info';
+  status:
+    | 'requested'
+    | 'held'
+    | 'pendingPayment'
+    | 'confirmed'
+    | 'completed'
+    | 'noShow'
+    | 'cancelledByClient'
+    | 'cancelledByIiic'
+    | 'rescheduled'
+    | 'expired';
+  paymentStatus: 'notRequired' | 'unpaid' | 'linkSent' | 'paid' | 'partRefunded' | 'refunded';
+  service: number | Service;
+  serviceOption?: string | null;
+  optionLabel?: string | null;
+  durationMinutes?: number | null;
+  /**
+   * Whose time it takes. Empty for a fixed-time session.
+   */
+  practitioner?: (number | null) | Practitioner;
+  /**
+   * The fixed-time session booked, for an info session.
+   */
+  event?: (number | null) | Event;
+  /**
+   * The client.
+   */
+  person: number | Person;
+  /**
+   * The parent or guardian who booked, when not the client.
+   */
+  bookedBy?: (number | null) | Person;
+  whoFor?: ('yourself' | 'family' | 'organisation') | null;
+  ageBand?: ('under18' | 'adult') | null;
+  format?: ('online' | 'office') | null;
+  startsAt?: string | null;
+  startsAt_tz?: 'Asia/Kolkata' | null;
+  endsAt?: string | null;
+  endsAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * While held or waiting for payment.
+   */
+  holdExpiresAt?: string | null;
+  holdExpiresAt_tz?: 'Asia/Kolkata' | null;
+  timeRequest?: {
+    preferredDays?:
+      | {
+          /**
+           * The day in India, as YYYY-MM-DD.
+           */
+          day: string;
+          id?: string | null;
+        }[]
+      | null;
+    preferredTimes?: string | null;
+    note?: string | null;
+  };
+  meetingUrl?: string | null;
+  calendarEventId?: string | null;
+  /**
+   * Set by the platform at booking, in paise.
+   */
+  price?: {
+    totalPaise?: number | null;
+    taxPaise?: number | null;
+    /**
+     * 18% is 1800.
+     */
+    gstRateBasisPoints?: number | null;
+    sacCode?: string | null;
+  };
+  /**
+   * The booking this one replaced.
+   */
+  rescheduledFrom?: (number | null) | Booking;
+  confirmedAt?: string | null;
+  confirmedAt_tz?: 'Asia/Kolkata' | null;
+  cancellation?: {
+    at?: string | null;
+    at_tz?: 'Asia/Kolkata' | null;
+    reason?: string | null;
+  };
+  company?: {
+    name?: string | null;
+    role?: string | null;
+    teamSize?: string | null;
+    sector?: string | null;
+  };
+  consents?: (number | Consent)[] | null;
+  source?: string | null;
+  utm?: {
+    source?: string | null;
+    medium?: string | null;
+    campaign?: string | null;
+    term?: string | null;
+    content?: string | null;
+  };
+  manageTokenHash?: string | null;
+  checkoutKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  title: string;
+  kind: 'infoSession' | 'cohortSession' | 'workshop';
+  /**
+   * The service it is booked as, such as the info session.
+   */
+  service?: (number | null) | Service;
+  /**
+   * Who runs it, if one person does.
+   */
+  practitioner?: (number | null) | Practitioner;
+  startsAt: string;
+  startsAt_tz: 'Asia/Kolkata';
+  endsAt: string;
+  endsAt_tz: 'Asia/Kolkata';
+  format: 'online' | 'office';
+  /**
+   * Places, if limited.
+   */
+  capacity?: number | null;
+  /**
+   * Sent to the people booked on it, never shown on the site.
+   */
+  joinLink?: string | null;
+  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1154,7 +1475,8 @@ export interface Consent {
     | 'mapStorage'
     | 'mapSharing'
     | 'testimonialPublication'
-    | 'relatedProgrammes';
+    | 'relatedProgrammes'
+    | 'enquiryReplies';
   /**
    * Taken from the notice.
    */
@@ -1222,7 +1544,8 @@ export interface ConsentVersion {
     | 'mapStorage'
     | 'mapSharing'
     | 'testimonialPublication'
-    | 'relatedProgrammes';
+    | 'relatedProgrammes'
+    | 'enquiryReplies';
   language: 'en-IN' | 'gu-IN' | 'hi-IN';
   /**
    * Numbered by the platform.
@@ -1237,6 +1560,264 @@ export interface ConsentVersion {
    */
   effectiveFrom: string;
   effectiveFrom_tz: 'Asia/Kolkata';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lead-activities".
+ */
+export interface LeadActivity {
+  id: number;
+  lead: number | Lead;
+  type: 'note' | 'call' | 'email' | 'whatsapp' | 'stageChange' | 'file' | 'enquiry' | 'proposal' | 'booking';
+  /**
+   * When it happened, if not now.
+   */
+  at: string;
+  at_tz: 'Asia/Kolkata';
+  /**
+   * In the office’s own words. No session content.
+   */
+  body?: string | null;
+  fileReference?: string | null;
+  by?: (number | null) | User;
+  fromStage?:
+    | (
+        | 'new'
+        | 'contacted'
+        | 'teamMapScheduled'
+        | 'teamMapDone'
+        | 'debriefHeld'
+        | 'proposalSent'
+        | 'won'
+        | 'lost'
+        | 'inConversation'
+        | 'mouDrafted'
+        | 'signed'
+        | 'closed'
+      )
+    | null;
+  toStage?:
+    | (
+        | 'new'
+        | 'contacted'
+        | 'teamMapScheduled'
+        | 'teamMapDone'
+        | 'debriefHeld'
+        | 'proposalSent'
+        | 'won'
+        | 'lost'
+        | 'inConversation'
+        | 'mouDrafted'
+        | 'signed'
+        | 'closed'
+      )
+    | null;
+  enquiry?: (number | null) | Enquiry;
+  proposalVersion?: (number | null) | ProposalVersion;
+  booking?: (number | null) | Booking;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "enquiries".
+ */
+export interface Enquiry {
+  id: number;
+  kind: 'teamMap' | 'partnership';
+  /**
+   * Mark as spam to keep it off the boards.
+   */
+  status: 'received' | 'spam';
+  outcome?: ('newLead' | 'existingLead') | null;
+  receivedAt: string;
+  receivedAt_tz: 'Asia/Kolkata';
+  submitted: {
+    organisationName: string;
+    website?: string | null;
+    teamSizeBand?: ('upTo10' | 'from11to50' | 'from51to200' | 'from201to500' | 'over500') | null;
+    sector?: string | null;
+    contactName: string;
+    role?: string | null;
+    email: string;
+    mobile?: string | null;
+    message?: string | null;
+  };
+  person?: (number | null) | Person;
+  organisation?: (number | null) | Organisation;
+  lead?: (number | null) | Lead;
+  consents?: (number | Consent)[] | null;
+  page?: string | null;
+  turnstile?: ('passed' | 'off') | null;
+  utm?: {
+    source?: string | null;
+    medium?: string | null;
+    campaign?: string | null;
+    term?: string | null;
+    content?: string | null;
+  };
+  submitterHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposal-versions".
+ */
+export interface ProposalVersion {
+  id: number;
+  proposal: number | Proposal;
+  number: number;
+  createdBy?: (number | null) | User;
+  document:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  feeTotalPaise?: number | null;
+  pdf?: {
+    key?: string | null;
+    sha256?: string | null;
+    renderedAt?: string | null;
+    renderedAt_tz?: 'Asia/Kolkata' | null;
+  };
+  sending?: {
+    sentAt?: string | null;
+    sentAt_tz?: 'Asia/Kolkata' | null;
+    sentBy?: (number | null) | User;
+    sentTo?: (number | null) | Person;
+    supersededAt?: string | null;
+    supersededAt_tz?: 'Asia/Kolkata' | null;
+    linkRevokedAt?: string | null;
+    linkRevokedAt_tz?: 'Asia/Kolkata' | null;
+  };
+  tracking?: {
+    firstViewedAt?: string | null;
+    firstViewedAt_tz?: 'Asia/Kolkata' | null;
+    lastViewedAt?: string | null;
+    lastViewedAt_tz?: 'Asia/Kolkata' | null;
+    viewCount?: number | null;
+  };
+  linkTokenHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposals".
+ */
+export interface Proposal {
+  id: number;
+  reference?: string | null;
+  lead: number | Lead;
+  status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined' | 'expired';
+  title: string;
+  subtitle?: string | null;
+  /**
+   * The name printed under "Prepared by".
+   */
+  preparedByName?: string | null;
+  preparedByTitle?: string | null;
+  /**
+   * The last day it stands, if IIIC gives one. Empty: it does not expire.
+   */
+  validUntil?: string | null;
+  /**
+   * What the client faces, as IIIC understood it.
+   */
+  situation?: string | null;
+  /**
+   * How IIIC proposes to work on it.
+   */
+  approach?: string | null;
+  phases?:
+    | {
+        name: string;
+        duration: string;
+        what: string;
+        outcome: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * What IIIC and the client will look at.
+   */
+  measures?: string | null;
+  fees?:
+    | {
+        item: string;
+        amountPaise: number;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The sum of the fees, worked out by the platform.
+   */
+  feeTotalPaise?: number | null;
+  /**
+   * What the client does to go ahead.
+   */
+  nextStep?: string | null;
+  /**
+   * The latest version made.
+   */
+  currentVersion?: (number | null) | ProposalVersion;
+  /**
+   * The version the client has.
+   */
+  sentVersion?: (number | null) | ProposalVersion;
+  acceptedAt?: string | null;
+  acceptedAt_tz?: 'Asia/Kolkata' | null;
+  declinedAt?: string | null;
+  declinedAt_tz?: 'Asia/Kolkata' | null;
+  expiredAt?: string | null;
+  expiredAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * When they accept or decline, in the office’s words.
+   */
+  answerNote?: string | null;
+  versions?: {
+    docs?: (number | ProposalVersion)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tasks".
+ */
+export interface Task {
+  id: number;
+  title: string;
+  kind: 'firstReply' | 'proposalFollowUp' | 'reviewFollowUpDraft' | 'other';
+  status: 'open' | 'done' | 'cancelled';
+  /**
+   * The day in India, as YYYY-MM-DD.
+   */
+  dueOn: string;
+  /**
+   * Whose list it waits on.
+   */
+  role: 'operator' | 'owner';
+  /**
+   * Someone in particular, if not whoever holds the role.
+   */
+  assignee?: (number | null) | User;
+  lead?: (number | null) | Lead;
+  note?: string | null;
+  doneAt?: string | null;
+  doneAt_tz?: 'Asia/Kolkata' | null;
+  doneBy?: (number | null) | User;
+  automation?: string | null;
+  key?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1434,152 +2015,6 @@ export interface Testimonial {
         id?: string | null;
       }[]
     | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "bookings".
- */
-export interface Booking {
-  id: number;
-  /**
-   * Such as IIIC-S-24117.
-   */
-  reference: string;
-  type: 'session' | 'call' | 'info';
-  status:
-    | 'requested'
-    | 'held'
-    | 'pendingPayment'
-    | 'confirmed'
-    | 'completed'
-    | 'noShow'
-    | 'cancelledByClient'
-    | 'cancelledByIiic'
-    | 'rescheduled'
-    | 'expired';
-  paymentStatus: 'notRequired' | 'unpaid' | 'linkSent' | 'paid' | 'partRefunded' | 'refunded';
-  service: number | Service;
-  serviceOption?: string | null;
-  optionLabel?: string | null;
-  durationMinutes?: number | null;
-  /**
-   * Whose time it takes. Empty for a fixed-time session.
-   */
-  practitioner?: (number | null) | Practitioner;
-  /**
-   * The fixed-time session booked, for an info session.
-   */
-  event?: (number | null) | Event;
-  /**
-   * The client.
-   */
-  person: number | Person;
-  /**
-   * The parent or guardian who booked, when not the client.
-   */
-  bookedBy?: (number | null) | Person;
-  whoFor?: ('yourself' | 'family' | 'organisation') | null;
-  ageBand?: ('under18' | 'adult') | null;
-  format?: ('online' | 'office') | null;
-  startsAt?: string | null;
-  startsAt_tz?: 'Asia/Kolkata' | null;
-  endsAt?: string | null;
-  endsAt_tz?: 'Asia/Kolkata' | null;
-  /**
-   * While held or waiting for payment.
-   */
-  holdExpiresAt?: string | null;
-  holdExpiresAt_tz?: 'Asia/Kolkata' | null;
-  timeRequest?: {
-    preferredDays?:
-      | {
-          /**
-           * The day in India, as YYYY-MM-DD.
-           */
-          day: string;
-          id?: string | null;
-        }[]
-      | null;
-    preferredTimes?: string | null;
-    note?: string | null;
-  };
-  meetingUrl?: string | null;
-  calendarEventId?: string | null;
-  /**
-   * Set by the platform at booking, in paise.
-   */
-  price?: {
-    totalPaise?: number | null;
-    taxPaise?: number | null;
-    /**
-     * 18% is 1800.
-     */
-    gstRateBasisPoints?: number | null;
-    sacCode?: string | null;
-  };
-  /**
-   * The booking this one replaced.
-   */
-  rescheduledFrom?: (number | null) | Booking;
-  confirmedAt?: string | null;
-  confirmedAt_tz?: 'Asia/Kolkata' | null;
-  cancellation?: {
-    at?: string | null;
-    at_tz?: 'Asia/Kolkata' | null;
-    reason?: string | null;
-  };
-  company?: {
-    name?: string | null;
-    role?: string | null;
-    teamSize?: string | null;
-    sector?: string | null;
-  };
-  consents?: (number | Consent)[] | null;
-  source?: string | null;
-  utm?: {
-    source?: string | null;
-    medium?: string | null;
-    campaign?: string | null;
-    term?: string | null;
-    content?: string | null;
-  };
-  manageTokenHash?: string | null;
-  checkoutKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "events".
- */
-export interface Event {
-  id: number;
-  title: string;
-  kind: 'infoSession' | 'cohortSession' | 'workshop';
-  /**
-   * The service it is booked as, such as the info session.
-   */
-  service?: (number | null) | Service;
-  /**
-   * Who runs it, if one person does.
-   */
-  practitioner?: (number | null) | Practitioner;
-  startsAt: string;
-  startsAt_tz: 'Asia/Kolkata';
-  endsAt: string;
-  endsAt_tz: 'Asia/Kolkata';
-  format: 'online' | 'office';
-  /**
-   * Places, if limited.
-   */
-  capacity?: number | null;
-  /**
-   * Sent to the people booked on it, never shown on the site.
-   */
-  joinLink?: string | null;
-  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2119,6 +2554,34 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'invoices';
         value: number | Invoice;
+      } | null)
+    | ({
+        relationTo: 'organisations';
+        value: number | Organisation;
+      } | null)
+    | ({
+        relationTo: 'leads';
+        value: number | Lead;
+      } | null)
+    | ({
+        relationTo: 'lead-activities';
+        value: number | LeadActivity;
+      } | null)
+    | ({
+        relationTo: 'tasks';
+        value: number | Task;
+      } | null)
+    | ({
+        relationTo: 'enquiries';
+        value: number | Enquiry;
+      } | null)
+    | ({
+        relationTo: 'proposals';
+        value: number | Proposal;
+      } | null)
+    | ({
+        relationTo: 'proposal-versions';
+        value: number | ProposalVersion;
       } | null)
     | ({
         relationTo: 'search-index';
@@ -2687,6 +3150,8 @@ export interface PeopleSelect<T extends boolean = true> {
   language?: T;
   ageBand?: T;
   city?: T;
+  organisation?: T;
+  jobTitle?: T;
   source?: T;
   utm?:
     | T
@@ -3146,6 +3611,257 @@ export interface InvoicesSelect<T extends boolean = true> {
   pdfKey?: T;
   failureCode?: T;
   idempotencyKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "organisations_select".
+ */
+export interface OrganisationsSelect<T extends boolean = true> {
+  name?: T;
+  type?: T;
+  website?: T;
+  sector?: T;
+  teamSizeBand?: T;
+  city?: T;
+  billing?:
+    | T
+    | {
+        gstin?: T;
+        line1?: T;
+        line2?: T;
+        city?: T;
+        state?: T;
+        postalCode?: T;
+      };
+  domain?: T;
+  nameKey?: T;
+  people?: T;
+  leads?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "leads_select".
+ */
+export interface LeadsSelect<T extends boolean = true> {
+  title?: T;
+  kind?: T;
+  stage?: T;
+  stageChangedAt?: T;
+  stageChangedAt_tz?: T;
+  organisation?: T;
+  person?: T;
+  owner?: T;
+  nextAction?: T;
+  dueOn?: T;
+  source?: T;
+  sourceNote?: T;
+  utm?:
+    | T
+    | {
+        source?: T;
+        medium?: T;
+        campaign?: T;
+        term?: T;
+        content?: T;
+      };
+  valueEstimatePaise?: T;
+  endReason?: T;
+  calls?: T;
+  previousLead?: T;
+  touchedAt?: T;
+  touchedAt_tz?: T;
+  lastActivityAt?: T;
+  lastActivityAt_tz?: T;
+  closedAt?: T;
+  closedAt_tz?: T;
+  alerts?:
+    | T
+    | {
+        untouched?: T;
+        staleFor?: T;
+        staleFor_tz?: T;
+      };
+  activities?: T;
+  tasks?: T;
+  proposals?: T;
+  enquiries?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lead-activities_select".
+ */
+export interface LeadActivitiesSelect<T extends boolean = true> {
+  lead?: T;
+  type?: T;
+  at?: T;
+  at_tz?: T;
+  body?: T;
+  fileReference?: T;
+  by?: T;
+  fromStage?: T;
+  toStage?: T;
+  enquiry?: T;
+  proposalVersion?: T;
+  booking?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tasks_select".
+ */
+export interface TasksSelect<T extends boolean = true> {
+  title?: T;
+  kind?: T;
+  status?: T;
+  dueOn?: T;
+  role?: T;
+  assignee?: T;
+  lead?: T;
+  note?: T;
+  doneAt?: T;
+  doneAt_tz?: T;
+  doneBy?: T;
+  automation?: T;
+  key?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "enquiries_select".
+ */
+export interface EnquiriesSelect<T extends boolean = true> {
+  kind?: T;
+  status?: T;
+  outcome?: T;
+  receivedAt?: T;
+  receivedAt_tz?: T;
+  submitted?:
+    | T
+    | {
+        organisationName?: T;
+        website?: T;
+        teamSizeBand?: T;
+        sector?: T;
+        contactName?: T;
+        role?: T;
+        email?: T;
+        mobile?: T;
+        message?: T;
+      };
+  person?: T;
+  organisation?: T;
+  lead?: T;
+  consents?: T;
+  page?: T;
+  turnstile?: T;
+  utm?:
+    | T
+    | {
+        source?: T;
+        medium?: T;
+        campaign?: T;
+        term?: T;
+        content?: T;
+      };
+  submitterHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposals_select".
+ */
+export interface ProposalsSelect<T extends boolean = true> {
+  reference?: T;
+  lead?: T;
+  status?: T;
+  title?: T;
+  subtitle?: T;
+  preparedByName?: T;
+  preparedByTitle?: T;
+  validUntil?: T;
+  situation?: T;
+  approach?: T;
+  phases?:
+    | T
+    | {
+        name?: T;
+        duration?: T;
+        what?: T;
+        outcome?: T;
+        id?: T;
+      };
+  measures?: T;
+  fees?:
+    | T
+    | {
+        item?: T;
+        amountPaise?: T;
+        id?: T;
+      };
+  feeTotalPaise?: T;
+  nextStep?: T;
+  currentVersion?: T;
+  sentVersion?: T;
+  acceptedAt?: T;
+  acceptedAt_tz?: T;
+  declinedAt?: T;
+  declinedAt_tz?: T;
+  expiredAt?: T;
+  expiredAt_tz?: T;
+  answerNote?: T;
+  versions?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposal-versions_select".
+ */
+export interface ProposalVersionsSelect<T extends boolean = true> {
+  proposal?: T;
+  number?: T;
+  createdBy?: T;
+  document?: T;
+  feeTotalPaise?: T;
+  pdf?:
+    | T
+    | {
+        key?: T;
+        sha256?: T;
+        renderedAt?: T;
+        renderedAt_tz?: T;
+      };
+  sending?:
+    | T
+    | {
+        sentAt?: T;
+        sentAt_tz?: T;
+        sentBy?: T;
+        sentTo?: T;
+        supersededAt?: T;
+        supersededAt_tz?: T;
+        linkRevokedAt?: T;
+        linkRevokedAt_tz?: T;
+      };
+  tracking?:
+    | T
+    | {
+        firstViewedAt?: T;
+        firstViewedAt_tz?: T;
+        lastViewedAt?: T;
+        lastViewedAt_tz?: T;
+        viewCount?: T;
+      };
+  linkTokenHash?: T;
   updatedAt?: T;
   createdAt?: T;
 }

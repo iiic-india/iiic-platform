@@ -5,6 +5,8 @@ import { ownerWithCode } from '@/access/policy'
 import { bookingTasks } from './booking'
 import { calendarTasks } from './calendar'
 import { paymentTasks } from './payments'
+import { pipelineTasks } from './pipeline'
+import { proposalTasks } from './proposals'
 import { purgeMissingPagesTask } from './purgeMissingPages'
 
 /**
@@ -14,7 +16,14 @@ import { purgeMissingPagesTask } from './purgeMissingPages'
  * API; Payload's default would let any signed-in account.
  */
 export const jobs: JobsConfig = {
-  // M3's builders each add tasks to a file of their own (docs/16 §12).
-  tasks: [purgeMissingPagesTask, ...bookingTasks, ...paymentTasks, ...calendarTasks],
+  // M3's and M4's builders each add tasks to a file of their own (docs/16 §12, docs/17 §11).
+  tasks: [
+    purgeMissingPagesTask,
+    ...bookingTasks,
+    ...paymentTasks,
+    ...calendarTasks,
+    ...pipelineTasks,
+    ...proposalTasks,
+  ],
   access: { run: ownerWithCode, queue: ownerWithCode, cancel: ownerWithCode },
 }

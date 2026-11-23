@@ -171,6 +171,15 @@ export const People: CollectionConfig = {
     },
     { name: 'city', type: 'text', maxLength: 100 },
     {
+      // Where the person works, for a lead (docs/04 `organisation_id?`; M4, docs/17 §2). A public
+      // form sets these only on a person it creates; it never changes an existing record.
+      type: 'row',
+      fields: [
+        { name: 'organisation', type: 'relationship', relationTo: 'organisations', index: true },
+        { name: 'jobTitle', type: 'text', label: 'Role there', maxLength: 100 },
+      ],
+    },
+    {
       name: 'source',
       type: 'text',
       maxLength: 100,
