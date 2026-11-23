@@ -294,14 +294,27 @@ export function notesWith(deps: NotesDeps) {
     return ok({ count: totalDocs, latestAt: latest.docs[0]?.createdAt ?? null })
   }
 
-  return { writeNote, updateNote, readNote, listOwnNotes, countNotesForOwner }
+  /** Whether the signed-in practitioner writes on this booking: the panel shows only then. */
+  const ownsBooking = async (
+    req: PayloadRequest,
+    bookingId: unknown,
+  ): Promise<Result<boolean, NoteError>> => {
+    const author = practitioner(req)
+    if (!author.ok) return author
+    const parsed = noteId.safeParse(bookingId)
+    if (!parsed.success) return err({ code: 'invalid', issues: issuesOf(parsed.error) })
+    return ok((await ownBooking(req, parsed.data, author.value)) !== null)
+  }
+
+  return { writeNote, updateNote, readNote, listOwnNotes, countNotesForOwner, ownsBooking }
 }
 
 /** The deployment's own: the keyring from the environment, the real audit log. */
-export const { writeNote, updateNote, readNote, listOwnNotes, countNotesForOwner } = notesWith({
-  keyring: () => loadKeyring(env()),
-  audit: recordAudit,
-})
+export const { writeNote, updateNote, readNote, listOwnNotes, countNotesForOwner, ownsBooking } =
+  notesWith({
+    keyring: () => loadKeyring(env()),
+    audit: recordAudit,
+  })
 
 /** Whether this deployment can seal and open notes (the panel says so when it cannot). */
 export const notesAvailable = (): boolean => loadKeyring(env()).ok
