@@ -29,3 +29,4 @@ blob-report/
 # the private store's local folder: privacy exports (src/lib/privacy/store.ts)
 /.private-store/
 .lighthouseci/
+/private-files/

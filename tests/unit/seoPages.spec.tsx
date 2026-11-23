@@ -204,6 +204,12 @@ const OWN = [
 /** Proof, which draws itself too: tests/unit/proofPage.spec.tsx. */
 const PROOF = ['(default)/proof/page.tsx']
 
+/** The certificate verify pages, never indexed: tests/unit/certificatesVerifyPages.spec.tsx. */
+const VERIFY = [
+  '(education)/institute/verify/page.tsx',
+  '(education)/institute/verify/[token]/page.tsx',
+]
+
 /** The Journal's pages, which draw themselves too: tests/unit/journalPages.spec.tsx. */
 const JOURNAL = [
   '(education)/journal/page.tsx',
@@ -247,7 +253,7 @@ describe('the pages under src/app/(platform)', () => {
       .map((file) => file.replaceAll('\\', '/'))
       .filter((file) => /(?:^|\/)(?:page|not-found)\.tsx$/.test(file))
     expect(found.sort()).toEqual(
-      [...OWN, ...PROOF, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND, ...BOOKING]
+      [...OWN, ...PROOF, ...VERIFY, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND, ...BOOKING]
         .map((entry) => (typeof entry === 'string' ? entry : entry.file))
         .sort(),
     )

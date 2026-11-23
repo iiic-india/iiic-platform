@@ -27,6 +27,7 @@ import { ReindexButton as ReindexButton_aead06e4cbf6b2620c5c51c9ab283634 } from 
 import { PlaceholdersNavLink as PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2 } from '../../../components/admin/PlaceholdersNavLink'
 import { WorkingHoursNavLink as WorkingHoursNavLink_9cf74cba72ee96a8bb164d2260a88795 } from '../../../components/admin/office/WorkingHoursNavLink'
 import { PrivacyNavLink as PrivacyNavLink_0fc8c0d711b6efe48645d514cea5f87b } from '../../../components/admin/privacy/PrivacyNavLink'
+import { CertificatesNavLink as CertificatesNavLink_5bf52cdd78ad81a40b386d5f6fcec962 } from '../../../components/admin/certificates/CertificatesNavLink'
 import { RecoveryCodes as RecoveryCodes_43c30919611f069a63a0aff35f9170f5 } from '../../../components/admin/RecoveryCodes'
 import { TOTPProvider as TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512 } from 'payload-totp/rsc'
 import { SetupTwoFactor as SetupTwoFactor_2abdb0aaa2f84dde7ee21588072499e4 } from '../../../components/admin/SetupTwoFactor'
@@ -34,6 +35,7 @@ import { VerifyTwoFactor as VerifyTwoFactor_546c8ab8e10ca06b3c0d6d60bcd95510 } f
 import { PlaceholdersView as PlaceholdersView_829678b75b003a8c21687eeed8eac416 } from '../../../components/admin/PlaceholdersView'
 import { WorkingHoursView as WorkingHoursView_36230b3270cb346e74fa6bdbdfb72811 } from '../../../components/admin/office/WorkingHoursView'
 import { PrivacyView as PrivacyView_f0035b0d10bdccf1067c64983a944228 } from '../../../components/admin/privacy/PrivacyView'
+import { CertificatesIssueView as CertificatesIssueView_19f75a3cf6b23ea1b8731cdc7426c966 } from '../../../components/admin/certificates/CertificatesIssueView'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 
@@ -68,6 +70,7 @@ export const importMap = {
   "/components/admin/PlaceholdersNavLink#PlaceholdersNavLink": PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2,
   "/components/admin/office/WorkingHoursNavLink#WorkingHoursNavLink": WorkingHoursNavLink_9cf74cba72ee96a8bb164d2260a88795,
   "/components/admin/privacy/PrivacyNavLink#PrivacyNavLink": PrivacyNavLink_0fc8c0d711b6efe48645d514cea5f87b,
+  "/components/admin/certificates/CertificatesNavLink#CertificatesNavLink": CertificatesNavLink_5bf52cdd78ad81a40b386d5f6fcec962,
   "/components/admin/RecoveryCodes#RecoveryCodes": RecoveryCodes_43c30919611f069a63a0aff35f9170f5,
   "payload-totp/rsc#TOTPProvider": TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512,
   "/components/admin/SetupTwoFactor#SetupTwoFactor": SetupTwoFactor_2abdb0aaa2f84dde7ee21588072499e4,
@@ -75,6 +78,7 @@ export const importMap = {
   "/components/admin/PlaceholdersView#PlaceholdersView": PlaceholdersView_829678b75b003a8c21687eeed8eac416,
   "/components/admin/office/WorkingHoursView#WorkingHoursView": WorkingHoursView_36230b3270cb346e74fa6bdbdfb72811,
   "/components/admin/privacy/PrivacyView#PrivacyView": PrivacyView_f0035b0d10bdccf1067c64983a944228,
+  "/components/admin/certificates/CertificatesIssueView#CertificatesIssueView": CertificatesIssueView_19f75a3cf6b23ea1b8731cdc7426c966,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24
 }
