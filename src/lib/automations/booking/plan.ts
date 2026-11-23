@@ -1,7 +1,7 @@
 import type { TemplateKey } from '@/emails/registry'
-import type { DomainEvent } from '@/lib/booking/events'
 import type { AutomationId } from '@/lib/automations/catalogue'
 import { after, OFFSETS, reminder24hAt, reminderShortAt } from '@/lib/automations/timing'
+import type { DomainEvent } from '@/lib/booking/events'
 import type { PlannedMessage } from '@/lib/messaging/operations'
 import { plannedSendTime } from '@/lib/messaging/policy'
 import type { Channel, Subject } from '@/lib/messaging/types'

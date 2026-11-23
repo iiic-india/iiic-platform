@@ -1,7 +1,6 @@
 import { Paragraph } from '../components/Frame'
 import { Details } from '../components/parts'
 import type { TemplateImplementation } from '../types'
-
 import { COPY, WHATSAPP_PARAMS } from './copy'
 import { SessionData } from './data'
 import { loadReminder } from './load'

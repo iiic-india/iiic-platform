@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react'
 
 import { Frame, Paragraph } from '../components/Frame'
-import { Button, CounsellingScope, Details, type Detail } from '../components/parts'
+import { Button, CounsellingScope, type Detail } from '../components/parts'
 import type { EmailContext } from '../types'
-
 import { JOIN_BUTTON, LABELS, placeOf, RESCHEDULE_LINE, whenOf } from './copy'
 import type { SessionData } from './data'
 

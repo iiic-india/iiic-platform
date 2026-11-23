@@ -1,7 +1,6 @@
 import { Paragraph } from '../components/Frame'
 import { Details } from '../components/parts'
 import type { TemplateImplementation } from '../types'
-
 import { COPY, LABELS, WHATSAPP_PARAMS } from './copy'
 import { ConfirmedData } from './data'
 import { loadConfirmed } from './load'

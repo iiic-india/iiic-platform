@@ -1,7 +1,6 @@
 import { Paragraph } from '../components/Frame'
 import { Button, Details } from '../components/parts'
 import type { TemplateImplementation } from '../types'
-
 import { COPY, LABELS, whenOf } from './copy'
 import { FeedbackData, SessionData } from './data'
 import { loadFeedback, loadNoShow } from './load'

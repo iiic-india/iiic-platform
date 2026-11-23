@@ -1,7 +1,6 @@
 import { Paragraph } from '../components/Frame'
 import { Button, Details, type Detail } from '../components/parts'
 import type { TemplateImplementation } from '../types'
-
 import { COPY, LABELS, placeOf, WHATSAPP_PARAMS, whenOf } from './copy'
 import { CancelledData, RefundData, RescheduledData, StaffChangeData } from './data'
 import { longDay, rupees } from './format'

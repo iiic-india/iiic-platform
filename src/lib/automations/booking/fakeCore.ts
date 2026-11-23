@@ -4,8 +4,8 @@ import { messageKey, type PlannedMessage } from '@/lib/messaging/operations'
 import type { MessageStatus } from '@/lib/messaging/types'
 import { ok } from '@/lib/result'
 
-import type { CancelScope } from './types'
 import type { MessagingCore } from './core'
+import type { CancelScope } from './types'
 
 /**
  * An in-memory messaging core for tests (docs/19 §11), keeping the two promises of the real one

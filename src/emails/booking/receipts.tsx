@@ -1,7 +1,6 @@
 import { Paragraph } from '../components/Frame'
 import { Details } from '../components/parts'
 import type { TemplateImplementation } from '../types'
-
 import { COPY, LABELS } from './copy'
 import { ConsentReceiptData, ReceiptData } from './data'
 import { longDay } from './format'

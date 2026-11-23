@@ -1,5 +1,4 @@
 import type { TemplateImplementation, TemplateImplementations } from '../types'
-
 import { feedbackRequest, noShowNotice } from './after'
 import {
   bookingCancelled,

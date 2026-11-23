@@ -1,7 +1,6 @@
 import { Paragraph } from '../components/Frame'
 import { Details, type Detail } from '../components/parts'
 import type { TemplateImplementation } from '../types'
-
 import { COPY, LABELS, WHATSAPP_PARAMS } from './copy'
 import { TimeRequestData } from './data'
 import { longIstDay } from './format'

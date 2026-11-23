@@ -1,7 +1,6 @@
 import { Paragraph } from '../components/Frame'
 import { Button, Details, type Detail } from '../components/parts'
 import type { EmailContext, TemplateImplementation } from '../types'
-
 import { COPY, LABELS, WHATSAPP_PARAMS, whenOf } from './copy'
 import { PaymentLinkData, SlotLostData } from './data'
 import { longDay, rupees, timeSpan } from './format'
