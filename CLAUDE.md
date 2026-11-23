@@ -50,7 +50,7 @@ tests/                      unit, integration, e2e
 ## Working in this repository
 
 - Start or resume a milestone with `/milestone M1` (any ID from `docs/10-build-plan.md`); it loads the right documents and plans before code.
-- After writing or changing copy, run `/copy-check <path>`; before every pull request, run the `iiic-reviewer` subagent on the diff and fix its Blocker and Fix findings.
+- After writing or changing copy, run `/copy-check <path>`; when a major part is complete (D-80), run the `iiic-reviewer` subagent once on its diff and fix its Blocker and Fix findings.
 - `.claude/settings.json` denies reading local secret files. Do not work around that rule. The brand kit is no longer locked (D-53): record a change to a kit file in `docs/decisions.md` before making it.
 
 ## Commands
@@ -75,11 +75,11 @@ Node 24 (`.nvmrc`), pnpm 10. Local Postgres: `docker compose up -d`, then `cp .e
 - Components use the kit's markup (see `src/brand/gallery.html`); interactive behaviour the kit leaves to JS (nav toggle, tabs, menu close, toasts, focus on the error summary) lives in small client components.
 - Conventional commits; reference decision IDs (`D-02`) and automation IDs (`B5`) in messages.
 
-## Definition of done (every pull request)
+## Definition of done (every major part, D-80)
 
 - The milestone's acceptance criteria in `docs/10-build-plan.md` are met for the slice.
 - Typecheck, lint, unit, integration and e2e tests pass; new logic has tests.
-- No horizontal scroll from 320 px to 1600 px; axe reports no serious issues; the brand rules hold; the budgets in `docs/12-engineering-standards.md` §2 hold (Lighthouse CI, its resource summary included, D-45); the headers and cookie-inventory tests pass.
+- No horizontal scroll from 320 px to 1600 px; axe reports no serious issues; the brand rules hold; the budgets in `docs/12-engineering-standards.md` §2 hold (Lighthouse CI, its resource summary included, D-45); the budgets report as warnings until the milestone's hardening pass, D-80; the headers and cookie-inventory tests pass.
 - No invented content; new placeholders are listed with their input IDs; new copy passes the writing standard.
 - Docs and `docs/decisions.md` updated if behaviour or a decision changed.
 - No secrets, no personal data in fixtures or logs.
