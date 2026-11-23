@@ -39,7 +39,9 @@ async function removeBusyBlocks(req: PayloadRequest, practitionerId: number | nu
 /**
  * A calendar address is kept as Google writes it, in lower case. When an owner points a
  * connection at another calendar, what was read from the old one (its watch channel, last read,
- * last failure) no longer applies and is cleared; the old channel runs out by itself.
+ * last failure) no longer applies and is cleared; the old channel runs out by itself. The
+ * private feed's address goes too, when the calendar or the practitioner changes: it was given
+ * to one practitioner for their own bookings, and must never show another's (docs/16 §7).
  */
 export const normaliseConnection: CollectionBeforeChangeHook<CalendarConnection> = ({
   context,
@@ -48,18 +50,19 @@ export const normaliseConnection: CollectionBeforeChangeHook<CalendarConnection>
   originalDoc,
 }) => {
   if (typeof data.calendarId === 'string') data.calendarId = data.calendarId.trim().toLowerCase()
-  if (
-    operation === 'update' &&
-    !context.calendarSync &&
-    typeof data.calendarId === 'string' &&
-    originalDoc &&
-    data.calendarId !== originalDoc.calendarId
-  ) {
+  if (operation !== 'update' || context.calendarSync || !originalDoc) return data
+  const calendarChanged =
+    typeof data.calendarId === 'string' && data.calendarId !== originalDoc.calendarId
+  const practitionerChanged =
+    data.practitioner !== undefined &&
+    idOf(data.practitioner as Ref) !== idOf(originalDoc.practitioner as Ref)
+  if (calendarChanged) {
     data.watch = { channelId: null, resourceId: null, expiresAt: null }
     data.channelTokenHash = null
     data.lastSyncedAt = null
     data.lastError = null
   }
+  if (calendarChanged || practitionerChanged) data.feedTokenHash = null
   return data
 }
 
