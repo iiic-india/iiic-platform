@@ -54,15 +54,21 @@ export async function handleResendWebhook(
   if (!input.svixId || !input.svixTimestamp || !input.svixSignature) {
     return answer(401, { received: false, error: 'bad-signature' })
   }
-  let body: unknown
   try {
-    body = new Webhook(deps.secret).verify(input.rawBody, {
+    // Throws on a bad signature or a timestamp outside the tolerance; returns nothing (svix 2).
+    new Webhook(deps.secret).verify(input.rawBody, {
       'svix-id': input.svixId,
       'svix-timestamp': input.svixTimestamp,
       'svix-signature': input.svixSignature,
     })
   } catch {
     return answer(401, { received: false, error: 'bad-signature' })
+  }
+  let body: unknown
+  try {
+    body = JSON.parse(input.rawBody)
+  } catch {
+    return answer(400, { received: false, error: 'unreadable' })
   }
   const parsed = parseResendEvent(body)
   if (!parsed.ok) return answer(400, { received: false, error: 'unreadable' })
@@ -103,8 +109,14 @@ const cloudMessage = z.object({
   from: z.string().regex(/^\+?[1-9]\d{7,14}$/),
   timestamp: z.string().max(20).optional(),
   type: z.string().max(32).optional(),
-  text: z.object({ body: z.string().max(4096) }).partial().optional(),
-  button: z.object({ text: z.string().max(256) }).partial().optional(),
+  text: z
+    .object({ body: z.string().max(4096) })
+    .partial()
+    .optional(),
+  button: z
+    .object({ text: z.string().max(256) })
+    .partial()
+    .optional(),
 })
 const cloudBody = z.object({
   entry: z
@@ -183,7 +195,10 @@ export type WhatsAppWebhookDeps = {
   now: () => Date
   apply: (report: ProviderReport) => Promise<Applied>
   /** A message from the person: the 24-hour window opens; a stop is honoured the same day. */
-  inbound: (notice: Extract<WhatsAppNotice, { kind: 'inbound' }>, messageId: string) => Promise<void>
+  inbound: (
+    notice: Extract<WhatsAppNotice, { kind: 'inbound' }>,
+    messageId: string,
+  ) => Promise<void>
 }
 
 export async function handleWhatsAppWebhook(
