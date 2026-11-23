@@ -322,6 +322,26 @@ describe('an issue (N4)', () => {
     expect(fake.of('N4')).toHaveLength(before)
   })
 
+  it('without the messaging core, leaves the issue scheduled and sends nothing', async () => {
+    const at = new Date(Date.now() + DAY)
+    const scheduled = await issue(990005, { status: 'scheduled', scheduledFor: at.toISOString() })
+    useMessagingCore(null)
+    try {
+      expect(await runN4(req, { issueId: scheduled.id, at: at.toISOString() }, at)).toEqual({
+        planned: 0,
+        reason: 'core-missing',
+      })
+    } finally {
+      useMessagingCore(fake.core)
+    }
+    const after = await payload.findByID({
+      collection: 'newsletter-issues',
+      id: scheduled.id,
+      overrideAccess: true,
+    })
+    expect(after.status).toBe('scheduled')
+  })
+
   it('a wake-up for an earlier time does nothing once the issue was moved', async () => {
     const first = new Date(Date.now() + DAY)
     const moved = new Date(Date.now() + 2 * DAY)

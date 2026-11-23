@@ -33,4 +33,7 @@ PAYLOAD_SECRET (HKDF, purpose "newsletter-confirm"); only its SHA-256 is stored;
 
 - [x] 2 · [x] 3 · [x] 4 jobs (hooks in Subscribers/NewsletterIssues: todo) · [ ] 5 · [x] 6 · [x] 7 · [x] 8 · [ ] 9
 - Run 3 (18:40 IST): reviews hooks wired into Testimonials/Consents afterChange (hooks only, no fields).
-  Next: NewsletterIssues hook (issueScheduled), API routes, pages, unit tests for V1/V2/O-sections, int tests.
+- Done in run 3: issue rules + hooks; routes /api/newsletter, /confirm, /unsubscribe; pages /newsletter,
+  confirm/[token], unsubscribe/[token], /w/[token] (+ withdraw route); int tests (fake core helper);
+  unit tests (issues, limit, sections, link shape). N4 refuses to start without the core.
+  Next: docs/19 §8 kept true, full checks (lint, typecheck, unit, format, build), remove NOTES.

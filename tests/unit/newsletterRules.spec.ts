@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { linkLive, NEWSLETTER_PATHS, SignupInput, signupAction } from '@/lib/newsletter/rules'
+import {
+  isOneClick,
+  linkLive,
+  NEWSLETTER_PATHS,
+  SignedLinkToken,
+  SignupInput,
+  signupAction,
+} from '@/lib/newsletter/rules'
 import {
   CONFIRM_DAYS,
   confirmationKey,
@@ -109,13 +116,29 @@ describe('the signup form', () => {
       '/journal',
     )
     expect(
-      SignupInput.parse({ email: 'a@example.invalid', source: 'https://elsewhere.invalid' })
-        .source,
+      SignupInput.parse({ email: 'a@example.invalid', source: 'https://elsewhere.invalid' }).source,
     ).toBeUndefined()
   })
 
   it('puts the one-click token in the query, encoded', () => {
     expect(NEWSLETTER_PATHS.oneClick('a.b-c')).toBe('/api/newsletter/unsubscribe?token=a.b-c')
     expect(NEWSLETTER_PATHS.confirm('abc')).toBe('/newsletter/confirm/abc')
+  })
+})
+
+describe('the unsubscribe links (RFC 8058)', () => {
+  it('tells the mail client’s one-click POST from the page’s form', () => {
+    expect(isOneClick({ 'List-Unsubscribe': 'One-Click' })).toBe(true)
+    expect(isOneClick({ token: 'fake' })).toBe(false)
+    expect(isOneClick(null)).toBe(false)
+  })
+
+  it('accepts a signed link’s shape and nothing else, before it is verified', () => {
+    expect(
+      SignedLinkToken.safeParse('eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOjF9.c2lnbmF0dXJl').success,
+    ).toBe(true)
+    expect(SignedLinkToken.safeParse('short').success).toBe(false)
+    expect(SignedLinkToken.safeParse('has spaces in it, not a token').success).toBe(false)
+    expect(SignedLinkToken.safeParse('a'.repeat(3000)).success).toBe(false)
   })
 })

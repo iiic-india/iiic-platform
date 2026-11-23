@@ -4,7 +4,7 @@ import type { PayloadRequest } from 'payload'
 import { z } from 'zod'
 
 import { stillSubscribed } from '@/emails/other/newsletter'
-import { plan } from '@/lib/automations/operations/core'
+import { hasMessagingCore, plan } from '@/lib/automations/operations/core'
 import { done, RecordId, type Outcome } from '@/lib/automations/operations/outcome'
 import { idOf } from '@/lib/privacy/consentLedger'
 import type { Subscriber } from '@/payload-types'
@@ -194,6 +194,10 @@ export async function runN4(req: PayloadRequest, input: unknown, now: Date): Pro
     return done(0, 'waiting')
   }
 
+  // Without the core nothing can be sent: the issue stays scheduled (an editor can still change
+  // it), and moving its time once the core is there sends it.
+  if (!hasMessagingCore()) return done(0, 'core-missing')
+
   if (issue.status === 'scheduled') {
     await req.payload.update({
       collection: 'newsletter-issues',
@@ -231,8 +235,9 @@ export async function runN4(req: PayloadRequest, input: unknown, now: Date): Pro
         sendAt: now,
       })
       if (!result.ok) {
-        // Without the core nothing is sent: the issue stays `sending` for the next run.
-        return done(planned, result.error.code)
+        // A refusal mid-way is a fault: the task's retries run it again, and the messages already
+        // planned are not planned twice (one row per key). The issue stays `sending` meanwhile.
+        throw new Error(`N4 could not plan a message (${result.error.code}).`)
       }
       if (result.value.created) planned += 1
     }
