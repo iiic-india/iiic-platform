@@ -203,6 +203,12 @@ const OWN = [
 /** Proof, which draws itself too: tests/unit/proofPage.spec.tsx. */
 const PROOF = ['(default)/proof/page.tsx']
 
+/**
+ * A proposal's tracked link, never indexed and never canonical, which draws itself too:
+ * tests/unit/pipelineProposalPage.spec.tsx.
+ */
+const PROPOSAL_LINK = ['(default)/p/[token]/page.tsx']
+
 /** The Journal's pages, which draw themselves too: tests/unit/journalPages.spec.tsx. */
 const JOURNAL = [
   '(education)/journal/page.tsx',
@@ -231,7 +237,7 @@ describe('the pages under src/app/(platform)', () => {
       .map((file) => file.replaceAll('\\', '/'))
       .filter((file) => /(?:^|\/)(?:page|not-found)\.tsx$/.test(file))
     expect(found.sort()).toEqual(
-      [...OWN, ...PROOF, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND]
+      [...OWN, ...PROOF, ...PROPOSAL_LINK, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND]
         .map((entry) => (typeof entry === 'string' ? entry : entry.file))
         .sort(),
     )
