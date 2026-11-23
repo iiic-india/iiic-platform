@@ -4,6 +4,8 @@ import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { istDayField } from '@/fields/istDay'
 import { paiseField } from '@/fields/numbers'
+import { proposalEndpoints } from '@/lib/pipeline/proposal/endpoints'
+import { giveReference, workOutFeeTotal } from '@/lib/pipeline/proposal/hooks'
 import { PROPOSAL_STATUSES } from '@/lib/pipeline/values'
 import { IST_FIELD } from '@/lib/time/ist'
 
@@ -70,6 +72,11 @@ export const Proposals: CollectionConfig = {
   },
   defaultSort: '-createdAt',
   disableBulkEdit: true,
+  // The reference and the fees' total are the platform's (src/lib/pipeline/proposal/hooks.ts).
+  hooks: { beforeChange: [giveReference, workOutFeeTotal] },
+  // Create version, preview, record the answer: each checks the user, the role and the code
+  // first (src/lib/pipeline/proposal/endpoints.ts).
+  endpoints: proposalEndpoints,
   fields: [
     {
       type: 'row',

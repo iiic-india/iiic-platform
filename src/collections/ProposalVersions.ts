@@ -3,6 +3,7 @@ import type { CollectionConfig, Field } from 'payload'
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { paiseField } from '@/fields/numbers'
+import { proposalVersionEndpoints } from '@/lib/pipeline/proposal/endpoints'
 import { IST_FIELD } from '@/lib/time/ist'
 
 const serverOnly = {
@@ -51,6 +52,9 @@ export const ProposalVersions: CollectionConfig = {
   },
   defaultSort: '-createdAt',
   disableBulkEdit: true,
+  // Preview, the PDF, send, withdraw the link: each checks the user, the role and the code first
+  // (src/lib/pipeline/proposal/endpoints.ts).
+  endpoints: proposalVersionEndpoints,
   fields: [
     {
       type: 'row',

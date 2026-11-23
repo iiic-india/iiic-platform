@@ -34,4 +34,7 @@ Branch `m4/board-proposals`, from `m4/foundation` (85918d5). Design: `docs/17-pi
 
 ## Progress
 
-- [ ] 1 · [ ] 2 · [ ] 3 · [ ] 4 · [ ] 5 · [ ] 6 · [ ] 7 · [ ] 8 · [ ] 9 · [ ] 10
+- [x] 1 · [x] 2 · [x] 3 · [x] 4 · [x] 5 (hooks + endpoints wired in the collections) · [ ] 6 · [x] 7 (P8 task; types to regenerate) · [ ] 8 · [ ] 9 · [ ] 10
+- Modules the collections reach (endpoints → wiring → interim, service, …) carry no `server-only` (the Payload CLI loads them).
+- Endpoints: `POST /api/proposals/:id/versions`, `GET /api/proposals/:id/preview`, `POST /api/proposals/:id/answer`, `GET /api/proposal-versions/:id/preview`, `GET …/:id/pdf`, `POST …/:id/send`, `POST …/:id/withdraw`.
+- Run 3 resumed at 5a52cfa.
