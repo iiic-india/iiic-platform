@@ -382,6 +382,15 @@ describe('the loaders, at send time', () => {
         paidPaise: null,
       },
     })
+    // A booking the office confirmed has no manage token: its message issues one, and a retry
+    // gives the same link (docs/19 §13).
+    const manageUrl = result.ok ? result.value.manageUrl : null
+    expect(manageUrl).toMatch(/\/b\/[\w-]{43}$/)
+    const again = await loaders.loadConfirmed(await fresh(), {
+      subject: { collection: 'bookings', id: booking.id },
+      recipient: recipient(),
+    })
+    expect(again.ok && again.value.manageUrl).toBe(manageUrl)
   })
 
   it('answer stale for a reminder whose booking moved, was cancelled or was rescheduled', async () => {
