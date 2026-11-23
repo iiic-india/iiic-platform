@@ -13,6 +13,14 @@ import {
   BOOKING_STATUSES,
   BOOKING_TYPES,
 } from '@/lib/booking/states'
+import {
+  cancelHandler,
+  cancelPreviewHandler,
+  confirmTimeHandler,
+  paymentLinkHandler,
+  rescheduleHandler,
+} from '@/lib/office/handlers'
+import { isOfficeUser } from '@/lib/office/who'
 import { IST_FIELD } from '@/lib/time/ist'
 
 const money = {
@@ -59,6 +67,23 @@ export const Bookings: CollectionConfig = {
     defaultColumns: ['reference', 'type', 'status', 'startsAt', 'practitioner', 'paymentStatus'],
     listSearchableFields: ['reference'],
     hidden: ({ user }) => !hasRole(user, 'owner', 'operator', 'practitioner'),
+    components: {
+      views: {
+        edit: {
+          // Cancel with the refund shown first, move, payment link, confirm a time request.
+          office: {
+            Component: '/components/admin/office/BookingOfficeView#BookingOfficeView',
+            path: '/office',
+            tab: {
+              label: 'Office actions',
+              href: '/office',
+              order: 100,
+              condition: ({ req }) => isOfficeUser(req.user),
+            },
+          },
+        },
+      },
+    },
   },
   // src/access/policy.ts (docs/05): the office and owners; a practitioner their own.
   access: {
@@ -70,6 +95,15 @@ export const Bookings: CollectionConfig = {
   // The reference, the end from the length, and the moves a staff edit may make
   // (src/lib/booking/bookingHooks.ts); the booking module's operations do the rest.
   hooks: { beforeChange: [assignReference, fillEnd, keepMoves] },
+  // The office's actions on a booking (docs/16 §12, E; src/lib/office/handlers.ts): each checks
+  // the user, the role and the two-factor code first.
+  endpoints: [
+    { path: '/:id/cancel-preview', method: 'get', handler: cancelPreviewHandler },
+    { path: '/:id/cancel', method: 'post', handler: cancelHandler },
+    { path: '/:id/reschedule', method: 'post', handler: rescheduleHandler },
+    { path: '/:id/confirm-time', method: 'post', handler: confirmTimeHandler },
+    { path: '/:id/payment-link', method: 'post', handler: paymentLinkHandler },
+  ],
   defaultSort: '-startsAt',
   disableBulkEdit: true,
   indexes: [{ fields: ['practitioner', 'startsAt'] }, { fields: ['status', 'holdExpiresAt'] }],

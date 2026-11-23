@@ -3,6 +3,8 @@ import type { CollectionConfig, Field } from 'payload'
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { paiseField } from '@/fields/numbers'
+import { decideRefundHandler, resendRefundHandler } from '@/lib/office/handlers'
+import { isOfficeUser } from '@/lib/office/who'
 import { refundRequestDefaults, refundRules } from '@/lib/payments/hooks'
 import { REFUND_REASONS, REFUND_STATUSES } from '@/lib/payments/states'
 import { IST_FIELD } from '@/lib/time/ist'
@@ -37,7 +39,30 @@ export const Refunds: CollectionConfig = {
     group: 'Money',
     defaultColumns: ['payment', 'amountPaise', 'reason', 'status', 'createdAt'],
     hidden: ({ user }) => !hasRole(user, ...POLICY.refunds.read.roles),
+    components: {
+      views: {
+        edit: {
+          // An owner approves or declines; the office sends a failed refund again.
+          decision: {
+            Component: '/components/admin/office/RefundDecisionView#RefundDecisionView',
+            path: '/decision',
+            tab: {
+              label: 'Decision',
+              href: '/decision',
+              order: 100,
+              condition: ({ req }) => isOfficeUser(req.user),
+            },
+          },
+        },
+      },
+    },
   },
+  // The owner's decision and the office's resend (docs/16 §5, §12; src/lib/office/handlers.ts),
+  // each checking the user, the role and the two-factor code first.
+  endpoints: [
+    { path: '/:id/decide', method: 'post', handler: decideRefundHandler },
+    { path: '/:id/send', method: 'post', handler: resendRefundHandler },
+  ],
   access: {
     read: allow(POLICY.refunds.read),
     create: allow(POLICY.refunds.create),
