@@ -532,6 +532,11 @@ export async function cancelAction(raw: unknown): Promise<Answer<Cancelled>> {
         booking,
         amountPaise: cancelled.value.refundPaise,
       })
+      // The rule's refund is what the client is told: when the payments cannot give it all back
+      // (an open refund holds part of it), nothing changes and the office takes it from here.
+      if (refund.requestedPaise < cancelled.value.refundPaise) {
+        return fail({ code: 'not-allowed', reason: 'refund-held' })
+      }
       return {
         ok: true,
         value: {
