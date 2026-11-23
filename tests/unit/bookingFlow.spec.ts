@@ -74,6 +74,19 @@ describe('step 3, the details', () => {
     expect(parseDetails({ ...minor, guardian: 'on' }).ok).toBe(true)
   })
 
+  it('refuses someone under 18 booking for themselves, ticked box or not', () => {
+    const self = { ...session, whoFor: 'yourself', ageBand: 'under18', guardian: 'on' }
+    const refused = parseDetails(self)
+    expect(refused.ok).toBe(false)
+    if (!refused.ok) {
+      expect(refused.errors).toContainEqual({
+        field: 'whoFor',
+        message: DETAIL_MESSAGES.minorForSelf,
+      })
+    }
+    expect(parseDetails({ ...self, ageBand: 'adult' }).ok).toBe(true)
+  })
+
   it('asks a call for the company, and an info session for no more than name and contact', () => {
     const call = { ...session, type: 'call', company: '' }
     const refused = parseDetails(call)

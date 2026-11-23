@@ -33,6 +33,8 @@ export const DETAIL_MESSAGES = {
   whoFor: 'Choose who the session is for.',
   ageBand: 'Choose the age band of the person the session is for.',
   guardian: 'A parent or guardian books for anyone under 18. Tick the box to say you are one.',
+  minorForSelf:
+    'A parent or guardian books for anyone under 18, in their own name. If that is you, choose “Someone in my family”.',
   company: 'Enter your company’s name.',
   bookingCommunications:
     'Tick the box about booking messages: we need it to send your confirmation and reminders.',
@@ -137,6 +139,7 @@ export function parseDetails(
         message: issue.message,
       }))
   const given = raw as {
+    whoFor?: unknown
     ageBand?: unknown
     guardian?: unknown
     consents?: Record<string, unknown>
@@ -147,6 +150,11 @@ export function parseDetails(
     (raw as { type?: unknown }).type === 'session'
   ) {
     errors.push({ field: 'guardian', message: DETAIL_MESSAGES.guardian })
+  }
+  // Someone under 18 never books for themselves: nothing about a child is stored until a
+  // guardian's consent can be checked (docs/08 §3; docs/16 §10).
+  if (given?.ageBand === 'under18' && given.whoFor === 'yourself') {
+    errors.push({ field: 'whoFor', message: DETAIL_MESSAGES.minorForSelf })
   }
   if (!isTick(given?.consents?.bookingCommunications)) {
     errors.push({

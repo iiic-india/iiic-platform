@@ -139,6 +139,7 @@ export function BookingFlow({
   const [note, setNote] = useState('')
 
   const [ageBand, setAgeBand] = useState<string | null>(null)
+  const [whoFor, setWhoFor] = useState<string | null>(null)
   const [emailHint, setEmailHint] = useState<string | null>(null)
   const [errors, setErrors] = useState<FieldError[]>([])
   const [problem, setProblem] = useState<string | null>(null)
@@ -645,7 +646,12 @@ export function BookingFlow({
                   <legend>{FLOW_COPY.whoForLegend}</legend>
                   {(['yourself', 'family'] as const).map((value) => (
                     <label className="iiic-check" key={value}>
-                      <input type="radio" name="whoFor" value={value} />
+                      <input
+                        type="radio"
+                        name="whoFor"
+                        value={value}
+                        onChange={() => setWhoFor(value)}
+                      />
                       <span>{FLOW_COPY.whoFor[value]}</span>
                     </label>
                   ))}
@@ -668,7 +674,7 @@ export function BookingFlow({
                     <div className="iiic-error">{errorOf('ageBand')}</div>
                   ) : null}
                 </fieldset>
-                {ageBand === 'under18' ? (
+                {ageBand === 'under18' && whoFor === 'family' ? (
                   <div className="iiic-field-wrap full">
                     <label className="iiic-check">
                       <input
