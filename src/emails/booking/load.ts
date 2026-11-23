@@ -23,6 +23,7 @@ import type {
   TimeRequestData,
 } from './data'
 import { firstNameOf } from './format'
+import { manageUrlFor } from './manageLink'
 
 /**
  * The booking templates' loaders (docs/19 §7): each reads its data when the message is sent, from
@@ -174,6 +175,15 @@ const plainSession = async (
 
 // ---- One loader per template ----
 
+/** The client's manage link for a booking's confirmation or move; staff get none. */
+async function manageUrlOf(
+  req: PayloadRequest,
+  booking: Booking,
+  recipient: Recipient,
+): Promise<string | null> {
+  return recipient.kind === 'person' ? manageUrlFor(req, booking) : null
+}
+
 export async function loadConfirmed(req: PayloadRequest, input: LoadInput): Loaded<ConfirmedData> {
   const booking = await subjectBooking(req, input.subject)
   if (!booking) return NOT_FOUND
@@ -181,7 +191,8 @@ export async function loadConfirmed(req: PayloadRequest, input: LoadInput): Load
   const session = await sessionOf(req, booking, input.recipient)
   if (!session) return NOT_FOUND
   const paid = PAID.has(booking.paymentStatus) ? (booking.price?.totalPaise ?? null) : null
-  return ok({ ...session, paidPaise: paid })
+  const manageUrl = await manageUrlOf(req, booking, input.recipient)
+  return ok({ ...session, paidPaise: paid, manageUrl })
 }
 
 /** B5 and B6: the booking still confirmed, at the time the reminder was planned for. */
@@ -203,7 +214,8 @@ export async function loadRescheduled(
   if (!from?.startsAt) return NOT_FOUND
   const session = await sessionOf(req, booking, input.recipient)
   if (!session) return NOT_FOUND
-  return ok({ ...session, fromStartsAt: new Date(from.startsAt) })
+  const manageUrl = await manageUrlOf(req, booking, input.recipient)
+  return ok({ ...session, fromStartsAt: new Date(from.startsAt), manageUrl })
 }
 
 export async function loadCancelled(req: PayloadRequest, input: LoadInput): Loaded<CancelledData> {

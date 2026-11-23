@@ -5,7 +5,7 @@ import { COPY, LABELS, placeOf, WHATSAPP_PARAMS, whenOf } from './copy'
 import { CancelledData, RefundData, RescheduledData, StaffChangeData } from './data'
 import { longDay, rupees } from './format'
 import { loadCancelled, loadRefund, loadRescheduled, loadStaffChange } from './load'
-import { BookingFrame, JoinButton, RescheduleLine, sessionRows } from './parts'
+import { BookingFrame, ManageOrJoinButton, RescheduleLine, sessionRows } from './parts'
 
 /**
  * B7 · a booking moved or cancelled, or a refund made: the client told by email and WhatsApp, the
@@ -32,7 +32,7 @@ export const bookingRescheduled: TemplateImplementation<RescheduledData> = {
       >
         <Paragraph>{moved.lead(data)}</Paragraph>
         <Details rows={sessionRows(data)} />
-        <JoinButton data={data} />
+        <ManageOrJoinButton data={data} />
         <RescheduleLine />
       </BookingFrame>
     ),

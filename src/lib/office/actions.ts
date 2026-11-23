@@ -63,6 +63,11 @@ export type OfficeDeps = {
     'requestRefund' | 'decideRefund' | 'sendRefund' | 'sendRefunds' | 'sendPaymentLink'
   >
   now: () => Date
+  /**
+   * Whether IIIC's own messages can reach the client (email is set up, docs/19 §3): then B13's
+   * message carries a payment link and the office is not asked to send it by hand. Unset, no.
+   */
+  messagesSetUp?: () => boolean
 }
 
 /** The audit log's name for each action's writes. */
@@ -309,16 +314,18 @@ export function makeOfficeActions(deps: OfficeDeps) {
       req: PayloadRequest,
       bookingId: number,
       raw: unknown,
-    ): Promise<Result<{ payment: Payment; shortUrl: string }, OfficeError>> {
+    ): Promise<Result<{ payment: Payment; shortUrl: string; messaged: boolean }, OfficeError>> {
       const refused = refuse(req, 'office')
       if (refused) return refused
       const input = parseInput(PaymentLinkBody, raw)
       if (!input.ok) return input
       name(req, AUDIT_ACTIONS.paymentLink)
-      return deps.payments.sendPaymentLink(req, {
+      const sent = await deps.payments.sendPaymentLink(req, {
         bookingId,
         expiresAt: input.value.expiresAt ?? null,
       })
+      // B13 (M6) sends the link on `payment.linkSent` when the messages can reach the client.
+      return sent.ok ? ok({ ...sent.value, messaged: deps.messagesSetUp?.() ?? false }) : sent
     },
 
     /**

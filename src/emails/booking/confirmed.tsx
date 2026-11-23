@@ -4,7 +4,7 @@ import type { TemplateImplementation } from '../types'
 import { COPY, LABELS, WHATSAPP_PARAMS } from './copy'
 import { ConfirmedData } from './data'
 import { loadConfirmed } from './load'
-import { BookingFrame, JoinButton, RescheduleLine, sessionRows } from './parts'
+import { BookingFrame, ManageOrJoinButton, RescheduleLine, sessionRows } from './parts'
 
 /** B2 · the booking confirmation, by email and WhatsApp (docs/06 B2). */
 const KEY = 'booking-confirmed'
@@ -33,7 +33,7 @@ export const bookingConfirmed: TemplateImplementation<ConfirmedData> = {
         >
           <Paragraph>{words.lead(data)}</Paragraph>
           <Details rows={sessionRows(data, paid)} />
-          <JoinButton data={data} />
+          <ManageOrJoinButton data={data} />
           <RescheduleLine />
         </BookingFrame>
       )

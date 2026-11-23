@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { Frame, Paragraph } from '../components/Frame'
 import { Button, CounsellingScope, type Detail } from '../components/parts'
 import type { EmailContext } from '../types'
-import { JOIN_BUTTON, LABELS, placeOf, RESCHEDULE_LINE, whenOf } from './copy'
+import { JOIN_BUTTON, LABELS, MANAGE_BUTTON, placeOf, RESCHEDULE_LINE, whenOf } from './copy'
 import type { SessionData } from './data'
 
 /**
@@ -30,6 +30,23 @@ export function JoinButton({ data }: { data: SessionData }) {
   return data.format === 'online' && data.meetingUrl ? (
     <Button href={data.meetingUrl}>{JOIN_BUTTON}</Button>
   ) : null
+}
+
+/**
+ * A confirmation's or a move's one button: the manage page when the message carries its link (as
+ * in the kit's confirmation), else the online session's link. The session's link stays in the
+ * details either way.
+ */
+export function ManageOrJoinButton({
+  data,
+}: {
+  data: SessionData & { manageUrl?: string | null }
+}) {
+  return data.manageUrl ? (
+    <Button href={data.manageUrl}>{MANAGE_BUTTON}</Button>
+  ) : (
+    <JoinButton data={data} />
+  )
 }
 
 /** The frame with the email's footer from the core, and the scope when it is a counselling one. */

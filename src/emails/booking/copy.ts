@@ -86,6 +86,9 @@ export const RESCHEDULE_LINE = `Need to reschedule? Reply to this email or call 
 /** The button that opens an online session's link. */
 export const JOIN_BUTTON = 'Join the session'
 
+/** The button that opens the booking's manage page (the kit's, booking-confirmation.html). */
+export const MANAGE_BUTTON = 'Manage your booking'
+
 const at = (instant: Date) => `${shortDay(instant)} at ${timeSpan(instant)}`
 
 export const COPY = {

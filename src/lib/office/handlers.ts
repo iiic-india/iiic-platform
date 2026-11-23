@@ -146,8 +146,8 @@ export const confirmTimeHandler = endpoint(
 export const paymentLinkHandler = endpoint(
   'office',
   async (actions, req, id) => actions.paymentLink(req, id, await bodyOf(req)),
-  ({ payment, shortUrl }) => ({
-    message: OFFICE_COPY.linkCreated(payment.amountPaise),
+  ({ payment, shortUrl, messaged }) => ({
+    message: OFFICE_COPY.linkCreated(payment.amountPaise, messaged),
     link: shortUrl,
   }),
 )

@@ -29,13 +29,21 @@ export const SessionData = z.object({
 })
 export type SessionData = z.infer<typeof SessionData>
 
+/**
+ * The booking's manage page (`/b/<token>`), when the message issues its token: a booking the
+ * office confirmed or moved (src/emails/booking/manageLink.ts). Absent when the client already
+ * holds the booking's token; the email then says how to reach IIIC instead.
+ */
+const ManageUrl = z.url().nullable().optional()
+
 export const ConfirmedData = SessionData.extend({
   /** What the person paid, shown only while prices are public (`whenPublic`, D-21). */
   paidPaise: Paise.nullable(),
+  manageUrl: ManageUrl,
 })
 export type ConfirmedData = z.infer<typeof ConfirmedData>
 
-export const RescheduledData = SessionData.extend({ fromStartsAt: z.date() })
+export const RescheduledData = SessionData.extend({ fromStartsAt: z.date(), manageUrl: ManageUrl })
 export type RescheduledData = z.infer<typeof RescheduledData>
 
 export const CancelledData = SessionData.extend({ by: z.enum(['client', 'iiic']) })
