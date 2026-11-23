@@ -6,7 +6,7 @@ import { emitAutomationEvent } from '@/lib/automations/emit'
 import { env } from '@/lib/env'
 import { inTransaction } from '@/lib/payments/store'
 import { idOf } from '@/lib/privacy/consentLedger'
-import { consentFor, currentNotice } from '@/lib/privacy/consents'
+import { currentNotice } from '@/lib/privacy/consents'
 import { err, ok, type Result } from '@/lib/result'
 import type { Subscriber } from '@/payload-types'
 
@@ -19,6 +19,7 @@ import {
   hashToken,
   isToken,
 } from './tokens'
+import { withdrawPurpose } from './withdrawals'
 
 /**
  * The newsletter's double opt-in, on the server (docs/19 §8; D-10; CLAUDE.md #4). A signup keeps
@@ -211,45 +212,11 @@ export async function withdrawMarketingEmail(
   channel: 'web' | 'email',
   now: Date,
 ): Promise<number> {
-  if ((await consentFor(req.payload, personId, 'marketingEmail', req)) !== 'granted') return 0
-  const { docs } = await req.payload.find({
-    collection: 'consents',
-    where: {
-      and: [
-        { person: { equals: personId } },
-        { purpose: { equals: 'marketingEmail' } },
-        { withdraws: { exists: false } },
-      ],
-    },
-    pagination: false,
-    depth: 0,
-    select: { purpose: true },
-    overrideAccess: true,
+  return withdrawPurpose(
     req,
-  })
-  let count = 0
-  for (const grant of docs) {
-    const ended = await req.payload.count({
-      collection: 'consents',
-      where: { withdraws: { equals: grant.id } },
-      overrideAccess: true,
-      req,
-    })
-    if (ended.totalDocs > 0) continue
-    await req.payload.create({
-      collection: 'consents',
-      data: {
-        withdraws: grant.id,
-        channel,
-        withdrawnAt: now.toISOString(),
-        evidence: { form: 'Newsletter unsubscribe' },
-      } as unknown as RequiredDataFromCollectionSlug<'consents'>,
-      overrideAccess: true,
-      req,
-    })
-    count += 1
-  }
-  return count
+    { personId, purpose: 'marketingEmail', channel, evidence: { form: 'Newsletter unsubscribe' } },
+    now,
+  )
 }
 
 async function findByEmail(req: PayloadRequest, email: string): Promise<Subscriber | null> {
