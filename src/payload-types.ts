@@ -198,6 +198,8 @@ export interface Config {
       'B11-reconcile': TaskB11Reconcile;
       'B2-B7-sync-calendar-event': TaskB2B7SyncCalendarEvent;
       'B14-refresh-busy-times': TaskB14RefreshBusyTimes;
+      'P2-lead-from-call': TaskP2LeadFromCall;
+      'P3-P4-lead-alerts': TaskP3P4LeadAlerts;
       inline: {
         input: unknown;
         output: unknown;
@@ -2409,7 +2411,9 @@ export interface PayloadJob {
           | 'B2-poll-pending-orders'
           | 'B11-reconcile'
           | 'B2-B7-sync-calendar-event'
-          | 'B14-refresh-busy-times';
+          | 'B14-refresh-busy-times'
+          | 'P2-lead-from-call'
+          | 'P3-P4-lead-alerts';
         taskID: string;
         input?:
           | {
@@ -2451,6 +2455,8 @@ export interface PayloadJob {
         | 'B11-reconcile'
         | 'B2-B7-sync-calendar-event'
         | 'B14-refresh-busy-times'
+        | 'P2-lead-from-call'
+        | 'P3-P4-lead-alerts'
       )
     | null;
   queue?: string | null;
@@ -4315,6 +4321,31 @@ export interface TaskB14RefreshBusyTimes {
     refreshed: number;
     failed: number;
     renewed: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP2-lead-from-call".
+ */
+export interface TaskP2LeadFromCall {
+  input: {
+    bookingId: number;
+  };
+  output: {
+    outcome: string;
+    leadId?: number | null;
+    created?: boolean | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP3-P4-lead-alerts".
+ */
+export interface TaskP3P4LeadAlerts {
+  input?: unknown;
+  output: {
+    untouched: number;
+    stale: number;
   };
 }
 /**

@@ -1,7 +1,13 @@
 import type { PayloadRequest, Where } from 'payload'
 
 import { domainOf } from '../fields'
-import { FREE_MAIL_DOMAINS, type FindMatches, type KeysFor, type Matches } from '../matching'
+import {
+  FREE_MAIL_DOMAINS,
+  type FindMatches,
+  type KeysFor,
+  type Matches,
+  type OrganisationKeys,
+} from '../matching'
 import { FINAL_STAGES, type LeadKind } from '../stages'
 import type { OrganisationType } from '../values'
 
@@ -113,10 +119,55 @@ async function leadOf(
 }
 
 /**
+ * The organisation of a kind's type that a request's keys match: by the website's host, then by
+ * the work email's domain, then by the name's key; the oldest first.
+ */
+export async function matchOrganisation(
+  req: PayloadRequest,
+  kind: LeadKind,
+  organisation: OrganisationKeys,
+  email: string | null | undefined,
+): Promise<number | null> {
+  const type = organisationTypeFor(kind)
+  const domains = [...new Set([organisation.domain, workDomainOf(email)])].filter(
+    (domain): domain is string => Boolean(domain),
+  )
+  for (const domain of domains) {
+    const found = await firstId(
+      req,
+      'organisations',
+      { and: [{ type: { equals: type } }, { domain: { equals: domain } }] },
+      'createdAt',
+    )
+    if (found !== null) return found
+  }
+  if (!organisation.nameKey) return null
+  return firstId(
+    req,
+    'organisations',
+    { and: [{ type: { equals: type } }, { nameKey: { equals: organisation.nameKey } }] },
+    'createdAt',
+  )
+}
+
+/**
+ * The open lead of a kind, the organisation's first, else the person's, newest first; and, when
+ * there is none, the newest ended one, for the new lead to name.
+ */
+export async function matchLeads(
+  req: PayloadRequest,
+  kind: LeadKind,
+  owners: { organisation: number | null; person: number | null },
+): Promise<{ openLeadId: number | null; previousLeadId: number | null }> {
+  const openLeadId = await leadOf(req, kind, owners, OPEN)
+  const previousLeadId = openLeadId === null ? await leadOf(req, kind, owners, ENDED) : null
+  return { openLeadId, previousLeadId }
+}
+
+/**
  * The records a request matches (src/lib/pipeline/matching.ts): the person by email, else by
- * mobile, the email winning a disagreement; the organisation of the kind's type by its website's
- * host, then its work email's domain, then its name key; the open lead of the kind, the
- * organisation's first, else the person's; and, when there is none, the newest ended one.
+ * mobile, the email winning a disagreement; the organisation (matchOrganisation); the leads
+ * (matchLeads).
  */
 export const findMatches: FindMatches = async (req, { kind, email, mobile, organisation }) => {
   const byEmail = await firstId(
@@ -131,33 +182,8 @@ export const findMatches: FindMatches = async (req, { kind, email, mobile, organ
   const personId = byEmail ?? byMobile
   const conflict =
     byEmail !== null && byMobile !== null && byEmail !== byMobile ? 'emailAndMobileDiffer' : null
-
-  const type = organisationTypeFor(kind)
-  const domains = [...new Set([organisation.domain, workDomainOf(email)])].filter(
-    (domain): domain is string => Boolean(domain),
-  )
-  let organisationId: number | null = null
-  for (const domain of domains) {
-    organisationId = await firstId(
-      req,
-      'organisations',
-      { and: [{ type: { equals: type } }, { domain: { equals: domain } }] },
-      'createdAt',
-    )
-    if (organisationId !== null) break
-  }
-  if (organisationId === null && organisation.nameKey) {
-    organisationId = await firstId(
-      req,
-      'organisations',
-      { and: [{ type: { equals: type } }, { nameKey: { equals: organisation.nameKey } }] },
-      'createdAt',
-    )
-  }
-
-  const owners = { organisation: organisationId, person: personId }
-  const openLeadId = await leadOf(req, kind, owners, OPEN)
-  const previousLeadId = openLeadId === null ? await leadOf(req, kind, owners, ENDED) : null
-  const matches: Matches = { personId, organisationId, openLeadId, previousLeadId, conflict }
+  const organisationId = await matchOrganisation(req, kind, organisation, email)
+  const leads = await matchLeads(req, kind, { organisation: organisationId, person: personId })
+  const matches: Matches = { personId, organisationId, ...leads, conflict }
   return matches
 }
