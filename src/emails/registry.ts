@@ -1,6 +1,6 @@
 import type { AutomationId } from '@/lib/automations/catalogue'
-import type { Flags } from '@/lib/settings/flags'
 import type { Channel, MessageKind, SenderKey } from '@/lib/messaging/types'
+import type { Flags } from '@/lib/settings/flags'
 
 /**
  * Every message template of Release 1 (docs/06, "Message templates needed for launch"; docs/19 §7),

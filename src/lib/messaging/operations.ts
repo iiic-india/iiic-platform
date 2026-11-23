@@ -1,7 +1,7 @@
 import type { PayloadRequest } from 'payload'
 
-import type { AutomationId } from '@/lib/automations/catalogue'
 import type { TemplateKey } from '@/emails/registry'
+import type { AutomationId } from '@/lib/automations/catalogue'
 import type { Result } from '@/lib/result'
 
 import type {
