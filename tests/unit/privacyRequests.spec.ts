@@ -16,9 +16,7 @@ describe('a request’s deadlines (DeadlinesFor)', () => {
   it('acknowledges every kind within 48 hours of receipt', () => {
     const received = ist('2027-02-10T09:15:00')
     for (const { value } of REQUEST_TYPES) {
-      expect(deadlinesFor(value, received).acknowledgeBy, value).toEqual(
-        ist('2027-02-12T09:15:00'),
-      )
+      expect(deadlinesFor(value, received).acknowledgeBy, value).toEqual(ist('2027-02-12T09:15:00'))
     }
   })
 

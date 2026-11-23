@@ -63,7 +63,12 @@ async function removeTestData() {
 const user = (label: Staff, roles: User['roles']) =>
   payload.create({
     collection: 'users',
-    data: { name: `Fake ${label}`, email: `${TAG}.${label}@example.invalid`, password: PASSWORD, roles },
+    data: {
+      name: `Fake ${label}`,
+      email: `${TAG}.${label}@example.invalid`,
+      password: PASSWORD,
+      roles,
+    },
   })
 
 const booking = (practitioner: Practitioner, day: string) =>
@@ -87,7 +92,9 @@ const readEntries = async (noteId: number) =>
   (
     await payload.find({
       collection: 'audit-log',
-      where: { and: [{ action: { equals: 'read-note' } }, { entityId: { equals: String(noteId) } }] },
+      where: {
+        and: [{ action: { equals: 'read-note' } }, { entityId: { equals: String(noteId) } }],
+      },
       pagination: false,
     })
   ).totalDocs
@@ -157,7 +164,10 @@ describe('who writes a note (D-11)', () => {
 
   it('refuses roles without notes, and nobody writes a note through the API', async () => {
     for (const who of ['owner', 'operator'] as const) {
-      const refused = await notes.writeNote(await reqAs(who), { bookingId: bookingA.id, body: WORDS })
+      const refused = await notes.writeNote(await reqAs(who), {
+        bookingId: bookingA.id,
+        body: WORDS,
+      })
       expect(refused.ok || refused.error.code, who).toBe('refused')
     }
     await expect(
@@ -351,7 +361,10 @@ describe('who reads a note (D-11; docs/18 §9)', () => {
 describe('rotating the notes key (pnpm notes:rekey; docs/18 §3)', () => {
   it('re-seals what the previous key sealed, once, and it opens under the new key alone', async () => {
     const id = await write()
-    const rotating = loadKeyring({ NOTES_ENCRYPTION_KEY: KEY_NEXT, NOTES_ENCRYPTION_KEY_PREVIOUS: KEY })
+    const rotating = loadKeyring({
+      NOTES_ENCRYPTION_KEY: KEY_NEXT,
+      NOTES_ENCRYPTION_KEY_PREVIOUS: KEY,
+    })
     if (!rotating.ok) throw new Error('the fake keys did not load')
     const first = await rekeyNotesWith(await createLocalReq({}, payload), rotating.value)
     expect(first.moved).toBeGreaterThanOrEqual(1)

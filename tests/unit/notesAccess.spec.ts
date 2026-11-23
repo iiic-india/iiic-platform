@@ -81,7 +81,11 @@ describe('opening a note', () => {
     const { req, find } = await fakeReq(staff(1, ['practitioner']))
     await notesWith({ keyring, audit: async () => {} }).readNote(req, 9)
     expect(find).toHaveBeenCalledWith(
-      expect.objectContaining({ collection: 'session-notes', overrideAccess: false, user: req.user }),
+      expect.objectContaining({
+        collection: 'session-notes',
+        overrideAccess: false,
+        user: req.user,
+      }),
     )
   })
 
