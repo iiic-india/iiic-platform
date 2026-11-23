@@ -16,11 +16,16 @@ import { AvailabilityRules } from './collections/AvailabilityRules'
 import { Bookings } from './collections/Bookings'
 import { BusyBlocks } from './collections/BusyBlocks'
 import { CalendarConnections } from './collections/CalendarConnections'
+import { CaseStudies } from './collections/CaseStudies'
+import { Certificates } from './collections/Certificates'
 import { Consents } from './collections/Consents'
 import { ConsentVersions } from './collections/ConsentVersions'
+import { DataRequests } from './collections/DataRequests'
 import { Events } from './collections/Events'
 import { Faqs } from './collections/Faqs'
+import { Feedback } from './collections/Feedback'
 import { GatewayEvents } from './collections/GatewayEvents'
+import { Incidents } from './collections/Incidents'
 import { Invoices } from './collections/Invoices'
 import { Media } from './collections/Media'
 import { MissingPages } from './collections/MissingPages'
@@ -33,6 +38,7 @@ import { PriceHistory } from './collections/PriceHistory'
 import { redirects } from './collections/Redirects'
 import { Refunds } from './collections/Refunds'
 import { Services } from './collections/Services'
+import { SessionNotes } from './collections/SessionNotes'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Testimonials } from './collections/Testimonials'
 import { Topics } from './collections/Topics'
@@ -153,6 +159,15 @@ export default buildConfig({
     GatewayEvents,
     Refunds,
     Invoices,
+    // The admin experience (M5; docs/18-admin-experience-design.md): session notes (S3, author
+    // only), certificates (D-39), privacy requests and the breach register, feedback and case
+    // studies.
+    SessionNotes,
+    Certificates,
+    DataRequests,
+    Incidents,
+    Feedback,
+    CaseStudies,
   ],
   globals: [Settings],
   // Automations (src/jobs/index.ts): never run on their own here.

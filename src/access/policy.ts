@@ -20,6 +20,9 @@ import { hasRole, isActive, ROLES, type MaybeStaff, type Role } from './roles'
  *   own profile (the profile's `staff` is their account): their bookings, working hours,
  *   calendar connection and busy times (docs/05: "own calendar and availability, own clients'
  *   bookings").
+ * - `author`: an active staff user who has entered the two-factor code reaches only the documents
+ *   they wrote (`author` is their account): session notes (D-11; docs/18 §3). No role reaches
+ *   another author's documents, an owner's included.
  * A deactivated account is refused everything (src/access/roles.ts).
  */
 export type Rule = {
@@ -30,10 +33,14 @@ export type Rule = {
   active?: true
   statusPublished?: true
   ownPractitioner?: true
+  author?: true
 }
 
 /** The query a practitioner's own documents answer: their profile's staff account is theirs. */
 export const OWN_PRACTITIONER_PATH = 'practitioner.staff'
+
+/** The query an author's own documents answer: the account that wrote them. */
+export const OWN_AUTHOR_PATH = 'author'
 
 export const POLICY = {
   users: {
@@ -286,6 +293,63 @@ export const POLICY = {
     update: {},
     delete: {},
   },
+
+  // ---- The admin experience (M5; docs/18-admin-experience-design.md) ----
+
+  // Session notes (docs/04 `session_notes`, S3; D-11; CLAUDE.md #3): read by their author only,
+  // with the two-factor code; no role reads another author's note, an owner's included. The body
+  // is encrypted by the server, so nobody writes a note through the API: the notes module writes
+  // and reads them after its own checks (src/lib/notes/, docs/18 §3), and every read is audited.
+  // Never deleted through the API; erasing a person removes their notes (docs/04, Rules).
+  sessionNotes: {
+    read: { author: true },
+    create: {},
+    update: {},
+    delete: {},
+  },
+  // Certificates (docs/04 `certificates`, S2; D-39): the office reads them; issuing, revoking and
+  // reissuing go through the certificates module, which checks who may (VIEW_POLICY) and audits
+  // each act, so no role writes one through the API. Never deleted: a certificate is revoked.
+  certificates: {
+    read: { roles: ['owner', 'operator'] },
+    create: {},
+    update: {},
+    delete: {},
+  },
+  // Privacy requests (docs/04 `data_requests`; docs/05, Privacy): the office prepares them; an
+  // owner confirms an erasure (VIEW_POLICY.privacyDecision, src/access/views.ts). The public form adds
+  // one through the server. Never deleted: a request's record is the proof it was answered.
+  dataRequests: {
+    read: { roles: ['owner', 'operator'] },
+    create: { roles: ['owner', 'operator'] },
+    update: { roles: ['owner', 'operator'] },
+    delete: {},
+  },
+  // The breach register (docs/04 `incidents`; docs/08 §3): whoever notices an incident in the
+  // office records it; owners and the operator keep each step's time. Never deleted.
+  incidents: {
+    read: { roles: ['owner', 'operator'] },
+    create: { roles: ['owner', 'operator'] },
+    update: { roles: ['owner', 'operator'] },
+    delete: {},
+  },
+  // Feedback (docs/04 `feedback`, private): written by the server from the feedback form (B8,
+  // M6); the operator reads it and marks it read; only an owner deletes one (erasure).
+  feedback: {
+    read: { roles: ['owner', 'operator'] },
+    create: {},
+    update: { roles: ['owner', 'operator'] },
+    delete: { roles: ['owner'] },
+  },
+  // Case studies (docs/04 `case_studies`; docs/05, Proof): the staff who keep content write them;
+  // anyone reads a published one; publishing needs the client's approval and an owner, which the
+  // collection checks itself. Only an owner deletes one.
+  caseStudies: {
+    read: { roles: ['owner', 'operator', 'editor'], statusPublished: true },
+    create: { roles: ['owner', 'operator', 'editor'] },
+    update: { roles: ['owner', 'operator', 'editor'] },
+    delete: { roles: ['owner'] },
+  },
 } as const satisfies Record<string, Record<string, Rule>>
 
 /**
@@ -364,6 +428,12 @@ export const FIELD_POLICY = {
     read: { roles: ['owner', 'operator', 'practitioner'] },
     write: { roles: ['owner', 'operator'] },
   },
+  // A case study's client approval (docs/05, Proof: required before publishing): the staff who
+  // keep case studies record it; the public card never shows it.
+  caseStudyApproval: {
+    read: { roles: ['owner', 'operator', 'editor'] },
+    write: { roles: ['owner', 'operator', 'editor'] },
+  },
 } as const satisfies Record<string, { read: FieldRule; write: FieldRule }>
 
 /** Whether a session has entered its two-factor code (payload-totp's strategy). */
@@ -389,6 +459,11 @@ export function allow(rule: Rule): Access {
     if (rule.self && user && isActive(user)) return { id: { equals: user.id } }
     if (rule.ownPractitioner && user?.id !== undefined && hasRole(user, 'practitioner')) {
       return { [OWN_PRACTITIONER_PATH]: { equals: user.id } }
+    }
+    // An author's own documents, and only with the code: payload-totp's wrapper would ask for it
+    // too, but a rule that guards S3 asks for itself (CLAUDE.md #3).
+    if (rule.author && user?.id !== undefined && isActive(user) && codeEntered(user)) {
+      return { [OWN_AUTHOR_PATH]: { equals: user.id } }
     }
     if (rule.published) return { _status: { equals: 'published' } }
     if (rule.active) return { active: { equals: true } }
