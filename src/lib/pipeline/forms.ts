@@ -16,6 +16,10 @@ import { TEAM_SIZE_BANDS, type TeamSizeBand } from './values'
  * version is the one the form showed, which the consent ledger checks was in force
  * (src/collections/Consents.ts). The spam guards (a trap field, the time the form was drawn, the
  * Turnstile token) are checked by the form's action, not here.
+ *
+ * Parsed on the server only: the phone check carries libphonenumber's full metadata, which no
+ * public page's script should load (docs/12 §2). The browser shows the messages the action sends
+ * back.
  */
 
 export const FORM_MESSAGES = {
