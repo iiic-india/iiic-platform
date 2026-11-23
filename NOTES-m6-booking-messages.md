@@ -42,7 +42,8 @@ Branch `m6/booking-messages` from `m6/foundation`. Design: `docs/19` §5 to §7,
 - [x] 1, 2, 3 (plan.ts, tasks.ts, snapshot.ts, core.ts, fakeCore.ts, wiring.ts, jobs file)
 - [x] Schema: `payments.linkUrl` (B13's link), payload-types regenerated with the B task slugs
 - [x] 4a: data.ts, format.ts, copy.ts, load.ts; confirmed, reminders, changes (B2, B5, B6, B7)
-- [ ] 4b: receipt (B3), consent receipt (B3a), after (B8, B9), slot lost (B10), time request
-      (B12), payment link (B13); booking/index.ts map; public/email PNGs
-- [ ] 5 WhatsApp texts doc. 6 unit tests for templates; int test for tasks with the fake core.
+- [x] 4b: receipts.tsx, payments.tsx, after.tsx, requests.tsx; booking/index.ts; public/email
+- [x] 5 docs/content/whatsapp-templates.md (counselling: scope line in the closing variable)
+- [x] 6a tests/unit/bookingTemplates.spec.tsx
+- [ ] 6b tests/int/bookingMessages.int.spec.ts: tasks + fake core + loaders against Postgres
 - [ ] 7 checks; remove NOTES
