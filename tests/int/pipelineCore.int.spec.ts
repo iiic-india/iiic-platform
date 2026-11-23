@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { PipelineEvent } from '@/lib/pipeline/events'
 import type { PartnershipEnquiry, TeamMapRequest } from '@/lib/pipeline/forms'
 import type { EnquiryContext } from '@/lib/pipeline/leads'
-import type { ConsentVersion, Lead } from '@/payload-types'
+import type { Booking, ConsentVersion, Lead, Person, Service } from '@/payload-types'
 import config from '@/payload.config'
 
 vi.mock('server-only', () => ({}))
@@ -30,6 +30,7 @@ const { receiveEnquiry } = await import('@/lib/pipeline/core/receive')
 const { raiseLeadAlerts } = await import('@/lib/pipeline/core/alerts')
 const { applyMove } = await import('@/lib/pipeline/core/moves')
 const { logActivity } = await import('@/lib/pipeline/core/activities')
+const { attachCall } = await import('@/lib/pipeline/core/calls')
 const { addWorkingDays } = await import('@/lib/pipeline/core/workingDays')
 const { leadTitle, SPAM_REASON } = await import('@/lib/pipeline/core/strings')
 const { FIRST_REPLY_WORKING_DAYS } = await import('@/lib/pipeline/tasks')
@@ -151,15 +152,17 @@ async function removeTestData() {
     await payload.delete({ collection: 'tasks', where: { lead: { in: ids } } })
     await payload.delete({ collection: 'lead-activities', where: { lead: { in: ids } } })
     await payload.delete({ collection: 'enquiries', where: { lead: { in: ids } } })
+    await payload.delete({ collection: 'leads', where: { id: { in: ids } } })
   }
   await payload.delete({
     collection: 'enquiries',
     where: { 'submitted.contactName': { like: TAG } },
   })
+  await payload.delete({ collection: 'bookings', where: { 'person.fullName': { like: TAG } } })
   // The people's consents are withdrawn as they go, and the entries kept (docs/04).
   await payload.delete({ collection: 'people', where: { fullName: { like: TAG } } })
-  if (ids.length) await payload.delete({ collection: 'leads', where: { id: { in: ids } } })
   await payload.delete({ collection: 'organisations', where: { name: { like: TAG } } })
+  await payload.delete({ collection: 'services', where: { slug: { like: 'int-pipeline' } } })
 }
 
 beforeAll(async () => {
@@ -527,5 +530,81 @@ describe('the alerts job raises each alert once (P3, P4; docs/17 §7)', () => {
       { name: 'lead.stale', leadId, since: after(8).toISOString() },
     ])
     expect((await leadDoc(leadId)).alerts?.staleFor).toBe(after(8).toISOString())
+  })
+})
+
+describe('a proposal call booked puts its lead on the board, once (P2; docs/17 §3)', () => {
+  it('makes the organisation and the lead, attaches the call, logs it and moves to Contacted', async () => {
+    const service = (await payload.create({
+      collection: 'services',
+      data: {
+        name: `Fake call ${TAG}`,
+        type: 'call',
+        slug: `int-pipeline-call-${RUN}`,
+        register: 'consultancy',
+        format: 'online',
+        active: true,
+        options: [{ label: 'Fake 30', duration: 30 }],
+      } as Service,
+    })) as Service
+    const caller = (await payload.create({
+      collection: 'people',
+      data: {
+        fullName: `Fake Person ${TAG} caller`,
+        email: email('caller'),
+        mobile: mobile(0),
+      } as Person,
+    })) as Person
+    // A call far ahead, with no practitioner's time taken: only its kind and details matter here.
+    const booking = (await payload.create({
+      collection: 'bookings',
+      data: {
+        type: 'call',
+        status: 'confirmed',
+        paymentStatus: 'notRequired',
+        service: service.id,
+        durationMinutes: 30,
+        person: caller.id,
+        startsAt: '2099-04-06T05:00:00.000Z',
+        endsAt: '2099-04-06T05:30:00.000Z',
+        company: { name: `Fake Company ${TAG} caller`, sector: 'Fake sector' },
+      } as Booking,
+    })) as Booking
+
+    const first = await attachCall(await fresh(), { bookingId: booking.id })
+    expect(first).toMatchObject({ ok: true, value: { created: true } })
+    if (!first.ok) return
+    const { leadId } = first.value
+    const again = await attachCall(await fresh(), { bookingId: booking.id })
+    expect(again).toEqual({ ok: true, value: { leadId, created: false } })
+
+    const lead = await leadDoc(leadId)
+    expect(lead).toMatchObject({
+      kind: 'consultancy',
+      stage: 'contacted',
+      source: 'proposalCall',
+      person: caller.id,
+      calls: [booking.id],
+    })
+    const organisation = await payload.findByID({
+      collection: 'organisations',
+      id: lead.organisation as number,
+      depth: 0,
+    })
+    expect(organisation).toMatchObject({
+      name: `Fake Company ${TAG} caller`,
+      type: 'business',
+      domain: domain('caller'),
+    })
+    expect(
+      await count('lead-activities', {
+        and: [{ lead: { equals: leadId } }, { type: { equals: 'booking' } }],
+      }),
+    ).toBe(1)
+    expect(
+      await count('lead-activities', {
+        and: [{ lead: { equals: leadId } }, { type: { equals: 'stageChange' } }],
+      }),
+    ).toBe(1)
   })
 })
