@@ -13,6 +13,7 @@ export type AutomationEvent =
   | { name: 'invoice.issued'; invoiceId: number; bookingId: number }
   // M6 · messaging core (builder A).
   | { name: 'message.failed'; messageId: number } // O3
+  | { name: 'automation.failed'; jobId: number } // O3: an M6 task that spent its retries
   | { name: 'message.suppressed'; suppressionId: number } // O9, N3
   // M6 · consent and proof (builder C).
   | { name: 'consent.withdrawn'; consentId: number } // V2's confirmation, N3
@@ -50,6 +51,7 @@ const SUBJECT_FIELD: { readonly [Name in AutomationEventName]: string } = {
   'calendar.changed': 'practitionerId',
   'invoice.issued': 'invoiceId',
   'message.failed': 'messageId',
+  'automation.failed': 'jobId',
   'message.suppressed': 'suppressionId',
   'consent.withdrawn': 'consentId',
   'review.consentRequested': 'testimonialId',

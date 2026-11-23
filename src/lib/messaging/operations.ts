@@ -4,7 +4,14 @@ import type { AutomationId } from '@/lib/automations/catalogue'
 import type { TemplateKey } from '@/emails/registry'
 import type { Result } from '@/lib/result'
 
-import type { Channel, MessageStatus, Recipient, SkipReason, Subject, SuppressionReason } from './types'
+import type {
+  Channel,
+  MessageStatus,
+  Recipient,
+  SkipReason,
+  Subject,
+  SuppressionReason,
+} from './types'
 
 /**
  * The messaging core's contracts (docs/19 §3). Builder A implements them in `src/lib/messaging/`
@@ -33,9 +40,7 @@ export type PlannedMessage = {
 }
 
 export type PlanError =
-  | { code: 'unknown-template' }
-  | { code: 'channel-not-allowed' }
-  | { code: 'recipient-missing' }
+  { code: 'unknown-template' } | { code: 'channel-not-allowed' } | { code: 'recipient-missing' }
 
 /**
  * Records the message (one row in `messages`, key from `messageKey`) and, when it is due now,
@@ -76,6 +81,11 @@ export type ProviderReport = {
   at: Date
   /** For bounces: Resend's bounce type; only `Permanent` suppresses the address. */
   bounce?: 'permanent' | 'transient'
+  /**
+   * For a bounce or a complaint: the address the provider tried, which is what is suppressed (the
+   * person's address may have changed since). Used for the suppression only, never logged.
+   */
+  address?: string
 }
 
 /** Applies a report: moves the message forward only (src/lib/messaging/states.ts), suppresses. */

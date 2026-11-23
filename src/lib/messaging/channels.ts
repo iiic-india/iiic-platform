@@ -44,11 +44,7 @@ export type OutgoingWhatsApp = {
 }
 
 export type SendErrorCode =
-  | 'not-configured'
-  | 'invalid-recipient'
-  | 'rejected'
-  | 'rate-limited'
-  | 'unavailable'
+  'not-configured' | 'invalid-recipient' | 'rejected' | 'rate-limited' | 'unavailable'
 
 /** A provider's refusal, as a code; `retryable` decides between a retry and a final failure. */
 export type SendError = { code: SendErrorCode; retryable: boolean }

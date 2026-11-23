@@ -1,5 +1,17 @@
 import type { ReactNode } from 'react'
-import { Body, Column, Container, Head, Html, Img, Link, Preview, Row, Section, Text } from 'react-email'
+import {
+  Body,
+  Column,
+  Container,
+  Head,
+  Html,
+  Img,
+  Link,
+  Preview,
+  Row,
+  Section,
+  Text,
+} from 'react-email'
 
 import { EMAIL, EMAIL_FONTS } from '../palette'
 
@@ -73,7 +85,14 @@ export function Frame({ preheader, eyebrow, heading, children, footer, assetUrl 
                   >
                     IIIC
                     <br />
-                    <span style={{ fontSize: 12, letterSpacing: 0, fontWeight: 'normal', color: EMAIL.muted }}>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        letterSpacing: 0,
+                        fontWeight: 'normal',
+                        color: EMAIL.muted,
+                      }}
+                    >
                       Indian Institute of Image Catalysts
                     </span>
                   </Column>
@@ -93,7 +112,11 @@ export function Frame({ preheader, eyebrow, heading, children, footer, assetUrl 
                 &nbsp;
               </Column>
               <Column
-                style={{ background: EMAIL.card, borderRadius: '0 18px 18px 0', padding: '36px 36px 32px' }}
+                style={{
+                  background: EMAIL.card,
+                  borderRadius: '0 18px 18px 0',
+                  padding: '36px 36px 32px',
+                }}
               >
                 {eyebrow ? (
                   <Text
@@ -138,7 +161,10 @@ export function Frame({ preheader, eyebrow, heading, children, footer, assetUrl 
               >
                 {footer.legalLine}
                 <br />
-                <Link href={footer.siteUrl} style={{ color: EMAIL.link, textDecoration: 'underline' }}>
+                <Link
+                  href={footer.siteUrl}
+                  style={{ color: EMAIL.link, textDecoration: 'underline' }}
+                >
                   {footer.siteDisplay}
                 </Link>
                 {footer.preferences ? (

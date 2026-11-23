@@ -1,7 +1,12 @@
 import type { CSSProperties } from 'react'
 import { Column, Link, Row, Section, Text } from 'react-email'
 
-import { CRISIS_HEADING, CRISIS_LINES, SCOPE_HEADING, SCOPE_STATEMENT } from '@/lib/counselling/scope'
+import {
+  CRISIS_HEADING,
+  CRISIS_LINES,
+  SCOPE_HEADING,
+  SCOPE_STATEMENT,
+} from '@/lib/counselling/scope'
 
 import { EMAIL, EMAIL_FONTS } from '../palette'
 
@@ -102,7 +107,13 @@ const small = {
  */
 export function CounsellingScope() {
   return (
-    <Section style={{ borderTop: `1px solid ${EMAIL.ticketBorder}`, padding: '18px 0 0', margin: '8px 0 0' }}>
+    <Section
+      style={{
+        borderTop: `1px solid ${EMAIL.ticketBorder}`,
+        padding: '18px 0 0',
+        margin: '8px 0 0',
+      }}
+    >
       <Text style={{ ...small, fontWeight: 'bold', color: EMAIL.ink }}>{SCOPE_HEADING}</Text>
       {SCOPE_STATEMENT.map((line) => (
         <Text key={line} style={small}>

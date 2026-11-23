@@ -19,7 +19,11 @@ const resendEvent = z.object({
     .object({
       email_id: z.string().min(1).max(128).optional(),
       created_at: z.string().optional(),
-      bounce: z.object({ type: z.string().max(64).optional() }).partial().optional(),
+      to: z.array(z.string().max(320)).max(50).optional(),
+      bounce: z
+        .object({ type: z.string().max(64).optional() })
+        .partial()
+        .optional(),
     })
     .loose(),
 })
@@ -32,8 +36,7 @@ const RESEND_STATUS: Readonly<Record<string, ProviderReport['status']>> = {
 }
 
 export type ParsedResendEvent =
-  | { kind: 'report'; report: ProviderReport }
-  | { kind: 'ignored'; type: string }
+  { kind: 'report'; report: ProviderReport } | { kind: 'ignored'; type: string }
 
 /**
  * A verified Resend event as a report on one message, or `ignored` for every other type (sent,
@@ -54,6 +57,11 @@ export function parseResendEvent(body: unknown): Result<ParsedResendEvent, { cod
     at: Number.isNaN(at.getTime()) ? new Date() : at,
     ...(status === 'bounced'
       ? { bounce: data.bounce?.type === 'Permanent' ? 'permanent' : 'transient' }
+      : {}),
+    // The platform sends one address per message; that address is what a bounce or complaint
+    // suppresses, read only here and never logged.
+    ...((status === 'bounced' || status === 'complained') && data.to?.[0]
+      ? { address: data.to[0].trim().toLowerCase() }
       : {}),
   }
   return ok({ kind: 'report', report })

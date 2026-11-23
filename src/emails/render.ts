@@ -28,7 +28,13 @@ export async function renderEmail<Data>(
   const element = template.element(data, context)
   const [html, text] = await Promise.all([
     render(element),
-    render(element, { plainText: true }),
+    // Headings keep their case in the text part: capitals read as shouting (VOICE.md).
+    render(element, {
+      plainText: true,
+      htmlToTextOptions: {
+        selectors: [{ selector: 'h1', options: { uppercase: false } }],
+      },
+    }),
   ])
   return {
     subject: template.subject(data),

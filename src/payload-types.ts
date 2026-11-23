@@ -94,6 +94,12 @@ export interface Config {
     'gateway-events': GatewayEvent;
     refunds: Refund;
     invoices: Invoice;
+    messages: Message;
+    'message-templates': MessageTemplate;
+    automations: Automation;
+    suppressions: Suppression;
+    subscribers: Subscriber;
+    'newsletter-issues': NewsletterIssue;
     'search-index': SearchIndex;
     redirects: Redirect;
     'totp-attempts': TotpAttempt;
@@ -106,6 +112,7 @@ export interface Config {
   collectionsJoins: {
     people: {
       consents: 'consents';
+      suppressions: 'suppressions';
     };
     consents: {
       withdrawal: 'consents';
@@ -139,6 +146,12 @@ export interface Config {
     'gateway-events': GatewayEventsSelect<false> | GatewayEventsSelect<true>;
     refunds: RefundsSelect<false> | RefundsSelect<true>;
     invoices: InvoicesSelect<false> | InvoicesSelect<true>;
+    messages: MessagesSelect<false> | MessagesSelect<true>;
+    'message-templates': MessageTemplatesSelect<false> | MessageTemplatesSelect<true>;
+    automations: AutomationsSelect<false> | AutomationsSelect<true>;
+    suppressions: SuppressionsSelect<false> | SuppressionsSelect<true>;
+    subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
+    'newsletter-issues': NewsletterIssuesSelect<false> | NewsletterIssuesSelect<true>;
     'search-index': SearchIndexSelect<false> | SearchIndexSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
@@ -154,9 +167,11 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     settings: PlatformSettings;
+    'payload-jobs-stats': PayloadJobsStat;
   };
   globalsSelect: {
     settings: SettingsSelect<false> | SettingsSelect<true>;
+    'payload-jobs-stats': PayloadJobsStatsSelect<false> | PayloadJobsStatsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -1117,6 +1132,16 @@ export interface Person {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  /**
+   * Nothing is sent to these addresses. Ask the person for one that works.
+   */
+  suppressions?: {
+    docs?: (number | Suppression)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  whatsappLastInboundAt?: string | null;
+  whatsappLastInboundAt_tz?: 'Asia/Kolkata' | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1237,6 +1262,31 @@ export interface ConsentVersion {
    */
   effectiveFrom: string;
   effectiveFrom_tz: 'Asia/Kolkata';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Addresses that bounced, complained or asked to stop. Nothing is sent to them.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "suppressions".
+ */
+export interface Suppression {
+  id: number;
+  channel: 'email' | 'whatsapp';
+  /**
+   * An email address in small letters, or a mobile with +91.
+   */
+  address: string;
+  reason: 'hardBounce' | 'complaint' | 'whatsappStop' | 'manual';
+  at: string;
+  at_tz: 'Asia/Kolkata';
+  source: 'resend' | 'whatsapp' | 'staff';
+  person?: (number | null) | Person;
+  /**
+   * For an entry made by hand: how the request reached IIIC.
+   */
+  note?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1842,6 +1892,386 @@ export interface Invoice {
   createdAt: string;
 }
 /**
+ * Every automated message: when it is due, its channel and what happened to it.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages".
+ */
+export interface Message {
+  id: number;
+  /**
+   * One message per key: it is never sent twice.
+   */
+  dedupeKey: string;
+  automation:
+    | 'B1'
+    | 'B2'
+    | 'B3'
+    | 'B3a'
+    | 'B4'
+    | 'B5'
+    | 'B6'
+    | 'B7'
+    | 'B8'
+    | 'B9'
+    | 'B10'
+    | 'B11'
+    | 'B12'
+    | 'B13'
+    | 'B14'
+    | 'P1'
+    | 'P2'
+    | 'P3'
+    | 'P4'
+    | 'P5'
+    | 'P6'
+    | 'P7'
+    | 'N1'
+    | 'N2'
+    | 'N3'
+    | 'N4'
+    | 'O1'
+    | 'O2'
+    | 'O3'
+    | 'O4'
+    | 'O5'
+    | 'O6'
+    | 'O7'
+    | 'O8'
+    | 'O9'
+    | 'O10'
+    | 'V1'
+    | 'V2'
+    | 'C5';
+  template:
+    | 'booking-confirmed'
+    | 'booking-receipt'
+    | 'consent-receipt'
+    | 'reminder-24h'
+    | 'reminder-short'
+    | 'booking-rescheduled'
+    | 'booking-cancelled'
+    | 'refund-processed'
+    | 'booking-change-staff'
+    | 'feedback-request'
+    | 'no-show'
+    | 'slot-lost'
+    | 'time-request-received'
+    | 'payment-link'
+    | 'payment-link-reminder'
+    | 'team-map-ack'
+    | 'partnership-ack'
+    | 'proposal-sent'
+    | 'newsletter-confirm'
+    | 'newsletter-welcome'
+    | 'newsletter-issue'
+    | 'data-request-ack'
+    | 'complaint-ack'
+    | 'privacy-deadline'
+    | 'review-consent-request'
+    | 'review-consent-reminder'
+    | 'review-withdrawal-confirmed'
+    | 'certificate-issued'
+    | 'daily-digest'
+    | 'weekly-report'
+    | 'incident-alert'
+    | 'backup-alert'
+    | 'failure-alert';
+  variant?: string | null;
+  channel: 'email' | 'whatsapp';
+  fallback?: ('email' | 'whatsapp') | null;
+  kind: 'transactional' | 'promotional' | 'operator' | 'internal';
+  /**
+   * Email only: the sending identity (docs/13 §1).
+   */
+  sender?: ('bookings' | 'hello' | 'platform' | 'journal') | null;
+  status:
+    | 'queued'
+    | 'sending'
+    | 'sent'
+    | 'delivered'
+    | 'read'
+    | 'failed'
+    | 'bounced'
+    | 'complained'
+    | 'skipped'
+    | 'cancelled'
+    | 'unknown';
+  skipReason?:
+    | (
+        | 'paused'
+        | 'no-address'
+        | 'suppressed'
+        | 'no-consent'
+        | 'under-18'
+        | 'not-configured'
+        | 'template-not-approved'
+        | 'window-closed'
+        | 'too-late'
+        | 'quiet-hours-late'
+        | 'stale'
+        | 'price-hidden'
+      )
+    | null;
+  /**
+   * A code from the provider, never its message.
+   */
+  lastError?: string | null;
+  recipientKind: 'person' | 'subscriber' | 'staff';
+  person?: (number | null) | Person;
+  subscriber?: (number | null) | Subscriber;
+  staff?: (number | null) | User;
+  subjectCollection:
+    | 'bookings'
+    | 'payments'
+    | 'refunds'
+    | 'invoices'
+    | 'testimonials'
+    | 'consents'
+    | 'people'
+    | 'subscribers'
+    | 'newsletter-issues'
+    | 'messages'
+    | 'suppressions'
+    | 'users'
+    | 'leads'
+    | 'proposals'
+    | 'certificates'
+    | 'data-requests'
+    | 'incidents';
+  subjectId: number;
+  /**
+   * About a counselling session: no offer, ever (docs/06).
+   */
+  counselling?: boolean | null;
+  fallbackOf?: (number | null) | Message;
+  sendAt?: string | null;
+  sendAt_tz?: 'Asia/Kolkata' | null;
+  sendBefore?: string | null;
+  sendBefore_tz?: 'Asia/Kolkata' | null;
+  requiresOpenWindow?: boolean | null;
+  attempts?: number | null;
+  claimedAt?: string | null;
+  claimedAt_tz?: 'Asia/Kolkata' | null;
+  sentAt?: string | null;
+  sentAt_tz?: 'Asia/Kolkata' | null;
+  deliveredAt?: string | null;
+  deliveredAt_tz?: 'Asia/Kolkata' | null;
+  readAt?: string | null;
+  readAt_tz?: 'Asia/Kolkata' | null;
+  provider?: ('resend' | 'aisensy' | 'fake') | null;
+  providerMessageId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The newsletter list. Each address confirmed its signup by email.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers".
+ */
+export interface Subscriber {
+  id: number;
+  email: string;
+  status: 'pending' | 'confirmed' | 'unsubscribed';
+  /**
+   * The page the signup came from.
+   */
+  source?: string | null;
+  notice?: (number | null) | ConsentVersion;
+  person?: (number | null) | Person;
+  consent?: (number | null) | Consent;
+  confirmExpiresAt?: string | null;
+  confirmExpiresAt_tz?: 'Asia/Kolkata' | null;
+  confirmedAt?: string | null;
+  confirmedAt_tz?: 'Asia/Kolkata' | null;
+  unsubscribedAt?: string | null;
+  unsubscribedAt_tz?: 'Asia/Kolkata' | null;
+  lastEngagedAt?: string | null;
+  lastEngagedAt_tz?: 'Asia/Kolkata' | null;
+  confirmTokenHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The words of each automated message, and the approved WhatsApp templates.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "message-templates".
+ */
+export interface MessageTemplate {
+  id: number;
+  key:
+    | 'booking-confirmed'
+    | 'booking-receipt'
+    | 'consent-receipt'
+    | 'reminder-24h'
+    | 'reminder-short'
+    | 'booking-rescheduled'
+    | 'booking-cancelled'
+    | 'refund-processed'
+    | 'booking-change-staff'
+    | 'feedback-request'
+    | 'no-show'
+    | 'slot-lost'
+    | 'time-request-received'
+    | 'payment-link'
+    | 'payment-link-reminder'
+    | 'team-map-ack'
+    | 'partnership-ack'
+    | 'proposal-sent'
+    | 'newsletter-confirm'
+    | 'newsletter-welcome'
+    | 'newsletter-issue'
+    | 'data-request-ack'
+    | 'complaint-ack'
+    | 'privacy-deadline'
+    | 'review-consent-request'
+    | 'review-consent-reminder'
+    | 'review-withdrawal-confirmed'
+    | 'certificate-issued'
+    | 'daily-digest'
+    | 'weekly-report'
+    | 'incident-alert'
+    | 'backup-alert'
+    | 'failure-alert';
+  channel: 'email' | 'whatsapp';
+  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  /**
+   * Email only. States the fact, with no urgency words (docs/13 §5).
+   */
+  subject?: string | null;
+  /**
+   * Email only: the next step, shown in the inbox after the subject.
+   */
+  preheader?: string | null;
+  /**
+   * The lines of the message, with {{variables}} the template names. For WhatsApp, exactly the text Meta approved.
+   */
+  body?: string | null;
+  providerTemplateName?: string | null;
+  category?: ('utility' | 'marketing' | 'authentication') | null;
+  /**
+   * Only approved wording is used. An owner approves.
+   */
+  status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'paused';
+  owner?: (number | null) | User;
+  lastReviewedAt?: string | null;
+  lastReviewedAt_tz?: 'Asia/Kolkata' | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Pause or resume an automation; see when it last ran and how often it failed.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "automations".
+ */
+export interface Automation {
+  id: number;
+  key:
+    | 'B1'
+    | 'B2'
+    | 'B3'
+    | 'B3a'
+    | 'B4'
+    | 'B5'
+    | 'B6'
+    | 'B7'
+    | 'B8'
+    | 'B9'
+    | 'B10'
+    | 'B11'
+    | 'B12'
+    | 'B13'
+    | 'B14'
+    | 'P1'
+    | 'P2'
+    | 'P3'
+    | 'P4'
+    | 'P5'
+    | 'P6'
+    | 'P7'
+    | 'N1'
+    | 'N2'
+    | 'N3'
+    | 'N4'
+    | 'O1'
+    | 'O2'
+    | 'O3'
+    | 'O4'
+    | 'O5'
+    | 'O6'
+    | 'O7'
+    | 'O8'
+    | 'O9'
+    | 'O10'
+    | 'V1'
+    | 'V2'
+    | 'C5';
+  /**
+   * Untick to pause it. Nothing it would send goes out while paused.
+   */
+  enabled?: boolean | null;
+  /**
+   * Why it was paused, for whoever turns it back on.
+   */
+  note?: string | null;
+  lastRunAt?: string | null;
+  lastRunAt_tz?: 'Asia/Kolkata' | null;
+  successCount?: number | null;
+  failureCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The monthly Journal email: written here, sent to confirmed subscribers.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-issues".
+ */
+export interface NewsletterIssue {
+  id: number;
+  number: number;
+  title: string;
+  /**
+   * Shown in the inbox after the subject.
+   */
+  preheader: string;
+  lead: {
+    post: number | Post;
+    /**
+     * Optional: a line of your own above the excerpt.
+     */
+    note?: string | null;
+  };
+  items?:
+    | {
+        post: number | Post;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  cta?: {
+    label?: string | null;
+    /**
+     * A page on this site, starting with /.
+     */
+    path?: string | null;
+  };
+  /**
+   * Schedule it with a time below; it can be cancelled until it sends.
+   */
+  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'cancelled';
+  scheduledFor?: string | null;
+  scheduledFor_tz?: 'Asia/Kolkata' | null;
+  sentAt?: string | null;
+  sentAt_tz?: 'Asia/Kolkata' | null;
+  recipientCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * What /search finds: an entry for each published page, offered service, published article and published question, kept up to date as they are published, changed and unpublished. "Reindex" builds a kind again from what is published.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2018,6 +2448,19 @@ export interface PayloadJob {
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
+  /**
+   * Used for concurrency control. Jobs with the same key are subject to exclusive/supersedes rules.
+   */
+  concurrencyKey?: string | null;
+  meta?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2119,6 +2562,26 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'invoices';
         value: number | Invoice;
+      } | null)
+    | ({
+        relationTo: 'message-templates';
+        value: number | MessageTemplate;
+      } | null)
+    | ({
+        relationTo: 'automations';
+        value: number | Automation;
+      } | null)
+    | ({
+        relationTo: 'suppressions';
+        value: number | Suppression;
+      } | null)
+    | ({
+        relationTo: 'subscribers';
+        value: number | Subscriber;
+      } | null)
+    | ({
+        relationTo: 'newsletter-issues';
+        value: number | NewsletterIssue;
       } | null)
     | ({
         relationTo: 'search-index';
@@ -2699,6 +3162,9 @@ export interface PeopleSelect<T extends boolean = true> {
       };
   tags?: T;
   consents?: T;
+  suppressions?: T;
+  whatsappLastInboundAt?: T;
+  whatsappLastInboundAt_tz?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3151,6 +3617,159 @@ export interface InvoicesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages_select".
+ */
+export interface MessagesSelect<T extends boolean = true> {
+  dedupeKey?: T;
+  automation?: T;
+  template?: T;
+  variant?: T;
+  channel?: T;
+  fallback?: T;
+  kind?: T;
+  sender?: T;
+  status?: T;
+  skipReason?: T;
+  lastError?: T;
+  recipientKind?: T;
+  person?: T;
+  subscriber?: T;
+  staff?: T;
+  subjectCollection?: T;
+  subjectId?: T;
+  counselling?: T;
+  fallbackOf?: T;
+  sendAt?: T;
+  sendAt_tz?: T;
+  sendBefore?: T;
+  sendBefore_tz?: T;
+  requiresOpenWindow?: T;
+  attempts?: T;
+  claimedAt?: T;
+  claimedAt_tz?: T;
+  sentAt?: T;
+  sentAt_tz?: T;
+  deliveredAt?: T;
+  deliveredAt_tz?: T;
+  readAt?: T;
+  readAt_tz?: T;
+  provider?: T;
+  providerMessageId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "message-templates_select".
+ */
+export interface MessageTemplatesSelect<T extends boolean = true> {
+  key?: T;
+  channel?: T;
+  language?: T;
+  subject?: T;
+  preheader?: T;
+  body?: T;
+  providerTemplateName?: T;
+  category?: T;
+  status?: T;
+  owner?: T;
+  lastReviewedAt?: T;
+  lastReviewedAt_tz?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "automations_select".
+ */
+export interface AutomationsSelect<T extends boolean = true> {
+  key?: T;
+  enabled?: T;
+  note?: T;
+  lastRunAt?: T;
+  lastRunAt_tz?: T;
+  successCount?: T;
+  failureCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "suppressions_select".
+ */
+export interface SuppressionsSelect<T extends boolean = true> {
+  channel?: T;
+  address?: T;
+  reason?: T;
+  at?: T;
+  at_tz?: T;
+  source?: T;
+  person?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers_select".
+ */
+export interface SubscribersSelect<T extends boolean = true> {
+  email?: T;
+  status?: T;
+  source?: T;
+  notice?: T;
+  person?: T;
+  consent?: T;
+  confirmExpiresAt?: T;
+  confirmExpiresAt_tz?: T;
+  confirmedAt?: T;
+  confirmedAt_tz?: T;
+  unsubscribedAt?: T;
+  unsubscribedAt_tz?: T;
+  lastEngagedAt?: T;
+  lastEngagedAt_tz?: T;
+  confirmTokenHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-issues_select".
+ */
+export interface NewsletterIssuesSelect<T extends boolean = true> {
+  number?: T;
+  title?: T;
+  preheader?: T;
+  lead?:
+    | T
+    | {
+        post?: T;
+        note?: T;
+      };
+  items?:
+    | T
+    | {
+        post?: T;
+        note?: T;
+        id?: T;
+      };
+  cta?:
+    | T
+    | {
+        label?: T;
+        path?: T;
+      };
+  status?: T;
+  scheduledFor?: T;
+  scheduledFor_tz?: T;
+  sentAt?: T;
+  sentAt_tz?: T;
+  recipientCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "search-index_select".
  */
 export interface SearchIndexSelect<T extends boolean = true> {
@@ -3225,6 +3844,8 @@ export interface PayloadJobsSelect<T extends boolean = true> {
   queue?: T;
   waitUntil?: T;
   processing?: T;
+  concurrencyKey?: T;
+  meta?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3416,6 +4037,24 @@ export interface PlatformSettings {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs-stats".
+ */
+export interface PayloadJobsStat {
+  id: number;
+  stats?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "settings_select".
  */
 export interface SettingsSelect<T extends boolean = true> {
@@ -3508,6 +4147,16 @@ export interface SettingsSelect<T extends boolean = true> {
         certificate?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs-stats_select".
+ */
+export interface PayloadJobsStatsSelect<T extends boolean = true> {
+  stats?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

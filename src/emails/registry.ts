@@ -52,7 +52,9 @@ export const TEMPLATES = [
   t('reminder-24h', ['B5'], ['whatsapp', 'email'], 'bookings', 'transactional', {
     counsellingScope: true,
   }),
-  t('reminder-short', ['B6'], ['whatsapp'], 'bookings', 'transactional', { counsellingScope: true }),
+  t('reminder-short', ['B6'], ['whatsapp'], 'bookings', 'transactional', {
+    counsellingScope: true,
+  }),
   t('booking-rescheduled', ['B7'], ['email', 'whatsapp'], 'bookings', 'transactional', {
     counsellingScope: true,
   }),
@@ -61,7 +63,7 @@ export const TEMPLATES = [
   t('booking-change-staff', ['B7', 'B10'], ['email'], 'platform', 'internal', { footer: 'none' }),
   t('feedback-request', ['B8'], ['email', 'whatsapp'], 'bookings', 'transactional', {}),
   t('no-show', ['B9'], ['email'], 'bookings', 'transactional', {}),
-  t('slot-lost', ['B10'], ['email', 'whatsapp'], 'bookings', 'transactional', {
+  t('slot-lost', ['B10'], ['email'], 'bookings', 'transactional', {
     price: 'ownPayment',
   }),
   t('time-request-received', ['B12'], ['email', 'whatsapp'], 'bookings', 'transactional', {}),
@@ -77,8 +79,24 @@ export const TEMPLATES = [
   t('proposal-sent', ['P5'], ['email'], 'hello', 'transactional', {}, 'C'),
   // ---- Newsletter (builder C) ----
   t('newsletter-confirm', ['N1'], ['email'], 'journal', 'transactional', { footer: 'none' }, 'C'),
-  t('newsletter-welcome', ['N2'], ['email'], 'journal', 'promotional', { footer: 'unsubscribe' }, 'C'),
-  t('newsletter-issue', ['N4'], ['email'], 'journal', 'promotional', { footer: 'unsubscribe' }, 'C'),
+  t(
+    'newsletter-welcome',
+    ['N2'],
+    ['email'],
+    'journal',
+    'promotional',
+    { footer: 'unsubscribe' },
+    'C',
+  ),
+  t(
+    'newsletter-issue',
+    ['N4'],
+    ['email'],
+    'journal',
+    'promotional',
+    { footer: 'unsubscribe' },
+    'C',
+  ),
   // ---- Privacy, reviews and certificates (builder C) ----
   t('data-request-ack', ['O4'], ['email'], 'hello', 'transactional', {}, 'C'),
   t('complaint-ack', ['O7'], ['email'], 'hello', 'transactional', {}, 'C'),

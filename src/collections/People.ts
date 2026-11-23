@@ -212,5 +212,29 @@ export const People: CollectionConfig = {
         description: 'What the person has agreed to, and any withdrawal, newest first.',
       },
     },
+    // ---- Messaging (M6, docs/19 §4) ----
+    {
+      // Addresses of theirs that bounced, complained or asked to stop (docs/06 O9).
+      name: 'suppressions',
+      type: 'join',
+      collection: 'suppressions',
+      on: 'person',
+      defaultSort: '-at',
+      admin: {
+        allowCreate: false,
+        defaultColumns: ['address', 'channel', 'reason', 'at'],
+        description: 'Nothing is sent to these addresses. Ask the person for one that works.',
+      },
+    },
+    {
+      // When the person last wrote to IIIC on WhatsApp: the 24-hour window for replies that are
+      // not templates (docs/06 V1; docs/13 §7). Written by the WhatsApp webhook only.
+      name: 'whatsappLastInboundAt',
+      type: 'date',
+      label: 'Last WhatsApp message from them',
+      access: { create: () => false, update: () => false },
+      timezone: IST_FIELD,
+      admin: { readOnly: true, date: { pickerAppearance: 'dayAndTime' } },
+    },
   ],
 }

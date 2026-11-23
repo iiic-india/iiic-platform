@@ -43,8 +43,7 @@ export type WhatsAppTemplate<Data> = {
 
 export type LoadError =
   /** What the message was about has changed (a booking moved or cancelled): not sent. */
-  | { code: 'stale' }
-  | { code: 'not-found' }
+  { code: 'stale' } | { code: 'not-found' }
 
 /**
  * Reads a template's data for one message at send time: the booking, the person's first name,

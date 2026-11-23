@@ -60,6 +60,29 @@ const schema = z.object({
   // Resend's shared sender where none is set (development); it delivers only to the Resend
   // account's own address. Vercel sets the platform's own sender (D-47).
   EMAIL_FROM_ADDRESS: z.string().default('onboarding@resend.dev'),
+  // Messaging (M6, docs/19). The cron route's bearer token; without it the route answers 503.
+  CRON_SECRET: optional(z.string().min(32, 'CRON_SECRET must be at least 32 characters')),
+  // The signing secret of Resend's webhook (Svix), for bounces and complaints (docs/13 §6).
+  RESEND_WEBHOOK_SECRET: optional(
+    z.string().regex(/^whsec_[A-Za-z0-9+/=]+$/, 'RESEND_WEBHOOK_SECRET must be a whsec_ secret'),
+  ),
+  // The root mail domain (D-05): senders on notify. and news., replies to its role inboxes.
+  MAIL_DOMAIN: optional(
+    z
+      .string()
+      .regex(/^(?=.{3,253}$)([a-z0-9-]+\.)+[a-z]{2,}$/, 'MAIL_DOMAIN must be a domain name'),
+  ),
+  // `fake` swaps both senders for the in-memory ones (src/lib/messaging/fakes.ts): local and CI.
+  MESSAGING_TRANSPORT: z.enum(['live', 'fake']).default('live'),
+  // WhatsApp through AiSensy (D-06): all three together, or none, and messages go by email.
+  WHATSAPP_PROVIDER: z.enum(['aisensy']).default('aisensy'),
+  WHATSAPP_API_KEY: optional(z.string().min(1)),
+  WHATSAPP_WEBHOOK_SECRET: optional(
+    z.string().min(32, 'WHATSAPP_WEBHOOK_SECRET must be at least 32 characters'),
+  ),
+  WHATSAPP_SENDER_NUMBER: optional(
+    z.string().regex(/^\+[1-9]\d{7,14}$/, 'WHATSAPP_SENDER_NUMBER must be in E.164, such as +91…'),
+  ),
   // Error reports to Sentry (docs/12 §7, D-49). Vercel's Sentry integration sets the NEXT_PUBLIC_
   // name; only the server reads either. Without one nothing is sent (development, CI).
   SENTRY_DSN: z.preprocess((value) => (value === '' ? undefined : value), z.url().optional()),
@@ -160,6 +183,21 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
   if (data.PAYMENT_GATEWAY === 'fake' && data.VERCEL_ENV) {
     throw new Error(
       'Invalid environment:\n- PAYMENT_GATEWAY: the fake gateway runs only locally and in CI, never on a Vercel deployment',
+    )
+  }
+  const whatsapp = [
+    data.WHATSAPP_API_KEY,
+    data.WHATSAPP_WEBHOOK_SECRET,
+    data.WHATSAPP_SENDER_NUMBER,
+  ]
+  if (whatsapp.some(Boolean) && !whatsapp.every(Boolean)) {
+    throw new Error(
+      'Invalid environment:\n- WhatsApp: set WHATSAPP_API_KEY, WHATSAPP_WEBHOOK_SECRET and WHATSAPP_SENDER_NUMBER together, or none of them',
+    )
+  }
+  if (data.MESSAGING_TRANSPORT === 'fake' && data.VERCEL_ENV) {
+    throw new Error(
+      'Invalid environment:\n- MESSAGING_TRANSPORT: the fake senders run only locally and in CI, never on a Vercel deployment',
     )
   }
   const mediaOrigin = data.R2_PUBLIC_BASE_URL ? new URL(data.R2_PUBLIC_BASE_URL).origin : undefined

@@ -1,5 +1,10 @@
 import type { ConsentState } from '@/lib/privacy/consentLedger'
-import { DEFAULT_QUIET_HOURS, inQuietHours, minutesOf, type QuietHours } from '@/lib/settings/quietHours'
+import {
+  DEFAULT_QUIET_HOURS,
+  inQuietHours,
+  minutesOf,
+  type QuietHours,
+} from '@/lib/settings/quietHours'
 import { istMinutes } from '@/lib/time/ist'
 
 import type { Channel, MessageKind, SkipReason } from './types'

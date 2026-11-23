@@ -29,9 +29,9 @@ export const AUTOMATION_LISTENERS: AutomationListeners = listenersFrom(AUTOMATIO
  * M3's listeners with M6's added after them, for the booking module's `emit`
  * (src/lib/booking/emit.ts): the calendar write and the documents run first, the messages after.
  */
-export function withAutomationListeners<L extends { readonly [name: string]: readonly string[] | undefined }>(
-  base: L,
-): L {
+export function withAutomationListeners<
+  L extends { readonly [name: string]: readonly string[] | undefined },
+>(base: L): L {
   const merged: Record<string, readonly string[]> = {}
   for (const [name, tasks] of Object.entries(base)) if (tasks) merged[name] = [...tasks]
   for (const [name, tasks] of Object.entries(AUTOMATION_LISTENERS)) {

@@ -100,7 +100,8 @@ export const AUTOMATIONS = [
     id: 'B6',
     title: 'Short reminder before the session',
     on: ['booking.confirmed', 'booking.rescheduled', 'booking.cancelled'],
-    timing: '2 h before (online: 30 min, with the link); dropped if quiet hours push it past the start',
+    timing:
+      '2 h before (online: 30 min, with the link); dropped if quiet hours push it past the start',
     channels: ['whatsapp'],
     basis: 'transactional',
     owner: 'B',
@@ -324,7 +325,7 @@ export const AUTOMATIONS = [
   {
     id: 'O3',
     title: 'Message or webhook failure',
-    on: ['message.failed'],
+    on: ['message.failed', 'automation.failed'],
     timing: 'At once; an owner emailed if three fail within an hour',
     channels: ['admin', 'email'],
     basis: 'internal',
