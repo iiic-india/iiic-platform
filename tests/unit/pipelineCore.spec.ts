@@ -1,9 +1,13 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+import type { PayloadRequest } from 'payload'
+import { describe, expect, it, vi } from 'vitest'
 
+import { logActivity } from '@/lib/pipeline/core/activities'
 import { heatOf, needsAttentionWhere, quietSince, staleWhere } from '@/lib/pipeline/core/heat'
 import { keysFor, nameKeyOf, organisationTypeFor, workDomainOf } from '@/lib/pipeline/core/match'
+import { canMoveLead, isEarlier, moveLead } from '@/lib/pipeline/core/moves'
 import { leadTitle, taskTitle } from '@/lib/pipeline/core/strings'
+import { closeTask } from '@/lib/pipeline/core/tasks'
 import { addWorkingDays, isWorkingDay } from '@/lib/pipeline/core/workingDays'
 import { STAGES_BY_KIND, type LeadKind, type LeadStage } from '@/lib/pipeline/stages'
 
@@ -162,5 +166,90 @@ describe('names the platform gives', () => {
 
   it('names a first-reply task by its kind', () => {
     expect(taskTitle('firstReply')).toBe('Reply to the request')
+  })
+})
+
+describe('moves along a board (docs/17 §3)', () => {
+  it('moves an active stage anywhere on its own board, and an end nowhere', () => {
+    expect(canMoveLead('consultancy', 'new', 'debriefHeld')).toBe(true)
+    expect(canMoveLead('consultancy', 'proposalSent', 'contacted')).toBe(true)
+    expect(canMoveLead('consultancy', 'new', 'lost')).toBe(true)
+    expect(canMoveLead('consultancy', 'won', 'new')).toBe(false)
+    expect(canMoveLead('consultancy', 'new', 'signed')).toBe(false)
+    expect(canMoveLead('partnership', 'closed', 'inConversation')).toBe(false)
+  })
+
+  it('knows which stages come earlier, for the platform’s own moves (P2, P5)', () => {
+    expect(isEarlier('consultancy', 'new', 'contacted')).toBe(true)
+    expect(isEarlier('consultancy', 'teamMapScheduled', 'contacted')).toBe(false)
+    expect(isEarlier('consultancy', 'contacted', 'contacted')).toBe(false)
+  })
+})
+
+describe('staff writes need the role and the code (CLAUDE.md #6)', () => {
+  const OPERATOR = 7
+  /** A request from a fake member of the staff, and a database that holds nothing. */
+  const requestBy = (user: Record<string, unknown> | null) => {
+    const findByID = vi.fn(async () => null)
+    const req = { user, payload: { findByID } } as unknown as PayloadRequest
+    return { req, findByID }
+  }
+  const operator = (strategy?: string) => ({
+    id: OPERATOR,
+    collection: 'users',
+    roles: ['operator'],
+    ...(strategy ? { _strategy: strategy } : {}),
+  })
+  const finance = { id: OPERATOR, collection: 'users', roles: ['finance'], _strategy: 'totp' }
+
+  it('refuses a move, an entry or a closed task without the code, in the wrong role, or as someone else', async () => {
+    const deactivated = { ...operator('totp'), active: false }
+    for (const user of [null, operator(), operator('local-jwt'), finance, deactivated]) {
+      const { req, findByID } = requestBy(user)
+      const by = OPERATOR
+      expect(await moveLead(req, { leadId: 1, to: 'contacted', by })).toEqual({
+        ok: false,
+        error: { code: 'not-allowed' },
+      })
+      expect(await logActivity(req, { leadId: 1, type: 'note', body: 'Fake', by })).toEqual({
+        ok: false,
+        error: { code: 'not-allowed' },
+      })
+      expect(await closeTask(req, { taskId: 1, status: 'done', by })).toEqual({
+        ok: false,
+        error: { code: 'not-allowed' },
+      })
+      expect(findByID).not.toHaveBeenCalled()
+    }
+    const { req } = requestBy(operator('totp'))
+    expect(await moveLead(req, { leadId: 1, to: 'contacted', by: OPERATOR + 1 })).toMatchObject({
+      error: { code: 'not-allowed' },
+    })
+  })
+
+  it('refuses the platform’s own kinds of entry to the staff', async () => {
+    const { req } = requestBy(operator('totp'))
+    for (const type of ['stageChange', 'enquiry', 'proposal', 'booking'] as const) {
+      expect(await logActivity(req, { leadId: 1, type, by: OPERATOR })).toMatchObject({
+        error: { code: 'not-allowed' },
+      })
+    }
+  })
+
+  it('lets an operator with the code through to the record', async () => {
+    const { req, findByID } = requestBy(operator('totp'))
+    expect(await moveLead(req, { leadId: 1, to: 'contacted', by: OPERATOR })).toEqual({
+      ok: false,
+      error: { code: 'not-found' },
+    })
+    expect(await logActivity(req, { leadId: 1, type: 'call', by: OPERATOR })).toEqual({
+      ok: false,
+      error: { code: 'not-found' },
+    })
+    expect(await closeTask(req, { taskId: 1, status: 'done', by: OPERATOR })).toEqual({
+      ok: false,
+      error: { code: 'not-found' },
+    })
+    expect(findByID).toHaveBeenCalledTimes(3)
   })
 })
