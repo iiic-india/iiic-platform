@@ -203,6 +203,7 @@ export interface Config {
       'B7-issue-credit-note': TaskB7IssueCreditNote;
       'P2-lead-from-call': TaskP2LeadFromCall;
       'P3-P4-lead-alerts': TaskP3P4LeadAlerts;
+      'P8-expire-proposals': TaskP8ExpireProposals;
       inline: {
         input: unknown;
         output: unknown;
@@ -2446,7 +2447,8 @@ export interface PayloadJob {
           | 'B3-issue-invoice'
           | 'B7-issue-credit-note'
           | 'P2-lead-from-call'
-          | 'P3-P4-lead-alerts';
+          | 'P3-P4-lead-alerts'
+          | 'P8-expire-proposals';
         taskID: string;
         input?:
           | {
@@ -2492,6 +2494,7 @@ export interface PayloadJob {
         | 'B7-issue-credit-note'
         | 'P2-lead-from-call'
         | 'P3-P4-lead-alerts'
+        | 'P8-expire-proposals'
       )
     | null;
   queue?: string | null;
@@ -4426,6 +4429,16 @@ export interface TaskP3P4LeadAlerts {
   output: {
     untouched: number;
     stale: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP8-expire-proposals".
+ */
+export interface TaskP8ExpireProposals {
+  input?: unknown;
+  output: {
+    expired: number;
   };
 }
 /**

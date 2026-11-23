@@ -68,6 +68,17 @@ describe('the beacon', () => {
     expect(await draw()).toBe('')
   })
 
+  it('never counts a proposal’s tracked link, whose address is its key', async () => {
+    process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN = TOKEN
+    for (const path of ['/p/abc', '/p/abc/pdf', '/P/abc']) {
+      requestFor(path)
+      expect(await draw(), path).toBe('')
+      expect(countsPath(path), path).toBe(false)
+      expect(beaconSources(path).scriptOrigins, path).toEqual([])
+    }
+    expect(countsPath('/proof')).toBe(true)
+  })
+
   it('takes only a token of a token’s shape, so nothing can leave its attribute', () => {
     for (const value of ['', '   ', 'short', `${TOKEN}"><script>`, `${TOKEN} x`, undefined]) {
       expect(beaconToken(value), String(value)).toBeNull()
