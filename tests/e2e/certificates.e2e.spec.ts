@@ -16,8 +16,8 @@ import { testUser } from '../helpers/seedUser'
 // and every certificate route turn anonymous requests away. An owner (desktop project only, so
 // the two projects never share the fake records): the issue screen opens, axe-clean, and
 // previews; an issue makes a PDF whose QR code, read from the rendered page, opens a page that
-// says Valid; after a revoke the same page says Revoked. Issuing needs M3's PDF renderer: until
-// the branches are joined the issue answers "render-failed" and that part is skipped, saying so.
+// says Valid; after a revoke the same page says Revoked. The PDF is M3's renderer's
+// (src/lib/pdf/render.ts), run by the server with Playwright's own Chromium, as CI installs it.
 
 const ORIGIN = siteOrigin()
 /** Payload reads the session cookie only when the request names an allowed origin. */
@@ -175,10 +175,8 @@ test.describe('An owner issues, the QR code verifies, a revoke shows at once', (
       code?: string
       issued?: { id: number; certificateId: string }[]
     }
-    test.skip(
-      issued.status() === 503 && answer.code === 'render-failed',
-      'Waits for M3’s PDF renderer (src/lib/pdf), joined after this branch.',
-    )
+    // A refusal's code names what failed (render-failed, storage-missing, signatory-missing).
+    expect(answer.code).toBeUndefined()
     expect(issued.status()).toBe(200)
     const made = answer.issued?.[0] as { id: number; certificateId: string }
 
