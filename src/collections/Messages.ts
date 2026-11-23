@@ -54,6 +54,15 @@ export const Messages: CollectionConfig = {
   disableBulkEdit: true,
   lockDocuments: false,
   indexes: [{ fields: ['status', 'sendAt'] }, { fields: ['subjectCollection', 'subjectId'] }],
+  // "Queue again" for a failed message or one with no answer (docs/19 §3): owners and the office
+  // with their code, checked first, audited. Loaded when called: the module is server-only.
+  endpoints: [
+    {
+      path: '/:id/queue-again',
+      method: 'post',
+      handler: async (req) => (await import('@/lib/messaging/requeue')).queueAgain(req),
+    },
+  ],
   fields: [
     {
       name: 'dedupeKey',
