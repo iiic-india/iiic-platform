@@ -33,7 +33,8 @@ export class FakeMessagingCore implements MessagingCore {
     for (const row of this.rows) {
       const { subject, automation } = row.planned
       if (row.status !== 'queued') continue
-      if (subject.collection !== scope.subject.collection || subject.id !== scope.subject.id) continue
+      if (subject.collection !== scope.subject.collection || subject.id !== scope.subject.id)
+        continue
       if (scope.automations && !scope.automations.includes(automation)) continue
       row.status = 'cancelled'
       cancelled += 1

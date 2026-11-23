@@ -88,6 +88,8 @@ export function makeSendPaymentLink(deps: PaymentsDeps): SendPaymentLink {
           refundedPaise: 0,
           receipt,
           gatewayPaymentLinkId: link.value.linkId,
+          // B13's message carries it (M6, docs/19 §7).
+          linkUrl: link.value.shortUrl,
           linkSentAt: now,
           expiresAt: input.expiresAt?.toISOString() ?? null,
         },

@@ -120,7 +120,8 @@ async function planFor(
         return null
       }
       const plan = slug === 'B5-reminder-24h' ? planReminder24h : planReminderShort
-      const booking = event.name === 'booking.cancelled' ? null : await bookingSnapshot(req, event.bookingId)
+      const booking =
+        event.name === 'booking.cancelled' ? null : await bookingSnapshot(req, event.bookingId)
       return plan(event, booking, context)
     }
     case 'B7-change-notice': {

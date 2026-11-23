@@ -142,7 +142,9 @@ describe('B5 · the reminder 24 hours before', () => {
       moved,
       context('2026-12-02T09:00:00'),
     )
-    expect(plan.cancel).toEqual([{ subject: { collection: 'bookings', id: 41 }, automations: ['B5'] }])
+    expect(plan.cancel).toEqual([
+      { subject: { collection: 'bookings', id: 41 }, automations: ['B5'] },
+    ])
     expect(keys(plan)).toEqual(['B5:bookings:52:whatsapp'])
     expect(only(plan).sendAt).toEqual(ist('2026-12-11T16:00:00'))
   })
@@ -219,7 +221,9 @@ describe('B6 · the short reminder', () => {
       moved,
       context('2026-12-02T09:00:00'),
     )
-    expect(plan.cancel).toEqual([{ subject: { collection: 'bookings', id: 41 }, automations: ['B6'] }])
+    expect(plan.cancel).toEqual([
+      { subject: { collection: 'bookings', id: 41 }, automations: ['B6'] },
+    ])
     expect(only(plan).sendAt).toEqual(ist('2026-12-12T14:00:00'))
   })
 })
@@ -314,7 +318,10 @@ describe('B10 · the slot was lost', () => {
 
 describe('B12 · a time request', () => {
   it('is acknowledged at once by email and WhatsApp', () => {
-    const plan = planTimeRequestAck(booking({ status: 'requested' }), context('2026-12-01T12:00:00'))
+    const plan = planTimeRequestAck(
+      booking({ status: 'requested' }),
+      context('2026-12-01T12:00:00'),
+    )
     expect(keys(plan)).toEqual(['B12:bookings:41:email', 'B12:bookings:41:whatsapp'])
   })
 })
@@ -372,14 +379,23 @@ describe('every planned message', () => {
     planConsentReceipt(booking({ counselling: true }), now),
     planReminder24h({ name: 'booking.confirmed', bookingId: 41, cause: 'staff' }, booking(), now),
     planReminderShort({ name: 'booking.confirmed', bookingId: 41, cause: 'staff' }, booking(), now),
-    planChangeNotice({ name: 'booking.cancelled', bookingId: 41, by: 'client' }, booking({ status: 'cancelledByClient' }), now),
+    planChangeNotice(
+      { name: 'booking.cancelled', bookingId: 41, by: 'client' },
+      booking({ status: 'cancelledByClient' }),
+      now,
+    ),
     planRefundNotice({ id: 9, status: 'processed' }, booking(), now),
     planReceipt({ id: 5, status: 'issued' }, booking(), now),
     planFeedbackRequest(booking({ status: 'completed' }), now),
     planNoShow(booking({ status: 'noShow' }), now),
     planSlotLost({ name: 'booking.slotLost', bookingId: 41, paymentId: 12 }, booking(), now),
     planTimeRequestAck(booking({ status: 'requested' }), now),
-    planPaymentLink({ id: 12, kind: 'paymentLink', status: 'created', amountPaise: 1 }, booking(), [], now),
+    planPaymentLink(
+      { id: 12, kind: 'paymentLink', status: 'created', amountPaise: 1 },
+      booking(),
+      [],
+      now,
+    ),
   ]
   const messages = plans.flatMap((plan) => plan.deliver)
 

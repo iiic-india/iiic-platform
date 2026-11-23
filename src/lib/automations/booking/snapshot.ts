@@ -45,9 +45,7 @@ export async function bookingSnapshot(
   const recipientId = idOf(booking.bookedBy) ?? idOf(booking.person)
   if (recipientId === null) return null
   const serviceId = idOf(booking.service)
-  const service = serviceId
-    ? await byId<{ register?: string }>(req, 'services', serviceId)
-    : null
+  const service = serviceId ? await byId<{ register?: string }>(req, 'services', serviceId) : null
   const recipient = await byId<{ preferredChannel?: string | null }>(req, 'people', recipientId)
   const practitionerId = idOf(booking.practitioner)
   const practitioner = practitionerId
