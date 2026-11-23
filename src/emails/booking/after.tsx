@@ -29,7 +29,7 @@ export const feedbackRequest: TemplateImplementation<FeedbackData> = {
         preheader={feedback.preheader()}
         eyebrow={feedback.eyebrow}
         heading={feedback.heading(data)}
-        counselling={false}
+        counselling={data.counselling}
       >
         <Paragraph>{feedback.lead(data)}</Paragraph>
         {data.feedbackUrl ? (
@@ -57,7 +57,7 @@ export const noShowNotice: TemplateImplementation<SessionData> = {
         preheader={noShow.preheader()}
         eyebrow={noShow.eyebrow}
         heading={noShow.heading(data)}
-        counselling={false}
+        counselling={data.counselling}
       >
         <Paragraph>{noShow.lead(data)}</Paragraph>
         <Details

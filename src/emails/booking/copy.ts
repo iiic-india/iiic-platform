@@ -72,7 +72,7 @@ export const LABELS = {
 
 /** The place as the person needs it: the office's address, or the meeting's kind. */
 export function placeOf(data: Pick<SessionData, 'format'>): string {
-  return data.format === 'online' ? 'Online, by Google Meet' : `IIIC, ${CONTACT.address}`
+  return data.format === 'online' ? 'Online' : `IIIC, ${CONTACT.address}`
 }
 
 /** When: Friday, 6 November 2026 · 3 PM – 3:45 PM (the kit's "{{date}} · {{slot}}"). */
@@ -106,7 +106,7 @@ export const COPY = {
       `${d.firstName}, your ${d.serviceName} is on ${shortDay(d.startsAt)}.`,
     lead: (d: SessionData) =>
       d.format === 'online'
-        ? `It starts at ${timeSpan(d.startsAt)}, online. The link is below.`
+        ? `It starts at ${timeSpan(d.startsAt)}, online.${d.meetingUrl ? ' The link is below.' : ''}`
         : `It starts at ${timeSpan(d.startsAt)}, at the IIIC office.`,
   },
   'booking-rescheduled': {
@@ -149,7 +149,7 @@ export const COPY = {
     item: (c: ConsentReceiptData['consents'][number]) =>
       `${c.purpose}: notice version ${c.version}, agreed on ${longDay(c.grantedAt)}.`,
     withdraw:
-      'You can withdraw any of these at any time, from the link at the foot of this email. Withdrawing does not cancel your booking.',
+      'You can withdraw any of these at any time: reply to this email, or use the link at the foot of it.',
   },
   'booking-receipt': {
     subject: (d: ReceiptData) => `Your ${DOCUMENT[d.document].toLowerCase()} ${d.number}`,
@@ -168,7 +168,7 @@ export const COPY = {
     eyebrow: 'Refund made',
     heading: (d: RefundData) => `${d.firstName}, your refund has been made.`,
     lead: (d: RefundData) =>
-      `We have refunded ${rupees(d.amountPaise)} to the account you paid from. Your bank decides how soon it shows.`,
+      `We have refunded ${rupees(d.amountPaise)} to the account you paid from.`,
     questions: `Questions about the refund? Reply to this email or call ${CONTACT.phone}.`,
   },
   'slot-lost': {
@@ -179,8 +179,8 @@ export const COPY = {
       `${d.firstName}, that time was taken before your payment arrived.`,
     lead: (d: SlotLostData) =>
       d.startsAt
-        ? `Someone else confirmed ${at(d.startsAt)} a moment before your payment reached us, so your ${d.serviceName} could not be booked.`
-        : `Someone else confirmed the time you chose a moment before your payment reached us, so your ${d.serviceName} could not be booked.`,
+        ? `Someone else confirmed ${at(d.startsAt)} before your payment reached us, so your ${d.serviceName} could not be booked.`
+        : `Someone else confirmed the time you chose before your payment reached us, so your ${d.serviceName} could not be booked.`,
     refund: (d: SlotLostData) =>
       `We are refunding your payment of ${rupees(d.amountPaise)} in full, to the account you paid from.`,
     button: 'Choose another time',
@@ -232,7 +232,7 @@ export const COPY = {
     eyebrow: (d: StaffChangeData) => STAFF_CHANGE[d.change],
     heading: (d: StaffChangeData) => `${STAFF_CHANGE[d.change]}: ${d.reference}`,
     lead: (d: StaffChangeData) => {
-      if (d.change === 'rescheduled') return `${d.serviceName}, moved by the client or the office.`
+      if (d.change === 'rescheduled') return `${d.serviceName} has a new time.`
       if (d.change === 'slotLost') {
         return `${d.serviceName}: the payment arrived after the time was taken. The platform has asked for a full refund.`
       }
@@ -271,7 +271,7 @@ export const WHATSAPP_SCOPE_LINE = [
 ].join(' ')
 
 /**
- * The closing variable of the four templates that carry the scope: the booking's reference, and
+ * The closing variable of the five templates about a booking's time (confirmed, the reminders, rescheduled, cancelled): the booking's reference, and
  * for a counselling booking the scope and crisis line after it. One approved text serves both,
  * and a variable is never empty (Meta refuses an empty one).
  */
@@ -325,7 +325,7 @@ export const WHATSAPP_PARAMS = {
     d.serviceName,
     longDay(d.startsAt),
     timeSpan(d.startsAt),
-    d.reference,
+    whatsappClosing(d),
   ],
   // 'feedback-request' gets its WhatsApp variables with M5's feedback link (docs/19 §10).
   'time-request-received': (d: TimeRequestData) => [d.firstName, d.serviceName, d.reference],

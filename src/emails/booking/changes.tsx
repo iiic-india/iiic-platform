@@ -1,6 +1,5 @@
 import { Paragraph } from '../components/Frame'
 import { Button, Details, type Detail } from '../components/parts'
-import { templateSpec } from '../registry'
 import type { TemplateImplementation } from '../types'
 
 import { COPY, LABELS, placeOf, WHATSAPP_PARAMS, whenOf } from './copy'
@@ -30,7 +29,7 @@ export const bookingRescheduled: TemplateImplementation<RescheduledData> = {
         preheader={moved.preheader(data)}
         eyebrow={moved.eyebrow}
         heading={moved.heading(data)}
-        counselling={templateSpec('booking-rescheduled').counsellingScope && data.counselling}
+        counselling={data.counselling}
       >
         <Paragraph>{moved.lead(data)}</Paragraph>
         <Details rows={sessionRows(data)} />
@@ -61,7 +60,7 @@ export const bookingCancelled: TemplateImplementation<CancelledData> = {
         preheader={cancelled.preheader(data)}
         eyebrow={cancelled.eyebrow}
         heading={cancelled.heading(data)}
-        counselling={templateSpec('booking-cancelled').counsellingScope && data.counselling}
+        counselling={data.counselling}
       >
         <Paragraph>{cancelled.lead(data)}</Paragraph>
         <Details

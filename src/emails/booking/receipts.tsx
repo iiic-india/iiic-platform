@@ -65,7 +65,7 @@ export const consentReceipt: TemplateImplementation<ConsentReceiptData> = {
         preheader={consent.preheader(data)}
         eyebrow={consent.eyebrow}
         heading={consent.heading(data)}
-        counselling={false}
+        counselling
       >
         <Paragraph>{consent.lead(data)}</Paragraph>
         {data.consents.map((item) => (

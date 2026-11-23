@@ -183,18 +183,26 @@ describe('the booking templates', () => {
     }
   })
 
-  it('carry the scope and the crisis numbers on a counselling booking, and only there', async () => {
+  it('carry the scope and the crisis numbers on every counselling booking’s email, and only there', async () => {
+    const carriesScope = (text: string, key: string) => {
+      expect(text, key).toContain(SCOPE_STATEMENT[1])
+      for (const line of CRISIS_LINES) expect(text, key).toContain(line.numbers[0])
+    }
     for (const key of BOOKING_KEYS) {
       const data = FAKE[key] as Record<string, unknown>
-      if (!implementation(key)?.email || !('counselling' in data)) continue
-      const counselling = await render(key, { ...data, counselling: true })
-      const other = await render(key, { ...data, counselling: false })
-      if (templateSpec(key).counsellingScope) {
-        expect(counselling.text, key).toContain(SCOPE_STATEMENT[1])
-        for (const line of CRISIS_LINES) expect(counselling.text, key).toContain(line.numbers[0])
-      } else {
-        expect(counselling.text, key).not.toContain(SCOPE_STATEMENT[1])
+      if (!implementation(key)?.email) continue
+      if (!('counselling' in data)) {
+        // The consent receipt is sent for counselling bookings only (B3a); the money messages
+        // and the staff notice are about a payment or a reference, not a session.
+        const rendered = await render(key, data)
+        if (key === 'consent-receipt') carriesScope(rendered.text, key)
+        else expect(rendered.text, key).not.toContain(SCOPE_STATEMENT[1])
+        continue
       }
+      // The registry's `counsellingScope` templates must carry it; every other one about a
+      // counselling session does too (VOICE.md, counselling emails).
+      carriesScope((await render(key, { ...data, counselling: true })).text, key)
+      const other = await render(key, { ...data, counselling: false })
       expect(other.text, key).not.toContain(SCOPE_STATEMENT[1])
     }
   })
@@ -248,6 +256,8 @@ describe('the booking templates', () => {
     })
     expect(office.html).not.toContain('meet.example.invalid')
     expect(office.text).toContain('Ahmedabad')
+    const noLinkYet = await render('reminder-24h', session({ meetingUrl: null }))
+    expect(noLinkYet.text).not.toContain('The link is below')
   })
 
   it('stand a placeholder with its input id where the feedback link is missing', async () => {

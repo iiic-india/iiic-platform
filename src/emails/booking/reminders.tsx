@@ -1,6 +1,5 @@
 import { Paragraph } from '../components/Frame'
 import { Details } from '../components/parts'
-import { templateSpec } from '../registry'
 import type { TemplateImplementation } from '../types'
 
 import { COPY, WHATSAPP_PARAMS } from './copy'
@@ -28,7 +27,7 @@ export const reminder24h: TemplateImplementation<SessionData> = {
         preheader={words.preheader(data)}
         eyebrow={words.eyebrow}
         heading={words.heading(data)}
-        counselling={templateSpec('reminder-24h').counsellingScope && data.counselling}
+        counselling={data.counselling}
       >
         <Paragraph>{words.lead(data)}</Paragraph>
         <Details rows={sessionRows(data)} />

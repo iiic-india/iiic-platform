@@ -46,7 +46,10 @@ export function BookingFrame({
   preheader: string
   eyebrow: string
   heading: string
-  /** The registry marks the templates that must carry the scope (counsellingScope). */
+  /**
+   * A counselling booking: its email carries the scope and the crisis numbers (VOICE.md, counselling
+   * emails; the registry marks the templates that must, `counsellingScope`).
+   */
   counselling: boolean
   children: ReactNode
 }) {

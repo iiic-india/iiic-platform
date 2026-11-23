@@ -6,7 +6,7 @@ Status: `[proposal]`. The words are drafts to `src/brand/VOICE.md`, for IIIC's a
 
 For every template: category **Utility**, language **English (en)**, no header, no buttons (a link is a variable in the body), no emoji. A variable never holds a line break and is never empty. The phone number is the one on both 2026 brochures (D-31); if it changes, the templates that carry it are submitted again.
 
-The closing variable of the four templates that carry the scope (`whatsappClosing`) is the booking's reference, and for a counselling booking the reference followed by the scope and crisis line: "Sessions at IIIC are non-clinical conversations based on the Subjective Self framework. They are not diagnosis or treatment, and they are not an emergency service. If you need help now: Tele-MANAS 14416 or 1-800-891-4416 (free, 24×7); Emergencies 112; Children 1098." So one approved text serves every booking, and a counselling one always carries the line.
+The closing variable of the five templates about a booking's time (`whatsappClosing`: confirmed, the two reminders, rescheduled and cancelled) is the booking's reference, and for a counselling booking the reference followed by the scope and crisis line: "Sessions at IIIC are non-clinical conversations based on the Subjective Self framework. They are not diagnosis or treatment, and they are not an emergency service. If you need help now: Tele-MANAS 14416 or 1-800-891-4416 (free, 24×7); Emergencies 112; Children 1098." So one approved text serves every booking, and a counselling one always carries the line.
 
 ## booking-confirmed · `iiic_booking_confirmed`
 
@@ -54,11 +54,12 @@ To change it again, reply to this message or call +91 96240 46464.
 
 ## booking-cancelled · `iiic_booking_cancelled`
 
-B7. It says nothing of why; a refund is told by email. Variables: first name, service, day, time, the booking's reference.
+B7. It says nothing of why; a refund is told by email. Variables: first name, service, day, time, the closing.
 
 ```text
-{{1}}, your {{2}} on {{3}} at {{4}} is cancelled. Booking ID {{5}}.
+{{1}}, your {{2}} on {{3}} at {{4}} is cancelled.
 To book another time, reply to this message or call +91 96240 46464.
+{{5}}
 ```
 
 ## feedback-request · `iiic_session_feedback`
