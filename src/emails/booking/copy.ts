@@ -163,6 +163,7 @@ export const COPY = {
     heading: (d: RefundData) => `${d.firstName}, your refund has been made.`,
     lead: (d: RefundData) =>
       `We have refunded ${rupees(d.amountPaise)} to the account you paid from. Your bank decides how soon it shows.`,
+    questions: `Questions about the refund? Reply to this email or call ${CONTACT.phone}.`,
   },
   'slot-lost': {
     subject: () => 'Your payment is being refunded: the time was taken',
