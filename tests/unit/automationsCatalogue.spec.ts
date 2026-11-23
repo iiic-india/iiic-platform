@@ -5,10 +5,12 @@ import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 
 import { priceAllowed, TEMPLATES, templateSpec, WHATSAPP_TEMPLATE_KEYS } from '@/emails/registry'
+import { jobs } from '@/jobs'
 import { AUTOMATION_IDS, AUTOMATIONS, CORE_TASKS } from '@/lib/automations/catalogue'
 import { AUTOMATION_EVENT_NAMES, automationEventKey } from '@/lib/automations/events'
 import { AUTOMATION_LISTENERS, withAutomationListeners } from '@/lib/automations/listeners'
 import { SCHEDULES, withSchedule } from '@/lib/automations/schedules'
+import { LISTENERS } from '@/lib/booking/emit'
 
 vi.mock('server-only', () => ({}))
 
@@ -101,9 +103,7 @@ describe('the automation catalogue', () => {
     ).toEqual([{ cron: '0 * * * * *', queue: 'default' }])
   })
 
-  it('starts every task M3 and M6 registered, by its schedule or an event, and fails it visibly', async () => {
-    const { jobs } = await import('@/jobs')
-    const { LISTENERS } = await import('@/lib/booking/emit')
+  it('starts every task M3 and M6 registered, by its schedule or an event, and fails it visibly', () => {
     const tasks = jobs.tasks ?? []
     const slugs = tasks.map((task) => String(task.slug))
     for (const slug of Object.keys(SCHEDULES)) expect(slugs, slug).toContain(slug)
