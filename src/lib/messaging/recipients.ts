@@ -25,7 +25,8 @@ export type RecipientFacts = {
   lastInboundAt: Date | null
 }
 
-const NOBODY: RecipientFacts = {
+/** No one to write to: the recipient is gone, or was never there. */
+export const NO_RECIPIENT: RecipientFacts = {
   address: null,
   personId: null,
   subscriberId: null,
@@ -59,7 +60,7 @@ async function person(req: PayloadRequest, id: number, channel: Channel): Promis
     },
     req,
   })
-  if (!found) return NOBODY
+  if (!found) return NO_RECIPIENT
   const record = found as Record<string, unknown>
   return {
     address: channel === 'email' ? text(record.email) : text(record.mobile),
@@ -87,11 +88,11 @@ export async function recipientFacts(
       select: { email: true, person: true, status: true },
       req,
     })
-    if (!found) return NOBODY
+    if (!found) return NO_RECIPIENT
     const personId = idOf((found as Record<string, unknown>).person)
     const linked = personId === null ? null : await person(req, Number(personId), channel)
     return {
-      ...(linked ?? NOBODY),
+      ...(linked ?? NO_RECIPIENT),
       // A subscriber is written to at the address they signed up with, on email only.
       address: channel === 'email' ? text(found.email) : null,
       personId: personId === null ? null : Number(personId),
@@ -109,8 +110,8 @@ export async function recipientFacts(
     select: { email: true, active: true },
     req,
   })
-  if (!staff || (staff as Record<string, unknown>).active === false) return NOBODY
-  return { ...NOBODY, address: channel === 'email' ? text(staff.email) : null }
+  if (!staff || (staff as Record<string, unknown>).active === false) return NO_RECIPIENT
+  return { ...NO_RECIPIENT, address: channel === 'email' ? text(staff.email) : null }
 }
 
 /** Whether the person wrote on WhatsApp within the last 24 hours (docs/13 §7). */
