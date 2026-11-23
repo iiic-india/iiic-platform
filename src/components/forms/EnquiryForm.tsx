@@ -5,7 +5,6 @@ import { useActionState } from 'react'
 
 import { TEAM_SIZE_BANDS } from '@/lib/pipeline/values'
 import {
-  type EnquiryFormAction,
   type EnquiryFormState,
   type FormSetup,
   HIDDEN,
@@ -184,17 +183,16 @@ export function EnquiryForm({
   kind,
   setup,
   notice: shown,
-  action,
 }: {
   kind: EnquiryFormKind
+  /** What the page read for the form, with its server action. */
   setup: FormSetup
   /** The consent text in force as the page was drawn; the form is drawn only while there is one. */
   notice: NoticeShown
-  action: EnquiryFormAction
 }) {
   const copy = FORM_COPY[kind]
   const [state, formAction, pending] = useActionState(
-    action,
+    setup.action,
     INITIAL_FORM_STATE,
     `${setup.page}#${copy.anchor}`,
   )

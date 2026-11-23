@@ -4,6 +4,8 @@ import experience from '@/components/experience/experience.module.css'
 import { FlipLines } from '@/components/experience/FlipLines'
 import { InsightNav } from '@/components/experience/InsightNav'
 import { RevealChapters } from '@/components/experience/RevealChapters'
+import { EnquiryForm } from '@/components/forms/EnquiryForm'
+import formStyles from '@/components/forms/forms.module.css'
 import { ArticleMeta } from '@/components/journal/ArticleMeta'
 import { FirstVoice, PlainVoices, WithVoice } from '@/components/proof/Voices'
 import { Todo } from '@/components/Todo'
@@ -15,6 +17,8 @@ import {
 import { LEGAL_REVIEW_AWAITS } from '@/lib/content/legalReview'
 import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
 import type { FaqItem, PageBlock, PageContent } from '@/lib/content/types'
+import { FORM_BLOCK_KINDS, NO_FORMS, type PageForms } from '@/lib/enquiryForms/state'
+import { type EnquiryFormKind, FORM_COPY, NO_NOTICE_PLACEHOLDER } from '@/lib/enquiryForms/strings'
 import { type Devices, devicesAt } from '@/lib/experience/narrative'
 import { articlePath, JOURNAL_PATH } from '@/lib/journal/addresses'
 import type { PostSummary } from '@/lib/journal/posts'
@@ -628,6 +632,34 @@ function LegalInformationSection({ legal }: { legal: LegalInformation }) {
 }
 
 /**
+ * A public form's section (docs/17 §6): the Team Map request or the partnership enquiry, at its
+ * fixed id, so that /organisations/team-map#team-map-request and /institute#partnership-enquiry
+ * open it. While no consent text for `enquiryReplies` is in force (or the page was drawn without
+ * its forms' setup) the section shows its placeholder instead of the form, which cannot be sent
+ * then. The forms' and acknowledgements' words are candidates until IIIC approves them (I-41).
+ */
+function EnquirySection({ kind, forms }: { kind: EnquiryFormKind; forms: PageForms }) {
+  const copy = FORM_COPY[kind]
+  const setup = forms[kind]
+  const headingId = `${copy.anchor}-heading`
+  return (
+    <section className="iiic-section" id={copy.anchor} aria-labelledby={headingId}>
+      <CandidateMark status="candidate" />
+      <SectionHead heading={copy.heading} headingId={headingId} />
+      <div className={formStyles.section}>
+        {setup?.notice ? (
+          <EnquiryForm kind={kind} setup={setup} notice={setup.notice} />
+        ) : (
+          <p>
+            <Todo {...NO_NOTICE_PLACEHOLDER} />
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}
+
+/**
  * The questions published for the page (Content → FAQs), in their order, as the kit's accordion:
  * each opens without JavaScript, and its answer is a paragraph a line. With no question
  * published the section is not drawn, and the page's structured data names none (D-62).
@@ -692,6 +724,7 @@ function Section({
   legal,
   faqs,
   firstVoice,
+  forms,
 }: {
   block: Exclude<PageBlock, BandBlock>
   draft: boolean
@@ -701,6 +734,7 @@ function Section({
   legal: LegalInformation
   faqs: readonly FaqItem[]
   firstVoice: PageVoices['first']
+  forms: PageForms
 }) {
   switch (block.blockType) {
     case 'hero':
@@ -736,6 +770,9 @@ function Section({
       return <LegalInformationSection legal={legal} />
     case 'faq':
       return <Faq block={block} faqs={faqs} />
+    case 'teamMapRequest':
+    case 'partnershipEnquiry':
+      return <EnquirySection kind={FORM_BLOCK_KINDS[block.blockType]} forms={forms} />
   }
 }
 
@@ -762,6 +799,7 @@ export function RenderBlocks({
   faqs = [],
   voices = NO_VOICES,
   journal = [],
+  forms = NO_FORMS,
 }: {
   layout: PageContent['layout']
   legalReview?: PageContent['legalReview']
@@ -771,6 +809,8 @@ export function RenderBlocks({
   voices?: PageVoices
   /** The newest published articles, which the home page shows before its band (docs/11 §4). */
   journal?: readonly PostSummary[]
+  /** What the page's forms need, which PageAt reads for a page that has one (src/lib/enquiryForms). */
+  forms?: PageForms
 }) {
   const devices = devicesAt(slug)
   const counselling = isCounsellingPage(slug)
@@ -797,6 +837,7 @@ export function RenderBlocks({
               legal={legal}
               faqs={faqs}
               firstVoice={slug === 'home' ? voices.first : null}
+              forms={forms}
             />
           )
           const section = counselling ? (
