@@ -4,7 +4,7 @@ import { IST } from '@/lib/time/ist'
 
 import { incidentClocks } from './breachClocks'
 import { deadlinesFor } from './deadlines'
-import { refusedMove, type RequestState } from './requestMoves'
+import { MOVE_MESSAGES, refusedMove, type RequestState } from './requestMoves'
 import type { RequestType } from './requests'
 
 /**
@@ -29,12 +29,16 @@ const sameInstant = (a: unknown, b: unknown) => instant(a)?.getTime() === instan
 const group = (value: unknown): Data =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Data) : {}
 
+const refuse = (path: string, message: string): never => {
+  throw new ValidationError({ collection: 'data-requests', errors: [{ path, message }] })
+}
+
 /**
  * A privacy request: recorded as received, with its two clocks set from its kind and the time it
- * reached IIIC (src/lib/privacy/deadlines.ts); the clocks are worked out again only when one of
- * those two is corrected, and the audit log names that change. Every change of state is checked
- * against the moves (src/lib/privacy/requestMoves.ts), and the times of acknowledgement,
- * verification and closing are filled in when the move is made without one.
+ * reached IIIC (src/lib/privacy/deadlines.ts). The clocks never move (docs/18 §5), so the kind and
+ * the time received are fixed once recorded. Every change of state is checked against the moves
+ * (src/lib/privacy/requestMoves.ts), and the times of acknowledgement and closing are filled in
+ * when the move is made without one.
  */
 export const requestRules: CollectionBeforeChangeHook = ({
   context,
@@ -48,22 +52,22 @@ export const requestRules: CollectionBeforeChangeHook = ({
   const merged = { ...before, ...draft }
   const now = new Date().toISOString()
 
-  if (operation === 'create') draft.status = 'received'
-
-  const received = instant(merged.receivedAt)
-  const clocksMove =
-    operation === 'create' ||
-    draft.type !== before.type ||
-    !sameInstant(merged.receivedAt, before.receivedAt)
-  if (received && typeof merged.type === 'string' && clocksMove) {
-    const { acknowledgeBy, resolveBy } = deadlinesFor(merged.type as RequestType, received)
-    draft.acknowledgeBy = acknowledgeBy.toISOString()
-    draft.acknowledgeBy_tz = IST
-    draft.resolveBy = resolveBy.toISOString()
-    draft.resolveBy_tz = IST
+  if (operation === 'create') {
+    draft.status = 'received'
+    const received = instant(draft.receivedAt)
+    if (received && typeof draft.type === 'string') {
+      const { acknowledgeBy, resolveBy } = deadlinesFor(draft.type as RequestType, received)
+      draft.acknowledgeBy = acknowledgeBy.toISOString()
+      draft.acknowledgeBy_tz = IST
+      draft.resolveBy = resolveBy.toISOString()
+      draft.resolveBy_tz = IST
+    }
+    return draft
   }
 
   if (operation !== 'update') return draft
+  if (merged.type !== before.type) refuse('type', MOVE_MESSAGES.fixed)
+  if (!sameInstant(merged.receivedAt, before.receivedAt)) refuse('receivedAt', MOVE_MESSAGES.fixed)
   const to = merged.status
   if (to === before.status) return draft
   const resolution = { ...group(before.resolution), ...group(draft.resolution) }
@@ -74,12 +78,7 @@ export const requestRules: CollectionBeforeChangeHook = ({
   const refusal = refusedMove(before as RequestState, { ...merged, resolution } as RequestState, {
     byErasure: context?.[ERASURE_CONTEXT] === true,
   })
-  if (refusal) {
-    throw new ValidationError({
-      collection: 'data-requests',
-      errors: [{ path: 'status', message: refusal }],
-    })
-  }
+  if (refusal) refuse('status', refusal)
   if (to === 'closed' && !resolution.closedAt) {
     draft.resolution = { ...resolution, closedAt: now, closedAt_tz: IST }
   }

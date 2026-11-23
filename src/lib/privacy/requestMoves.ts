@@ -44,6 +44,8 @@ const LABEL: Record<RequestStatus, string> = {
 /** The words the form shows when a move is refused (src/brand/VOICE.md: errors say what to do). */
 export const MOVE_MESSAGES = {
   closedStays: 'A closed request stays closed. Record a new request if the person asks again.',
+  fixed:
+    'The kind and the time received set the deadlines, so they cannot change once recorded. If one is wrong, close this request as refused with the note “Recorded in error” and record it again.',
   outcome: 'Choose how the request ended before you close it.',
   reason: 'Write what was done, or why not, before you close it with this outcome.',
   erasureByOwner:

@@ -162,19 +162,23 @@ describe('the clocks set on save', () => {
     expect(typeof saved.acknowledgedAt).toBe('string')
   })
 
-  it('works the clocks out again when the time received is corrected', () => {
+  it('never moves the clocks: the kind and the time received are fixed once recorded', () => {
     const originalDoc = {
       type: 'access',
       status: 'received',
       receivedAt: '2027-01-10T04:30:00.000Z',
       resolveBy: '2027-02-09T04:30:00.000Z',
     }
-    const saved = run(requestRules, {
-      operation: 'update',
-      originalDoc,
-      data: { ...originalDoc, receivedAt: '2027-01-11T04:30:00.000Z' },
-    })
-    expect(saved.resolveBy).toBe('2027-02-10T04:30:00.000Z')
+    const later = { ...originalDoc, receivedAt: '2027-01-11T04:30:00.000Z' }
+    expect(() => run(requestRules, { operation: 'update', originalDoc, data: later })).toThrow()
+    const kind = { ...originalDoc, type: 'consumerComplaint' }
+    expect(() => run(requestRules, { operation: 'update', originalDoc, data: kind })).toThrow()
+    // The same instant written another way, or a save that leaves both out, is no change.
+    const same = { status: 'received', receivedAt: '2027-01-10T10:00:00.000+05:30' }
+    expect(() => run(requestRules, { operation: 'update', originalDoc, data: same })).not.toThrow()
+    expect(() =>
+      run(requestRules, { operation: 'update', originalDoc, data: { summary: 'Fake.' } }),
+    ).not.toThrow()
   })
 
   it('refuses a move the table does not allow, with the reason on the status field', () => {
