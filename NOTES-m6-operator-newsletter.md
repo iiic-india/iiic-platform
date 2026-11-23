@@ -22,12 +22,12 @@ PAYLOAD_SECRET (HKDF, purpose "newsletter-confirm"); only its SHA-256 is stored;
 ## Files (order of work)
 
 1. NOTES (this) · 2. `src/lib/newsletter/` tokens, signup, confirm, unsubscribe + unit tests
-3. core port, `src/emails/other/` templates · 4. `src/jobs/newsletter.ts` N1–N4, hooks in Subscribers/NewsletterIssues
-5. API routes `/api/newsletter`, `/api/newsletter/unsubscribe`; pages confirm/unsubscribe, `/w/[token]`
-6. V1, V2 (`src/lib/automations/reviews/`), hooks emitting `review.consentRequested`, `consent.withdrawn`
-7. O1, O2+O10, O5, O6, O9 (`src/lib/automations/operations/`), `src/jobs/operations.ts`
-8. P1–P7, O4, O7, O8, C5 registered on their events, waiting on M4/M5
-9. generate:types, checks, remove NOTES.
+2. core port, `src/emails/other/` templates · 4. `src/jobs/newsletter.ts` N1–N4, hooks in Subscribers/NewsletterIssues
+3. API routes `/api/newsletter`, `/api/newsletter/unsubscribe`; pages confirm/unsubscribe, `/w/[token]`
+4. V1, V2 (`src/lib/automations/reviews/`), hooks emitting `review.consentRequested`, `consent.withdrawn`
+5. O1, O2+O10, O5, O6, O9 (`src/lib/automations/operations/`), `src/jobs/operations.ts`
+6. P1–P7, O4, O7, O8, C5 registered on their events, waiting on M4/M5
+7. generate:types, checks, remove NOTES.
 
 ## Progress
 

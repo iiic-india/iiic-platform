@@ -103,9 +103,7 @@ function RequestBody({ data }: { data: RequestData }) {
         <br />
         {data.programmeLine}
       </Quote>
-      {data.connection ? (
-        <Para>The card will also say: “{data.connection}”.</Para>
-      ) : null}
+      {data.connection ? <Para>The card will also say: “{data.connection}”.</Para> : null}
       <Para>If your designation or city has changed, tell us what to show.</Para>
       {data.excerpt ? (
         <Para>
@@ -132,13 +130,15 @@ function RequestBody({ data }: { data: RequestData }) {
         </Para>
       )}
       <Para>
-        You can ask us to remove it at any time by replying to this email or writing to {data.hello}.
+        You can ask us to remove it at any time by replying to this email or writing to {data.hello}
+        .
       </Para>
     </>
   )
 }
 
-const requestSubject = (data: RequestData) => `May we publish what you wrote about ${data.programme}?`
+const requestSubject = (data: RequestData) =>
+  `May we publish what you wrote about ${data.programme}?`
 
 export const reviewConsentRequest: TemplateImplementation<RequestData> = {
   load: (req, { subject }) => loadReviewRequest(req, subject.id),

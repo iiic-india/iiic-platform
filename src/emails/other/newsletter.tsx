@@ -125,7 +125,9 @@ export const newsletterWelcome: TemplateImplementation<WelcomeData> = {
           Thank you for confirming. Once a month, IIIC sends one email from the Journal: a lead
           story, two short items and one link.
         </Para>
-        <Para>Every issue has an unsubscribe link at the foot. One click takes you off the list.</Para>
+        <Para>
+          Every issue has an unsubscribe link at the foot. One click takes you off the list.
+        </Para>
         <Button href={siteLink(context.siteUrl, data.journalPath)}>Read the Journal</Button>
       </Frame>
     ),
@@ -213,7 +215,9 @@ export const newsletterIssue: TemplateImplementation<IssueData> = {
         <SectionHeading>{data.lead.title}</SectionHeading>
         <Para>{data.lead.excerpt}</Para>
         <Para>
-          <PlainLink href={siteLink(context.siteUrl, data.lead.path)}>Read it in the Journal</PlainLink>
+          <PlainLink href={siteLink(context.siteUrl, data.lead.path)}>
+            Read it in the Journal
+          </PlainLink>
         </Para>
         {data.items.map((item) => (
           <div key={item.path}>

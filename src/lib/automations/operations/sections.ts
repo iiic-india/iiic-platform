@@ -31,8 +31,7 @@ export type DigestFacts = {
   reviewsAwaitingConsent: number
 }
 
-const plural = (count: number, one: string, many: string) =>
-  `${count} ${count === 1 ? one : many}`
+const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
 
 /** Time requests flagged on Today after a day without an answer (docs/06 B12). */
 export const TIME_REQUEST_FLAG_HOURS = 24
@@ -86,11 +85,16 @@ export function digestSections(facts: DigestFacts): Section[] {
   }
   if (facts.failedJobs) delivery.push(`${plural(facts.failedJobs, 'job', 'jobs')} failed`)
   if (facts.suppressed) {
-    delivery.push(`${plural(facts.suppressed, 'address', 'addresses')} stopped (bounce, spam or stop)`)
+    delivery.push(
+      `${plural(facts.suppressed, 'address', 'addresses')} stopped (bounce, spam or stop)`,
+    )
   }
 
   return [
-    { title: 'Today’s sessions', lines: sessionLines.length ? sessionLines : ['No sessions today.'] },
+    {
+      title: 'Today’s sessions',
+      lines: sessionLines.length ? sessionLines : ['No sessions today.'],
+    },
     { title: 'Time requests', lines: requestLines },
     { title: 'Payments', lines: money.length ? money : ['Nothing waiting.'] },
     {

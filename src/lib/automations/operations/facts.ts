@@ -76,7 +76,9 @@ export async function readDigestFacts(req: PayloadRequest, now: Date): Promise<D
       reference: booking.reference,
       waitingHours: Math.floor((now.getTime() - Date.parse(booking.createdAt)) / HOUR),
     })),
-    refundsAwaitingApproval: await count(req, 'refunds', { status: { equals: 'awaitingApproval' } }),
+    refundsAwaitingApproval: await count(req, 'refunds', {
+      status: { equals: 'awaitingApproval' },
+    }),
     reconciliationFlagged: await count(req, 'gateway-events', {
       and: [
         { source: { equals: 'reconciliation' } },

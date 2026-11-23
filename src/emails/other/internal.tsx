@@ -78,7 +78,10 @@ export const dailyDigest: TemplateImplementation<StaffEmailData> = {
   load: async (req, { recipient }): Promise<Result<StaffEmailData, LoadError>> => {
     if (!(await activeStaff(req, recipient, DIGEST_ROLES))) return err({ code: 'stale' })
     const now = new Date()
-    return ok({ day: formatIstDate(now), sections: digestSections(await readDigestFacts(req, now)) })
+    return ok({
+      day: formatIstDate(now),
+      sections: digestSections(await readDigestFacts(req, now)),
+    })
   },
   email: {
     key: 'daily-digest',
@@ -95,7 +98,10 @@ export const weeklyReport: TemplateImplementation<StaffEmailData> = {
   load: async (req, { recipient }) => {
     if (!(await activeStaff(req, recipient, REPORT_ROLES))) return err({ code: 'stale' })
     const now = new Date()
-    return ok({ day: formatIstDate(now), sections: reportSections(await readReportFacts(req, now)) })
+    return ok({
+      day: formatIstDate(now),
+      sections: reportSections(await readReportFacts(req, now)),
+    })
   },
   email: {
     key: 'weekly-report',
