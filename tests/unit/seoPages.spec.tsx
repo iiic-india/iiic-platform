@@ -212,6 +212,14 @@ const JOURNAL = [
   '(education)/journal/topic/[topic]/page/[number]/page.tsx',
 ]
 
+/** The newsletter's pages and the withdraw page (M6): tests/unit/newsletterPages.spec.tsx. */
+const NEWSLETTER = [
+  'newsletter/page.tsx',
+  'newsletter/confirm/[token]/page.tsx',
+  'newsletter/unsubscribe/[token]/page.tsx',
+  'w/[token]/page.tsx',
+]
+
 beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_SITE_URL', ORIGIN)
   request.path = ''
@@ -231,7 +239,7 @@ describe('the pages under src/app/(platform)', () => {
       .map((file) => file.replaceAll('\\', '/'))
       .filter((file) => /(?:^|\/)(?:page|not-found)\.tsx$/.test(file))
     expect(found.sort()).toEqual(
-      [...OWN, ...PROOF, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND]
+      [...OWN, ...PROOF, ...JOURNAL, ...NEWSLETTER, ...DOORS, ...SECTIONS, ...NOT_FOUND]
         .map((entry) => (typeof entry === 'string' ? entry : entry.file))
         .sort(),
     )
