@@ -125,4 +125,15 @@ describe('parseEnv', () => {
       }).sentryDsn,
     ).toBe(dsn)
   })
+
+  it('takes Turnstile’s two keys together or neither (docs/17 §6)', () => {
+    const keys = { TURNSTILE_SITE_KEY: 'fake-site-key', TURNSTILE_SECRET_KEY: 'fake-secret' }
+    expect(parseEnv({ ...valid, ...keys }).TURNSTILE_SITE_KEY).toBe('fake-site-key')
+    expect(parseEnv({ ...valid, TURNSTILE_SITE_KEY: '', TURNSTILE_SECRET_KEY: '' })).toMatchObject({
+      TURNSTILE_SITE_KEY: undefined,
+      TURNSTILE_SECRET_KEY: undefined,
+    })
+    expect(() => parseEnv({ ...valid, TURNSTILE_SITE_KEY: 'fake-site-key' })).toThrow(/Turnstile/)
+    expect(() => parseEnv({ ...valid, TURNSTILE_SECRET_KEY: 'fake-secret' })).toThrow(/Turnstile/)
+  })
 })
