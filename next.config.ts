@@ -44,6 +44,18 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(dirname),
   },
+  // The PDF renderer reads the kit's print templates, stylesheet, fonts and logos from disk
+  // (src/lib/pdf/templates.ts), and the serverless Chromium unpacks its browser from its package;
+  // the functions that run jobs ship them (D-09; docs/07, PDFs).
+  outputFileTracingIncludes: {
+    '/api/**': [
+      './src/brand/templates/print/*.html',
+      './src/brand/css/*.css',
+      './src/brand/fonts/*.woff2',
+      './src/brand/logo/*.svg',
+      './node_modules/@sparticuz/chromium/bin/**',
+    ],
+  },
 }
 
 const withPayloadConfig = withPayload(nextConfig, { devBundleServerPackages: false })

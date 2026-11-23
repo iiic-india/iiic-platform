@@ -3,6 +3,7 @@ import 'server-only'
 import type { PayloadRequest } from 'payload'
 
 import { CALENDAR_SUBSCRIPTIONS } from '@/lib/calendar/queue'
+import { DOCUMENT_SUBSCRIPTIONS } from '@/lib/invoicing/queue'
 
 import type { DomainEvent, DomainEventName, EmitDomainEvent } from './events'
 
@@ -11,7 +12,7 @@ import type { DomainEvent, DomainEventName, EmitDomainEvent } from './events'
  * per task subscribed to it, inside the request's transaction (Payload's jobs live in Postgres, so
  * a change that is rolled back queues nothing), with the key `<event>:<id>` in the job's input; a
  * job still waiting with the same key is not queued twice, so a retried step queues nothing new.
- * M3 subscribes only the calendar write; the messages' subscriptions are M6's.
+ * M3 subscribes the calendar write and the documents; the messages' subscriptions are M6's.
  *
  * The job's input is the event itself: ids only, never a name, a contact detail, a note or an
  * amount (CLAUDE.md #3), so nothing personal reaches a job's input or its logs.
@@ -20,11 +21,16 @@ import type { DomainEvent, DomainEventName, EmitDomainEvent } from './events'
 /** The tasks each event starts, by their automation IDs (docs/06). M6 adds its own. */
 export type Listeners = { readonly [Name in DomainEventName]?: readonly string[] }
 
-/** M3's own listener: the calendar write (B2, B7), after the booking's change commits. */
+/**
+ * M3's own listeners: the calendar write (B2, B7), after the booking's change commits, and the
+ * documents in Zoho Books (B3's invoice on a capture, the credit note on a processed refund).
+ */
 export const LISTENERS: Listeners = {
   'booking.confirmed': [CALENDAR_SUBSCRIPTIONS['booking.confirmed']],
   'booking.rescheduled': [CALENDAR_SUBSCRIPTIONS['booking.rescheduled']],
   'booking.cancelled': [CALENDAR_SUBSCRIPTIONS['booking.cancelled']],
+  'payment.captured': [DOCUMENT_SUBSCRIPTIONS['payment.captured']],
+  'refund.processed': [DOCUMENT_SUBSCRIPTIONS['refund.processed']],
 }
 
 /** The id an event is about, for its idempotency key. */

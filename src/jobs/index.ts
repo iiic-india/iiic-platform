@@ -4,6 +4,7 @@ import { ownerWithCode } from '@/access/policy'
 
 import { bookingTasks } from './booking'
 import { calendarTasks } from './calendar'
+import { documentTasks } from './documents'
 import { paymentTasks } from './payments'
 import { purgeMissingPagesTask } from './purgeMissingPages'
 
@@ -15,6 +16,12 @@ import { purgeMissingPagesTask } from './purgeMissingPages'
  */
 export const jobs: JobsConfig = {
   // M3's builders each add tasks to a file of their own (docs/16 §12).
-  tasks: [purgeMissingPagesTask, ...bookingTasks, ...paymentTasks, ...calendarTasks],
+  tasks: [
+    purgeMissingPagesTask,
+    ...bookingTasks,
+    ...paymentTasks,
+    ...calendarTasks,
+    ...documentTasks,
+  ],
   access: { run: ownerWithCode, queue: ownerWithCode, cancel: ownerWithCode },
 }
