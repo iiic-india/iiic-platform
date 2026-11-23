@@ -1,4 +1,5 @@
 import type { TemplateKey } from '@/emails/registry'
+import { CRISIS_HEADING, CRISIS_LINES, SCOPE_STATEMENT } from '@/lib/counselling/scope'
 import { CONTACT } from '@/lib/site/contact'
 
 import type {
@@ -257,6 +258,33 @@ export const STAFF_CHANGE: Record<StaffChangeData['change'], string> = {
 }
 
 /**
+ * The scope and the crisis numbers on one line, for a counselling booking's WhatsApp confirmation
+ * and reminders (docs/06, counselling guardrail), in the words of src/lib/counselling/scope.ts.
+ * A WhatsApp variable may not hold a line break, so it is one line.
+ */
+export const WHATSAPP_SCOPE_LINE = [
+  SCOPE_STATEMENT[0],
+  SCOPE_STATEMENT[1],
+  `${CRISIS_HEADING}: ${CRISIS_LINES.map(
+    (line) => `${line.label} ${line.numbers.join(' or ')}${line.note ? ` (${line.note})` : ''}`,
+  ).join('; ')}.`,
+].join(' ')
+
+/**
+ * The closing variable of the four templates that carry the scope: the booking's reference, and
+ * for a counselling booking the scope and crisis line after it. One approved text serves both,
+ * and a variable is never empty (Meta refuses an empty one).
+ */
+export function whatsappClosing(d: Pick<SessionData, 'reference' | 'counselling'>): string {
+  const reference = `Booking ID ${d.reference}.`
+  return d.counselling ? `${reference} ${WHATSAPP_SCOPE_LINE}` : reference
+}
+
+/** Where to go: an online booking's link, else the place. */
+const whereOf = (d: SessionData) =>
+  d.format === 'online' && d.meetingUrl ? d.meetingUrl : placeOf(d)
+
+/**
  * The WhatsApp templates' variables, in the order the approved texts number them
  * (docs/content/whatsapp-templates.md, submitted to Meta). Each names the person's own booking.
  */
@@ -266,28 +294,31 @@ export const WHATSAPP_PARAMS = {
     d.serviceName,
     longDay(d.startsAt),
     timeSpan(d.startsAt),
-    placeOf(d),
-    d.reference,
+    whereOf(d),
+    whatsappClosing(d),
   ],
   'reminder-24h': (d: SessionData) => [
     d.firstName,
     d.serviceName,
     longDay(d.startsAt),
     timeSpan(d.startsAt),
-    d.format === 'online' && d.meetingUrl ? d.meetingUrl : placeOf(d),
+    whereOf(d),
+    whatsappClosing(d),
   ],
   'reminder-short': (d: SessionData) => [
     d.firstName,
     d.serviceName,
     timeSpan(d.startsAt),
-    d.format === 'online' && d.meetingUrl ? d.meetingUrl : placeOf(d),
+    whereOf(d),
+    whatsappClosing(d),
   ],
   'booking-rescheduled': (d: RescheduledData) => [
     d.firstName,
     d.serviceName,
     longDay(d.startsAt),
     timeSpan(d.startsAt),
-    d.reference,
+    whereOf(d),
+    whatsappClosing(d),
   ],
   'booking-cancelled': (d: CancelledData) => [
     d.firstName,
