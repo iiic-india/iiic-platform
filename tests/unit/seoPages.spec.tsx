@@ -47,6 +47,7 @@ import { getPage } from '@/lib/content/pages'
 import type { PageContent } from '@/lib/content/types'
 import { logMissingPage } from '@/lib/redirects/log'
 import { MAP_PAGE } from '@/lib/seo/appPages'
+import { isNoindexPath } from '@/lib/seo/paths'
 import { pageGraph } from '@/lib/seo/schema'
 import { HOME_TITLE, SITE_DESCRIPTION, SITE_NAME } from '@/lib/seo/site'
 
@@ -212,6 +213,21 @@ const JOURNAL = [
   '(education)/journal/topic/[topic]/page/[number]/page.tsx',
 ]
 
+/**
+ * The booking flow's pages (docs/02; M3), which are never indexed: each lies under a private
+ * route, which sends noindex and stays out of the sitemap (src/lib/security/headers.ts), and
+ * sets robots noindex in its own metadata. Their flow is tested end to end
+ * (tests/e2e/booking.e2e.spec.ts).
+ */
+const BOOKING = [
+  { file: '(counselling)/book/session/page.tsx', path: '/book/session' },
+  { file: '(consultancy)/book/call/page.tsx', path: '/book/call' },
+  { file: '(education)/book/info/page.tsx', path: '/book/info' },
+  { file: '(booking)/book/pay/[ref]/page.tsx', path: '/book/pay/IIIC-S-00000' },
+  { file: '(booking)/book/confirmed/[ref]/page.tsx', path: '/book/confirmed/IIIC-S-00000' },
+  { file: '(booking)/b/[token]/page.tsx', path: `/b/${'a'.repeat(43)}` },
+]
+
 beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_SITE_URL', ORIGIN)
   request.path = ''
@@ -231,10 +247,14 @@ describe('the pages under src/app/(platform)', () => {
       .map((file) => file.replaceAll('\\', '/'))
       .filter((file) => /(?:^|\/)(?:page|not-found)\.tsx$/.test(file))
     expect(found.sort()).toEqual(
-      [...OWN, ...PROOF, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND]
+      [...OWN, ...PROOF, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND, ...BOOKING]
         .map((entry) => (typeof entry === 'string' ? entry : entry.file))
         .sort(),
     )
+  })
+
+  it.each(BOOKING)('keeps the booking page $path out of search', ({ path }) => {
+    expect(isNoindexPath(path), path).toBe(true)
   })
 })
 
