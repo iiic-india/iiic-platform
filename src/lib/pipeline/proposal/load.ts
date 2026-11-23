@@ -86,6 +86,34 @@ export async function recipientOf(
   return person && email ? { personId: person.id, email } : null
 }
 
+type Groups = Pick<ProposalVersion, 'sending' | 'tracking' | 'pdf'>
+
+/**
+ * Changes some of a version's sending, tracking or printed-file fields, keeping the rest of each
+ * group as it was (the server's own write: the collection is written by no role).
+ */
+export async function patchVersion(
+  req: PayloadRequest,
+  id: number,
+  patch: { [K in keyof Groups]?: Partial<NonNullable<Groups[K]>> } & { linkTokenHash?: string },
+): Promise<void> {
+  const current = await findVersion(req, id)
+  if (!current) return
+  const { linkTokenHash, ...groups } = patch
+  const data: Record<string, unknown> = linkTokenHash ? { linkTokenHash } : {}
+  for (const key of Object.keys(groups) as (keyof Groups)[]) {
+    data[key] = { ...(current[key] ?? {}), ...groups[key] }
+  }
+  await req.payload.update({
+    collection: 'proposal-versions',
+    id,
+    data,
+    depth: 0,
+    overrideAccess: true,
+    req,
+  })
+}
+
 /** The latest version's number for a proposal, or 0 before the first. */
 export async function lastVersionNumber(req: PayloadRequest, proposalId: number): Promise<number> {
   const { docs } = await req.payload.find({

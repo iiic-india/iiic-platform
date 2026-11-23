@@ -17,7 +17,8 @@ import type { ProposalPrinter } from './print'
  */
 export type ProposalDeps = {
   printer: ProposalPrinter
-  mailer: ProposalMailer
+  /** The mailer for a request (the real one sends through the request's Payload instance). */
+  mailerFor: (req: PayloadRequest) => ProposalMailer
   emit: EmitPipelineEvent
   logActivity: LogActivity
   createTask: CreateTask
