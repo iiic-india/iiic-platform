@@ -20,6 +20,38 @@ export const PROPOSAL_EMAIL = {
     ].join('\n'),
 } as const
 
+/**
+ * The office's words for a proposal's printed parts: `incomplete` names them, and the draft
+ * preview shows an empty one as a placeholder with its name.
+ */
+export const PART_LABELS = {
+  clientName: 'the client’s name (the lead’s organisation)',
+  title: 'the title',
+  subtitle: 'the subtitle',
+  preparedByName: 'who prepared it',
+  preparedByTitle: 'their title',
+  situation: 'the situation',
+  approach: 'the approach',
+  phases: 'the phases, each with its name, what happens, duration and outcome',
+  measures: 'how progress is measured',
+  fees: 'the fees, each with an amount',
+  nextStep: 'the next step',
+} as const
+
+/** A part the draft preview shows as not typed yet, in the kit's placeholder form. */
+export const notTypedYet = (part: keyof typeof PART_LABELS) =>
+  `[[TODO: ${PART_LABELS[part]}, not typed yet]]`
+
+/** The lead's timeline entries the proposal actions write (the platform's, not the office's). */
+export const PROPOSAL_ACTIVITY = {
+  versionMade: (reference: string) => `Proposal ${reference} made.`,
+  sent: (reference: string) => `Proposal ${reference} sent.`,
+  accepted: (reference: string) => `Proposal ${reference}: the client accepted.`,
+  declined: (reference: string) => `Proposal ${reference}: the client declined.`,
+  expired: (reference: string) => `Proposal ${reference} passed its last valid day.`,
+  followUpTask: 'Follow up the proposal',
+} as const
+
 export const PROPOSAL_PAGE = {
   metaTitle: 'Your proposal from IIIC',
   kicker: 'Proposal',
