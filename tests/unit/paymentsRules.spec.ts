@@ -8,7 +8,6 @@ import {
   refundRules,
 } from '@/lib/payments/hooks'
 import { findingFor, istDayWindow } from '@/lib/payments/reconcile'
-import { stuckRefundOutcome } from '@/lib/payments/refunds'
 import {
   REFUND_KEY,
   refundableState,
@@ -16,6 +15,7 @@ import {
   staffRefundKey,
   statusOnRequest,
 } from '@/lib/payments/refundRules'
+import { stuckRefundOutcome } from '@/lib/payments/refunds'
 import type { GatewayEvent, Payment, PriceHistory, Refund } from '@/payload-types'
 
 vi.mock('server-only', () => ({}))

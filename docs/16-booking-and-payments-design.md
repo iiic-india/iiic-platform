@@ -162,7 +162,7 @@ Nothing waits on these: IIIC's values live in the admin, empty or behind the fla
 | I-31: family-session length | Not an option until set |
 | I-33: the office address for "at the office" | The legal address in Settings, a placeholder while empty |
 | Under-18 bookings (`08` §3, guardian verification) | The guardian books in their own name (whoFor `family`, ageBand `under18`); no child's details stored until guardian verification exists |
-| Previews and production share one database (operations memory) | M3's payments must not run on a preview until the preview has its own database (`07`); the fake gateway is refused on every Vercel deployment |
+| Previews and production share one database (operations memory) | M3's payments must not run on a preview until the preview has its own database (`07`): `gatewayFor` answers `not-configured` on every Vercel deployment but production, as the calendar and Zoho do; the fake gateway is refused on every Vercel deployment |
 
 ## 11. Fakes, environment and the test plan
 
