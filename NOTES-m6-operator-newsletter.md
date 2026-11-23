@@ -31,4 +31,6 @@ PAYLOAD_SECRET (HKDF, purpose "newsletter-confirm"); only its SHA-256 is stored;
 
 ## Progress
 
-- [ ] 2 · [ ] 3 · [ ] 4 · [ ] 5 · [ ] 6 · [ ] 7 · [ ] 8 · [ ] 9
+- [x] 2 · [x] 3 · [x] 4 jobs (hooks in Subscribers/NewsletterIssues: todo) · [ ] 5 · [x] 6 · [x] 7 · [x] 8 · [ ] 9
+- Run 3 (18:40 IST): reviews hooks wired into Testimonials/Consents afterChange (hooks only, no fields).
+  Next: NewsletterIssues hook (issueScheduled), API routes, pages, unit tests for V1/V2/O-sections, int tests.

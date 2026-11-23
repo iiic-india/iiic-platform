@@ -3,7 +3,7 @@ import 'server-only'
 import type { PayloadRequest } from 'payload'
 import { z } from 'zod'
 
-import { cancelPlanned, plan } from '@/lib/automations/operations/core'
+import { plan } from '@/lib/automations/operations/core'
 import { done, RecordId, type Outcome } from '@/lib/automations/operations/outcome'
 import { after, OFFSETS } from '@/lib/automations/timing'
 import { idOf } from '@/lib/privacy/consentLedger'
@@ -55,17 +55,6 @@ export async function runV1(req: PayloadRequest, input: unknown, now: Date): Pro
   })
   const planned = Number(request.value.created) + Number(reminder.ok && reminder.value.created)
   return reminder.ok ? done(planned) : done(planned, reminder.error.code)
-}
-
-/**
- * When a review leaves "Consent requested" (a reply was recorded), its queued reminder is
- * cancelled at once; the reminder's own `load` is the belt to these braces.
- */
-export async function cancelV1Reminder(req: PayloadRequest, testimonialId: number): Promise<number> {
-  return cancelPlanned(req, {
-    subject: { collection: 'testimonials', id: testimonialId },
-    automations: ['V1'],
-  })
 }
 
 const ConsentEvent = z.object({ consentId: RecordId })
