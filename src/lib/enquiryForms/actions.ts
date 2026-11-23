@@ -12,7 +12,7 @@ import config from '@payload-config'
 
 import { recentEnquiries } from './limits'
 import { registerOf } from './register'
-import { enquiryNotice } from './setup'
+import { enquiryNotice } from './notice'
 import type { EnquiryFormState } from './state'
 import type { EnquiryFormKind } from './strings'
 import { submitEnquiry } from './submit'
