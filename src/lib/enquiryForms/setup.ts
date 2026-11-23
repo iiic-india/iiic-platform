@@ -2,8 +2,8 @@ import 'server-only'
 
 import { getPayload } from 'payload'
 
-import { env } from '@/lib/env'
 import type { PageContent } from '@/lib/content/types'
+import { env } from '@/lib/env'
 import config from '@payload-config'
 
 import { sendPartnershipEnquiry, sendTeamMapRequest } from './actions'

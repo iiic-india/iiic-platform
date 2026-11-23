@@ -1,7 +1,6 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { buildCsp } from '@/lib/security/csp'
 import {
   fakeTurnstile,
   isTokenShaped,
@@ -10,6 +9,7 @@ import {
   turnstileKeys,
   turnstileSources,
 } from '@/lib/enquiryForms/turnstile'
+import { buildCsp } from '@/lib/security/csp'
 
 // Cloudflare Turnstile on the public forms, only where both its keys are set (docs/17 §6).
 // Obviously fake keys and tokens; no request leaves for Cloudflare.

@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useActionState } from 'react'
 
-import { TEAM_SIZE_BANDS } from '@/lib/pipeline/values'
 import {
   type EnquiryFormState,
   type FormSetup,
@@ -23,6 +22,7 @@ import {
   REFUSALS,
   TRAP_LABEL,
 } from '@/lib/enquiryForms/strings'
+import { TEAM_SIZE_BANDS } from '@/lib/pipeline/values'
 
 import { Acknowledgement } from './Acknowledgement'
 import { ErrorSummary, type SummaryItem } from './ErrorSummary'
