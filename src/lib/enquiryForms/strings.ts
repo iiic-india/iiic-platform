@@ -169,7 +169,7 @@ export const FORM_COPY = {
       heading: 'Request received',
       lines: [
         'Your Team Map request has reached IIIC.',
-        'The office will call or write to you within two working days.',
+        'The office will reply within two working days.',
       ],
       /** The proposal call can be booked meanwhile (docs/17 §6). */
       callLine: 'You can book the proposal call now, before the office replies.',
@@ -185,7 +185,7 @@ export const FORM_COPY = {
       heading: 'Enquiry received',
       lines: [
         'Your partnership enquiry has reached IIIC.',
-        'The office will call or write to you within two working days.',
+        'The office will reply within two working days.',
       ],
       callLine: null,
     },
