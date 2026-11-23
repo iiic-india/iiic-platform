@@ -77,7 +77,7 @@ async function paidBooking(): Promise<{ booking: Booking; payment: Payment }> {
   const booking = await payload.create({
     collection: 'bookings',
     data: {
-      reference: `${REF}${Date.now()}-${made}`,
+      reference: `${REF}${(Date.now() % 1_000_000).toString(36)}-${made}`,
       type: 'session',
       status: 'confirmed',
       paymentStatus: 'paid',

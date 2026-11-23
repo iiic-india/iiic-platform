@@ -70,7 +70,7 @@ async function book(of: Person, with_: Practitioner, slot: number) {
   return payload.create({
     collection: 'bookings',
     data: {
-      reference: `${REF}${Date.now()}-${slot}`,
+      reference: `${REF}${(Date.now() % 1_000_000).toString(36)}-${slot}`,
       type: 'session',
       status: 'confirmed',
       paymentStatus: 'notRequired',
