@@ -62,6 +62,21 @@ export type SignupInput = z.infer<typeof SignupInput>
 /** The one-click unsubscribe body RFC 8058 requires. */
 export const ONE_CLICK_BODY = 'List-Unsubscribe=One-Click'
 
+/** Whether a POST's fields are RFC 8058's one-click body (and not a page's form). */
+export function isOneClick(fields: Record<string, unknown> | null | undefined): boolean {
+  return fields?.['List-Unsubscribe'] === 'One-Click'
+}
+
+/**
+ * A signed link's token as the core makes it (src/lib/messaging/operations.ts `SignLink`: a JWS
+ * in compact form), checked for shape before it is verified.
+ */
+export const SignedLinkToken = z
+  .string()
+  .min(16)
+  .max(2048)
+  .regex(/^[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]*){0,4}$/)
+
 /** The site paths the newsletter's links point to (the core builds its footer links with them). */
 export const NEWSLETTER_PATHS = {
   signup: '/api/newsletter',
