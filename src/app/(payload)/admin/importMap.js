@@ -17,14 +17,18 @@ import { HeadingFeatureClient as HeadingFeatureClient_e70f5e05f09f93e00b997edb1e
 import { ParagraphFeatureClient as ParagraphFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { CreateRedirect as CreateRedirect_40a388ea1dcd1cd3648583964e701d74 } from '../../../components/admin/CreateRedirect'
 import { ResolvedCell as ResolvedCell_eb99c300bb86ada485225c83d9fcc34f } from '../../../components/admin/ResolvedCell'
+import { ProposalActions as ProposalActions_6ab3e218fa6e82b5847237499c6d5a91 } from '../../../components/admin/pipeline/ProposalActions'
+import { VersionActions as VersionActions_0db85738e858f6a81302838320dd4b14 } from '../../../components/admin/pipeline/VersionActions'
 import { LinkToDoc as LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { ReindexButton as ReindexButton_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { PlaceholdersNavLink as PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2 } from '../../../components/admin/PlaceholdersNavLink'
+import { PipelineNavLink as PipelineNavLink_2ec16a57a3300ce1e4252a19494cba11 } from '../../../components/admin/pipeline/PipelineNavLink'
 import { RecoveryCodes as RecoveryCodes_43c30919611f069a63a0aff35f9170f5 } from '../../../components/admin/RecoveryCodes'
 import { TOTPProvider as TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512 } from 'payload-totp/rsc'
 import { SetupTwoFactor as SetupTwoFactor_2abdb0aaa2f84dde7ee21588072499e4 } from '../../../components/admin/SetupTwoFactor'
 import { VerifyTwoFactor as VerifyTwoFactor_546c8ab8e10ca06b3c0d6d60bcd95510 } from '../../../components/admin/VerifyTwoFactor'
 import { PlaceholdersView as PlaceholdersView_829678b75b003a8c21687eeed8eac416 } from '../../../components/admin/PlaceholdersView'
+import { PipelineView as PipelineView_97b8252568236b2ca3957bb65e609e06 } from '../../../components/admin/pipeline/PipelineView'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 
@@ -49,14 +53,18 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#ParagraphFeatureClient": ParagraphFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "/components/admin/CreateRedirect#CreateRedirect": CreateRedirect_40a388ea1dcd1cd3648583964e701d74,
   "/components/admin/ResolvedCell#ResolvedCell": ResolvedCell_eb99c300bb86ada485225c83d9fcc34f,
+  "/components/admin/pipeline/ProposalActions#ProposalActions": ProposalActions_6ab3e218fa6e82b5847237499c6d5a91,
+  "/components/admin/pipeline/VersionActions#VersionActions": VersionActions_0db85738e858f6a81302838320dd4b14,
   "@payloadcms/plugin-search/client#LinkToDoc": LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634,
   "@payloadcms/plugin-search/client#ReindexButton": ReindexButton_aead06e4cbf6b2620c5c51c9ab283634,
   "/components/admin/PlaceholdersNavLink#PlaceholdersNavLink": PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2,
+  "/components/admin/pipeline/PipelineNavLink#PipelineNavLink": PipelineNavLink_2ec16a57a3300ce1e4252a19494cba11,
   "/components/admin/RecoveryCodes#RecoveryCodes": RecoveryCodes_43c30919611f069a63a0aff35f9170f5,
   "payload-totp/rsc#TOTPProvider": TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512,
   "/components/admin/SetupTwoFactor#SetupTwoFactor": SetupTwoFactor_2abdb0aaa2f84dde7ee21588072499e4,
   "/components/admin/VerifyTwoFactor#VerifyTwoFactor": VerifyTwoFactor_546c8ab8e10ca06b3c0d6d60bcd95510,
   "/components/admin/PlaceholdersView#PlaceholdersView": PlaceholdersView_829678b75b003a8c21687eeed8eac416,
+  "/components/admin/pipeline/PipelineView#PipelineView": PipelineView_97b8252568236b2ca3957bb65e609e06,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24
 }
