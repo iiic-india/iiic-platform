@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import { renderPageAsImage } from 'unpdf'
 
 import { siteOrigin } from '../../src/lib/seo/site'
+import type { Person } from '../../src/payload-types'
 import config from '../../src/payload.config'
 import { decodePage } from '../helpers/certificateQr'
 import { assertLocalDatabase } from '../helpers/localDatabase'
@@ -100,7 +101,9 @@ test.describe('An owner issues, the QR code verifies, a revoke shows at once', (
     await payload.delete({ collection: 'users', where: { email: { equals: owner.email } } })
     await payload.create({ collection: 'users', data: owner })
     await payload.delete({ collection: 'people', where: { fullName: { equals: PERSON } } })
-    personId = (await payload.create({ collection: 'people', data: { fullName: PERSON } })).id
+    personId = (
+      await payload.create({ collection: 'people', data: { fullName: PERSON } as Person })
+    ).id
     const settings = await payload.findGlobal({ slug: 'settings', depth: 0 })
     if (!settings.certificates?.signatoryName || !settings.certificates?.signatoryTitle) {
       restoreSignatory = {
