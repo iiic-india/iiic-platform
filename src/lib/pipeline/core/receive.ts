@@ -284,11 +284,12 @@ async function store(
 /**
  * ReceiveEnquiry: refused with `no-notice` while no consent text for replies to an enquiry is in
  * force, and with `notice-changed` when the form showed another version than the one in force;
- * otherwise stored whole, or not at all.
+ * otherwise stored whole, or not at all. The form carries the version's number as it showed it
+ * (src/lib/enquiryForms/notice.ts); the consent is recorded against that version's record.
  */
 export const receiveEnquiry: ReceiveEnquiry = async (req, input) => {
   const notice = await currentNotice(req.payload, PURPOSE, LANGUAGE, input.context.receivedAt)
   if (!notice) return err({ code: 'no-notice' })
-  if (notice.id !== input.fields.noticeVersion) return err({ code: 'notice-changed' })
+  if (notice.version !== input.fields.noticeVersion) return err({ code: 'notice-changed' })
   return inTransaction(req, () => store(req, input, notice.id), keepOk)
 }

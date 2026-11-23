@@ -70,7 +70,8 @@ function teamMap(label: string, digit: number, changes: Partial<TeamMapRequest> 
     mobile: mobile(digit),
     prompt: 'Fake words typed in the form (int.pipeline).',
     consent: 'yes',
-    noticeVersion: notice.id,
+    // The form carries the version's number as it showed it.
+    noticeVersion: notice.version,
     ...changes,
   }
   return fields
@@ -85,7 +86,7 @@ function partnership(label: string, digit: number): PartnershipEnquiry {
     phone: mobile(digit),
     nature: 'Fake words about a partnership (int.pipeline).',
     consent: 'yes',
-    noticeVersion: notice.id,
+    noticeVersion: notice.version,
   }
 }
 
@@ -440,7 +441,7 @@ describe('what stores nothing (docs/17 §4)', () => {
     notice = await enquiryNotice(new Date(Date.now() - 1000))
     const answer = await receiveEnquiry(await fresh(), {
       kind: 'teamMap',
-      fields: teamMap('stale', 5, { noticeVersion: shown.id }),
+      fields: teamMap('stale', 5, { noticeVersion: shown.version }),
       context: context(),
     })
     expect(answer).toEqual({ ok: false, error: { code: 'notice-changed' } })

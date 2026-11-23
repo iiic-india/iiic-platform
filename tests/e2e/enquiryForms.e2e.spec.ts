@@ -32,6 +32,9 @@ async function cms(): Promise<Payload> {
 const fakeEmail = (project: string, what: string) =>
   `e2e-${what}-${project}@example.invalid`.toLowerCase()
 
+/** The start of the addresses the received request is sent from, which make a person. */
+const RECEIVED_EMAIL_PREFIX = 'e2e-received-'
+
 async function enquiriesFrom(email: string): Promise<number> {
   const db = await cms()
   const { totalDocs } = await db.count({
@@ -87,10 +90,11 @@ test.describe('The Team Map request', () => {
   test.afterAll(async () => {
     const db = await cms()
     // What ReceiveEnquiry made for a received request: the person, the organisation, the lead
-    // with its activity and task, and the enquiry; children first.
+    // with its activity and task, and the enquiry; children first. Only this file's own: other
+    // files' fake people stay theirs to remove.
     const { docs: people } = await db.find({
       collection: 'people',
-      where: { email: { like: '@example.invalid' } },
+      where: { email: { like: RECEIVED_EMAIL_PREFIX } },
       depth: 0,
       pagination: false,
       overrideAccess: true,
