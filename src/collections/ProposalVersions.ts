@@ -57,6 +57,14 @@ export const ProposalVersions: CollectionConfig = {
   endpoints: proposalVersionEndpoints,
   fields: [
     {
+      // Preview, the PDF, send, withdraw the link, and how the link stands (not stored).
+      name: 'versionActions',
+      type: 'ui',
+      admin: {
+        components: { Field: '/components/admin/pipeline/VersionActions#VersionActions' },
+      },
+    },
+    {
       type: 'row',
       fields: [
         {

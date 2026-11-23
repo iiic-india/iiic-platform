@@ -79,6 +79,14 @@ export const Proposals: CollectionConfig = {
   endpoints: proposalEndpoints,
   fields: [
     {
+      // Status, preview, "Create version", the client's answer (not stored).
+      name: 'proposalActions',
+      type: 'ui',
+      admin: {
+        components: { Field: '/components/admin/pipeline/ProposalActions#ProposalActions' },
+      },
+    },
+    {
       type: 'row',
       fields: [
         {
