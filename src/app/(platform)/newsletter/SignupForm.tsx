@@ -1,5 +1,5 @@
-import { NEWSLETTER_PATHS } from '@/lib/newsletter/rules'
 import { SIGNUP_COPY } from '@/lib/newsletter/copy'
+import { NEWSLETTER_PATHS } from '@/lib/newsletter/rules'
 
 import { FocusOnArrival } from './FocusOnArrival'
 import styles from './newsletter.module.css'

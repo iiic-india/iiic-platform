@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { createLocalReq, getPayload } from 'payload'
 
-import styles from '@/app/(platform)/newsletter/newsletter.module.css'
 import { FocusOnArrival } from '@/app/(platform)/newsletter/FocusOnArrival'
+import styles from '@/app/(platform)/newsletter/newsletter.module.css'
 import { CandidateMark } from '@/components/blocks/PageBlocks'
 import { verifySignedLink } from '@/lib/automations/operations/core'
 import { NEWSLETTER_COPY_STATUS, WITHDRAW_COPY } from '@/lib/newsletter/copy'
