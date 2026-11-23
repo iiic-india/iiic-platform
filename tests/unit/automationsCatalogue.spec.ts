@@ -2,13 +2,15 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { priceAllowed, TEMPLATES, templateSpec, WHATSAPP_TEMPLATE_KEYS } from '@/emails/registry'
 import { AUTOMATION_IDS, AUTOMATIONS, CORE_TASKS } from '@/lib/automations/catalogue'
 import { AUTOMATION_EVENT_NAMES, automationEventKey } from '@/lib/automations/events'
 import { AUTOMATION_LISTENERS, withAutomationListeners } from '@/lib/automations/listeners'
 import { SCHEDULES, withSchedule } from '@/lib/automations/schedules'
+
+vi.mock('server-only', () => ({}))
 
 // The catalogue against docs/06 (docs/19 §5): every Release 1 automation is in it once, each
 // message-sending automation has a template, and the wiring is read from it.
@@ -97,6 +99,32 @@ describe('the automation catalogue', () => {
     expect(
       withSchedule({ slug: 'B4-expire-holds', handler: async () => ({ output: {} }) }).schedule,
     ).toEqual([{ cron: '0 * * * * *', queue: 'default' }])
+  })
+
+  it('starts every task M3 and M6 registered, by its schedule or an event, and fails it visibly', async () => {
+    const { jobs } = await import('@/jobs')
+    const { LISTENERS } = await import('@/lib/booking/emit')
+    const tasks = jobs.tasks ?? []
+    const slugs = tasks.map((task) => String(task.slug))
+    for (const slug of Object.keys(SCHEDULES)) expect(slugs, slug).toContain(slug)
+    const heard = new Set<string>(
+      [...Object.values(LISTENERS), ...Object.values(AUTOMATION_LISTENERS)].flatMap((listeners) => [
+        ...(listeners ?? []),
+      ]),
+    )
+    for (const task of tasks) {
+      const slug = String(task.slug)
+      const scheduled = Boolean(task.schedule?.length)
+      expect(scheduled || heard.has(slug), `${slug} has no schedule and no event`).toBe(true)
+      expect(scheduled, slug).toBe(slug in SCHEDULES)
+      // The shared failure path (O3) on every task, M3's included.
+      expect(task.onFail, slug).toBeTypeOf('function')
+    }
+    // The documents' jobs stay M3's listeners; B3's email hears the invoice the job issues.
+    expect(LISTENERS['payment.captured']).toContain('B3-issue-invoice')
+    expect(AUTOMATION_LISTENERS['invoice.issued']).toEqual(['B3-receipt'])
+    expect(AUTOMATION_LISTENERS['payment.linkSent']).toEqual(['B13-payment-link'])
+    expect(AUTOMATION_LISTENERS['refund.processed']).toEqual(['B7-change-notice'])
   })
 })
 

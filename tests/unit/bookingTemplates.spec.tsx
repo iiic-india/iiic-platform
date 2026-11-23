@@ -260,6 +260,22 @@ describe('the booking templates', () => {
     expect(noLinkYet.text).not.toContain('The link is below')
   })
 
+  it('give a confirmation or a move the manage link as its one button when the message issued it', async () => {
+    const manageUrl = `https://example.invalid/b/${'A'.repeat(43)}`
+    for (const key of ['booking-confirmed', 'booking-rescheduled'] as const) {
+      const fake = FAKE[key] as ConfirmedData | RescheduledData
+      const managed = await render(key, { ...fake, manageUrl })
+      expect(managed.html, key).toContain(`href="${manageUrl}"`)
+      expect(managed.text, key).toContain('Manage your booking')
+      expect(managed.text, key).not.toContain('Join the session')
+      // The session's own link stays in the details.
+      expect(managed.text, key).toContain('https://meet.example.invalid/fake-link')
+      const plain = await render(key, fake)
+      expect(plain.text, key).not.toContain('Manage your booking')
+      expect(plain.text, key).toContain('Join the session')
+    }
+  })
+
   it('stand a placeholder with its input id where the feedback link is missing', async () => {
     const rendered = await render('feedback-request', FAKE['feedback-request'])
     expect([...rendered.text.matchAll(PLACEHOLDER)].map((match) => match[2])).toEqual(['I-17'])
