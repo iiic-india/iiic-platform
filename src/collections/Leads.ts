@@ -4,6 +4,7 @@ import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { istDayField } from '@/fields/istDay'
 import { paiseField } from '@/fields/numbers'
+import { prepareLead, recordLeadChange } from '@/lib/pipeline/core/hooks'
 import { validateEndReason, validateStage } from '@/lib/pipeline/fields'
 import { LEAD_KINDS, LEAD_STAGES } from '@/lib/pipeline/stages'
 import { LEAD_SOURCES, UNTOUCHED_LEVELS } from '@/lib/pipeline/values'
@@ -56,6 +57,9 @@ export const Leads: CollectionConfig = {
   },
   defaultSort: '-createdAt',
   disableBulkEdit: true,
+  // The title, the kind fixed once made, moves held to STAGE_MOVES and stamped, the stage-change
+  // entry and the events (src/lib/pipeline/core/hooks.ts).
+  hooks: { beforeChange: [prepareLead], afterChange: [recordLeadChange] },
   fields: [
     {
       // "<organisation> · Consultancy": named by the platform, never by a person's name alone.

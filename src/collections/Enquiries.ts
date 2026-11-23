@@ -2,6 +2,8 @@ import type { CollectionConfig, Field } from 'payload'
 
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { closeSpamLead } from '@/lib/pipeline/core/hooks'
+import { ENQUIRY_CONFLICTS } from '@/lib/pipeline/core/strings'
 import {
   ENQUIRY_KINDS,
   ENQUIRY_OUTCOMES,
@@ -46,6 +48,8 @@ export const Enquiries: CollectionConfig = {
   },
   defaultSort: '-receivedAt',
   disableBulkEdit: true,
+  // Marked as spam, the lead it made ends (src/lib/pipeline/core/hooks.ts).
+  hooks: { afterChange: [closeSpamLead] },
   fields: [
     {
       type: 'row',
@@ -121,6 +125,14 @@ export const Enquiries: CollectionConfig = {
         kept({ name: 'lead', type: 'relationship', relationTo: 'leads', index: true }),
       ],
     },
+    kept({
+      // What matching found for the office to look at (docs/17 §4, step 1): the email and the
+      // mobile point at two people; the email's is linked.
+      name: 'conflict',
+      type: 'select',
+      label: 'Matching',
+      options: [...ENQUIRY_CONFLICTS],
+    }),
     kept({
       // The consents given on the form, recorded before this enquiry (CLAUDE.md #4).
       name: 'consents',

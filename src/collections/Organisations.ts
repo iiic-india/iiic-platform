@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { organisationKeys, retitleLeads } from '@/lib/pipeline/core/hooks'
 import { validateGstin, validatePostalCode, validateWebsite } from '@/lib/pipeline/fields'
 import { ORGANISATION_TYPES, TEAM_SIZE_BANDS } from '@/lib/pipeline/values'
 
@@ -36,6 +37,8 @@ export const Organisations: CollectionConfig = {
   },
   defaultSort: 'name',
   disableBulkEdit: true,
+  // The matching keys, and a renamed organisation's lead titles (src/lib/pipeline/core/hooks.ts).
+  hooks: { beforeChange: [organisationKeys], afterChange: [retitleLeads] },
   fields: [
     { name: 'name', type: 'text', required: true, maxLength: 200 },
     {

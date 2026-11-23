@@ -1,5 +1,6 @@
 import { POLICY } from '@/access/policy'
 import { err, ok } from '@/lib/result'
+import { IST } from '@/lib/time/ist'
 import type { LeadActivity } from '@/payload-types'
 
 import type { LogActivity } from '../leads'
@@ -47,6 +48,7 @@ export const logActivity: LogActivity = async (req, input) => {
         lead: lead.id,
         type: input.type as ActivityType,
         at: (input.at ?? new Date()).toISOString(),
+        at_tz: IST,
         body: input.body,
         by: input.by,
         enquiry: input.about?.enquiryId,

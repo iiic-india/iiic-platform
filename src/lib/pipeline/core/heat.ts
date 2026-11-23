@@ -97,16 +97,12 @@ export const staleWhere: StaleWhere = (now) => {
       },
     ],
   }
-  return {
-    and: [
-      {
-        or: (Object.keys(STALE_STAGES) as LeadKind[]).map((kind) => ({
-          and: [{ kind: { equals: kind } }, { stage: { in: [...STALE_STAGES[kind]] } }],
-        })),
-      },
-      quiet,
-    ],
-  }
+  const stages: Where[] = (Object.keys(STALE_STAGES) as LeadKind[]).map(
+    (kind): Where => ({
+      and: [{ kind: { equals: kind } }, { stage: { in: [...STALE_STAGES[kind]] } }],
+    }),
+  )
+  return { and: [{ or: stages }, quiet] }
 }
 
 /** The leads waiting on a first action at `now`: in New, untouched, made 24 hours ago or more. */

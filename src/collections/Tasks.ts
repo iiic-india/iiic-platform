@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { istDayField } from '@/fields/istDay'
+import { announceTask, holdTaskMoves } from '@/lib/pipeline/core/hooks'
 import { TASK_KINDS, TASK_ROLES, TASK_STATUSES } from '@/lib/pipeline/values'
 import { IST_FIELD } from '@/lib/time/ist'
 
@@ -37,6 +38,8 @@ export const Tasks: CollectionConfig = {
   },
   defaultSort: 'dueOn',
   disableBulkEdit: true,
+  // TASK_MOVES, doneAt and doneBy, and `task.created` (src/lib/pipeline/core/hooks.ts).
+  hooks: { beforeChange: [holdTaskMoves], afterChange: [announceTask] },
   fields: [
     { name: 'title', type: 'text', required: true, maxLength: 200 },
     {

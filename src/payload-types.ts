@@ -1648,6 +1648,7 @@ export interface Enquiry {
   person?: (number | null) | Person;
   organisation?: (number | null) | Organisation;
   lead?: (number | null) | Lead;
+  conflict?: 'emailAndMobileDiffer' | null;
   consents?: (number | Consent)[] | null;
   page?: string | null;
   turnstile?: ('passed' | 'off') | null;
@@ -3761,6 +3762,7 @@ export interface EnquiriesSelect<T extends boolean = true> {
   person?: T;
   organisation?: T;
   lead?: T;
+  conflict?: T;
   consents?: T;
   page?: T;
   turnstile?: T;

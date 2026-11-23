@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { prepareActivity, stampLeadFromActivity } from '@/lib/pipeline/core/hooks'
 import { LEAD_STAGES } from '@/lib/pipeline/stages'
 import { ACTIVITY_TYPES } from '@/lib/pipeline/values'
 import { IST_FIELD } from '@/lib/time/ist'
@@ -36,6 +37,9 @@ export const LeadActivities: CollectionConfig = {
   },
   defaultSort: '-at',
   disableBulkEdit: true,
+  // Staff types only, never changed, and the lead's last activity and first action
+  // (src/lib/pipeline/core/hooks.ts).
+  hooks: { beforeChange: [prepareActivity], afterChange: [stampLeadFromActivity] },
   fields: [
     {
       type: 'row',
