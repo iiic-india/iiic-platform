@@ -32,6 +32,19 @@ export const Suppressions: CollectionConfig = {
   defaultSort: '-at',
   disableBulkEdit: true,
   indexes: [{ fields: ['channel', 'address'], unique: true }],
+  hooks: {
+    // However an entry is made (a webhook, the office), O9 tells the office and N3 unsubscribes
+    // (docs/19 §4). The event carries the entry's id only. Loaded when it runs: the Payload CLI
+    // reads this file too, and the emitter is server-only.
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        if (operation !== 'create') return doc
+        const { emitAutomationEvent } = await import('@/lib/automations/emit')
+        await emitAutomationEvent(req, { name: 'message.suppressed', suppressionId: doc.id })
+        return doc
+      },
+    ],
+  },
   fields: [
     {
       type: 'row',
