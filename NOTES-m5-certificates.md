@@ -36,4 +36,4 @@ Working notes for a run that may be cut off. Removed in the last commit.
 
 ## Progress
 
-- [x] 1 · [x] 2 · [x] 3 · [ ] 4 · [ ] 5 · [ ] 6 · [ ] 7 · [ ] 8
+- [x] 1 · [x] 2 · [x] 3 · [x] 4 · [x] 5 · [x] 6 · [ ] 7 (unit done; int + e2e next) · [ ] 8
