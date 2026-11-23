@@ -138,9 +138,10 @@ export type ConfirmErasure = (
 /**
  * The access request's export: the person's own records as JSON and a readable summary, stored
  * in the private bucket for the owner to send (docs/05: "an access request produces a data
- * export"). Session notes join it only if D-11 says so.
+ * export"). Session notes join it only if D-11 says so. A deployment without the private bucket
+ * refuses it as `storage-missing`.
  */
 export type ExportPersonData = (
   req: PayloadRequest,
   requestId: number,
-) => Promise<Result<{ key: string }, RequestError>>
+) => Promise<Result<{ key: string }, RequestError | { code: 'storage-missing' }>>

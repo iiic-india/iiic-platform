@@ -6,7 +6,7 @@ vi.mock('server-only', () => ({}))
 
 const { EXPORT_SECTIONS, exportKeys, exportPersonDataWith, pageKeyOf, renderExportPage } =
   await import('@/lib/privacy/export')
-const { isSafeKey } = await import('@/lib/privacy/store')
+const { isSafeKey, privateStoreFor } = await import('@/lib/privacy/store')
 const { planOf, PLAN_LINES } = await import('@/lib/privacy/erasure')
 const { codeEnteredRecently } = await import('@/lib/privacy/stepUp')
 
@@ -62,6 +62,23 @@ describe('the private store’s keys', () => {
     ]) {
       expect(isSafeKey(key)).toBe(false)
     }
+  })
+
+  it('is the private bucket once R2 and the bucket are set, none on Vercel without, else the folder', async () => {
+    const bucket = {
+      R2_ACCOUNT_ID: 'example-account',
+      R2_ACCESS_KEY_ID: 'example-key-id',
+      R2_SECRET_ACCESS_KEY: 'example-secret',
+      R2_BUCKET_PRIVATE: 'iiic-private',
+    }
+    expect(privateStoreFor({ ...bucket, VERCEL_ENV: 'production' })).not.toBeNull()
+    for (const VERCEL_ENV of ['development', 'preview', 'production'] as const) {
+      expect(privateStoreFor({ VERCEL_ENV, R2_BUCKET_PRIVATE: 'iiic-private' })).toBeNull()
+    }
+    const folder = privateStoreFor({}, '/never-written')
+    expect(folder).not.toBeNull()
+    // A key outside the store's folder is refused before anything is read or written.
+    await expect(folder?.get('../etc/passwd.json') as Promise<unknown>).rejects.toThrow()
   })
 })
 

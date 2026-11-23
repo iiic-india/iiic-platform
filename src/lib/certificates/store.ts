@@ -1,10 +1,11 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { GetObjectCommand, NoSuchKey, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { GetObjectCommand, NoSuchKey, PutObjectCommand, type S3Client } from '@aws-sdk/client-s3'
 
 import type { ServerEnv } from '@/lib/env'
 import { err, ok, type Result } from '@/lib/result'
+import { privateBucketOf } from '@/lib/storage/privateBucket'
 
 import type { CertificateStore } from './contract'
 import { parseCertificateId } from './ids'
@@ -117,15 +118,8 @@ export function certificateStoreFor(
   env: StoreEnv,
   folder: string = LOCAL_FOLDER,
 ): Result<CertificateStore, { code: 'storage-missing' }> {
-  const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_PRIVATE } = env
-  if (R2_BUCKET_PRIVATE && R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY) {
-    const client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY },
-    })
-    return ok(bucketStore(client, R2_BUCKET_PRIVATE))
-  }
+  const bucket = privateBucketOf(env)
+  if (bucket) return ok(bucketStore(bucket.client, bucket.bucket))
   if (env.VERCEL_ENV === 'preview' || env.VERCEL_ENV === 'production') {
     return err({ code: 'storage-missing' })
   }

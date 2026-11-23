@@ -101,7 +101,7 @@ export const PRIVACY_COPY = {
     'not-now': 'The request is not at the step this needs. Check its status.',
     'not-verified': 'Record the identity check first.',
     'storage-missing':
-      'The private store is not set up on this deployment yet, so nothing can be kept. Ask an owner.',
+      'This deployment has no private bucket for exports (R2_BUCKET_PRIVATE), so nothing was kept.',
     'wrong-code': 'That code did not match. Check your authenticator app and try again.',
     locked: 'This account is locked after too many wrong codes. Try again later, or ask an owner.',
     failed: 'That did not work. Try again in a moment.',

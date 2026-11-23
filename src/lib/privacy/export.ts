@@ -8,7 +8,7 @@ import { recordAudit } from '@/lib/audit/record'
 import { err, ok, type Result } from '@/lib/result'
 import { formatIstDate, formatIstTime } from '@/lib/time/ist'
 
-import type { RequestError } from './requests'
+import type { ExportPersonData, RequestError } from './requests'
 import { codeEnteredRecently } from './stepUp'
 import { isSafeKey, privateStore, type PrivateStore } from './store'
 
@@ -228,7 +228,7 @@ export function exportPersonDataWith(
   }
 }
 
-export const exportPersonData = exportPersonDataWith(privateStore)
+export const exportPersonData: ExportPersonData = exportPersonDataWith(privateStore)
 
 export type ExportDownload = { body: Buffer; contentType: string; filename: string }
 
