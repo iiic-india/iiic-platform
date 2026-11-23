@@ -155,7 +155,10 @@ describe('a practitioner and their own clients (the owner, 22 November 2026)', (
     expect(read?.mobile).toBe('+918123456789')
     expect(read?.email).toBe(client.mine.email)
     for (const field of NOT_SHARED) {
-      expect((read as Record<string, unknown> | undefined)?.[field], field).toBeUndefined()
+      expect(
+        (read as unknown as Record<string, unknown> | undefined)?.[field],
+        field,
+      ).toBeUndefined()
     }
     const byId = await payload.findByID({
       collection: 'people',
@@ -165,7 +168,7 @@ describe('a practitioner and their own clients (the owner, 22 November 2026)', (
     })
     expect(byId.fullName).toBe(client.mine.fullName)
     for (const field of NOT_SHARED) {
-      expect((byId as Record<string, unknown>)[field], field).toBeUndefined()
+      expect((byId as unknown as Record<string, unknown>)[field], field).toBeUndefined()
     }
   })
 
