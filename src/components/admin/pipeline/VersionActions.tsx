@@ -41,7 +41,7 @@ export const VersionActions: UIFieldServerComponent = async ({ id, payload, req 
           collection: 'proposals',
           id: proposalId,
           depth: 0,
-          select: { status: true, sentVersion: true, reference: true },
+          select: { status: true, sentVersion: true, currentVersion: true, reference: true },
           disableErrors: true,
           overrideAccess: false,
           req,
@@ -53,8 +53,10 @@ export const VersionActions: UIFieldServerComponent = async ({ id, payload, req 
   const views = version.tracking?.viewCount ?? 0
   const feesMayPrint = mayPrintFees(await readFlags(payload))
   const status = proposal.status ?? 'draft'
-  // A proposal the client has answered takes no new send; a draft or a sent one does.
-  const sendable = status !== 'accepted' && status !== 'declined'
+  // Only the latest version goes out (src/lib/pipeline/proposal/send.ts), and a proposal the
+  // client has answered takes no new send.
+  const sendable =
+    idOf(proposal.currentVersion) === version.id && status !== 'accepted' && status !== 'declined'
 
   return (
     <section aria-labelledby="version-actions-heading" className={styles.panel}>
