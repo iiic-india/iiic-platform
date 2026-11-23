@@ -18,22 +18,29 @@ import { BusyBlocks } from './collections/BusyBlocks'
 import { CalendarConnections } from './collections/CalendarConnections'
 import { Consents } from './collections/Consents'
 import { ConsentVersions } from './collections/ConsentVersions'
+import { Enquiries } from './collections/Enquiries'
 import { Events } from './collections/Events'
 import { Faqs } from './collections/Faqs'
 import { GatewayEvents } from './collections/GatewayEvents'
 import { Invoices } from './collections/Invoices'
+import { LeadActivities } from './collections/LeadActivities'
+import { Leads } from './collections/Leads'
 import { Media } from './collections/Media'
 import { MissingPages } from './collections/MissingPages'
+import { Organisations } from './collections/Organisations'
 import { Pages } from './collections/Pages'
 import { Payments } from './collections/Payments'
 import { People } from './collections/People'
 import { Posts } from './collections/Posts'
 import { Practitioners } from './collections/Practitioners'
 import { PriceHistory } from './collections/PriceHistory'
+import { Proposals } from './collections/Proposals'
+import { ProposalVersions } from './collections/ProposalVersions'
 import { redirects } from './collections/Redirects'
 import { Refunds } from './collections/Refunds'
 import { Services } from './collections/Services'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
+import { Tasks } from './collections/Tasks'
 import { Testimonials } from './collections/Testimonials'
 import { Topics } from './collections/Topics'
 import { Users } from './collections/Users'
@@ -163,6 +170,14 @@ export default buildConfig({
     GatewayEvents,
     Refunds,
     Invoices,
+    // The pipeline (M4; docs/17-pipeline-design.md).
+    Organisations,
+    Leads,
+    LeadActivities,
+    Tasks,
+    Enquiries,
+    Proposals,
+    ProposalVersions,
   ],
   globals: [Settings],
   // Automations (src/jobs/index.ts): never run on their own here.

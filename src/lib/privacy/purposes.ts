@@ -11,6 +11,10 @@ export const CONSENT_PURPOSES = [
   { value: 'mapSharing', label: 'Sharing the Map with a counsellor' },
   { value: 'testimonialPublication', label: 'Publishing a testimonial' },
   { value: 'relatedProgrammes', label: 'Suggesting related programmes' },
+  // A Team Map request or a partnership enquiry (docs/03 F5, F12; docs/08 §3: a notice per
+  // flow): keeping the details sent and replying about that request, nothing more. Proposed in
+  // docs/17 §10; docs/04's list has no purpose for an enquiry.
+  { value: 'enquiryReplies', label: 'Replies to an enquiry' },
 ] as const
 
 export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number]['value']
