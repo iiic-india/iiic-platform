@@ -10,10 +10,11 @@ import type { EnquiryKind, EnquiryOutcome, LeadSource, UntouchedLevel } from './
  * listeners' jobs inside the change's own transaction, with an idempotency key, so a rolled-back
  * change queues nothing and a retry queues nothing new.
  *
- * M4 subscribes its own two tasks: `proposal.sent` queues `P5-send-proposal` (the email with the
- * tracked link) and, at the merge, M3's `booking.confirmed` queues `P2-lead-from-call`. Every
- * other subscription is M6's (P1 and P7's acknowledgements, P3 and P4 on Today and in the
- * digest, P6's drafted follow-up).
+ * M4 subscribes one task of its own, at the merge: M3's `booking.confirmed` queues
+ * `P2-lead-from-call`. The proposal email goes from the send itself, because the link's token
+ * exists only there (src/lib/pipeline/proposals.ts, SendVersion). Every other subscription is
+ * M6's (P1 and P7's acknowledgements, P3 and P4 on Today and in the digest, P6's drafted
+ * follow-up).
  */
 export type PipelineEvent =
   /** A public form's request stored, with its lead (P1, P7: the acknowledgement, M6). */
@@ -42,7 +43,7 @@ export type PipelineEvent =
   | { name: 'task.created'; taskId: number }
   /** A proposal frozen as a new version. */
   | { name: 'proposal.versionCreated'; proposalId: number; versionId: number }
-  /** A version sent with its tracked link (P5: the email; the follow-up task is made in the send). */
+  /** A version sent with its tracked link (P5; Today; P6 counts from it, M6). */
   | { name: 'proposal.sent'; proposalId: number; versionId: number }
   /** A sent version opened for the first time through its link. */
   | { name: 'proposal.viewed'; proposalId: number; versionId: number }

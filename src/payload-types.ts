@@ -1692,6 +1692,8 @@ export interface ProposalVersion {
     sentAt_tz?: 'Asia/Kolkata' | null;
     sentBy?: (number | null) | User;
     sentTo?: (number | null) | Person;
+    emailedAt?: string | null;
+    emailedAt_tz?: 'Asia/Kolkata' | null;
     supersededAt?: string | null;
     supersededAt_tz?: 'Asia/Kolkata' | null;
     linkRevokedAt?: string | null;
@@ -3847,6 +3849,8 @@ export interface ProposalVersionsSelect<T extends boolean = true> {
         sentAt_tz?: T;
         sentBy?: T;
         sentTo?: T;
+        emailedAt?: T;
+        emailedAt_tz?: T;
         supersededAt?: T;
         supersededAt_tz?: T;
         linkRevokedAt?: T;

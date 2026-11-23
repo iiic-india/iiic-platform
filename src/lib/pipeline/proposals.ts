@@ -81,18 +81,21 @@ export type PrintVersion = (
 ) => Promise<Result<{ pdf: Uint8Array; filename: string; sha256: string }, ProposalError>>
 
 /**
- * Sends a version to the lead's contact (docs/05 "Send a proposal"; P5), in one transaction:
- * prints it (refused with placeholders or hidden fees), records its SHA-256, issues the tracked
- * link (a token of 32 random bytes, kept as its SHA-256), marks any version sent before it as
- * replaced, sets the proposal `sent` with `sentVersion`, moves a consultancy lead to Proposal
- * sent if it is earlier, logs a `proposal` activity, makes the follow-up task due in three
- * working days (key `P5:version:<id>`) and emits `proposal.sent`, whose job sends the email after
- * the transaction commits. Owner or operator, with the code. The link's address is returned once.
+ * Sends a version to the lead's contact (docs/05 "Send a proposal"; P5; docs/17 §5). First, in
+ * one transaction: prints it (refused with placeholders or hidden fees), records its SHA-256,
+ * issues the tracked link (a token of 32 random bytes, kept only as its SHA-256), marks any
+ * version sent before it as replaced (its link closes), sets the proposal `sent` with
+ * `sentVersion`, moves a consultancy lead to Proposal sent if it is earlier, logs a `proposal`
+ * activity, makes the follow-up task due in three working days (key `P5:version:<id>`) and emits
+ * `proposal.sent`. Then, once that has committed, emails the link (ProposalMailer) and records
+ * `emailedAt`. The token exists only in this call, so the email is sent here, not by a job; when
+ * it fails the proposal stays sent, `mailed` is false, and the office copies the link shown once
+ * or sends again, which issues a new link and closes the old. Owner or operator, with the code.
  */
 export type SendVersion = (
   req: PayloadRequest,
   input: { versionId: number; by: number },
-) => Promise<Result<{ linkUrl: string }, ProposalError>>
+) => Promise<Result<{ linkUrl: string; mailed: boolean }, ProposalError>>
 
 /**
  * The tracked link (`/p/[token]`): the version's PDF to whoever holds the token, while the
@@ -115,9 +118,10 @@ export type RecordAnswer = (
 export type ExpireProposals = (req: PayloadRequest, now: Date) => Promise<number>
 
 /**
- * The proposal email (P5) through the platform's mail adapter: to one address, the reference in
- * the subject, the tracked link in the body, and no amount (D-21 holds for email too, whatever
- * MayPrintFees answers). M6 replaces its words with the React Email template; the port stays.
+ * The proposal email (P5) through the platform's mail adapter (Payload's `sendEmail`, Resend once
+ * configured): to one address, the reference in the subject, the tracked link in the body, and no
+ * amount (D-21 holds for email too, whatever MayPrintFees answers). M6 replaces its words with
+ * the React Email template and logs it in `message_log`; the port stays.
  */
 export type ProposalMailer = (message: {
   to: string

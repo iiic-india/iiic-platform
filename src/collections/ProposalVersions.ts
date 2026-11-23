@@ -138,7 +138,11 @@ export const ProposalVersions: CollectionConfig = {
         },
         {
           type: 'row',
-          fields: [instant('supersededAt', 'Replaced'), instant('linkRevokedAt', 'Link withdrawn')],
+          fields: [
+            instant('emailedAt', 'Emailed'),
+            instant('supersededAt', 'Replaced'),
+            instant('linkRevokedAt', 'Link withdrawn'),
+          ],
         },
       ],
     },
