@@ -3,7 +3,6 @@ import type { Payload } from 'payload'
 import { err, ok } from '@/lib/result'
 
 import type { ProposalMailer } from '../proposals'
-
 import { PROPOSAL_EMAIL } from './copy'
 
 /**

@@ -1,9 +1,8 @@
 import { err, ok } from '@/lib/result'
 
+import type { SendVersion } from '../proposals'
 import { PROPOSAL_SENT_STAGE } from '../stages'
 import { PROPOSAL_FOLLOW_UP_WORKING_DAYS } from '../tasks'
-import type { SendVersion } from '../proposals'
-
 import { PROPOSAL_ACTIVITY } from './copy'
 import type { ProposalDeps } from './deps'
 import { expireIfDue } from './expire'

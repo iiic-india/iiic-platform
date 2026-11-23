@@ -2,7 +2,6 @@ import { err, ok } from '@/lib/result'
 import { istDay } from '@/lib/time/ist'
 
 import type { PreviewProposal, PrintVersion, ProposalError, ProposalSnapshot } from '../proposals'
-
 import { notTypedYet } from './copy'
 import type { ProposalDeps } from './deps'
 import { mayPrintFees } from './fees'

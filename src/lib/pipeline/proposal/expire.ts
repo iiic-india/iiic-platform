@@ -5,7 +5,6 @@ import { istDay } from '@/lib/time/ist'
 import type { Proposal } from '@/payload-types'
 
 import type { ExpireProposals } from '../proposals'
-
 import type { ProposalDeps } from './deps'
 import { inTransaction } from './guard'
 import { isPastValidity } from './status'

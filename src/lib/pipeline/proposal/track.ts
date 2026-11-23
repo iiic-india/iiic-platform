@@ -4,7 +4,6 @@ import { err, ok, type Result } from '@/lib/result'
 import type { Proposal, ProposalVersion } from '@/payload-types'
 
 import type { OpenTrackedLink, ProposalError } from '../proposals'
-
 import type { ProposalDeps } from './deps'
 import { expireIfDue } from './expire'
 import { inTransaction } from './guard'

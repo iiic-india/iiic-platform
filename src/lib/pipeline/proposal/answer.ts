@@ -3,7 +3,6 @@ import type { PayloadRequest } from 'payload'
 import { err, ok, type Result } from '@/lib/result'
 
 import type { ProposalError, RecordAnswer } from '../proposals'
-
 import { PROPOSAL_ACTIVITY } from './copy'
 import type { ProposalDeps } from './deps'
 import { expireIfDue } from './expire'

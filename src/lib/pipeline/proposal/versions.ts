@@ -3,7 +3,6 @@ import { istDay } from '@/lib/time/ist'
 import type { ProposalVersion } from '@/payload-types'
 
 import type { CreateVersion, ProposalError } from '../proposals'
-
 import { PROPOSAL_ACTIVITY } from './copy'
 import type { ProposalDeps } from './deps'
 import { expireIfDue } from './expire'

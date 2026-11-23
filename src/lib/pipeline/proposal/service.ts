@@ -7,7 +7,6 @@ import type {
   RecordAnswer,
   SendVersion,
 } from '../proposals'
-
 import { makeRecordAnswer, makeWithdrawLink, type WithdrawLink } from './answer'
 import type { ProposalDeps } from './deps'
 import { makeExpireProposals } from './expire'

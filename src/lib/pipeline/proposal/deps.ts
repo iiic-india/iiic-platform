@@ -6,7 +6,6 @@ import type { EmitPipelineEvent } from '../events'
 import type { LogActivity, MoveLead } from '../leads'
 import type { ProposalMailer } from '../proposals'
 import type { AddWorkingDays, CreateTask } from '../tasks'
-
 import type { ProposalPrinter } from './print'
 
 /**

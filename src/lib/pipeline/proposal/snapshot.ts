@@ -3,7 +3,6 @@ import { z } from 'zod'
 import type { Proposal } from '@/payload-types'
 
 import type { ProposalSnapshot } from '../proposals'
-
 import { versionReference } from './reference'
 
 /**

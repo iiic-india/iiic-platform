@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 import { CopyButton } from '../CopyButton'
-
 import { VERSION_PANEL_COPY as COPY } from './copy'
 import styles from './Pipeline.module.css'
 

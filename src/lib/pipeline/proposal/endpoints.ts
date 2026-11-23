@@ -2,7 +2,6 @@ import type { Endpoint, PayloadHandler, PayloadRequest } from 'payload'
 import { z } from 'zod'
 
 import type { ProposalError } from '../proposals'
-
 import { PART_LABELS } from './copy'
 import { officeUser, readerUser } from './guard'
 import type { PrintedPart } from './snapshot'
