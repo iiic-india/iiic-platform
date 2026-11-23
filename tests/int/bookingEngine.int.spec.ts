@@ -595,6 +595,54 @@ describe('the server functions check who is asking (CLAUDE.md #6)', () => {
     expect(cancelled.ok && cancelled.value.booking.status).toBe('cancelledByClient')
   })
 
+  it('refuses a booking whose total in force is not the one the visitor was shown', async () => {
+    const now = atIst('2099-03-15', '08:00')
+    const saved = await payload.findGlobal({ slug: 'settings', select: { flags: true }, depth: 0 })
+    await payload.updateGlobal({
+      slug: 'settings',
+      data: { flags: { ...saved.flags, pricesPublic: true, payAtBooking: false } },
+    })
+    try {
+      // A fake price saved after the visitor's page loaded: ₹1,800 in force, ₹1,500 shown.
+      const raised = async () => ({
+        totalPaise: 180_000,
+        taxPaise: 27_458,
+        taxablePaise: 152_542,
+        rate: 1800,
+        sacCode: '000000',
+        priceHistoryId: 1,
+      })
+      const input = {
+        checkoutKey: checkoutKey(),
+        serviceId: service.id,
+        serviceOption: option(),
+        practitionerId: practitioner.id,
+        startsAt: at('11:00', '2099-03-17').toISOString(),
+      }
+      const refused = await api.bookSlot(await fresh(), input, {
+        personId: person.id,
+        price: raised,
+        shownTotalPaise: 150_000,
+        now,
+      })
+      expect(refused).toEqual({ ok: false, error: { code: 'price-changed' } })
+      const { totalDocs } = await payload.count({
+        collection: 'bookings',
+        where: { checkoutKey: { equals: input.checkoutKey } },
+      })
+      expect(totalDocs).toBe(0)
+      const booked = await api.bookSlot(await fresh(), input, {
+        personId: person.id,
+        price: raised,
+        shownTotalPaise: 180_000,
+        now,
+      })
+      expect(booked.ok).toBe(true)
+    } finally {
+      await payload.updateGlobal({ slug: 'settings', data: { flags: saved.flags } })
+    }
+  })
+
   it('lets only the office confirm a time request', async () => {
     const asked = await api.askForTime(
       await fresh(),

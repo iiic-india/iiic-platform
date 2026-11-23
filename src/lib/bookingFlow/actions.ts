@@ -56,6 +56,7 @@ export type ActionError =
   | { code: 'not-found' }
   | { code: 'gateway-down'; holdExpiresAt: string | null }
   | { code: 'payments-off' }
+  | { code: 'price-changed' }
   | { code: 'failed' }
 
 type Answer<T> = { ok: true; value: T } | { ok: false; error: ActionError }
@@ -71,6 +72,7 @@ function fromBooking(error: { code: string; reason?: string }): ActionError {
     case 'rule-missing':
     case 'not-found':
     case 'full':
+    case 'price-changed':
       return { code: error.code }
     case 'not-allowed':
       return { code: 'not-allowed', reason: error.reason }
@@ -123,6 +125,9 @@ const Choice = z.discriminatedUnion('kind', [
     practitionerId: Id,
     startsAt: z.iso.datetime({ offset: true }),
     format: Format,
+    // The total step 1 and the review showed (null when none was shown): a different total in
+    // force refuses the booking, so what is charged is what was shown (docs/08 §5).
+    shownTotalPaise: z.number().int().min(0).nullable(),
   }),
   z.strictObject({
     kind: z.literal('request'),
@@ -237,11 +242,11 @@ export async function submitBookingAction(raw: unknown): Promise<Answer<Submitte
             }
           : fail(fromBooking(asked.error))
       }
-      const { kind: _kind, ...slot } = choice
+      const { kind: _kind, shownTotalPaise, ...slot } = choice
       const booked = await bookSlot(
         req,
         { ...slot, checkoutKey: input.data.checkoutKey, ...flowDetails },
-        context,
+        { ...context, shownTotalPaise },
       )
       return booked.ok
         ? {

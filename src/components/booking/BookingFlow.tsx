@@ -264,6 +264,7 @@ export function BookingFlow({
             practitionerId: practitionerId as number,
             startsAt: startsAt as string,
             format: chosenFormat,
+            shownTotalPaise: option?.total?.totalPaise ?? null,
           }
     setSending(true)
     setProblem(null)

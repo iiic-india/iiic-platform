@@ -130,6 +130,8 @@ export const FLOW_COPY = {
     'rule-missing': 'This session cannot be booked online yet. Ask for a time instead.',
     'not-found': 'That choice is no longer available. Start again from the first step.',
     full: 'That info session is full. Choose another one.',
+    'price-changed':
+      'The price of this session changed while you were booking. Nothing was booked. Reload the page to see the new total.',
     'consent-text-missing':
       'IIIC has not published the booking-messages consent text yet, so bookings cannot be taken online.',
     'payments-off': 'Online payment is not available right now. Please contact IIIC to pay.',
