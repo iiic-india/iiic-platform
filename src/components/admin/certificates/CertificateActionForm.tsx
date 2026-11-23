@@ -4,8 +4,8 @@ import { Button, ConfirmationModal, toast, useModal } from '@payloadcms/ui'
 import { useRouter } from 'next/navigation'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 
-import { CERTIFICATES_COPY as COPY } from './certificatesCopy'
 import styles from './Certificates.module.css'
+import { CERTIFICATES_COPY as COPY } from './certificatesCopy'
 
 type Props = {
   /** The route, such as `/api/certificates/12/revoke`. */

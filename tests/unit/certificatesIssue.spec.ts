@@ -125,7 +125,11 @@ function fakePayload(options: { signatory?: boolean } = {}) {
       const row = (tables[args.collection] ?? []).find(({ id }) => id === args.id)
       return row ? structuredClone(row) : null
     },
-    create: async (args: { collection: string; data: Record<string, unknown>; req?: PayloadRequest }) => {
+    create: async (args: {
+      collection: string
+      data: Record<string, unknown>
+      req?: PayloadRequest
+    }) => {
       calls.push(`create:${args.collection}`)
       const table = (tables[args.collection] ??= [])
       if (args.collection === 'certificates') {
@@ -161,7 +165,9 @@ function fakePayload(options: { signatory?: boolean } = {}) {
         Object.assign(row, structuredClone(args.data))
         writes.push({ op: 'update', action: args.req?.context.auditAction, id: row.id })
       }
-      return args.id === undefined ? { docs: structuredClone(targets) } : structuredClone(targets[0])
+      return args.id === undefined
+        ? { docs: structuredClone(targets) }
+        : structuredClone(targets[0])
     },
   }
 
@@ -189,7 +195,12 @@ const staff = (roles: string[], over: Record<string, unknown> = {}) => ({
 })
 
 const requestOf = (fake: Fake, user: unknown): PayloadRequest =>
-  ({ payload: fake.payload, user, context: {}, headers: new Headers() }) as unknown as PayloadRequest
+  ({
+    payload: fake.payload,
+    user,
+    context: {},
+    headers: new Headers(),
+  }) as unknown as PayloadRequest
 
 let fake: Fake
 let store: CertificateStore & { keys(): string[] }
@@ -258,23 +269,26 @@ describe('every act refuses before it reads its input (CLAUDE.md #6)', () => {
     ['a practitioner', staff(['practitioner']), 403, 'not-allowed'],
   ]
 
-  it.each(refusals)('refuses %s everything, with nothing read', async (_who, user, status, code) => {
-    const actions = makeCertificateActions(depsOf())
-    const req = requestOf(fake, user)
-    const answers = await Promise.all([
-      actions.preview(req, one),
-      actions.issue(req, one),
-      actions.revoke(req, { certificateId: 1, reason: 'Example reason (fake)' }),
-      actions.reissue(req, { certificateId: 1, reason: 'Example reason (fake)' }),
-      actions.download(req, 1),
-      // Malformed input is refused the same way: the role is asked first.
-      actions.issue(req, { nonsense: true }),
-    ])
-    for (const answer of answers) {
-      expect(answer).toEqual(err({ code: 'refused', refusal: { status, code } }))
-    }
-    expect(fake.calls).toEqual([])
-  })
+  it.each(refusals)(
+    'refuses %s everything, with nothing read',
+    async (_who, user, status, code) => {
+      const actions = makeCertificateActions(depsOf())
+      const req = requestOf(fake, user)
+      const answers = await Promise.all([
+        actions.preview(req, one),
+        actions.issue(req, one),
+        actions.revoke(req, { certificateId: 1, reason: 'Example reason (fake)' }),
+        actions.reissue(req, { certificateId: 1, reason: 'Example reason (fake)' }),
+        actions.download(req, 1),
+        // Malformed input is refused the same way: the role is asked first.
+        actions.issue(req, { nonsense: true }),
+      ])
+      for (const answer of answers) {
+        expect(answer).toEqual(err({ code: 'refused', refusal: { status, code } }))
+      }
+      expect(fake.calls).toEqual([])
+    },
+  )
 
   it('lets the operator issue and download, but only an owner revoke or reissue', async () => {
     const actions = makeCertificateActions(depsOf())
@@ -283,9 +297,9 @@ describe('every act refuses before it reads its input (CLAUDE.md #6)', () => {
     const id = issued.ok ? (issued.value[0]?.id as number) : 0
     expect((await actions.download(operator(), id)).ok).toBe(true)
     const refusal = err({ code: 'refused', refusal: { status: 403, code: 'not-allowed' } })
-    expect(await actions.revoke(operator(), { certificateId: id, reason: 'Example reason' })).toEqual(
-      refusal,
-    )
+    expect(
+      await actions.revoke(operator(), { certificateId: id, reason: 'Example reason' }),
+    ).toEqual(refusal)
     expect(
       await actions.reissue(operator(), { certificateId: id, reason: 'Example reason' }),
     ).toEqual(refusal)
@@ -309,7 +323,8 @@ describe('issuing', () => {
     const rows = fake.rows('certificates').slice(1)
     expect(rows.map((row) => row.verifyTokenHash)).toEqual(tokens.map(hashVerifyToken))
     // The token itself is in no row: only the PDF and its QR code carry it.
-    for (const token of tokens) expect(JSON.stringify(fake.rows('certificates'))).not.toContain(token)
+    for (const token of tokens)
+      expect(JSON.stringify(fake.rows('certificates'))).not.toContain(token)
     expect(rows.every((row) => row.status === 'valid' && row.batch === 'batch-fake')).toBe(true)
     expect(rows.map((row) => row.issuedBy)).toEqual([7, 7])
   })
@@ -329,7 +344,9 @@ describe('issuing', () => {
     expect(fake.writes).toEqual(
       rows.map((row) => ({ op: 'create', action: 'issue-certificate', id: row.id })),
     )
-    expect(events).toEqual(rows.map((row) => ({ name: 'certificate.issued', certificateId: row.id })))
+    expect(events).toEqual(
+      rows.map((row) => ({ name: 'certificate.issued', certificateId: row.id })),
+    )
   })
 
   it('prints the fixed statement, the signatory and the escaped name, and no word of a degree', async () => {
@@ -446,9 +463,9 @@ describe('the QR code, the verify page, revoking and reissuing', () => {
     const valid = await verify().verifyByToken(token)
     expect(valid).toMatchObject({ found: true, status: 'valid', name: 'Example Learner' })
 
-    expect(await actions.revoke(owner(), { certificateId: id, reason: 'Example reason (fake)' })).toEqual(
-      ok({ id }),
-    )
+    expect(
+      await actions.revoke(owner(), { certificateId: id, reason: 'Example reason (fake)' }),
+    ).toEqual(ok({ id }))
     const revoked = await verify().verifyByToken(token)
     expect(revoked).toMatchObject({ found: true, status: 'revoked', revokedOn: '2099-03-01' })
     // The reason stays in the admin.
@@ -533,7 +550,11 @@ describe('downloading', () => {
     const file = await actions.download(operator(), String(id))
     expect(file.ok).toBe(true)
     expect(fake.rows('audit-log')).toEqual([
-      expect.objectContaining({ action: 'download-certificate', entity: 'certificates', entityId: String(id) }),
+      expect.objectContaining({
+        action: 'download-certificate',
+        entity: 'certificates',
+        entityId: String(id),
+      }),
     ])
   })
 

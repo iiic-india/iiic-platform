@@ -15,9 +15,10 @@ export type CertificateEvent = { name: typeof CERTIFICATE_ISSUED; certificateId:
 export type EmitCertificateEvent = (req: PayloadRequest, event: CertificateEvent) => Promise<void>
 
 /** The tasks the event starts, by automation ID: M6 adds C5's task here. */
-export const CERTIFICATE_LISTENERS: Readonly<Record<CertificateEvent['name'], readonly string[]>> = {
-  [CERTIFICATE_ISSUED]: [],
-}
+export const CERTIFICATE_LISTENERS: Readonly<Record<CertificateEvent['name'], readonly string[]>> =
+  {
+    [CERTIFICATE_ISSUED]: [],
+  }
 
 /** The idempotency key of an event's jobs: `certificate.issued:<id>`. */
 export const certificateEventKey = (event: CertificateEvent): string =>

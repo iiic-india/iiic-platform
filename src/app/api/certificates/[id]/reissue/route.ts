@@ -1,5 +1,11 @@
 import { CERTIFICATES_COPY as COPY } from '@/components/admin/certificates/certificatesCopy'
-import { json, readJson, refusalResponse, staffRequest, withoutBlanks } from '@/lib/certificates/http'
+import {
+  json,
+  readJson,
+  refusalResponse,
+  staffRequest,
+  withoutBlanks,
+} from '@/lib/certificates/http'
 import { certificateActions } from '@/lib/certificates/wiring'
 
 export const dynamic = 'force-dynamic'

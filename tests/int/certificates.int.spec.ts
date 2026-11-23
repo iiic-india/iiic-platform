@@ -280,8 +280,15 @@ describe('issuing, revoking and reissuing', () => {
     const fresh = reissued.value
     expect(fresh.certificateId).not.toBe(old!.certificateId)
 
-    const replacement = await payload.findByID({ collection: 'certificates', id: fresh.id, depth: 0 })
-    expect(replacement).toMatchObject({ replaces: old!.id, nameAsPrinted: 'Example Learner Corrected' })
+    const replacement = await payload.findByID({
+      collection: 'certificates',
+      id: fresh.id,
+      depth: 0,
+    })
+    expect(replacement).toMatchObject({
+      replaces: old!.id,
+      nameAsPrinted: 'Example Learner Corrected',
+    })
     expect(await auditOf(old!.id)).toEqual(['issue-certificate', 'reissue-certificate'])
     expect(await auditOf(fresh.id)).toEqual(['reissue-certificate'])
 
@@ -296,7 +303,10 @@ describe('issuing, revoking and reissuing', () => {
       replacedBy: null,
     })
     expect(
-      await actions.reissue(await as(staff.owner), { certificateId: old!.id, reason: 'Again (fake)' }),
+      await actions.reissue(await as(staff.owner), {
+        certificateId: old!.id,
+        reason: 'Again (fake)',
+      }),
     ).toEqual(err({ code: 'already-revoked' }))
   })
 
@@ -352,21 +362,21 @@ describe('anonymous and unauthorised requests are refused', () => {
       expect(await actions.revoke(req, { certificateId: made!.id, reason: 'Fake reason' })).toEqual(
         refusal,
       )
-      expect(await actions.reissue(req, { certificateId: made!.id, reason: 'Fake reason' })).toEqual(
-        refusal,
-      )
+      expect(
+        await actions.reissue(req, { certificateId: made!.id, reason: 'Fake reason' }),
+      ).toEqual(refusal)
       expect(await actions.download(req, made!.id)).toEqual(refusal)
       expect(await findRecipients(req, { q: 'Example' })).toEqual(refusal)
     }
     // The operator issues, but revoking and reissuing are an owner's.
     const operator = await as(staff.operator)
     const notAllowed = err({ code: 'refused', refusal: { status: 403, code: 'not-allowed' } })
-    expect(await actions.revoke(operator, { certificateId: made!.id, reason: 'Fake reason' })).toEqual(
-      notAllowed,
-    )
-    expect(await actions.reissue(operator, { certificateId: made!.id, reason: 'Fake reason' })).toEqual(
-      notAllowed,
-    )
+    expect(
+      await actions.revoke(operator, { certificateId: made!.id, reason: 'Fake reason' }),
+    ).toEqual(notAllowed)
+    expect(
+      await actions.reissue(operator, { certificateId: made!.id, reason: 'Fake reason' }),
+    ).toEqual(notAllowed)
     expect(await auditOf(made!.id)).toEqual(['issue-certificate'])
     const row = await payload.findByID({ collection: 'certificates', id: made!.id, depth: 0 })
     expect(row.status).toBe('valid')

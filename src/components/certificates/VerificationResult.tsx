@@ -22,13 +22,7 @@ export const checkIdHref = (id: string) => `${VERIFY_PATH}?id=${encodeURICompone
  * and the fixed statement. Never the reason, a contact detail or the PDF. The status is written in
  * words as well as shown by the badge's colour.
  */
-export function VerificationResult({
-  view,
-  by,
-}: {
-  view: VerificationView
-  by: 'token' | 'id'
-}) {
+export function VerificationResult({ view, by }: { view: VerificationView; by: 'token' | 'id' }) {
   if (!view.found) {
     return (
       <section aria-labelledby="verify-result" className={styles.result}>

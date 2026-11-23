@@ -14,8 +14,8 @@ import { formatIstDate } from '@/lib/time/ist'
 import type { Certificate } from '@/payload-types'
 
 import { CertificateActionForm } from './CertificateActionForm'
-import { CERTIFICATES_COPY as COPY } from './certificatesCopy'
 import styles from './Certificates.module.css'
+import { CERTIFICATES_COPY as COPY } from './certificatesCopy'
 import { IssueForm } from './IssueForm'
 
 /** The admin path of this view, and of one certificate on it. */
@@ -347,9 +347,7 @@ export async function CertificatesIssueView({
                         <td data-label={COPY.status}>
                           {doc.status === 'revoked' ? COPY.revokedStatus : COPY.valid}
                         </td>
-                        <td data-label={COPY.issuedOn}>
-                          {instantText(doc.issuedAt)}
-                        </td>
+                        <td data-label={COPY.issuedOn}>{instantText(doc.issuedAt)}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -105,7 +105,10 @@ describe('the routes refuse before they read anything', () => {
 
   it('lets the operator issue but not revoke or reissue', async () => {
     session.user = staff(['operator'])
-    actions.issue.mockResolvedValue({ ok: true, value: [{ id: 5, certificateId: 'IIIC-C-2099-0001-6' }] })
+    actions.issue.mockResolvedValue({
+      ok: true,
+      value: [{ id: 5, certificateId: 'IIIC-C-2099-0001-6' }],
+    })
     const { POST: issue } = await import('@/app/api/certificates/issue/route')
     const { POST: revoke } = await import('@/app/api/certificates/[id]/revoke/route')
     const issued = await issue(post('/api/certificates/issue', { recipients: [] }).request)
@@ -144,7 +147,10 @@ describe('the routes refuse before they read anything', () => {
       value: { certificateId: 'IIIC-C-2099-0001-6', pdf: new TextEncoder().encode('%PDF-1.7') },
     })
     const { GET: pdf } = await import('@/app/api/certificates/[id]/pdf/route')
-    const answer = await pdf(new Request('http://localhost:3000/api/certificates/5/pdf'), params('5'))
+    const answer = await pdf(
+      new Request('http://localhost:3000/api/certificates/5/pdf'),
+      params('5'),
+    )
     expect(answer.status).toBe(200)
     expect(answer.headers.get('Content-Type')).toBe('application/pdf')
     expect(answer.headers.get('Content-Disposition')).toBe(

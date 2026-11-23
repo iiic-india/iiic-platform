@@ -6,8 +6,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 
 import type { CertificatePreview, IssuedCertificate } from '@/lib/certificates/contract'
 
-import { CERTIFICATES_COPY as COPY } from './certificatesCopy'
 import styles from './Certificates.module.css'
+import { CERTIFICATES_COPY as COPY } from './certificatesCopy'
 
 type Recipient = { personId: number; fullName: string; nameAsPrinted: string }
 type Found = { personId: number; fullName: string }
@@ -18,7 +18,10 @@ const MAX_RECIPIENTS = 200
 
 const CONFIRM_SLUG = 'certificates-issue-confirm'
 
-async function call<T>(path: string, init?: RequestInit): Promise<{ ok: true; value: T } | { ok: false; message: string }> {
+async function call<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<{ ok: true; value: T } | { ok: false; message: string }> {
   try {
     const response = await fetch(path, {
       credentials: 'include',
@@ -259,7 +262,12 @@ export function IssueForm({ events, canIssue }: { events: EventOption[]; canIssu
                 {COPY.findPersonHint}
               </p>
             </div>
-            <Button buttonStyle="secondary" disabled={pending !== null} margin={false} type="submit">
+            <Button
+              buttonStyle="secondary"
+              disabled={pending !== null}
+              margin={false}
+              type="submit"
+            >
               {pending === 'search' ? COPY.searching : COPY.search}
             </Button>
           </div>

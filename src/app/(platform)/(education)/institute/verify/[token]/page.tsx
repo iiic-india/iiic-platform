@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
-import styles from '@/components/certificates/verify.module.css'
 import { VerificationResult } from '@/components/certificates/VerificationResult'
+import styles from '@/components/certificates/verify.module.css'
 import { VERIFY_COPY as COPY } from '@/lib/certificates/verifyCopy'
 import { verifyByToken } from '@/lib/certificates/wiring'
 

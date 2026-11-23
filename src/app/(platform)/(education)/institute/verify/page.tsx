@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 
 import { FocusOnLoad } from '@/components/certificates/FocusOnLoad'
-import styles from '@/components/certificates/verify.module.css'
 import { VerificationResult } from '@/components/certificates/VerificationResult'
+import styles from '@/components/certificates/verify.module.css'
 import type { VerificationView } from '@/lib/certificates/contract'
 import { typedCertificateId } from '@/lib/certificates/ids'
 import { VERIFY_PATH } from '@/lib/certificates/token'
@@ -65,7 +65,9 @@ export default async function VerifyByIdPage({ searchParams }: Props) {
         </label>
         <div className={styles.row}>
           <input
-            aria-describedby={invalid ? 'certificate-id-error certificate-id-help' : 'certificate-id-help'}
+            aria-describedby={
+              invalid ? 'certificate-id-error certificate-id-help' : 'certificate-id-help'
+            }
             aria-invalid={invalid ? true : undefined}
             autoCapitalize="characters"
             autoComplete="off"

@@ -88,7 +88,9 @@ export function bucketStore(client: S3Client, bucket: string): CertificateStore 
     },
     async get(key) {
       try {
-        const object = await client.send(new GetObjectCommand({ Bucket: bucket, Key: checked(key) }))
+        const object = await client.send(
+          new GetObjectCommand({ Bucket: bucket, Key: checked(key) }),
+        )
         return object.Body ? await object.Body.transformToByteArray() : null
       } catch (error) {
         if (error instanceof NoSuchKey) return null

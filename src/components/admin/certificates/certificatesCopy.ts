@@ -13,8 +13,7 @@ export const CERTIFICATES_COPY = {
   waitsTitle: 'Before the first issue',
   waitsSignatory:
     'The signatory’s name and title are not in Settings → Certificates yet (I-51). The preview shows a placeholder, and issuing waits until both are there.',
-  waitsStatement:
-    'The certificate’s fixed statement is a draft until the lawyer’s review (I-22).',
+  waitsStatement: 'The certificate’s fixed statement is a draft until the lawyer’s review (I-22).',
   waitsStorage:
     'This deployment has no private bucket for the PDFs (R2_BUCKET_PRIVATE), so issuing is switched off here.',
   waitsRenderer:
@@ -57,14 +56,15 @@ export const CERTIFICATES_COPY = {
       : 'Every page as it will print. The ID and the QR code are given on issue.',
   previewFrame: (name: string) => `Certificate preview for ${name}`,
   previewWaiting: (inputs: string[]) => `Still waiting for ${inputs.join(', ')}.`,
-  issue: (count: number) =>
-    count === 1 ? 'Issue 1 certificate' : `Issue ${count} certificates`,
+  issue: (count: number) => (count === 1 ? 'Issue 1 certificate' : `Issue ${count} certificates`),
   issueConfirmTitle: 'Issue these certificates?',
   issueConfirm: (count: number) =>
     `This issues ${count === 1 ? '1 certificate' : `${count} certificates`} with their own IDs. Each can be revoked later by an owner, but an ID is never given again.`,
   issuing: 'Issuing…',
   issued: (ids: string[]) =>
-    ids.length === 1 ? `Issued ${ids[0]}.` : `Issued ${ids.length} certificates: ${ids.join(', ')}.`,
+    ids.length === 1
+      ? `Issued ${ids[0]}.`
+      : `Issued ${ids.length} certificates: ${ids.join(', ')}.`,
   cancel: 'Cancel',
 
   errorTitle: 'Nothing was issued',

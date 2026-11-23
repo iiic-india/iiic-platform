@@ -32,7 +32,7 @@ Working notes for a run that may be cut off. Removed in the last commit.
 ## Order of work
 
 1. NOTES 2. token/template/qr/store + unit tests 3. issue/revoke/reissue/verify
-4. wiring + routes 5. verify pages 6. admin view 7. int + e2e tests 8. checks
+2. wiring + routes 5. verify pages 6. admin view 7. int + e2e tests 8. checks
 
 ## Progress
 
