@@ -29,9 +29,13 @@ export function beaconToken(
   return parsed.success ? parsed.data : null
 }
 
-/** Whether a path is one of the public pages the beacon may count: never the admin's. */
+/**
+ * Whether a path is one of the public pages the beacon may count: never the admin's, and never a
+ * proposal's tracked link (`/p/<token>`, docs/17 §5), whose address is the key to the proposal and
+ * must not reach a third party.
+ */
 export function countsPath(pathname: string): boolean {
-  return !/^\/admin(?:\/|$)/i.test(pathname)
+  return !/^\/admin(?:\/|$)/i.test(pathname) && !/^\/p(?:\/|$)/i.test(pathname)
 }
 
 /** What the beacon adds to a page's policy: its two origins where it loads, nothing elsewhere. */
