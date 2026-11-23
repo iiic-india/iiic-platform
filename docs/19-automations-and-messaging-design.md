@@ -64,7 +64,7 @@ The catalogue is code (`src/lib/automations/catalogue.ts`); listeners, schedules
 | --- | --- | --- | --- | --- | --- | --- |
 | B1 | checkout (M3) | at once | — | — | M3 | — |
 | B2 | `booking.confirmed` | at once | E, W (E fallback), C (M3), A | T | `B2-confirmation` · B | — |
-| B3 | `invoice.issued` | at once | D, E | T | `B3-receipt` · B | M3 documents emitting it |
+| B3 | `invoice.issued` | at once | D, E | T | `B3-receipt` · B | Zoho Books issuing the invoice (the GSTIN, the Zoho settings) |
 | B3a | `booking.confirmed` (counselling) | with B2 | E | T | `B3a-consent-receipt` · B | — |
 | B4 | schedule | every minute | — | — | M3 `B4-expire-holds` | — |
 | B5 | `booking.confirmed`, `.rescheduled`, `.cancelled` | 24 h before; none if booked under 24 h ahead | W, E fallback | T | `B5-reminder-24h` · B | — |
@@ -147,7 +147,10 @@ O1 (08:30 IST) goes to active owners and operators; O2 with O10 (Monday 09:00) t
 | A read-only Supabase management token for O6 | O6 reports "not set up" on Today |
 | Cost lines and the WhatsApp quality rating for O10 | Placeholders in the report |
 | Working days and holidays for P1, P5, P6 | Monday to Friday, no holidays |
-| M3 documents emitting `invoice.issued`; attendance marking emitting `booking.completed` and `booking.noShow`; the feedback page | B3, B8, B9 built and tested on the events; live when those land |
+| Attendance marking emitting `booking.completed` and `booking.noShow`; the feedback page | B8, B9 built and tested on the events; live when those land |
+| Proposed: a message about a booking that has no manage token yet issues one derived from a key under `PAYLOAD_SECRET` and the booking's id (§13), so a retry or a fallback gives the same link | Built so; a booking whose token the client's browser holds gets no link by email |
+| Proposed: every task, M3's included, takes the shared `onFail`, so a job that spends its retries raises `automation.failed` for O3 | Built so |
+| Proposed: `refund.awaitingApproval` sends no message; owners see it on Today and in O1's digest | Built so (no listener) |
 | Proposed: the manage link (`/b/[token]`) is not in the booking emails, since its token is not stored; they say "reply to this email or call" (the kit's words) until a signed `manage` link exists | Built so |
 | Proposed: B3's email states the document's number, date and total and offers the PDF by reply, until a signed link to the private documents bucket exists | Built so |
 | B8's link: the feedback page and its tokens (M5) | The email carries `[[TODO: …, I-17]]` where the button goes, which blocks the send in production; the WhatsApp feedback template is submitted with M5 |
@@ -174,4 +177,15 @@ The foundation is frozen for the builders: the collections' fields, `src/access/
 - **B · Templates and the B-series**: `src/emails/booking/` (every booking template, email and WhatsApp params, the `load` functions, the hosted PNGs in `public/email/`), `src/lib/automations/booking/` (planners and re-planning), `src/jobs/bookingMessages.ts`; the WhatsApp template texts for submission (`docs/content/whatsapp-templates.md`, for Meta).
 - **C · The rest and the newsletter**: `src/emails/other/`, `src/lib/automations/operations/` (digest sections, report, O5 retention, O6, O9), `src/lib/automations/reviews/` (V1, V2), `src/lib/automations/pipeline/` (P1 to P7 against `04`, live with M4), `src/lib/automations/privacy/` (O4, O7, O8, live with M5), `src/lib/newsletter/`, `src/app/api/newsletter/`, `src/app/(platform)/newsletter/`, `src/app/(platform)/w/[token]/`, hooks in `Subscribers.ts` and `NewsletterIssues.ts`, `src/jobs/operations.ts`, `src/jobs/newsletter.ts`; C5 (live with M5).
 
-Waits on other milestones: P1 to P7 on M4's `leads`, `proposals` and their events; O4, O7, O8 and C5 on M5's data requests, incidents and certificates; B3 on M3 documents emitting `invoice.issued`; B8 and B9 on attendance marking and the feedback page. Each is built and tested on its event now and goes live when the emitter lands.
+Waits on other milestones: P1 to P7 on M4's `leads`, `proposals` and their events; O4, O7, O8 and C5 on M5's data requests, incidents and certificates; B8 and B9 on attendance marking and the feedback page. Each is built and tested on its event now and goes live when the emitter lands.
+
+## 13. At the join (on M3)
+
+Joined on `m6/join` from `m3/join`, in the order A, B, C. What the join wired, beyond the three slices:
+
+- **The core.** B's tasks reach A's `deliver` and `cancelQueued` (`src/lib/automations/booking/wiring.ts`); C's port uses A's `deliver`, `cancelQueued` and `verifyLink` unless a test registers a fake or none (`src/lib/automations/operations/core.ts`). Both load A's modules when first used, never with the config.
+- **Failures.** `src/jobs/index.ts` gives every task without an `onFail` the shared one (`withFailurePath`, counted against the task's own tries), so M3's jobs raise `automation.failed` for O3 too.
+- **Schedules.** The table in §2 covers every timed task M3 and M6 register; every other task is started by an event. `tests/unit/automationsCatalogue.spec.ts` holds both to the jobs config.
+- **M3's second half.** The invoice job raises `invoice.issued` once Zoho Books has issued the tax invoice (`src/lib/invoicing/wiring.ts`), which queues B3; the credit note raises nothing, since B7's refund notice tells the client on `refund.processed`. `refund.awaitingApproval` has no listener (Today and O1 read the refunds waiting). `payment.linkSent` queues B13, whose message carries `payments.linkUrl`; the office's note after sending a link says IIIC's message carries it when email is set up, and asks the office to send it otherwise.
+- **The manage link.** A booking the office confirmed or moved has no manage token, so its confirmation (B2) or its move (B7) issues one when it is sent (`src/emails/booking/manageLink.ts`): derived from a key under `PAYLOAD_SECRET` and the booking's id, in the shape of M3's tokens, its SHA-256 stored in `manageTokenHash` as for every token, so a retry or the email after WhatsApp gives the same link. The email's one button is then the kit's "Manage your booking"; the session's link stays in the details. A booking whose token was handed to the client's browser keeps it, and its email says how to reach IIIC instead.
+- People's suppressions join and `whatsappLastInboundAt` read as the office's alone, like every field of a person but the name and contacts (D-89).

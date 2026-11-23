@@ -65,7 +65,8 @@ export const AUTOMATIONS = [
     basis: 'transactional',
     owner: 'B',
     task: 'B3-receipt',
-    waitsOn: 'M3 documents emitting invoice.issued (one line at the join)',
+    // M3's invoice job raises invoice.issued since the M6 join (src/lib/invoicing/wiring.ts).
+    waitsOn: 'Zoho Books issuing the invoice: the GSTIN and the Zoho settings (docs/16 §10)',
   },
   {
     id: 'B3a',
