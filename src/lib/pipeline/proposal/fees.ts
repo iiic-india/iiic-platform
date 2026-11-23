@@ -4,8 +4,8 @@ import type { MayPrintFees } from '../proposals'
 
 /**
  * The fees rule (docs/17 §5), in one place. D-21 keeps every price off every page, email and
- * template while `prices_public` is off, and the owner ruled on 23 November 2026 that no fee
- * prints anywhere while it is, proposals included. So this answers whether a proposal's fees
+ * template while `prices_public` is off, and the owner ruled on 23 November 2026 (D-94) that no
+ * fee prints anywhere while it is, proposals included. So this answers whether a proposal's fees
  * section prints: only while prices are public. With prices hidden a proposal is still made,
  * previewed, printed, sent and tracked, with its fees section left out entirely (no amount, no
  * total, nothing in its place); a version needs fees typed only when they will print. Every

@@ -11,9 +11,10 @@ import { escapeHtml, fillTemplate, markup, withoutComments, type MergeError } fr
  *
  * The caller says whether the fees section prints (`withFees`, from M4's one fees rule,
  * src/lib/pipeline/proposal/fees.ts). While prices are hidden (D-21: no price on any page, email
- * or template while `prices_public` is off; the owner's ruling of 23 November 2026) the section is
- * left out entirely: its heading, the fee table and the total go, and the next step takes its
- * number. Nothing is printed in its place. With fees, a proposal without one is refused.
+ * or template while `prices_public` is off; the owner's ruling, D-94) the section is left out
+ * entirely: its heading, the fee table and the total go, and the next step takes its number.
+ * Nothing is printed in its place, and the kit's file is unchanged. With fees, a proposal without
+ * one is refused.
  */
 
 export type ProposalPhase = { name: string; what: string; duration: string; outcome: string }

@@ -36,7 +36,7 @@ Everything needed to build the IIIC platform with Claude Code: what the product 
 | 16 | `16-booking-and-payments-design.md` | M3's design: the booking and money collections, their states, the double-booking guard, money and webhook rules, the slot engine and calendar contracts, the flags, the events for M6, open items with what is assumed, the test plan and who builds what | M3, M6 |
 | 17 | `17-pipeline-design.md` | M4's design: organisations, leads, activities, tasks, enquiries and proposals with their access, the stages and moves, how a request becomes a lead, the proposal's life and the fees under D-21, the public forms, stale leads, the events for M5 and M6, open items with what is assumed, the test plan and who builds what | M4, M5, M6 |
 | — | `content/` | `copy-architecture.md` (every page, section by section) and `sources/` (IIIC's texts, brochures, feedback, the copy system, the old site, verbatim) | M2 |
-| — | `decisions.md` | D-A to D-C and D-01 to D-90 with status | Every milestone |
+| — | `decisions.md` | D-A to D-C and D-01 to D-94 with status | Every milestone |
 | — | `research/` | The four research reports behind `07` and `08` (messaging, architecture, compliance, payments), verbatim, with sources, October 2026; and the research behind the admin console's components (D-78) and the public site's motion kit (`11` §11), November 2026 | When a choice is questioned |
 | — | `prototype-prompt.md` | Optional: a clickable HTML prototype to test the flows with real people before M3 | Before M1 (optional) |
 
