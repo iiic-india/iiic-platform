@@ -2,7 +2,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { feeTotalPaise, mayPrintFees } from '@/lib/pipeline/proposal/fees'
-import { newReference, REFERENCE, referenceFor, versionReference } from '@/lib/pipeline/proposal/reference'
+import {
+  newReference,
+  REFERENCE,
+  referenceFor,
+  versionReference,
+} from '@/lib/pipeline/proposal/reference'
 import {
   draftSnapshotOf,
   missingParts,
@@ -26,7 +31,9 @@ const COPY: WorkingCopy = {
   preparedByTitle: 'Fake Title',
   situation: 'Fake situation.',
   approach: 'Fake approach.',
-  phases: [{ name: 'Fake phase', what: 'Fake work.', duration: 'Fake weeks', outcome: 'Fake end.' }],
+  phases: [
+    { name: 'Fake phase', what: 'Fake work.', duration: 'Fake weeks', outcome: 'Fake end.' },
+  ],
   measures: 'Fake measures.',
   fees: [
     { item: 'Fake fee one', amountPaise: 1_000_00 },

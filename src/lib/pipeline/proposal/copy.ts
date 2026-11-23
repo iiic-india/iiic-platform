@@ -10,7 +10,15 @@ import { CONTACT } from '@/lib/site/contact'
 
 export const PROPOSAL_EMAIL = {
   subject: (reference: string) => `Your proposal from IIIC, ${reference}`,
-  text: ({ clientName, reference, linkUrl }: { clientName: string; reference: string; linkUrl: string }) =>
+  text: ({
+    clientName,
+    reference,
+    linkUrl,
+  }: {
+    clientName: string
+    reference: string
+    linkUrl: string
+  }) =>
     [
       `Here is IIIC's proposal for ${clientName}, reference ${reference}.`,
       '',

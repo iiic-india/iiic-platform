@@ -108,7 +108,9 @@ describe('a lead’s heat (P3, P4)', () => {
   const base = { kind: 'consultancy' as const, createdAt: hoursAgo(0) }
 
   it('is untouched in New from 24 hours, red from 48, until someone acts', () => {
-    expect(interimHeatOf({ ...base, stage: 'new', createdAt: hoursAgo(23) }, NOW).state).toBe('fine')
+    expect(interimHeatOf({ ...base, stage: 'new', createdAt: hoursAgo(23) }, NOW).state).toBe(
+      'fine',
+    )
     expect(interimHeatOf({ ...base, stage: 'new', createdAt: hoursAgo(24) }, NOW)).toMatchObject({
       state: 'untouched',
       level: 'amber',

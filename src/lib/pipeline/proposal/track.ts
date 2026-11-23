@@ -61,7 +61,11 @@ export async function readTrackedLink(
     if (!opened.ok) return opened
     const snapshot = readSnapshot(opened.value.version.document)
     if (!snapshot) return err({ code: 'link-closed' })
-    return ok({ title: snapshot.title, clientName: snapshot.clientName, reference: snapshot.reference })
+    return ok({
+      title: snapshot.title,
+      clientName: snapshot.clientName,
+      reference: snapshot.reference,
+    })
   })
 }
 

@@ -60,7 +60,10 @@ export function missingParts(copy: WorkingCopy, clientName: string | null): Prin
       (copy.phases?.length ?? 0) > 0 &&
       (copy.phases ?? []).every(
         (phase) =>
-          filled(phase.name) && filled(phase.what) && filled(phase.duration) && filled(phase.outcome),
+          filled(phase.name) &&
+          filled(phase.what) &&
+          filled(phase.duration) &&
+          filled(phase.outcome),
       ),
     measures: filled(copy.measures),
     fees:
@@ -144,9 +147,7 @@ export const SNAPSHOT = z.object({
   reference: z.string().max(40),
   situation: words,
   approach: words,
-  phases: z
-    .array(z.object({ name: words, what: words, duration: words, outcome: words }))
-    .max(12),
+  phases: z.array(z.object({ name: words, what: words, duration: words, outcome: words })).max(12),
   measures: words,
   fees: z.array(z.object({ item: words, amountPaise: z.number().int().min(0) })).max(20),
   nextStep: words,

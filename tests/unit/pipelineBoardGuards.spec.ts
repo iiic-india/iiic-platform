@@ -20,9 +20,8 @@ const actions = vi.hoisted(() => ({
 }))
 vi.mock('@/lib/pipeline/proposal/wiring', () => ({ proposals: () => actions }))
 
-const { proposalEndpoints, proposalVersionEndpoints } = await import(
-  '@/lib/pipeline/proposal/endpoints'
-)
+const { proposalEndpoints, proposalVersionEndpoints } =
+  await import('@/lib/pipeline/proposal/endpoints')
 
 type FakeUser = { id: number; roles: string[]; _strategy?: string; active?: boolean }
 
@@ -67,9 +66,9 @@ describe('"Move to stage"', () => {
 
   it('refuses anyone without a staff session and its code', async () => {
     expect((await call(handler, request(null))).status).toBe(401)
-    expect((await call(handler, request(staff(['owner'], { _strategy: 'local-jwt' })))).status).toBe(
-      401,
-    )
+    expect(
+      (await call(handler, request(staff(['owner'], { _strategy: 'local-jwt' })))).status,
+    ).toBe(401)
     expect((await call(handler, request(staff(['owner'], { active: false })))).status).toBe(401)
     expect(moveLead).not.toHaveBeenCalled()
   })
@@ -133,9 +132,9 @@ describe('the proposal endpoints', () => {
   it('refuse anonymous and code-less requests before any action runs', async () => {
     for (const handler of [...office, ...readers]) {
       expect((await call(handler, request(null))).status).toBe(401)
-      expect((await call(handler, request(staff(['owner'], { _strategy: 'api-key' })))).status).toBe(
-        401,
-      )
+      expect(
+        (await call(handler, request(staff(['owner'], { _strategy: 'api-key' })))).status,
+      ).toBe(401)
     }
     for (const action of Object.values(actions)) expect(action).not.toHaveBeenCalled()
   })
@@ -169,7 +168,9 @@ describe('the proposal endpoints', () => {
   })
 
   it('return the link once after a send, and nothing about the client', async () => {
-    actions.send.mockResolvedValueOnce(ok({ linkUrl: 'http://localhost:3000/p/abc', mailed: false }))
+    actions.send.mockResolvedValueOnce(
+      ok({ linkUrl: 'http://localhost:3000/p/abc', mailed: false }),
+    )
     const answer = await call(office[2] as PayloadHandler, request(staff(['owner'])))
     expect(answer.status).toBe(200)
     expect(answer.body).toEqual({ linkUrl: 'http://localhost:3000/p/abc', mailed: false })
@@ -196,8 +197,8 @@ describe('the proposal endpoints', () => {
   })
 
   it('refuse an id that is not a whole number', async () => {
-    expect((await call(readers[2] as PayloadHandler, request(staff(['owner']), {}, 'x'))).status).toBe(
-      400,
-    )
+    expect(
+      (await call(readers[2] as PayloadHandler, request(staff(['owner']), {}, 'x'))).status,
+    ).toBe(400)
   })
 })

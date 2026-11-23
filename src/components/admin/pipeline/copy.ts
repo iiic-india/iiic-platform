@@ -13,7 +13,8 @@ export const BOARD_COPY = {
   boards: 'Boards',
   board: { consultancy: 'Consultancy', partnership: 'Partnerships' },
   needsAttention: 'Needs attention',
-  needsAttentionNone: 'Nothing needs attention: every new lead has been answered and none has gone quiet.',
+  needsAttentionNone:
+    'Nothing needs attention: every new lead has been answered and none has gone quiet.',
   emptyColumn: 'No leads at this stage.',
   count: (n: number) => (n === 1 ? '1 lead' : `${n} leads`),
   finalNote: (n: number) => `The ${n} most recent are shown.`,

@@ -370,7 +370,11 @@ describe('generated, previewed, sent and tracked', () => {
     })
     expect(tasks).toHaveLength(1)
     // Friday evening plus three working days: Wednesday.
-    expect(tasks[0]).toMatchObject({ kind: 'proposalFollowUp', dueOn: '2026-11-25', status: 'open' })
+    expect(tasks[0]).toMatchObject({
+      kind: 'proposalFollowUp',
+      dueOn: '2026-11-25',
+      status: 'open',
+    })
     expect(named('proposal.sent')).toEqual([
       { name: 'proposal.sent', proposalId: proposal.id, versionId: first },
     ])
@@ -419,7 +423,10 @@ describe('generated, previewed, sent and tracked', () => {
     // While the office revises, the client's link still opens.
     expect((await proposals.read(await fresh(), tokenOf(firstLink))).ok).toBe(true)
     // An older version is never sent.
-    const old = await proposals.send(await as(staff.owner), { versionId: first, by: staff.owner.id })
+    const old = await proposals.send(await as(staff.owner), {
+      versionId: first,
+      by: staff.owner.id,
+    })
     expect(old).toMatchObject({ ok: false, error: { code: 'bad-move' } })
 
     const sent = await proposals.send(await as(staff.owner), {
@@ -427,7 +434,10 @@ describe('generated, previewed, sent and tracked', () => {
       by: staff.owner.id,
     })
     if (!sent.ok) throw new Error(sent.error.code)
-    const closed = await proposals.open(await fresh(), { token: tokenOf(firstLink), now: clock.now })
+    const closed = await proposals.open(await fresh(), {
+      token: tokenOf(firstLink),
+      now: clock.now,
+    })
     expect(closed).toMatchObject({ ok: false, error: { code: 'link-closed' } })
     expect((await version(first)).sending?.supersededAt).toBeTruthy()
     expect((await proposals.read(await fresh(), tokenOf(sent.value.linkUrl))).ok).toBe(true)
@@ -488,7 +498,10 @@ describe('generated, previewed, sent and tracked', () => {
 describe('P8, expiry', () => {
   it('expires a sent proposal past its last valid day, once', async () => {
     const other = await makeLead('debriefHeld')
-    const dated = await makeProposal(other, { ...parts('Fake dated proposal'), validUntil: '2026-11-21' })
+    const dated = await makeProposal(other, {
+      ...parts('Fake dated proposal'),
+      validUntil: '2026-11-21',
+    })
     const made = await proposals.createVersion(await as(staff.owner), { proposalId: dated.id })
     if (!made.ok) throw new Error(made.error.code)
     const sent = await proposals.send(await as(staff.owner), {

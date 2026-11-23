@@ -94,7 +94,12 @@ export async function printSnapshot(
   if (!snapshot) return err({ code: 'not-found' as const })
   const pdf = await deps.printer.pdf(snapshot, { feesMayPrint })
   if (!pdf.ok) return err(fromPrinter(pdf.error))
-  return ok({ version, pdf: pdf.value, filename: pdfFilename(snapshot), sha256: sha256Of(pdf.value) })
+  return ok({
+    version,
+    pdf: pdf.value,
+    filename: pdfFilename(snapshot),
+    sha256: sha256Of(pdf.value),
+  })
 }
 
 export function makePrintVersion(deps: ProposalDeps): PrintVersion {

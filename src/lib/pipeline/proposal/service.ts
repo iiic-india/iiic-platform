@@ -23,10 +23,7 @@ export type Proposals = {
   print: PrintVersion
   send: SendVersion
   open: OpenTrackedLink
-  read: (
-    req: Parameters<OpenTrackedLink>[0],
-    token: string,
-  ) => ReturnType<typeof readTrackedLink>
+  read: (req: Parameters<OpenTrackedLink>[0], token: string) => ReturnType<typeof readTrackedLink>
   answer: RecordAnswer
   withdraw: WithdrawLink
   expire: ExpireProposals

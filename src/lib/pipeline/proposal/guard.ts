@@ -1,9 +1,4 @@
-import {
-  commitTransaction,
-  initTransaction,
-  killTransaction,
-  type PayloadRequest,
-} from 'payload'
+import { commitTransaction, initTransaction, killTransaction, type PayloadRequest } from 'payload'
 
 import { POLICY } from '@/access/policy'
 import { hasRole, isActive } from '@/access/roles'

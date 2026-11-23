@@ -20,7 +20,10 @@ type Refusal = { message: string; details: string[] }
 /** What an endpoint said when it said no, as the admin shows it. */
 async function refusalOf(response: Response, fallback: string): Promise<Refusal> {
   const body = (await response.json().catch(() => ({}))) as { message?: string; details?: string[] }
-  return { message: body.message ?? fallback, details: Array.isArray(body.details) ? body.details : [] }
+  return {
+    message: body.message ?? fallback,
+    details: Array.isArray(body.details) ? body.details : [],
+  }
 }
 
 function RefusalNote({ id, refusal }: { id: string; refusal: Refusal | null }) {

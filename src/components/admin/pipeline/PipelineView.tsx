@@ -73,7 +73,9 @@ function Card({ card, adminRoute }: { card: BoardCard; adminRoute: string }) {
             <dt>{COPY.nextAction}</dt>
             <dd>
               {card.nextAction}
-              {card.dueOn ? `, ${COPY.due} ${formatIstDate(new Date(`${card.dueOn}T12:00:00+05:30`))}` : ''}
+              {card.dueOn
+                ? `, ${COPY.due} ${formatIstDate(new Date(`${card.dueOn}T12:00:00+05:30`))}`
+                : ''}
             </dd>
           </div>
         ) : null}
@@ -115,9 +117,7 @@ export async function PipelineView({ initPageResult, params, searchParams }: Adm
   const kind = kindOf(searchParams?.kind)
   const board = allowed ? await loadBoard(req, kind, new Date()) : null
   const movedId = Number(searchParams?.moved)
-  const moved = board?.columns
-    .flatMap((column) => column.cards)
-    .find((card) => card.id === movedId)
+  const moved = board?.columns.flatMap((column) => column.cards).find((card) => card.id === movedId)
 
   return (
     <DefaultTemplate
@@ -205,7 +205,9 @@ export async function PipelineView({ initPageResult, params, searchParams }: Adm
             <FocusMoved
               cardId={moved ? cardId(moved.id) : null}
               message={
-                moved ? COPY.move.moved(moved.title || COPY.untitled, stageLabel(moved.stage)) : null
+                moved
+                  ? COPY.move.moved(moved.title || COPY.untitled, stageLabel(moved.stage))
+                  : null
               }
             />
           </>

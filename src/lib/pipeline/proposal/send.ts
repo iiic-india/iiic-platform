@@ -87,7 +87,11 @@ export function makeSendVersion(deps: ProposalDeps): SendVersion {
         req,
       })
       if (leadMovesOnSend(lead)) {
-        const moved = await deps.moveLead(req, { leadId: lead.id, to: PROPOSAL_SENT_STAGE, by: null })
+        const moved = await deps.moveLead(req, {
+          leadId: lead.id,
+          to: PROPOSAL_SENT_STAGE,
+          by: null,
+        })
         if (!moved.ok) return err({ code: 'not-found' as const })
       }
       const logged = await deps.logActivity(req, {
@@ -110,7 +114,11 @@ export function makeSendVersion(deps: ProposalDeps): SendVersion {
         key: `P5:version:${version.id}`,
       })
       if (!task.ok) return err({ code: 'not-found' as const })
-      await deps.emit(req, { name: 'proposal.sent', proposalId: proposal.id, versionId: version.id })
+      await deps.emit(req, {
+        name: 'proposal.sent',
+        proposalId: proposal.id,
+        versionId: version.id,
+      })
       return ok({
         to: recipient.email,
         reference: snapshot.reference,

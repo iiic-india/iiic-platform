@@ -27,7 +27,13 @@ type Refusal = { message: string; details: string[] }
  * stored anywhere, so a reload loses it (docs/17 §5). The panel sits inside the record's form, so
  * each action is a button, not a form.
  */
-export function VersionActionsPanel({ versionId, isOffice, feesMayPrint, linkOpen, sendable }: Props) {
+export function VersionActionsPanel({
+  versionId,
+  isOffice,
+  feesMayPrint,
+  linkOpen,
+  sendable,
+}: Props) {
   const {
     config: {
       routes: { api },

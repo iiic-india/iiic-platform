@@ -182,7 +182,9 @@ export function plainPdf(lines: readonly string[]): Uint8Array {
  * a Vercel deployment (`wiring.ts`), where a client must never receive the stand-in's copy: the
  * PDF is then refused as waiting for the real printer, and nothing can be sent.
  */
-export function fakeProposalPrinter({ printsPdf = true }: { printsPdf?: boolean } = {}): ProposalPrinter {
+export function fakeProposalPrinter({
+  printsPdf = true,
+}: { printsPdf?: boolean } = {}): ProposalPrinter {
   return {
     fake: true,
     async page(snapshot, { feesMayPrint }) {
