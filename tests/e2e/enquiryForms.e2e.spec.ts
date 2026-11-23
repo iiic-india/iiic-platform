@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, type Page, test } from '@playwright/test'
-import { getPayload, type Payload } from 'payload'
+import { getPayload, type Payload, type Where } from 'payload'
 
 import { FORM_COPY, REFUSALS } from '../../src/lib/enquiryForms/strings'
 import { FORM_MESSAGES } from '../../src/lib/pipeline/forms'
@@ -104,7 +104,7 @@ test.describe('The Team Map request', () => {
     })
     const personIds = people.map((person) => person.id)
     const organisationIds = organisations.map((organisation) => organisation.id)
-    const owners = [
+    const owners: Where[] = [
       ...(personIds.length ? [{ person: { in: personIds } }] : []),
       ...(organisationIds.length ? [{ organisation: { in: organisationIds } }] : []),
     ]
