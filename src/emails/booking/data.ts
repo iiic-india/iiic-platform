@@ -41,6 +41,15 @@ export type RescheduledData = z.infer<typeof RescheduledData>
 export const CancelledData = SessionData.extend({ by: z.enum(['client', 'iiic']) })
 export type CancelledData = z.infer<typeof CancelledData>
 
+export const FeedbackData = SessionData.extend({
+  /**
+   * The feedback page for this booking (`/feedback/[token]`, M5). Null until that page and its
+   * tokens exist: the email then carries a placeholder, which blocks the send in production.
+   */
+  feedbackUrl: z.url().nullable(),
+})
+export type FeedbackData = z.infer<typeof FeedbackData>
+
 export const TimeRequestData = z.object({
   firstName: Name,
   serviceName: ServiceName,

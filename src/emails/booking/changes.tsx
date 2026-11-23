@@ -1,5 +1,5 @@
 import { Paragraph } from '../components/Frame'
-import { Button, Details } from '../components/parts'
+import { Button, Details, type Detail } from '../components/parts'
 import { templateSpec } from '../registry'
 import type { TemplateImplementation } from '../types'
 
@@ -125,8 +125,13 @@ export const bookingChangeStaff: TemplateImplementation<StaffChangeData> = {
     subject: staff.subject,
     preheader: staff.preheader,
     element: (data, context) => {
-      const rows = [{ label: LABELS.what, value: data.serviceName }]
-      if (data.fromStartsAt) rows.push({ label: LABELS.was, value: whenOf({ startsAt: data.fromStartsAt, endsAt: null }) })
+      const rows: Detail[] = [{ label: LABELS.what, value: data.serviceName }]
+      if (data.fromStartsAt) {
+        rows.push({
+          label: LABELS.was,
+          value: whenOf({ startsAt: data.fromStartsAt, endsAt: null }),
+        })
+      }
       if (data.startsAt) {
         rows.push({
           label: data.fromStartsAt ? LABELS.now : LABELS.when,

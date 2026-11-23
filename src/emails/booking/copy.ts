@@ -101,7 +101,8 @@ export const COPY = {
     subject: (d: SessionData) => `Your ${d.serviceName} on ${at(d.startsAt)}`,
     preheader: (d: SessionData) => `${placeOf(d)}. Booking ID ${d.reference}.`,
     eyebrow: 'Reminder',
-    heading: (d: SessionData) => `${d.firstName}, your ${d.serviceName} is on ${shortDay(d.startsAt)}.`,
+    heading: (d: SessionData) =>
+      `${d.firstName}, your ${d.serviceName} is on ${shortDay(d.startsAt)}.`,
     lead: (d: SessionData) =>
       d.format === 'online'
         ? `It starts at ${timeSpan(d.startsAt)}, online. The link is below.`
@@ -135,6 +136,7 @@ export const COPY = {
     lead: (d: TimeRequestData) =>
       `We have your request for a ${d.serviceName}. Someone at IIIC will reply with a time, or with a question if none of the days you gave is free.`,
     note: 'Nothing is booked until we confirm a time with you.',
+    change: `To change your request, reply to this email or call ${CONTACT.phone}.`,
   },
   'consent-receipt': {
     subject: () => 'What you agreed to when you booked',
@@ -152,12 +154,15 @@ export const COPY = {
     subject: (d: ReceiptData) => `Your ${DOCUMENT[d.document].toLowerCase()} ${d.number}`,
     preheader: (d: ReceiptData) => `For booking ${d.reference}: ${rupeesExact(d.totalPaise)}.`,
     eyebrow: (d: ReceiptData) => DOCUMENT[d.document],
-    heading: (d: ReceiptData) => `${d.firstName}, here is your ${DOCUMENT[d.document].toLowerCase()}.`,
+    heading: (d: ReceiptData) =>
+      `${d.firstName}, here is your ${DOCUMENT[d.document].toLowerCase()}.`,
     lead: (d: ReceiptData) => `It is for your payment for booking ${d.reference}.`,
     amount: (paise: number) => rupeesExact(paise),
+    questions: `Need the PDF, or have a question about it? Reply to this email or call ${CONTACT.phone}.`,
   },
   'refund-processed': {
-    subject: (d: RefundData) => `Refund of ${rupees(d.amountPaise)} made for booking ${d.reference}`,
+    subject: (d: RefundData) =>
+      `Refund of ${rupees(d.amountPaise)} made for booking ${d.reference}`,
     preheader: () => 'It goes back to the account you paid from.',
     eyebrow: 'Refund made',
     heading: (d: RefundData) => `${d.firstName}, your refund has been made.`,
@@ -169,7 +174,8 @@ export const COPY = {
     subject: () => 'Your payment is being refunded: the time was taken',
     preheader: (d: SlotLostData) => `${rupees(d.amountPaise)}, back to the account you paid from.`,
     eyebrow: 'Not booked',
-    heading: (d: SlotLostData) => `${d.firstName}, that time was taken before your payment arrived.`,
+    heading: (d: SlotLostData) =>
+      `${d.firstName}, that time was taken before your payment arrived.`,
     lead: (d: SlotLostData) =>
       d.startsAt
         ? `Someone else confirmed ${at(d.startsAt)} a moment before your payment reached us, so your ${d.serviceName} could not be booked.`
@@ -194,8 +200,10 @@ export const COPY = {
     heading: (d: SessionData) => `${d.firstName}, how was your ${d.serviceName}?`,
     lead: (d: SessionData) =>
       `We would like to know how your ${d.serviceName} on ${longDay(d.startsAt)} went. There is one question: a rating from 1 to 5.`,
-    // The feedback page is M5's (Proof): until it exists the message cannot go (docs/19 §10).
-    link: '[[TODO: the feedback page’s address, built in M5]]',
+    button: 'Rate your session',
+    // The feedback page and its links are M5's: until they exist this stands where the button
+    // goes, and the placeholder blocks the send in production (docs/19 §10).
+    missingLink: '[[TODO: the link to the feedback page for this booking, I-17]]',
   },
   'payment-link': {
     subject: (d: PaymentLinkData) => `Payment for your booking on ${shortDay(d.startsAt)}`,
@@ -288,7 +296,7 @@ export const WHATSAPP_PARAMS = {
     timeSpan(d.startsAt),
     d.reference,
   ],
-  'feedback-request': (d: SessionData) => [d.firstName, d.serviceName, longDay(d.startsAt)],
+  // 'feedback-request' gets its WhatsApp variables with M5's feedback link (docs/19 §10).
   'time-request-received': (d: TimeRequestData) => [d.firstName, d.serviceName, d.reference],
   'payment-link': (d: PaymentLinkData) => [
     d.firstName,

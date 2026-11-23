@@ -22,6 +22,11 @@ export function shortDay(instant: Date): string {
   return `${WEEKDAY.format(instant)}, ${DAY_MONTH.format(instant)}`
 }
 
+/** A day in India given as YYYY-MM-DD (a time request's days), as Friday, 6 November 2026. */
+export function longIstDay(day: string): string {
+  return longDay(new Date(`${day}T12:00:00+05:30`))
+}
+
 /** 3 PM, or 3 PM – 3:45 PM when the end is known. */
 export function timeSpan(startsAt: Date, endsAt?: Date | null): string {
   const start = formatIstTime(startsAt)

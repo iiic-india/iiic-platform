@@ -12,6 +12,7 @@ import type {
   CancelledData,
   ConfirmedData,
   ConsentReceiptData,
+  FeedbackData,
   PaymentLinkData,
   ReceiptData,
   RefundData,
@@ -214,7 +215,18 @@ export async function loadCancelled(req: PayloadRequest, input: LoadInput): Load
   return ok({ ...session, by: booking.status === 'cancelledByIiic' ? 'iiic' : 'client' })
 }
 
-export const loadCompleted = withStatus(plainSession, ['completed'])
+/**
+ * B8: a completed booking. The feedback page's link is M5's (`/feedback/[token]`); until its
+ * tokens exist the link is null and the email carries a placeholder instead (docs/19 §10).
+ */
+export async function loadFeedback(req: PayloadRequest, input: LoadInput): Loaded<FeedbackData> {
+  const booking = await subjectBooking(req, input.subject)
+  if (!booking) return NOT_FOUND
+  if (booking.status !== 'completed') return STALE
+  const session = await sessionOf(req, booking, input.recipient)
+  return session ? ok({ ...session, feedbackUrl: null }) : NOT_FOUND
+}
+
 export const loadNoShow = withStatus(plainSession, ['noShow'])
 
 export async function loadTimeRequest(
@@ -264,7 +276,13 @@ export async function loadConsentReceipt(
     const notice = consent.noticeVersion
     const version = typeof notice === 'object' && notice ? notice.version : null
     return version
-      ? [{ purpose: purposeLabel(consent.purpose), version, grantedAt: new Date(consent.grantedAt) }]
+      ? [
+          {
+            purpose: purposeLabel(consent.purpose),
+            version,
+            grantedAt: new Date(consent.grantedAt),
+          },
+        ]
       : []
   })
   if (!consents.length) return NOT_FOUND
@@ -415,7 +433,6 @@ export async function loadStaffChange(
     serviceName: service.name,
     startsAt: booking.startsAt ? new Date(booking.startsAt) : null,
     fromStartsAt: change === 'rescheduled' && from?.startsAt ? new Date(from.startsAt) : null,
-    by:
-      change === 'cancelled' ? (booking.status === 'cancelledByIiic' ? 'iiic' : 'client') : null,
+    by: change === 'cancelled' ? (booking.status === 'cancelledByIiic' ? 'iiic' : 'client') : null,
   })
 }
