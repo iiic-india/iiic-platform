@@ -12,5 +12,5 @@ export function registerOf(path: string): AnalyticsEventInput['register'] {
   return 'default'
 }
 
-/** A path on this site as the analytics events name it: small letters, digits, hyphens. */
-export const PAGE_PATH = /^\/[a-z0-9/-]{0,199}$/
+/** A path on this site as the analytics events name it: small letters, digits, hyphens; never "//". */
+export const PAGE_PATH = /^\/(?!\/)[a-z0-9/-]{0,199}$/
