@@ -111,7 +111,8 @@ describe('the shared failure path', () => {
     expect(attemptsOf(undefined)).toBe(0)
     const own = vi.fn()
     expect(withFailurePath({ slug: 'x', onFail: own }).onFail).toBe(own)
-    expect(withFailurePath({ slug: 'x', retries: 3 }).onFail).toBeTypeOf('function')
+    const given = withFailurePath({ slug: 'x', retries: 3 }) as { onFail?: unknown }
+    expect(given.onFail).toBeTypeOf('function')
   })
 })
 
