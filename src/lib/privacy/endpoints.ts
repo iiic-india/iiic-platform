@@ -1,6 +1,6 @@
-import 'server-only'
+﻿import 'server-only'
 
-import type { Endpoint, PayloadHandler, PayloadRequest } from 'payload'
+import type { PayloadHandler, PayloadRequest } from 'payload'
 
 import { viewRefusal } from '@/access/views'
 import { PRIVACY_COPY, type PrivacyErrorCode } from '@/components/admin/privacy/privacyCopy'
@@ -10,7 +10,7 @@ import { downloadExport, exportPersonData, type ExportError } from './export'
 import { enterCodeAgain, type StepUpError } from './stepUp'
 
 /**
- * The request actions' routes under /api/privacy (docs/18 §5). Each asks `viewRefusal` first,
+ * The request actions' routes under /api/privacy (docs/18 Â§5). Each asks `viewRefusal` first,
  * before it reads any input (CLAUDE.md #6), then the privacy module checks again and reads with
  * the user's own access. Confirming an erasure and making an export take the two-factor code in
  * the same request. Answers are never cached and never carry a person's details.
@@ -115,17 +115,10 @@ const download: PayloadHandler = async (req) => {
   })
 }
 
-export const privacyEndpoints: Endpoint[] = [
-  { path: '/privacy/erasure-plan', method: 'post', handler: guarded('Planning an erasure', plan) },
-  {
-    path: '/privacy/confirm-erasure',
-    method: 'post',
-    handler: guarded('Confirming an erasure', confirm),
-  },
-  { path: '/privacy/export', method: 'post', handler: guarded('Making an export', makeExport) },
-  {
-    path: '/privacy/export-file',
-    method: 'get',
-    handler: guarded('Downloading an export', download),
-  },
-]
+/** Registered by src/plugins/notesAndPrivacy.ts, which loads this module only when one is called. */
+export const privacyHandlers = {
+  plan: guarded('Planning an erasure', plan),
+  confirm: guarded('Confirming an erasure', confirm),
+  export: guarded('Making an export', makeExport),
+  download: guarded('Downloading an export', download),
+} satisfies Record<string, PayloadHandler>

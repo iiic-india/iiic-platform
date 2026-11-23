@@ -1,6 +1,6 @@
 import 'server-only'
 
-import type { Endpoint, PayloadHandler, PayloadRequest } from 'payload'
+import type { PayloadHandler, PayloadRequest } from 'payload'
 
 import { NOTES_COPY, type NoteErrorCode } from '@/components/admin/notes/notesCopy'
 
@@ -126,10 +126,11 @@ const count: PayloadHandler = async (req) => {
   return json(counted.value)
 }
 
-export const notesEndpoints: Endpoint[] = [
-  { path: '/notes/list', method: 'get', handler: guarded('Listing notes', list) },
-  { path: '/notes/write', method: 'post', handler: guarded('Writing a note', write) },
-  { path: '/notes/update', method: 'post', handler: guarded('Changing a note', update) },
-  { path: '/notes/open', method: 'post', handler: guarded('Opening a note', open) },
-  { path: '/notes/count', method: 'get', handler: guarded('Counting notes', count) },
-]
+/** Registered by src/plugins/notesAndPrivacy.ts, which loads this module only when one is called. */
+export const notesHandlers = {
+  list: guarded('Listing notes', list),
+  write: guarded('Writing a note', write),
+  update: guarded('Changing a note', update),
+  open: guarded('Opening a note', open),
+  count: guarded('Counting notes', count),
+} satisfies Record<string, PayloadHandler>

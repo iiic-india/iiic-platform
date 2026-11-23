@@ -49,6 +49,8 @@ import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
 import { reportServerError, reportTestError } from './lib/monitoring/sentry'
 import { auditLog } from './plugins/auditLog'
+// M5 A: session notes and privacy (docs/18 §3, §5).
+import { notesAndPrivacy } from './plugins/notesAndPrivacy'
 import { searchIndex } from './plugins/searchIndex'
 import { totpCopy } from './plugins/totpCopy'
 import { totpSecretAtRest } from './plugins/totpSecretAtRest'
@@ -108,7 +110,11 @@ export default buildConfig({
       // Recovery codes for staff two-factor (src/lib/auth/recoveryEndpoints.ts).
       beforeDashboard: ['/components/admin/RecoveryCodes#RecoveryCodes'],
       // Content → Placeholders: what the pages still wait for (D-56).
-      afterNavLinks: ['/components/admin/PlaceholdersNavLink#PlaceholdersNavLink'],
+      afterNavLinks: [
+        '/components/admin/PlaceholdersNavLink#PlaceholdersNavLink',
+        // M5 A: Privacy (docs/18 §6).
+        '/components/admin/privacy/PrivacyNavLink#PrivacyNavLink',
+      ],
       // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
       // plugin spreads after its own, so these win. One labelled code field each; the verify
       // view also takes a recovery code.
@@ -121,6 +127,12 @@ export default buildConfig({
         placeholders: {
           Component: '/components/admin/PlaceholdersView#PlaceholdersView',
           path: '/placeholders',
+          exact: true,
+        },
+        // M5 A: Privacy, which checks the user, the code and the role itself (docs/18 §6).
+        privacy: {
+          Component: '/components/admin/privacy/PrivacyView#PrivacyView',
+          path: '/privacy',
           exact: true,
         },
       },
@@ -244,6 +256,9 @@ export default buildConfig({
     payloadTotp(TOTP_OPTIONS),
     totpSecretAtRest({ collection: 'users', previousSecret: config.PAYLOAD_SECRET_PREVIOUS }),
     totpCopy(),
+    // M5 A: the privacy collections' rules, the notes and request panels, and their routes
+    // (src/plugins/notesAndPrivacy.ts). It adds no collection.
+    notesAndPrivacy(),
     // Last, so it sees every collection (src/plugins/auditLog.ts).
     auditLog(),
   ],

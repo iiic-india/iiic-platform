@@ -37,6 +37,7 @@ export const PRIVACY_COPY = {
   notice: 'Notice',
   evidence: 'Evidence',
   noEvidence: 'None recorded',
+  deviceRecorded: 'IP address and browser recorded',
   shownOf: (shown: number, total: number) =>
     shown === total ? `${total} entries` : `The latest ${shown} of ${total} entries`,
 
@@ -73,6 +74,7 @@ export const PRIVACY_COPY = {
     ownerConfirms:
       'An owner reads this plan and confirms. Set the status to “Waiting for an owner” when it is ready.',
     confirmTitle: 'Confirm erasure',
+    readPlanFirst: 'Read the plan above before you confirm.',
     confirmWarning:
       'This deletes what the plan lists and cannot be undone. Enter the code from your authenticator app to confirm.',
     code: 'Two-factor code',
