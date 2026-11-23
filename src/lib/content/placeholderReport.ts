@@ -1,6 +1,7 @@
 import type { Payload, PayloadRequest } from 'payload'
 
 import { STARTER_PAGES } from '@/content/starter'
+import { enquiryNotice } from '@/lib/enquiryForms/notice'
 import { readLegalInformation } from '@/lib/settings/source'
 
 import { buildReport, codedPlaceholders, type Report, type ReportSource } from './placeholders'
@@ -12,7 +13,8 @@ import { pagePath } from './slug'
  * (D-51). Read with the staff member's own access, never past it: only the roles that read
  * drafts get any page at all. The legal information in the settings decides which of the
  * footer's and /legal's placeholders the site still draws; it is public, so it is read past the
- * settings' owner-only rule, and only whether each detail is there reaches the report.
+ * settings' owner-only rule, and only whether each detail is there reaches the report. So does
+ * whether a consent text for replies to an enquiry is in force, which the public forms wait on.
  */
 export async function loadPlaceholderReport(
   payload: Payload,
@@ -50,5 +52,7 @@ export async function loadPlaceholderReport(
       content: page,
     }))
   const legal = await readLegalInformation(payload)
-  return buildReport([...inAdmin, ...starters], codedPlaceholders(legal), legal)
+  // The public forms show their placeholder while no consent text is in force (docs/17 §6).
+  const noticeInForce = (await enquiryNotice(payload)) !== null
+  return buildReport([...inAdmin, ...starters], codedPlaceholders(legal), legal, noticeInForce)
 }

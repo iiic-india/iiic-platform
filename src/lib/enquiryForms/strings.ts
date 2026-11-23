@@ -221,5 +221,11 @@ export const TURNSTILE_NOSCRIPT = `The spam check on this form needs JavaScript.
 /** The trap field's label: nobody sees it, and anything typed in it marks a robot. */
 export const TRAP_LABEL = 'Leave this empty'
 
+/**
+ * The forms' words, acknowledgements included, are candidates until IIIC approves them (I-41):
+ * each form's section carries the candidate marker, and the placeholders report lists it.
+ */
+export const FORMS_COPY_STATUS: 'approved' | 'candidate' = 'candidate'
+
 /** What a form shows in place of its fields while no consent text is in force (docs/17 §6). */
 export const NO_NOTICE_PLACEHOLDER = { id: 'I-22', what: 'the enquiry consent text' } as const

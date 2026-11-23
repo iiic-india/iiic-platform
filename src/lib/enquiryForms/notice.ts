@@ -1,5 +1,3 @@
-import 'server-only'
-
 import type { Payload } from 'payload'
 
 import { currentNotice } from '@/lib/privacy/consents'
@@ -10,7 +8,9 @@ import type { NoticeShown } from './state'
 /**
  * The consent text in force for replies to an enquiry (`enquiryReplies`, docs/17 §6), in the
  * site's language: what the form shows beside its box, and the only version the form is taken
- * under. None, and the form is not shown (Content → Consent texts; I-22).
+ * under. None, and the form is not shown (Content → Consent texts; I-22). Server code, though
+ * free of `server-only`, as src/lib/privacy/consents.ts is: it holds no secret, and the
+ * placeholders report reads it too.
  */
 export async function enquiryNotice(
   payload: Payload,

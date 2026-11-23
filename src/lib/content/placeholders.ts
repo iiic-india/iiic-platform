@@ -1,5 +1,6 @@
 import { CERTIFICATE_HEADING } from '@/lib/certificates/statement'
 import { SCOPE_HEADING } from '@/lib/counselling/scope'
+import { FORM_COPY, FORMS_COPY_STATUS, NO_NOTICE_PLACEHOLDER } from '@/lib/enquiryForms/strings'
 import { STEP_ZERO_QUESTION } from '@/lib/map/stepZero'
 import { NOT_FOUND_LINES, NOT_FOUND_QUESTIONS, type QuestionPool } from '@/lib/notFound/copy'
 import {
@@ -92,7 +93,12 @@ const FIXED_HEADINGS: Partial<Record<PageBlock['blockType'], string>> = {
   certificate: CERTIFICATE_HEADING,
   contact: CONTACT_HEADING,
   legal: LEGAL_INFORMATION_HEADING,
+  teamMapRequest: FORM_COPY.teamMap.heading,
+  partnershipEnquiry: FORM_COPY.partnership.heading,
 }
+
+/** The public forms' blocks, which draw their placeholder while no consent text is in force. */
+const FORM_BLOCKS: readonly PageBlock['blockType'][] = ['teamMapRequest', 'partnershipEnquiry']
 
 /**
  * Every string a block shows, whatever field holds it. The admin's block name and the row ids
@@ -139,11 +145,15 @@ function typedIn(texts: string[], section: string): Placeholder[] {
 /**
  * Every placeholder a page shows: the typed ones, and the ones its blocks draw themselves. The
  * legal information section draws a placeholder for each detail the settings lack, so the page
- * is read with the legal information the site has (none, unless the caller gives it).
+ * is read with the legal information the site has (none, unless the caller gives it). A public
+ * form draws its placeholder instead of its fields while no consent text for replies to an
+ * enquiry is in force (docs/17 §6), so the page is read knowing whether one is (none, unless the
+ * caller says so).
  */
 export function placeholdersIn(
   page: Pick<PageContent, 'layout'>,
   legal: LegalInformation = NO_LEGAL_INFORMATION,
+  enquiryNoticeInForce = false,
 ): Placeholder[] {
   return page.layout.flatMap((block) => {
     const section = sectionName(block)
@@ -153,16 +163,23 @@ export function placeholdersIn(
         section,
       )
     }
+    if (FORM_BLOCKS.includes(block.blockType)) {
+      return enquiryNoticeInForce ? [] : [{ ...NO_NOTICE_PLACEHOLDER, section }]
+    }
     const drawn = DRAWN_BY_BLOCK[block.blockType]
     const typed = typedIn(strings(block), section)
     return drawn ? [{ ...drawn, section }, ...typed] : typed
   })
 }
 
-/** The sections whose copy IIIC has not approved yet (I-41). */
+/** The sections whose copy IIIC has not approved yet (I-41), the public forms' included. */
 export function candidateSections(page: Pick<PageContent, 'layout'>): string[] {
   return page.layout
-    .filter((block) => 'copyStatus' in block && block.copyStatus === 'candidate')
+    .filter((block) =>
+      FORM_BLOCKS.includes(block.blockType)
+        ? FORMS_COPY_STATUS === 'candidate'
+        : 'copyStatus' in block && block.copyStatus === 'candidate',
+    )
     .map(sectionName)
 }
 
@@ -247,16 +264,21 @@ function byInput(a: { id: string }, b: { id: string }): number {
 
 /**
  * The report over a set of pages, with the placeholders the code itself draws, read with the
- * legal information the settings hold (none, unless the caller gives it).
+ * legal information the settings hold (none, unless the caller gives it) and knowing whether a
+ * consent text for replies to an enquiry is in force (not, unless the caller says so).
  */
 export function buildReport(
   sources: ReportSource[],
   coded = CODED_PLACEHOLDERS,
   legal: LegalInformation = NO_LEGAL_INFORMATION,
+  enquiryNoticeInForce = false,
 ): Report {
   const missing = [
     ...sources.flatMap(({ page, content }) =>
-      placeholdersIn(content, legal).map((placeholder) => ({ ...placeholder, page })),
+      placeholdersIn(content, legal, enquiryNoticeInForce).map((placeholder) => ({
+        ...placeholder,
+        page,
+      })),
     ),
     ...coded,
   ]

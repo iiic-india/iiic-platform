@@ -27,4 +27,5 @@ Branch m4/forms from m4/foundation. Design: docs/17 §6, §12 B.
 
 ## Progress
 - [x] 1 notes  - [x] 2 blocks+types  - [x] 3 lib/enquiryForms core (guards, limits, setup, state, strings, submit, turnstile, register, wiring, actions) committed; tests pending
-- run 3 (resumed): components next, then render, CSP, starter, tests
+- run 3 (resumed): [x] components (EnquiryForm takes setup.action) [x] render (PageAt -> formsOn in pageForms.ts, dynamic import of setup.ts) [x] CSP frameOrigins + proxy [x] starter pages
+- next: fix existing unit tests (anchors, institute links), new unit tests (guards, submit, turnstile, csp, form render), e2e spec, checks

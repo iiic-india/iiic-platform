@@ -18,7 +18,12 @@ import { LEGAL_REVIEW_AWAITS } from '@/lib/content/legalReview'
 import { FIXED_PLACEHOLDERS } from '@/lib/content/placeholders'
 import type { FaqItem, PageBlock, PageContent } from '@/lib/content/types'
 import { FORM_BLOCK_KINDS, NO_FORMS, type PageForms } from '@/lib/enquiryForms/state'
-import { type EnquiryFormKind, FORM_COPY, NO_NOTICE_PLACEHOLDER } from '@/lib/enquiryForms/strings'
+import {
+  type EnquiryFormKind,
+  FORM_COPY,
+  FORMS_COPY_STATUS,
+  NO_NOTICE_PLACEHOLDER,
+} from '@/lib/enquiryForms/strings'
 import { type Devices, devicesAt } from '@/lib/experience/narrative'
 import { articlePath, JOURNAL_PATH } from '@/lib/journal/addresses'
 import type { PostSummary } from '@/lib/journal/posts'
@@ -644,7 +649,7 @@ function EnquirySection({ kind, forms }: { kind: EnquiryFormKind; forms: PageFor
   const headingId = `${copy.anchor}-heading`
   return (
     <section className="iiic-section" id={copy.anchor} aria-labelledby={headingId}>
-      <CandidateMark status="candidate" />
+      <CandidateMark status={FORMS_COPY_STATUS} />
       <SectionHead heading={copy.heading} headingId={headingId} />
       <div className={formStyles.section}>
         {setup?.notice ? (
