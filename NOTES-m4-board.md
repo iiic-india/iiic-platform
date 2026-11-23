@@ -34,7 +34,10 @@ Branch `m4/board-proposals`, from `m4/foundation` (85918d5). Design: `docs/17-pi
 
 ## Progress
 
-- [x] 1 · [x] 2 · [x] 3 · [x] 4 · [x] 5 (hooks + endpoints wired in the collections) · [ ] 6 · [x] 7 (P8 task; types to regenerate) · [ ] 8 · [ ] 9 · [ ] 10
+- [x] 1 · [x] 2 · [x] 3 · [x] 4 · [x] 5 · [x] 6 · [x] 7 (types regenerated) · [x] 8 · [x] 9 (importmap done) · [ ] 10
+- Board: `src/components/admin/pipeline/` board.ts (buildBoard pure, loadBoard), moveEndpoint.ts (`POST /api/pipeline/move`, root endpoint in payload.config), PipelineView, MoveToStage, FocusMoved, PipelineNavLink; panels ProposalActions(+Panel), VersionActions(+Panel) as `ui` fields.
+- Outside the list, needed: `src/lib/analytics/beacon.ts` countsPath leaves `/p/` out (the token must not reach Cloudflare) + its test.
+- Next: unit tests (board, move endpoint gate, proposal endpoint gates, P8 task, service flow with fakes), int test, checks, docs/17 kept true.
 - Modules the collections reach (endpoints → wiring → interim, service, …) carry no `server-only` (the Payload CLI loads them).
 - Endpoints: `POST /api/proposals/:id/versions`, `GET /api/proposals/:id/preview`, `POST /api/proposals/:id/answer`, `GET /api/proposal-versions/:id/preview`, `GET …/:id/pdf`, `POST …/:id/send`, `POST …/:id/withdraw`.
 - Run 3 resumed at 5a52cfa.
