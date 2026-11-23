@@ -1,10 +1,17 @@
 // @vitest-environment node
-import { ValidationError } from 'payload'
+import { ValidationError, type Field, type FieldAccess } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
 
 import { Bookings } from '@/collections/Bookings'
 import { bookingTasks, expireHoldsTask } from '@/jobs/booking'
-import { assignReference, fillEnd, keepMoves } from '@/lib/booking/bookingHooks'
+import {
+  assignReference,
+  CAPTURE_CONFIRMATION,
+  fillEnd,
+  keepMoves,
+  validatePaymentStatus,
+} from '@/lib/booking/bookingHooks'
+import { BOOKING_PAYMENT_STATUSES } from '@/lib/booking/states'
 
 // The bookings collection's own rules (docs/16 §3, §6) and the B4 task's shape. The hooks run on
 // every write, the admin form's included; a staff edit moves a booking only along the table of
@@ -96,6 +103,106 @@ describe('the bookings collection’s hooks', () => {
       }),
     ) as Record<string, unknown>
     expect(typeof data.confirmedAt).toBe('string')
+  })
+
+  it('lets a practitioner mark their session attended or a no-show, and nothing else', () => {
+    const practitioner = { id: 2, collection: 'users', roles: ['practitioner'], active: true }
+    const as = (from: string, to: string) =>
+      keepMoves(
+        args({
+          data: { status: to },
+          originalDoc: { status: from, type: 'session' } as never,
+          req: { user: practitioner } as never,
+        }),
+      )
+    expect(as('confirmed', 'completed')).toMatchObject({ status: 'completed' })
+    expect(as('confirmed', 'noShow')).toMatchObject({ status: 'noShow' })
+    for (const [from, to] of [
+      ['confirmed', 'cancelledByIiic'],
+      ['confirmed', 'rescheduled'],
+      ['pendingPayment', 'confirmed'],
+      ['held', 'cancelledByClient'],
+    ] as const) {
+      expect(() => as(from, to), `${from} → ${to}`).toThrow(ValidationError)
+    }
+  })
+
+  it('confirms a hold, or a lapsed one, only for a captured payment, never by a staff edit', () => {
+    const placed = {
+      type: 'session',
+      practitioner: 3,
+      startsAt: '2026-12-07T04:30:00.000Z',
+      endsAt: '2026-12-07T05:00:00.000Z',
+    }
+    for (const from of ['pendingPayment', 'expired']) {
+      expect(
+        () =>
+          keepMoves(
+            args({
+              data: { status: 'confirmed' },
+              originalDoc: { ...placed, status: from } as never,
+            }),
+          ),
+        from,
+      ).toThrow(ValidationError)
+      // ConfirmBooking marks the write it makes for a capture (an owner may run the poll).
+      const captured = keepMoves(
+        args({
+          data: { status: 'confirmed' },
+          originalDoc: { ...placed, status: from } as never,
+          context: { [CAPTURE_CONFIRMATION]: true },
+        }),
+      ) as Record<string, unknown>
+      expect(captured.status).toBe('confirmed')
+    }
+  })
+
+  it('keeps every field but the state to the office, and the payment state to the server', () => {
+    const fields = new Map<string, Field>()
+    const walk = (list: Field[]) => {
+      for (const field of list) {
+        if ('name' in field) fields.set(field.name, field)
+        else if ('fields' in field) walk(field.fields)
+      }
+    }
+    walk(Bookings.fields)
+    const user = (role: string) => ({ id: 9, roles: [role], active: true, _strategy: 'totp' })
+    const mayUpdate = (name: string, role: string) => {
+      const update = (fields.get(name) as { access?: { update?: FieldAccess } }).access?.update
+      if (!update) return true
+      return update({ req: { user: user(role) } } as never)
+    }
+    const officeOnly = ['person', 'bookedBy', 'practitioner', 'startsAt', 'endsAt', 'service']
+    for (const name of officeOnly) {
+      expect(mayUpdate(name, 'practitioner'), name).toBe(false)
+      expect(mayUpdate(name, 'operator'), name).toBe(true)
+    }
+    for (const name of ['paymentStatus', 'manageTokenHash', 'checkoutKey', 'rescheduledFrom']) {
+      for (const role of ['owner', 'operator', 'practitioner']) {
+        expect(mayUpdate(name, role), `${name} by ${role}`).toBe(false)
+      }
+    }
+    expect(mayUpdate('status', 'practitioner')).toBe(true)
+  })
+
+  it('lets the office book a client as unpaid or needing no payment, and no later state', () => {
+    const office = { user: staff, t: (key: string) => key }
+    const check = (value: string, overrideAccess: boolean, operation = 'create') =>
+      validatePaymentStatus(value, {
+        operation,
+        overrideAccess,
+        req: office,
+        options: [...BOOKING_PAYMENT_STATUSES],
+        hasMany: false,
+        required: true,
+      } as never)
+    expect(check('unpaid', false)).toBe(true)
+    expect(check('notRequired', false)).toBe(true)
+    expect(typeof check('paid', false)).toBe('string')
+    expect(typeof check('linkSent', false)).toBe('string')
+    // The payments module writes with access overridden.
+    expect(check('paid', true)).toBe(true)
+    expect(check('paid', true, 'update')).toBe(true)
   })
 
   it('leaves the server’s own writes to the booking module', () => {

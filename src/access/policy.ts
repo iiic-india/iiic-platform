@@ -360,6 +360,14 @@ export const FIELD_POLICY = {
     read: { roles: ['owner', 'operator', 'finance'] },
     write: { roles: [] },
   },
+  // Everything on a booking but its state: the office changes it (docs/05). A practitioner reads
+  // their own bookings and marks them attended or a no-show, which the collection's hook holds
+  // (src/lib/booking/bookingHooks.ts), and changes nothing else: not the client, the time, who it
+  // is with, or the manage link (D-89).
+  bookingEdits: {
+    read: { roles: ['owner', 'operator', 'practitioner'] },
+    write: { roles: ['owner', 'operator'] },
+  },
   // Server bookkeeping on a booking (its calendar event, when it was confirmed): every staff role
   // that reads the booking reads it; only the server writes it.
   serverOnly: {
