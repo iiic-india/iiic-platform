@@ -442,8 +442,9 @@ test.describe('Public shell', () => {
   test('a broken counselling link gets the 404 with the scope statement and the crisis numbers', async ({
     page,
   }) => {
-    // docs/11 §5.1, item 8: "Book a session" leads here until the booking flow is built.
-    const response = await page.goto('/book/session')
+    // docs/11 §5.1, item 8: an address under /book/session that has no page (the booking flow
+    // itself is /book/session, built in M3) is a counselling path.
+    const response = await page.goto('/book/session/no-such-step')
     expect(response?.status()).toBe(404)
     await expect(page.getByText('404 · Page not found', { exact: true })).toBeVisible()
     const scope = page.locator('#scope')
@@ -451,7 +452,7 @@ test.describe('Public shell', () => {
     await expect(scope.getByRole('link', { name: '14416' })).toHaveAttribute('href', 'tel:14416')
     await expect(scope.getByRole('link', { name: '1098' })).toHaveAttribute('href', 'tel:1098')
     // The info session is booked in the education register: not a counselling path.
-    expect((await page.goto('/book/info'))?.status()).toBe(404)
+    expect((await page.goto('/book/info/no-such-step'))?.status()).toBe(404)
     await expect(page.getByText('404 · Page not found', { exact: true })).toBeVisible()
     await expect(page.locator('#scope')).toHaveCount(0)
   })

@@ -36,6 +36,8 @@ test.describe('Office actions', () => {
 
   test('the working-hours view is not reachable without signing in', async ({ page }) => {
     await page.goto('/admin/working-hours')
-    await expect(page).toHaveURL(/\/admin\/login/)
+    // The admin sends a visitor to sign in, or, while no account exists yet, to make the first.
+    await expect(page).toHaveURL(/\/admin\/(login|create-first-user)/)
+    expect(page.url()).not.toContain('working-hours')
   })
 })
