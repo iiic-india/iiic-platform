@@ -355,6 +355,8 @@ export type BookingState = {
   slotLost: boolean
   /** A payment attempt failed and the hold still stands. */
   lastAttemptFailed: boolean
+  /** A checkout was opened for the booking, so a payment may still arrive after the hold. */
+  paymentOpened: boolean
 }
 
 /** Where the booking this browser made stands: the payment step polls it (docs/16 §5). */
@@ -389,6 +391,7 @@ export async function bookingStateAction(raw: unknown): Promise<Answer<BookingSt
       holdExpiresAt: booking.holdExpiresAt ?? null,
       slotLost: lost.totalDocs > 0,
       lastAttemptFailed: latest.docs[0]?.status === 'failed',
+      paymentOpened: latest.docs.length > 0,
     },
   }
 }
