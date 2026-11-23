@@ -16,8 +16,7 @@ export const CERTIFICATES_COPY = {
   waitsStatement: 'The certificate’s fixed statement is a draft until the lawyer’s review (I-22).',
   waitsStorage:
     'This deployment has no private bucket for the PDFs (R2_BUCKET_PRIVATE), so issuing is switched off here.',
-  waitsRenderer:
-    'PDFs cannot be made here yet: the PDF renderer arrives with M3’s documents. The preview works.',
+  waitsRenderer: 'PDFs cannot be made on this deployment yet, so issuing waits. The preview works.',
 
   programmeLegend: 'The programme',
   programmeName: 'Programme',
@@ -38,7 +37,7 @@ export const CERTIFICATES_COPY = {
   fromEvent: 'Or add everyone booked on an event',
   noEvent: 'Choose an event',
   addEvent: 'Add everyone booked',
-  eventEmpty: 'No one is booked on that event.',
+  eventEmpty: 'No one has a confirmed or completed booking on that event.',
   nameAsPrinted: 'Name as printed',
   personOnRecord: 'On record as',
   remove: (name: string) => `Remove ${name}`,
@@ -53,7 +52,7 @@ export const CERTIFICATES_COPY = {
   previewNote: (shown: number, total: number) =>
     shown < total
       ? `The first ${shown} of ${total} pages. Every page prints the same way with its own name.`
-      : 'Every page as it will print. The ID and the QR code are given on issue.',
+      : 'Each page with its name. The ID and the QR code are given on issue.',
   previewFrame: (name: string) => `Certificate preview for ${name}`,
   previewWaiting: (inputs: string[]) => `Still waiting for ${inputs.join(', ')}.`,
   issue: (count: number) => (count === 1 ? 'Issue 1 certificate' : `Issue ${count} certificates`),
@@ -67,7 +66,7 @@ export const CERTIFICATES_COPY = {
       : `Issued ${ids.length} certificates: ${ids.join(', ')}.`,
   cancel: 'Cancel',
 
-  errorTitle: 'Nothing was issued',
+  errorTitle: 'That did not go through',
   failed: 'That did not work. Try again in a moment.',
   offline: 'The admin could not reach the server. Check the connection and try again.',
 
@@ -105,6 +104,10 @@ export const CERTIFICATES_COPY = {
   working: 'Working…',
 } as const
 
+/** One to nine in words, 10 and up in figures (VOICE.md, numbers). */
+const SMALL = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine']
+const inWords = (count: number) => SMALL[count - 1] ?? String(count)
+
 /** What a route answers for each refusal, in the admin's words (docs/18 §4). */
 export const CERTIFICATE_ANSWERS = {
   'sign-in': 'Sign in again to continue.',
@@ -116,7 +119,7 @@ export const CERTIFICATE_ANSWERS = {
   'storage-missing':
     'This deployment has no private bucket for certificates (R2_BUCKET_PRIVATE). Nothing was issued.',
   'person-not-found': (ids: number[]) =>
-    `${ids.length === 1 ? 'One person is' : `${ids.length} people are`} no longer on record (ID ${ids.join(', ')}). Remove them and try again.`,
+    `${ids.length === 1 ? 'One person is' : `${inWords(ids.length)} people are`} no longer on record (ID ${ids.join(', ')}). Remove them and try again.`,
   'not-found': 'No certificate matches.',
   'already-revoked': 'This certificate is already revoked.',
   'render-failed':

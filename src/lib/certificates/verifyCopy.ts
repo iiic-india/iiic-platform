@@ -36,9 +36,12 @@ export const VERIFY_COPY = {
   },
   valid: 'Valid',
   revoked: 'Revoked',
-  validNote: 'This certificate was issued by IIIC and has not been revoked.',
+  validNote:
+    'This certificate was issued by Indian Institute of Image Catalysts and has not been revoked.',
   revokedNote: (day: string | null) =>
-    day ? `IIIC revoked this certificate on ${day}.` : 'IIIC has revoked this certificate.',
+    day
+      ? `Indian Institute of Image Catalysts revoked this certificate on ${day}.`
+      : 'Indian Institute of Image Catalysts has revoked this certificate.',
   replacedBy: 'It was replaced by certificate',
   checkReplacement: (id: string) => `Check certificate ${id}`,
   initialsNote:
