@@ -30,4 +30,9 @@ Branch `m4/crm-core` from `m4/foundation` (85918d5). Design: `docs/17-pipeline-d
 
 ## Progress
 
-- (updated per commit)
+- Steps 1 to 5 committed (pure parts and unit tests; emit, tasks, activities, moves; match,
+  receive; hooks and the People erasure hook; alerts, calls, the two jobs).
+- Schema: `enquiries.conflict` (select `emailAndMobileDiffer`); the job slugs P2 and P3-P4 in the
+  types. No migration (the lead's).
+- Next: int tests `tests/int/pipelineCore.int.spec.ts` (receive, repeat, stale notice, failure
+  part-way, alerts once each), then the checks, then remove this file.
