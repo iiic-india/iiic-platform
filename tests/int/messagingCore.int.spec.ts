@@ -49,14 +49,15 @@ const fakeTemplate: TemplateImplementation<{ ref: string }> = {
     schema: z.object({ ref: z.string() }),
     subject: () => 'Fake subject (int.messaging)',
     preheader: () => 'Fake preheader',
-    element: (data, context) =>
-      createElement(Frame, {
+    element: (data, context) => {
+      const props = {
         preheader: 'Fake preheader',
         heading: 'Fake heading',
         assetUrl: context.assetUrl,
         footer: context.footer,
-        children: createElement(Paragraph, null, `Fake line ${data.ref}.`),
-      }),
+      } as Parameters<typeof Frame>[0]
+      return createElement(Frame, props, createElement(Paragraph, null, `Fake line ${data.ref}.`))
+    },
   },
   whatsapp: { key: 'reminder-24h', schema: z.object({ ref: z.string() }), params: () => ['Fake'] },
 }

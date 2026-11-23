@@ -1,5 +1,4 @@
 import type { TemplateImplementation, TemplateImplementations } from '../types'
-
 import { failureAlert } from './failureAlert'
 
 /** Builder A's template (docs/19 §9): the failure alert to an owner (O3). */

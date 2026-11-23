@@ -2,8 +2,8 @@ import 'server-only'
 
 import type { PayloadRequest } from 'payload'
 
-import { emitAutomationEvent, type EmitAutomationEvent } from '@/lib/automations/emit'
 import type { AutomationId } from '@/lib/automations/catalogue'
+import { emitAutomationEvent, type EmitAutomationEvent } from '@/lib/automations/emit'
 import { countOutcome } from '@/lib/automations/rows'
 import { idOf } from '@/lib/privacy/consentLedger'
 import { err, ok } from '@/lib/result'
