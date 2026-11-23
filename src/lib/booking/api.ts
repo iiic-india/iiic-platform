@@ -389,10 +389,12 @@ export async function bookSlot(
   )
   if (!price.ok) return price
   const flags = await readFlags(req.payload)
+  // A free option shows no total, as the flow's review draws none for it.
+  const inForce = price.value && price.value.totalPaise > 0 ? price.value.totalPaise : null
   if (
     flags.pricesPublic &&
     context.shownTotalPaise !== undefined &&
-    (price.value?.totalPaise ?? null) !== context.shownTotalPaise
+    inForce !== (context.shownTotalPaise || null)
   ) {
     return err({ code: 'price-changed' })
   }
