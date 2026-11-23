@@ -1,11 +1,6 @@
 import type { Where } from 'payload'
 
-import {
-  STALE_STAGES,
-  UNTOUCHED_STAGE,
-  type LeadKind,
-  type LeadStage,
-} from '../stages'
+import { STALE_STAGES, UNTOUCHED_STAGE, type LeadKind, type LeadStage } from '../stages'
 import {
   STALE_AFTER_DAYS,
   UNTOUCHED_HOURS,
@@ -53,7 +48,8 @@ export const heatOf: HeatOf = (lead, now): LeadHeat => {
     const made = instant(lead.createdAt)
     if (!made) return { state: 'fine' }
     const waited = now.getTime() - made.getTime()
-    if (waited >= UNTOUCHED_HOURS.red * HOUR) return { state: 'untouched', level: 'red', since: made }
+    if (waited >= UNTOUCHED_HOURS.red * HOUR)
+      return { state: 'untouched', level: 'red', since: made }
     if (waited >= UNTOUCHED_HOURS.amber * HOUR) {
       return { state: 'untouched', level: 'amber', since: made }
     }
@@ -97,11 +93,9 @@ export const staleWhere: StaleWhere = (now) => {
       },
     ],
   }
-  const stages: Where[] = (Object.keys(STALE_STAGES) as LeadKind[]).map(
-    (kind): Where => ({
-      and: [{ kind: { equals: kind } }, { stage: { in: [...STALE_STAGES[kind]] } }],
-    }),
-  )
+  const stages: Where[] = (Object.keys(STALE_STAGES) as LeadKind[]).map((kind): Where => ({
+    and: [{ kind: { equals: kind } }, { stage: { in: [...STALE_STAGES[kind]] } }],
+  }))
   return { and: [{ or: stages }, quiet] }
 }
 

@@ -129,7 +129,11 @@ export const prepareLead: CollectionBeforeChangeHook = async ({
   const to = merged.stage as LeadStage
   if (from === to) return draft
   if (!canMoveLead(kind, from, to)) {
-    refuse('leads', 'stage', isFinalStage(from) ? HOOK_MESSAGES.ended : HOOK_MESSAGES.badMove(from, to))
+    refuse(
+      'leads',
+      'stage',
+      isFinalStage(from) ? HOOK_MESSAGES.ended : HOOK_MESSAGES.badMove(from, to),
+    )
   }
   draft.stageChangedAt = now
   draft.lastActivityAt = now
