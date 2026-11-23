@@ -20,6 +20,9 @@ import { hasRole, isActive, ROLES, type MaybeStaff, type Role } from './roles'
  *   own profile (the profile's `staff` is their account): their bookings, working hours,
  *   calendar connection and busy times (docs/05: "own calendar and availability, own clients'
  *   bookings").
+ * - `ownClients`: a practitioner reaches only the people who have a booking with them, through
+ *   the person's bookings (the owner's rule of 22 November 2026); FIELD_POLICY.personRecord keeps
+ *   every field but the name, mobile and email from them.
  * A deactivated account is refused everything (src/access/roles.ts).
  */
 export type Rule = {
@@ -30,10 +33,14 @@ export type Rule = {
   active?: true
   statusPublished?: true
   ownPractitioner?: true
+  ownClients?: true
 }
 
 /** The query a practitioner's own documents answer: their profile's staff account is theirs. */
 export const OWN_PRACTITIONER_PATH = 'practitioner.staff'
+
+/** The query a practitioner's own clients answer: a booking of theirs names the person. */
+export const OWN_CLIENTS_PATH = `bookings.${OWN_PRACTITIONER_PATH}`
 
 export const POLICY = {
   users: {
@@ -102,11 +109,12 @@ export const POLICY = {
     update: {},
     delete: {},
   },
-  // The one record of a person (docs/04, S2): the office and the owners. Practitioners see their
-  // own clients once bookings link the two (M3). Deleting a person is the erasure an owner
-  // confirms (docs/05, Privacy), so only owners delete.
+  // The one record of a person (docs/04, S2): the office and the owners. A practitioner reads the
+  // people who have a booking with them, and of those only the name, mobile and email
+  // (FIELD_POLICY.personRecord; the owner's rule of 22 November 2026). Deleting a person is the
+  // erasure an owner confirms (docs/05, Privacy), so only owners delete.
   people: {
-    read: { roles: ['owner', 'operator'] },
+    read: { roles: ['owner', 'operator'], ownClients: true },
     create: { roles: ['owner', 'operator'] },
     update: { roles: ['owner', 'operator'] },
     delete: { roles: ['owner'] },
@@ -358,6 +366,13 @@ export const FIELD_POLICY = {
     read: { roles: ROLES },
     write: { roles: [] },
   },
+  // Everything on a person's record but the name, mobile and email: the office and the owners. A
+  // practitioner, who reads their own clients (POLICY.people), reads those three and nothing more
+  // (the owner's rule of 22 November 2026). Only the office writes a person at all.
+  personRecord: {
+    read: { roles: ['owner', 'operator'] },
+    write: { roles: ['owner', 'operator'] },
+  },
   // The join link of a fixed-time session goes to the people booked on it, never to the page that
   // lists the times; the office keeps it, the practitioner who runs it reads it.
   eventJoinLink: {
@@ -389,6 +404,9 @@ export function allow(rule: Rule): Access {
     if (rule.self && user && isActive(user)) return { id: { equals: user.id } }
     if (rule.ownPractitioner && user?.id !== undefined && hasRole(user, 'practitioner')) {
       return { [OWN_PRACTITIONER_PATH]: { equals: user.id } }
+    }
+    if (rule.ownClients && user?.id !== undefined && hasRole(user, 'practitioner')) {
+      return { [OWN_CLIENTS_PATH]: { equals: user.id } }
     }
     if (rule.published) return { _status: { equals: 'published' } }
     if (rule.active) return { active: { equals: true } }

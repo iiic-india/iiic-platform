@@ -39,8 +39,9 @@ vi.mock('@/lib/content/revalidate', async (importOriginal) => ({
 // actually use. `self` means only the person's own record; `published` means published
 // documents only, never a draft; `not in force` means only consent texts not yet in force;
 // `active` means active documents only (a service offered now, a practitioner's profile shown on
-// the site).
-type Outcome = 'all' | 'self' | 'published' | 'not in force' | 'active' | 'shown' | 'none'
+// the site); `own clients` means only the people who have a booking with the practitioner.
+type Outcome =
+  'all' | 'self' | 'published' | 'not in force' | 'active' | 'shown' | 'own clients' | 'none'
 type Requester = Role | 'anonymous' | 'deactivated owner'
 type Expected = Record<string, Record<Requester, Outcome>>
 
@@ -123,10 +124,10 @@ const EXPECTED: Record<keyof typeof COLLECTIONS, Expected> = {
     update: row({ owner: 'all', staff: 'none', operator: 'all', editor: 'all' }),
     delete: row({ owner: 'all', staff: 'none', editor: 'all' }),
   },
-  // S2 (docs/04): the office and the owners; only an owner deletes (the erasure, docs/05).
-  // Practitioners see their own clients once bookings link them (M3), so none yet.
+  // S2 (docs/04): the office and the owners; only an owner deletes (the erasure, docs/05). A
+  // practitioner reads the people who have a booking with them (the owner, 22 November 2026).
   people: {
-    read: row({ owner: 'all', staff: 'none', operator: 'all' }),
+    read: row({ owner: 'all', staff: 'none', operator: 'all', practitioner: 'own clients' }),
     create: row({ owner: 'all', staff: 'none', operator: 'all' }),
     update: row({ owner: 'all', staff: 'none', operator: 'all' }),
     delete: row({ owner: 'all', staff: 'none' }),
@@ -237,6 +238,11 @@ async function outcome(access: Access | undefined, user: ReturnType<typeof reque
   if ('active' in result) {
     expect(result).toEqual({ active: { equals: true } })
     return 'active'
+  }
+  if ('bookings.practitioner.staff' in result) {
+    // Through the person's bookings: those whose practitioner profile is the requester's.
+    expect(result).toEqual({ 'bookings.practitioner.staff': { equals: USER_ID } })
+    return 'own clients'
   }
   if ('status' in result) {
     // A review's own status, not a draft's: the published reviews only.
@@ -457,6 +463,31 @@ describe('the fields a visitor never reads (docs/04, docs/05)', () => {
     // The public profile's fields stay public.
     for (const name of ['publicName', 'photo', 'credentials', 'bio', 'services', 'active']) {
       expect(accessOf(practitioners.get(name)), name).toBeUndefined()
+    }
+  })
+
+  it('people: a practitioner reads a client’s name, mobile and email, and nothing else (the owner, 22 November 2026)', async () => {
+    const people = fieldsOf(People.fields)
+    const shared = ['fullName', 'mobile', 'email']
+    for (const name of shared) {
+      expect(people.get(name), name).toBeDefined()
+      expect(accessOf(people.get(name))?.read, name).toBeUndefined()
+    }
+    // Every other field on the record, including any added later, is the office's alone. A
+    // group's own rule covers the fields inside it.
+    const others = [...people.keys()].filter(
+      (name) => !shared.includes(name) && !shared.some((top) => name.startsWith(`${top}.`)),
+    )
+    expect(others).toEqual(expect.arrayContaining(['ageBand', 'city', 'consents', 'bookings']))
+    for (const name of others.filter((name) => !name.includes('.'))) {
+      const read = accessOf(people.get(name))?.read
+      expect(read, name).toBeDefined()
+      for (const who of [...ROLES, 'anonymous', 'deactivated owner'] as const) {
+        expect(await fieldAllows(read, requester(who)), `${who} reads ${name}`).toBe(
+          ['owner', 'operator'].includes(who),
+        )
+      }
+      expect(await fieldAllows(read, requester('operator', 'local-jwt')), name).toBe(false)
     }
   })
 

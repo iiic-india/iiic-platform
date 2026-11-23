@@ -5,7 +5,7 @@ import {
   type CollectionConfig,
 } from 'payload'
 
-import { allow, POLICY } from '@/access/policy'
+import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { phoneField } from '@/lib/phone'
 import { withdrawOnDeletion } from '@/lib/privacy/consents'
@@ -74,13 +74,19 @@ export const withdrawConsentsOnDeletion: CollectionBeforeDeleteHook = async ({ i
   await withdrawOnDeletion(req, id)
 }
 
+/**
+ * Every field but the name, mobile and email: the office's alone to read. A practitioner reads
+ * their own clients (POLICY.people) and only those three (FIELD_POLICY.personRecord).
+ */
+const OFFICE_ONLY = { read: allowField(FIELD_POLICY.personRecord.read) }
+
 const verifiedAt = (name: string, label: string) => ({
   name,
   type: 'date' as const,
   label,
   timezone: IST_FIELD,
   // Set by the server when the person proves the detail with a one-time code, never by hand.
-  access: { create: () => false, update: () => false },
+  access: { ...OFFICE_ONLY, create: () => false, update: () => false },
   admin: {
     readOnly: true,
     position: 'sidebar' as const,
@@ -102,9 +108,10 @@ export const People: CollectionConfig = {
     useAsTitle: 'fullName',
     defaultColumns: ['fullName', 'mobile', 'email', 'city', 'updatedAt'],
     listSearchableFields: ['fullName', 'mobile', 'email'],
-    hidden: ({ user }) => !hasRole(user, ...POLICY.people.read.roles),
+    hidden: ({ user }) => !hasRole(user, ...POLICY.people.read.roles, 'practitioner'),
   },
-  // src/access/policy.ts (docs/04, docs/05): owners and the operator; only owners delete.
+  // src/access/policy.ts (docs/04, docs/05): owners and the operator; a practitioner reads their
+  // own clients' name, mobile and email; only owners delete.
   access: {
     read: allow(POLICY.people.read),
     create: allow(POLICY.people.create),
@@ -150,10 +157,12 @@ export const People: CollectionConfig = {
           type: 'select',
           label: 'Preferred channel',
           options: [...PREFERRED_CHANNELS],
+          access: OFFICE_ONLY,
         },
         {
           name: 'language',
           type: 'select',
+          access: OFFICE_ONLY,
           options: [...LANGUAGES],
           defaultValue: DEFAULT_LANGUAGE,
           required: true,
@@ -162,6 +171,7 @@ export const People: CollectionConfig = {
           name: 'ageBand',
           type: 'select',
           label: 'Age band',
+          access: OFFICE_ONLY,
           options: [...AGE_BANDS],
           admin: {
             description: 'Under 18: a parent or guardian books and consents for them.',
@@ -169,17 +179,19 @@ export const People: CollectionConfig = {
         },
       ],
     },
-    { name: 'city', type: 'text', maxLength: 100 },
+    { name: 'city', type: 'text', maxLength: 100, access: OFFICE_ONLY },
     {
       name: 'source',
       type: 'text',
       maxLength: 100,
+      access: OFFICE_ONLY,
       admin: { description: 'How the person first reached IIIC, such as a booking or a referral.' },
     },
     {
       name: 'utm',
       type: 'group',
       label: 'Campaign (UTM)',
+      access: OFFICE_ONLY,
       admin: { description: 'The campaign tags on the link the person first arrived by, if any.' },
       fields: [
         {
@@ -197,6 +209,7 @@ export const People: CollectionConfig = {
       type: 'text',
       hasMany: true,
       maxLength: 50,
+      access: OFFICE_ONLY,
       admin: { description: 'Short labels for the office’s own use.' },
     },
     {
@@ -206,10 +219,26 @@ export const People: CollectionConfig = {
       collection: 'consents',
       on: 'person',
       defaultSort: '-grantedAt',
+      access: OFFICE_ONLY,
       admin: {
         allowCreate: false,
         defaultColumns: ['purpose', 'grantedAt', 'withdrawnAt', 'channel'],
         description: 'What the person has agreed to, and any withdrawal, newest first.',
+      },
+    },
+    {
+      // The bookings that name the person as the client. A practitioner reaches their own
+      // clients through it (POLICY.people), but never reads it: the office's alone.
+      name: 'bookings',
+      type: 'join',
+      collection: 'bookings',
+      on: 'person',
+      defaultSort: '-startsAt',
+      access: OFFICE_ONLY,
+      admin: {
+        allowCreate: false,
+        defaultColumns: ['reference', 'status', 'startsAt', 'practitioner'],
+        description: 'The bookings this person is the client on, latest first.',
       },
     },
   ],
