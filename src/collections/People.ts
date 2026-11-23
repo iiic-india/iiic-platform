@@ -184,11 +184,24 @@ export const People: CollectionConfig = {
     { name: 'city', type: 'text', maxLength: 100, access: OFFICE_ONLY },
     {
       // Where the person works, for a lead (docs/04 `organisation_id?`; M4, docs/17 §2). A public
-      // form sets these only on a person it creates; it never changes an existing record.
+      // form sets these only on a person it creates; it never changes an existing record. The
+      // office's alone: a practitioner reads only a client's name, mobile and email (D-89).
       type: 'row',
       fields: [
-        { name: 'organisation', type: 'relationship', relationTo: 'organisations', index: true },
-        { name: 'jobTitle', type: 'text', label: 'Role there', maxLength: 100 },
+        {
+          name: 'organisation',
+          type: 'relationship',
+          relationTo: 'organisations',
+          index: true,
+          access: OFFICE_ONLY,
+        },
+        {
+          name: 'jobTitle',
+          type: 'text',
+          label: 'Role there',
+          maxLength: 100,
+          access: OFFICE_ONLY,
+        },
       ],
     },
     {

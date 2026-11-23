@@ -75,11 +75,7 @@ export async function proxy(request: NextRequest) {
       ...(env().mediaOrigin ? [env().mediaOrigin as string] : []),
       ...checkout.imageOrigins,
     ],
-    scriptOrigins: [
-      ...beacon.scriptOrigins,
-      ...checkout.scriptOrigins,
-      ...turnstile.scriptOrigins,
-    ],
+    scriptOrigins: [...beacon.scriptOrigins, ...checkout.scriptOrigins, ...turnstile.scriptOrigins],
     connectOrigins: [...beacon.connectOrigins, ...checkout.connectOrigins],
     frameAncestors: framed ? "'self'" : "'none'",
     frameSources: admin ? "'self'" : "'none'",

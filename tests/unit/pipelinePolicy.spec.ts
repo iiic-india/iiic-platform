@@ -264,9 +264,15 @@ describe('what M4 adds to the trust layer (docs/17 §6)', () => {
     expect(CONSENT_PURPOSES.map((purpose) => purpose.value)).toContain('enquiryReplies')
   })
 
-  it('links a person to an organisation without changing who may read people', () => {
+  it('links a person to an organisation, which only the office reads (D-89)', () => {
     const fields = fieldsOf(People.fields)
     expect(fields.get('organisation')).toMatchObject({ relationTo: 'organisations' })
-    expect(accessOf(fields.get('organisation'))).toBeUndefined()
+    // A practitioner reads a client's name, mobile and email only; tests/unit/policy.spec.ts
+    // checks every other field of a person, these two included, is the office's alone.
+    for (const name of ['organisation', 'jobTitle']) {
+      expect(accessOf(fields.get(name))?.read, name).toBeDefined()
+      expect(accessOf(fields.get(name))?.create, name).toBeUndefined()
+      expect(accessOf(fields.get(name))?.update, name).toBeUndefined()
+    }
   })
 })
