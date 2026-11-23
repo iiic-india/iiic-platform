@@ -87,14 +87,18 @@ export const FORM_ANCHORS = {
   partnershipEnquiry: 'partnership-enquiry',
 } as const
 
+/** The fixed blocks, by their type, and the id each carries on its page. */
+export const FIXED_BLOCK_IDS = {
+  scope: 'scope',
+  certificate: 'certificate',
+  contact: 'contact',
+  legal: 'legal',
+  ...FORM_ANCHORS,
+} as const
+
 /** The ids the fixed blocks carry (scope, certificate, contact, legal, the forms): no section may take one. */
-export const FIXED_ANCHORS = [
-  'scope',
-  'certificate',
-  'contact',
-  'legal',
-  ...Object.values(FORM_ANCHORS),
-] as const
+export const FIXED_ANCHORS: readonly (typeof FIXED_BLOCK_IDS)[keyof typeof FIXED_BLOCK_IDS][] =
+  Object.values(FIXED_BLOCK_IDS)
 
 /** A short name a link opens a section by: small letters, numbers and hyphens. */
 export function isAnchor(value: unknown): true | string {
@@ -626,14 +630,7 @@ function fixedLabel(type: string): string {
  * The sections a page carries once at most: the fixed blocks, whose ids are their own, and the
  * questions section, which shows the page's one list of questions.
  */
-const ONCE_A_PAGE: readonly string[] = [
-  'scope',
-  'certificate',
-  'contact',
-  'legal',
-  ...Object.keys(FORM_ANCHORS),
-  'faq',
-]
+const ONCE_A_PAGE: readonly string[] = [...Object.keys(FIXED_BLOCK_IDS), 'faq']
 
 /**
  * No two sections answer to the same link name, none takes the shell's or a fixed block's,
