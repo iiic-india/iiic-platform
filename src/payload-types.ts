@@ -106,6 +106,7 @@ export interface Config {
   collectionsJoins: {
     people: {
       consents: 'consents';
+      bookings: 'bookings';
     };
     consents: {
       withdrawal: 'consents';
@@ -1119,6 +1120,14 @@ export interface Person {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  /**
+   * The bookings this person is the client on, latest first.
+   */
+  bookings?: {
+    docs?: (number | Booking)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -1239,6 +1248,152 @@ export interface ConsentVersion {
    */
   effectiveFrom: string;
   effectiveFrom_tz: 'Asia/Kolkata';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookings".
+ */
+export interface Booking {
+  id: number;
+  /**
+   * Such as IIIC-S-24117.
+   */
+  reference: string;
+  type: 'session' | 'call' | 'info';
+  status:
+    | 'requested'
+    | 'held'
+    | 'pendingPayment'
+    | 'confirmed'
+    | 'completed'
+    | 'noShow'
+    | 'cancelledByClient'
+    | 'cancelledByIiic'
+    | 'rescheduled'
+    | 'expired';
+  paymentStatus: 'notRequired' | 'unpaid' | 'linkSent' | 'paid' | 'partRefunded' | 'refunded';
+  service: number | Service;
+  serviceOption?: string | null;
+  optionLabel?: string | null;
+  durationMinutes?: number | null;
+  /**
+   * Whose time it takes. Empty for a fixed-time session.
+   */
+  practitioner?: (number | null) | Practitioner;
+  /**
+   * The fixed-time session booked, for an info session.
+   */
+  event?: (number | null) | Event;
+  /**
+   * The client.
+   */
+  person: number | Person;
+  /**
+   * The parent or guardian who booked, when not the client.
+   */
+  bookedBy?: (number | null) | Person;
+  whoFor?: ('yourself' | 'family' | 'organisation') | null;
+  ageBand?: ('under18' | 'adult') | null;
+  format?: ('online' | 'office') | null;
+  startsAt?: string | null;
+  startsAt_tz?: 'Asia/Kolkata' | null;
+  endsAt?: string | null;
+  endsAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * While held or waiting for payment.
+   */
+  holdExpiresAt?: string | null;
+  holdExpiresAt_tz?: 'Asia/Kolkata' | null;
+  timeRequest?: {
+    preferredDays?:
+      | {
+          /**
+           * The day in India, as YYYY-MM-DD.
+           */
+          day: string;
+          id?: string | null;
+        }[]
+      | null;
+    preferredTimes?: string | null;
+    note?: string | null;
+  };
+  meetingUrl?: string | null;
+  calendarEventId?: string | null;
+  /**
+   * Set by the platform at booking, in paise.
+   */
+  price?: {
+    totalPaise?: number | null;
+    taxPaise?: number | null;
+    /**
+     * 18% is 1800.
+     */
+    gstRateBasisPoints?: number | null;
+    sacCode?: string | null;
+  };
+  /**
+   * The booking this one replaced.
+   */
+  rescheduledFrom?: (number | null) | Booking;
+  confirmedAt?: string | null;
+  confirmedAt_tz?: 'Asia/Kolkata' | null;
+  cancellation?: {
+    at?: string | null;
+    at_tz?: 'Asia/Kolkata' | null;
+    reason?: string | null;
+  };
+  company?: {
+    name?: string | null;
+    role?: string | null;
+    teamSize?: string | null;
+    sector?: string | null;
+  };
+  consents?: (number | Consent)[] | null;
+  source?: string | null;
+  utm?: {
+    source?: string | null;
+    medium?: string | null;
+    campaign?: string | null;
+    term?: string | null;
+    content?: string | null;
+  };
+  manageTokenHash?: string | null;
+  checkoutKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  title: string;
+  kind: 'infoSession' | 'cohortSession' | 'workshop';
+  /**
+   * The service it is booked as, such as the info session.
+   */
+  service?: (number | null) | Service;
+  /**
+   * Who runs it, if one person does.
+   */
+  practitioner?: (number | null) | Practitioner;
+  startsAt: string;
+  startsAt_tz: 'Asia/Kolkata';
+  endsAt: string;
+  endsAt_tz: 'Asia/Kolkata';
+  format: 'online' | 'office';
+  /**
+   * Places, if limited.
+   */
+  capacity?: number | null;
+  /**
+   * Sent to the people booked on it, never shown on the site.
+   */
+  joinLink?: string | null;
+  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1436,152 +1591,6 @@ export interface Testimonial {
         id?: string | null;
       }[]
     | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "bookings".
- */
-export interface Booking {
-  id: number;
-  /**
-   * Such as IIIC-S-24117.
-   */
-  reference: string;
-  type: 'session' | 'call' | 'info';
-  status:
-    | 'requested'
-    | 'held'
-    | 'pendingPayment'
-    | 'confirmed'
-    | 'completed'
-    | 'noShow'
-    | 'cancelledByClient'
-    | 'cancelledByIiic'
-    | 'rescheduled'
-    | 'expired';
-  paymentStatus: 'notRequired' | 'unpaid' | 'linkSent' | 'paid' | 'partRefunded' | 'refunded';
-  service: number | Service;
-  serviceOption?: string | null;
-  optionLabel?: string | null;
-  durationMinutes?: number | null;
-  /**
-   * Whose time it takes. Empty for a fixed-time session.
-   */
-  practitioner?: (number | null) | Practitioner;
-  /**
-   * The fixed-time session booked, for an info session.
-   */
-  event?: (number | null) | Event;
-  /**
-   * The client.
-   */
-  person: number | Person;
-  /**
-   * The parent or guardian who booked, when not the client.
-   */
-  bookedBy?: (number | null) | Person;
-  whoFor?: ('yourself' | 'family' | 'organisation') | null;
-  ageBand?: ('under18' | 'adult') | null;
-  format?: ('online' | 'office') | null;
-  startsAt?: string | null;
-  startsAt_tz?: 'Asia/Kolkata' | null;
-  endsAt?: string | null;
-  endsAt_tz?: 'Asia/Kolkata' | null;
-  /**
-   * While held or waiting for payment.
-   */
-  holdExpiresAt?: string | null;
-  holdExpiresAt_tz?: 'Asia/Kolkata' | null;
-  timeRequest?: {
-    preferredDays?:
-      | {
-          /**
-           * The day in India, as YYYY-MM-DD.
-           */
-          day: string;
-          id?: string | null;
-        }[]
-      | null;
-    preferredTimes?: string | null;
-    note?: string | null;
-  };
-  meetingUrl?: string | null;
-  calendarEventId?: string | null;
-  /**
-   * Set by the platform at booking, in paise.
-   */
-  price?: {
-    totalPaise?: number | null;
-    taxPaise?: number | null;
-    /**
-     * 18% is 1800.
-     */
-    gstRateBasisPoints?: number | null;
-    sacCode?: string | null;
-  };
-  /**
-   * The booking this one replaced.
-   */
-  rescheduledFrom?: (number | null) | Booking;
-  confirmedAt?: string | null;
-  confirmedAt_tz?: 'Asia/Kolkata' | null;
-  cancellation?: {
-    at?: string | null;
-    at_tz?: 'Asia/Kolkata' | null;
-    reason?: string | null;
-  };
-  company?: {
-    name?: string | null;
-    role?: string | null;
-    teamSize?: string | null;
-    sector?: string | null;
-  };
-  consents?: (number | Consent)[] | null;
-  source?: string | null;
-  utm?: {
-    source?: string | null;
-    medium?: string | null;
-    campaign?: string | null;
-    term?: string | null;
-    content?: string | null;
-  };
-  manageTokenHash?: string | null;
-  checkoutKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "events".
- */
-export interface Event {
-  id: number;
-  title: string;
-  kind: 'infoSession' | 'cohortSession' | 'workshop';
-  /**
-   * The service it is booked as, such as the info session.
-   */
-  service?: (number | null) | Service;
-  /**
-   * Who runs it, if one person does.
-   */
-  practitioner?: (number | null) | Practitioner;
-  startsAt: string;
-  startsAt_tz: 'Asia/Kolkata';
-  endsAt: string;
-  endsAt_tz: 'Asia/Kolkata';
-  format: 'online' | 'office';
-  /**
-   * Places, if limited.
-   */
-  capacity?: number | null;
-  /**
-   * Sent to the people booked on it, never shown on the site.
-   */
-  joinLink?: string | null;
-  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2705,6 +2714,7 @@ export interface PeopleSelect<T extends boolean = true> {
       };
   tags?: T;
   consents?: T;
+  bookings?: T;
   updatedAt?: T;
   createdAt?: T;
 }
