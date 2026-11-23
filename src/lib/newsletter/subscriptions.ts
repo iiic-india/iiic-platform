@@ -1,6 +1,6 @@
 import 'server-only'
 
-import type { PayloadRequest } from 'payload'
+import type { PayloadRequest, RequiredDataFromCollectionSlug } from 'payload'
 
 import { emitAutomationEvent } from '@/lib/automations/emit'
 import { env } from '@/lib/env'
@@ -133,16 +133,22 @@ export async function confirmSignup(
 
   return inTransaction(req, async () => {
     const personId = await findOrAddPerson(req, entry.email, now)
-    // The consent first, under the notice the form showed (CLAUDE.md #4).
+    // The consent first, under the notice the form showed (CLAUDE.md #4). The ledger takes the
+    // purpose and the language from the notice (completeEntry in src/collections/Consents.ts).
+    const grant = {
+      person: personId,
+      noticeVersion: Number(noticeId),
+      channel: 'web',
+      grantedAt: now.toISOString(),
+      evidence: {
+        form: FORM,
+        ip: evidence.ip.slice(0, 500),
+        userAgent: evidence.userAgent.slice(0, 500),
+      },
+    }
     const consent = await req.payload.create({
       collection: 'consents',
-      data: {
-        person: personId,
-        noticeVersion: Number(noticeId),
-        channel: 'web',
-        grantedAt: now.toISOString(),
-        evidence: { form: FORM, ip: evidence.ip.slice(0, 500), userAgent: evidence.userAgent.slice(0, 500) },
-      },
+      data: grant as unknown as RequiredDataFromCollectionSlug<'consents'>,
       overrideAccess: true,
       req,
     })
@@ -239,7 +245,7 @@ export async function withdrawMarketingEmail(
         channel,
         withdrawnAt: now.toISOString(),
         evidence: { form: 'Newsletter unsubscribe' },
-      } as never,
+      } as unknown as RequiredDataFromCollectionSlug<'consents'>,
       overrideAccess: true,
       req,
     })
