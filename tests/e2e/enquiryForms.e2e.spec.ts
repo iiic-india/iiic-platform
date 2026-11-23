@@ -104,15 +104,21 @@ test.describe('The Team Map request', () => {
     })
     const personIds = people.map((person) => person.id)
     const organisationIds = organisations.map((organisation) => organisation.id)
-    const { docs: leads } = await db.find({
-      collection: 'leads',
-      where: {
-        or: [{ person: { in: personIds } }, { organisation: { in: organisationIds } }],
-      },
-      depth: 0,
-      pagination: false,
-      overrideAccess: true,
-    })
+    const owners = [
+      ...(personIds.length ? [{ person: { in: personIds } }] : []),
+      ...(organisationIds.length ? [{ organisation: { in: organisationIds } }] : []),
+    ]
+    const leads = owners.length
+      ? (
+          await db.find({
+            collection: 'leads',
+            where: { or: owners },
+            depth: 0,
+            pagination: false,
+            overrideAccess: true,
+          })
+        ).docs
+      : []
     const leadIds = leads.map((lead) => lead.id)
     if (leadIds.length) {
       for (const collection of ['tasks', 'lead-activities', 'enquiries'] as const) {
