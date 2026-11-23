@@ -35,10 +35,9 @@ export function nameKeyOf(name: string): string {
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
   for (const form of LEGAL_FORMS) {
-    if (folded.endsWith(` ${form}`)) {
-      const rest = folded.slice(0, -form.length - 1).trim()
-      return rest || folded
-    }
+    // A name that is nothing but a legal form keeps it.
+    if (folded === form) return folded
+    if (folded.endsWith(` ${form}`)) return folded.slice(0, -form.length - 1).trim()
   }
   return folded
 }
