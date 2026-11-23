@@ -118,7 +118,7 @@ describe('M5 collections: who may do what (docs/05, docs/18)', () => {
     const read = SessionNotes.access?.read as Access
     const result = await read({
       req: { user: staff(['practitioner'], { id: 12 }) },
-    } as Parameters<Access>[0])
+    } as unknown as Parameters<Access>[0])
     expect(result).toEqual({ author: { equals: 12 } })
   })
 
