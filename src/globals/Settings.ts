@@ -384,6 +384,26 @@ const darkPatternAudits: Field = {
 }
 
 /**
+ * Who signs IIIC's certificates (D-39; src/brand/templates/print/certificate.html), exactly as it
+ * should print. IIIC's to supply (docs/18 §9): while either is empty, no certificate is issued,
+ * and the preview shows a placeholder in its place (CLAUDE.md #1).
+ */
+const certificateSignatory: Field = {
+  name: 'certificates',
+  type: 'group',
+  label: 'Signatory',
+  fields: [
+    {
+      type: 'row',
+      fields: [
+        { name: 'signatoryName', type: 'text', label: 'Name, as printed', maxLength: 120 },
+        { name: 'signatoryTitle', type: 'text', label: 'Title, as printed', maxLength: 120 },
+      ],
+    },
+  ],
+}
+
+/**
  * The settings (docs/04 `settings`; docs/05, Settings): owners only. The legal information the
  * site prints, the bank details for invoices, the booking defaults, the quiet hours, the
  * feature flags, the processor register and the yearly dark-pattern audit. Pages read the legal
@@ -427,6 +447,12 @@ export const Settings: GlobalConfig = {
           fields: [moneyRules],
         },
         { label: 'Feature flags', fields: [featureFlags] },
+        {
+          label: 'Certificates',
+          description:
+            'Who signs IIIC’s certificates. No certificate is issued until both are entered.',
+          fields: [certificateSignatory],
+        },
         {
           label: 'Processors',
           description:

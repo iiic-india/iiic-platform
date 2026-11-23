@@ -16,11 +16,16 @@ import { AvailabilityRules } from './collections/AvailabilityRules'
 import { Bookings } from './collections/Bookings'
 import { BusyBlocks } from './collections/BusyBlocks'
 import { CalendarConnections } from './collections/CalendarConnections'
+import { CaseStudies } from './collections/CaseStudies'
+import { Certificates } from './collections/Certificates'
 import { Consents } from './collections/Consents'
 import { ConsentVersions } from './collections/ConsentVersions'
+import { DataRequests } from './collections/DataRequests'
 import { Events } from './collections/Events'
 import { Faqs } from './collections/Faqs'
+import { Feedback } from './collections/Feedback'
 import { GatewayEvents } from './collections/GatewayEvents'
+import { Incidents } from './collections/Incidents'
 import { Invoices } from './collections/Invoices'
 import { Media } from './collections/Media'
 import { MissingPages } from './collections/MissingPages'
@@ -33,6 +38,7 @@ import { PriceHistory } from './collections/PriceHistory'
 import { redirects } from './collections/Redirects'
 import { Refunds } from './collections/Refunds'
 import { Services } from './collections/Services'
+import { SessionNotes } from './collections/SessionNotes'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Testimonials } from './collections/Testimonials'
 import { Topics } from './collections/Topics'
@@ -43,6 +49,8 @@ import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
 import { reportServerError, reportTestError } from './lib/monitoring/sentry'
 import { auditLog } from './plugins/auditLog'
+// M5 A: session notes and privacy (docs/18 §3, §5).
+import { notesAndPrivacy } from './plugins/notesAndPrivacy'
 import { searchIndex } from './plugins/searchIndex'
 import { totpCopy } from './plugins/totpCopy'
 import { totpSecretAtRest } from './plugins/totpSecretAtRest'
@@ -106,6 +114,8 @@ export default buildConfig({
         '/components/admin/PlaceholdersNavLink#PlaceholdersNavLink',
         // Calendar → Working hours, with the preview of bookable times (docs/05; docs/16 §12).
         '/components/admin/office/WorkingHoursNavLink#WorkingHoursNavLink',
+        // M5 A: Privacy (docs/18 §6).
+        '/components/admin/privacy/PrivacyNavLink#PrivacyNavLink',
       ],
       // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
       // plugin spreads after its own, so these win. One labelled code field each; the verify
@@ -125,6 +135,12 @@ export default buildConfig({
         workingHours: {
           Component: '/components/admin/office/WorkingHoursView#WorkingHoursView',
           path: '/working-hours',
+          exact: true,
+        },
+        // M5 A: Privacy, which checks the user, the code and the role itself (docs/18 §6).
+        privacy: {
+          Component: '/components/admin/privacy/PrivacyView#PrivacyView',
+          path: '/privacy',
           exact: true,
         },
       },
@@ -163,6 +179,15 @@ export default buildConfig({
     GatewayEvents,
     Refunds,
     Invoices,
+    // The admin experience (M5; docs/18-admin-experience-design.md): session notes (S3, author
+    // only), certificates (D-39), privacy requests and the breach register, feedback and case
+    // studies.
+    SessionNotes,
+    Certificates,
+    DataRequests,
+    Incidents,
+    Feedback,
+    CaseStudies,
   ],
   globals: [Settings],
   // Automations (src/jobs/index.ts): never run on their own here.
@@ -239,6 +264,9 @@ export default buildConfig({
     payloadTotp(TOTP_OPTIONS),
     totpSecretAtRest({ collection: 'users', previousSecret: config.PAYLOAD_SECRET_PREVIOUS }),
     totpCopy(),
+    // M5 A: the privacy collections' rules, the notes and request panels, and their routes
+    // (src/plugins/notesAndPrivacy.ts). It adds no collection.
+    notesAndPrivacy(),
     // Last, so it sees every collection (src/plugins/auditLog.ts).
     auditLog(),
   ],
