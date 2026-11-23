@@ -106,7 +106,7 @@ Timing rules are pure (`src/lib/automations/timing.ts`): `reminder24hAt`, `remin
 
 ## 7. Templates
 
-**Registry** (`src/emails/registry.ts`): every Release 1 key with its automations, channels, sender, kind, footer link (`withdraw` page, `unsubscribe` with headers, or `none` for internal mail), `counsellingScope` (booking confirmed, the reminders, rescheduled), `offers: false` for every one, and its price rule: `never`, `whenPublic` (the confirmation, only while `prices_public` is on) or `ownPayment` (receipt, payment link, refund, slot lost: the person's own money, D-24). WhatsApp templates are the eight of `06` (`WHATSAPP_TEMPLATE_KEYS`), each naming the person's own booking; slot lost and the payment link's reminder go by email.
+**Registry** (`src/emails/registry.ts`): every Release 1 key with its automations, channels, sender, kind, footer link (`withdraw` page, `unsubscribe` with headers, or `none` for internal mail), `counsellingScope` (booking confirmed, the reminders, rescheduled), `offers: false` for every one, and its price rule: `never`, `whenPublic` (the confirmation, only while `prices_public` is on) or `ownPayment` (receipt, payment link, refund, slot lost: the person's own money, D-24). WhatsApp templates are the eight of `06` (`WHATSAPP_TEMPLATE_KEYS`), each naming the person's own booking; slot lost and the payment link's reminder go by email. Their texts for Meta are in `docs/content/whatsapp-templates.md`; the four that carry the scope end with one closing variable, the booking's reference, followed for a counselling booking by the scope and crisis line (`whatsappClosing`, `src/emails/booking/copy.ts`), so one approved text serves every booking and no variable is ever empty.
 
 **Frame and parts** (`src/emails/components/`, ported from `src/brand/templates/email/booking-confirmation.html`): the paper page, the mark, the white card with the yellow bar, the footer with the legal line from Settings, the site and the preference link; `Paragraph`, `Button` (one per email), `Details` (the ticket), `CounsellingScope` (words from `src/lib/counselling/scope.ts`). Colours from `tokens.json` by role (`src/emails/palette.ts`). `renderEmail` (`src/emails/render.ts`) gives HTML with Outlook's 600 px ghost table and the plain-text part. The PNGs (`mark-email-160.png`, `logo-email-600.png`) are served from `<site>/email/`.
 
@@ -148,6 +148,10 @@ O1 (08:30 IST) goes to active owners and operators; O2 with O10 (Monday 09:00) t
 | Cost lines and the WhatsApp quality rating for O10 | Placeholders in the report |
 | Working days and holidays for P1, P5, P6 | Monday to Friday, no holidays |
 | M3 documents emitting `invoice.issued`; attendance marking emitting `booking.completed` and `booking.noShow`; the feedback page | B3, B8, B9 built and tested on the events; live when those land |
+| Proposed: the manage link (`/b/[token]`) is not in the booking emails, since its token is not stored; they say "reply to this email or call" (the kit's words) until a signed `manage` link exists | Built so |
+| Proposed: B3's email states the document's number, date and total and offers the PDF by reply, until a signed link to the private documents bucket exists | Built so |
+| B8's link: the feedback page and its tokens (M5) | The email carries `[[TODO: …, I-17]]` where the button goes, which blocks the send in production; the WhatsApp feedback template is submitted with M5 |
+| B13's message needs the payment link's address | `payments.linkUrl`, written when the link is made (`src/lib/payments/links.ts`) |
 
 ## 11. The test plan
 
