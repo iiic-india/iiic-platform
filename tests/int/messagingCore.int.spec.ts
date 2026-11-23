@@ -264,9 +264,10 @@ describe('fires once (docs/19 §2)', () => {
     expect(outcomes.sort()).toEqual(['not-claimed', 'sent'])
     const message = await row(planned.value.messageId)
     expect(sentWith(email, message.dedupeKey)).toHaveLength(1)
-    const summary = await dispatchWith(deps)(await req(), at, 50)
-    expect(summary.sent).toBe(0)
+    // The dispatcher a minute later finds it sent and leaves it.
+    await dispatchWith(deps)(await req(), at, 50)
     expect(sentWith(email, message.dedupeKey)).toHaveLength(1)
+    expect((await row(message.id)).attempts).toBe(1)
   })
 
   it('cancels the queued messages about a subject, and only the automations asked', async () => {
