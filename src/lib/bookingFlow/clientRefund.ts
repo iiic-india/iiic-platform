@@ -3,6 +3,7 @@ import 'server-only'
 import type { PayloadRequest } from 'payload'
 
 import { emit } from '@/lib/booking/emit'
+import { cancellationRefundKey } from '@/lib/office/refundPlan'
 import { readPaymentSettings } from '@/lib/payments/records'
 import {
   MIN_REFUND_PAISE,
@@ -18,8 +19,9 @@ import type { Booking } from '@/payload-types'
  * the cancellation's transaction once the booking module has worked out the amount under the
  * service's rule. It follows the office's rules for a request (docs/16 §5): approved at once at
  * or below the threshold in Settings, else waiting for an owner (with no threshold, every refund
- * waits); never more than the payment can still give back; one key per payment, so a repeated
- * request finds the first. Nobody signed in asked for it, so `requestedBy` stays empty, as for
+ * waits); never more than the payment can still give back; taken from the latest payment first,
+ * with the office's key (`cancel:<booking>:<payment>`, src/lib/office/refundPlan.ts), so a
+ * repeated request finds the first and either side's cancellation keys its refunds alike. Nobody signed in asked for it, so `requestedBy` stays empty, as for
  * the platform's own refunds. The money goes back through the gateway to the original method,
  * sent by the caller after the transaction commits (the payments module's `sendRefunds`).
  *
@@ -57,9 +59,6 @@ async function chainOf(req: PayloadRequest, booking: Booking): Promise<number[]>
 
 export type ClientRefund = { refundIds: number[]; toSend: number[]; awaitingOwner: boolean }
 
-/** The key of a cancellation's refund on one payment: one per payment, whatever happens. */
-export const cancellationKey = (paymentId: number) => `cancel:${paymentId}`
-
 export async function requestClientRefund(
   req: PayloadRequest,
   input: { booking: Booking; amountPaise: number },
@@ -72,7 +71,7 @@ export async function requestClientRefund(
     where: {
       and: [{ booking: { in: chain } }, { status: { in: ['captured', 'partRefunded'] } }],
     },
-    sort: 'createdAt',
+    sort: '-createdAt',
     pagination: false,
     req,
     ...SERVER,
@@ -81,7 +80,7 @@ export async function requestClientRefund(
   let left = input.amountPaise
   for (const found of payments) {
     if (left < MIN_REFUND_PAISE) break
-    const key = cancellationKey(found.id)
+    const key = cancellationRefundKey(input.booking.id, found.id)
     const { docs: existing } = await req.payload.find({
       collection: 'refunds',
       where: { idempotencyKey: { equals: key } },
