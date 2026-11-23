@@ -16,22 +16,24 @@ Working notes for a run that may be cut off. Removed in the last commit.
 - env: `R2_BUCKET_PRIVATE` (+ R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY).
 - PDF: M3's `renderPdf(html, { serverless })` and `selfContained(html, printTemplateDir())` on
   m3/join (not in base). Coded against `RenderCertificatePdf`; wiring returns null until the join.
+- Requests: Next route handlers build the PayloadRequest with `createPayloadRequest({ config, request })`
+  (auth strategies run, so `_strategy` is 'totp' with the code); int tests use `createLocalReq`.
 
 ## Files (slice B only)
 
-- src/lib/certificates/: token.ts, template.ts, qr.ts, store.ts, wiring.ts, issue.ts, revoke.ts,
-  verify.ts, download.ts, events.ts
-- src/app/api/certificates/[id]/pdf/route.ts
-- src/components/admin/certificates/ (issue view, preview, revoke/reissue)
+- src/lib/certificates/: token, template, qr, store, view, verify (done); issue.ts (preview, issue,
+  revoke, reissue, download: done); events.ts (done); wiring.ts, http.ts (next)
+- src/app/api/certificates/preview|issue/route.ts, [id]/revoke|reissue|pdf/route.ts
+- src/components/admin/certificates/ (issue view, client form, copy)
 - src/app/(platform)/(education)/institute/verify/page.tsx, [token]/page.tsx, copy
-- payload.config.ts block `// M5 B`
+- payload.config.ts block `// M5 B` (the view)
 - tests: unit certificates*.spec.ts, int certificates.int.spec.ts, e2e certificates.e2e.spec.ts
 
 ## Order of work
 
-1. NOTES (this) 2. token/template/qr/store + unit tests 3. issue/revoke/reissue/verify + tests
-4. download route 5. verify pages 6. admin view 7. e2e QR test 8. checks
+1. NOTES 2. token/template/qr/store + unit tests 3. issue/revoke/reissue/verify
+4. wiring + routes 5. verify pages 6. admin view 7. int + e2e tests 8. checks
 
 ## Progress
 
-- [ ] 2 · [ ] 3 · [ ] 4 · [ ] 5 · [ ] 6 · [ ] 7 · [ ] 8
+- [x] 1 · [x] 2 · [x] 3 · [ ] 4 · [ ] 5 · [ ] 6 · [ ] 7 · [ ] 8

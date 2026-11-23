@@ -94,6 +94,9 @@ const invalid = (error: z.ZodError): CertificateError => ({
   ),
 })
 
+/** The zone the admin shows these times in (CLAUDE.md #8), as the field's type names it. */
+const TZ = IST as typeof IST
+
 /** The year of issue: the year in India at the moment of issue. */
 const yearOf = (instant: Date): number => Number(istDay(instant).slice(0, 4))
 
@@ -230,7 +233,7 @@ export function makeCertificateActions(deps: CertificateDeps) {
     programmeDetails: made.programmeDetails ?? undefined,
     completedOn: made.completedOn,
     issuedAt: issuedAt.toISOString(),
-    issuedAt_tz: IST,
+    issuedAt_tz: TZ,
     issuedBy: (req.user as { id: number }).id,
     batch,
     verifyTokenHash: made.verifyTokenHash,
@@ -394,7 +397,7 @@ export function makeCertificateActions(deps: CertificateDeps) {
     status: 'revoked' as const,
     revocation: {
       at: deps.now().toISOString(),
-      at_tz: IST,
+      at_tz: TZ,
       by: (req.user as { id: number }).id,
       reason,
     },
