@@ -108,7 +108,12 @@ export default buildConfig({
       // Recovery codes for staff two-factor (src/lib/auth/recoveryEndpoints.ts).
       beforeDashboard: ['/components/admin/RecoveryCodes#RecoveryCodes'],
       // Content → Placeholders: what the pages still wait for (D-56).
-      afterNavLinks: ['/components/admin/PlaceholdersNavLink#PlaceholdersNavLink'],
+      afterNavLinks: [
+        '/components/admin/PlaceholdersNavLink#PlaceholdersNavLink',
+        // M5 B: certificates (D-39; docs/18 §4).
+        '/components/admin/certificates/CertificatesNavLink#CertificatesNavLink',
+        // M5 B end.
+      ],
       // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
       // plugin spreads after its own, so these win. One labelled code field each; the verify
       // view also takes a recovery code.
@@ -123,6 +128,14 @@ export default buildConfig({
           path: '/placeholders',
           exact: true,
         },
+        // M5 B: Learning → Certificates → Issue (D-39; docs/18 §4). The view checks the user,
+        // the code and the role itself, and every route it calls does again (CLAUDE.md #6).
+        certificatesIssue: {
+          Component: '/components/admin/certificates/CertificatesIssueView#CertificatesIssueView',
+          path: '/certificates/issue',
+          exact: true,
+        },
+        // M5 B end.
       },
     },
   },

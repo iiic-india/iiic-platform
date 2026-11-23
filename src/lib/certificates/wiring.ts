@@ -30,6 +30,9 @@ import { makeVerify } from './verify'
 const render: RenderCertificatePdf | null = null
 const selfContain = async (html: string): Promise<string> => html
 
+/** Whether this deployment can make PDFs; the issue screen says so when it cannot. */
+export const RENDERER_WIRED: boolean = render !== null
+
 let actions: CertificateActions | undefined
 
 export function certificateActions(): CertificateActions {

@@ -20,11 +20,13 @@ import { ResolvedCell as ResolvedCell_eb99c300bb86ada485225c83d9fcc34f } from '.
 import { LinkToDoc as LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { ReindexButton as ReindexButton_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { PlaceholdersNavLink as PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2 } from '../../../components/admin/PlaceholdersNavLink'
+import { CertificatesNavLink as CertificatesNavLink_5bf52cdd78ad81a40b386d5f6fcec962 } from '../../../components/admin/certificates/CertificatesNavLink'
 import { RecoveryCodes as RecoveryCodes_43c30919611f069a63a0aff35f9170f5 } from '../../../components/admin/RecoveryCodes'
 import { TOTPProvider as TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512 } from 'payload-totp/rsc'
 import { SetupTwoFactor as SetupTwoFactor_2abdb0aaa2f84dde7ee21588072499e4 } from '../../../components/admin/SetupTwoFactor'
 import { VerifyTwoFactor as VerifyTwoFactor_546c8ab8e10ca06b3c0d6d60bcd95510 } from '../../../components/admin/VerifyTwoFactor'
 import { PlaceholdersView as PlaceholdersView_829678b75b003a8c21687eeed8eac416 } from '../../../components/admin/PlaceholdersView'
+import { CertificatesIssueView as CertificatesIssueView_19f75a3cf6b23ea1b8731cdc7426c966 } from '../../../components/admin/certificates/CertificatesIssueView'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 
@@ -52,11 +54,13 @@ export const importMap = {
   "@payloadcms/plugin-search/client#LinkToDoc": LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634,
   "@payloadcms/plugin-search/client#ReindexButton": ReindexButton_aead06e4cbf6b2620c5c51c9ab283634,
   "/components/admin/PlaceholdersNavLink#PlaceholdersNavLink": PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2,
+  "/components/admin/certificates/CertificatesNavLink#CertificatesNavLink": CertificatesNavLink_5bf52cdd78ad81a40b386d5f6fcec962,
   "/components/admin/RecoveryCodes#RecoveryCodes": RecoveryCodes_43c30919611f069a63a0aff35f9170f5,
   "payload-totp/rsc#TOTPProvider": TOTPProvider_4eaf6cb33cfb75be01716613e3c9a512,
   "/components/admin/SetupTwoFactor#SetupTwoFactor": SetupTwoFactor_2abdb0aaa2f84dde7ee21588072499e4,
   "/components/admin/VerifyTwoFactor#VerifyTwoFactor": VerifyTwoFactor_546c8ab8e10ca06b3c0d6d60bcd95510,
   "/components/admin/PlaceholdersView#PlaceholdersView": PlaceholdersView_829678b75b003a8c21687eeed8eac416,
+  "/components/admin/certificates/CertificatesIssueView#CertificatesIssueView": CertificatesIssueView_19f75a3cf6b23ea1b8731cdc7426c966,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24
 }

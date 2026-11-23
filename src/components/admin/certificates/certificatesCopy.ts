@@ -71,8 +71,19 @@ export const CERTIFICATES_COPY = {
   failed: 'That did not work. Try again in a moment.',
   offline: 'The admin could not reach the server. Check the connection and try again.',
 
+  recentTitle: 'Latest certificates',
+  recentNone: 'No certificates yet. Each one you issue appears here.',
+  certificateId: 'Certificate ID',
+  status: 'Status',
+  valid: 'Valid',
+  revokedStatus: 'Revoked',
+  details: 'Details',
+  issuedOn: 'Issued on',
+  revokedOn: 'Revoked on',
+  openRecord: 'Open the record',
+
   // The record's own panel: download, revoke, reissue.
-  recordTitle: 'This certificate',
+  recordTitle: 'Certificate',
   download: 'Download the PDF',
   revokeTitle: 'Revoke',
   revokeHint:
