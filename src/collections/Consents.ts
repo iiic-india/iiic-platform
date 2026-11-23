@@ -14,6 +14,7 @@ import { relationship, text } from 'payload/shared'
 
 import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { raiseConsentWithdrawn } from '@/lib/automations/reviews/hooks'
 import {
   idOf,
   inForceAt,
@@ -206,7 +207,8 @@ export const Consents: CollectionConfig = {
     beforeChange: [neverChange, nameEntry],
     // A withdrawn consent to publish a testimonial takes the person's reviews down at once, in
     // the same transaction (docs/06 V2; src/lib/proof/ledger.ts).
-    afterChange: [withdrawReviewsOnWithdrawal],
+    // A withdrawal also raises `consent.withdrawn` for V2's confirmation and N3 (docs/19 §5).
+    afterChange: [withdrawReviewsOnWithdrawal, raiseConsentWithdrawn],
     beforeDelete: [neverDelete],
   },
   fields: [

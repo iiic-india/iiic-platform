@@ -1,0 +1,39 @@
+/* The newsletter's and the withdraw page's plain pages (docs/19 §8). The kit's classes do the
+   work; these add spacing only, with no colour of their own (CLAUDE.md, non-negotiable 2). */
+
+.page {
+  padding-top: 48px;
+  padding-bottom: 80px;
+}
+
+.page h1 {
+  margin: 0 0 24px;
+}
+
+.form > * + * {
+  margin-top: 20px;
+}
+
+.notice {
+  white-space: pre-line;
+}
+
+.outcome {
+  margin: 0 0 24px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.list > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--iiic-rule);
+}

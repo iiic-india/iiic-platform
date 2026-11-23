@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { guardIssue, raiseIssueScheduled } from '@/lib/newsletter/hooks'
 import { IST_FIELD } from '@/lib/time/ist'
 
 const serverOnly = {
@@ -35,6 +36,8 @@ export const NewsletterIssues: CollectionConfig = {
     delete: allow(POLICY.newsletterIssues.delete),
   },
   defaultSort: '-number',
+  // An editor drafts, schedules and cancels; scheduling raises N4's event (src/lib/newsletter/hooks.ts).
+  hooks: { beforeChange: [guardIssue], afterChange: [raiseIssueScheduled] },
   fields: [
     {
       type: 'row',
