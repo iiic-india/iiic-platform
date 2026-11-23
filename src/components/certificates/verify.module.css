@@ -1,0 +1,89 @@
+/* The verify pages (docs/18 §4): the ID form and what IIIC's record shows. The kit's classes do
+   the work; these add spacing and the record's two columns, with no colour beyond the kit's roles
+   (CLAUDE.md, non-negotiable 2). */
+
+.page {
+  padding-top: 48px;
+  padding-bottom: 80px;
+}
+
+.page h1 {
+  margin: 0 0 16px;
+}
+
+.intro {
+  margin: 0 0 32px;
+}
+
+.summary {
+  margin: 0 0 24px;
+}
+
+.form {
+  margin: 0 0 40px;
+}
+
+/* The field and its button side by side; on a narrow phone the button goes under the field. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.field {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.result {
+  margin: 0 0 40px;
+}
+
+.result h2 {
+  margin: 0 0 16px;
+  overflow-wrap: anywhere;
+}
+
+.status {
+  margin: 0 0 20px;
+}
+
+/* Label and value side by side from a tablet up; stacked on a phone. */
+.record {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px 24px;
+  margin: 0 0 20px;
+}
+
+.record dt {
+  color: var(--iiic-text-muted);
+}
+
+.record dd {
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 640px) {
+  .record {
+    grid-template-columns: 12rem minmax(0, 1fr);
+  }
+
+  .record dd {
+    margin: 0;
+  }
+}
+
+.note {
+  margin: 0 0 12px;
+  color: var(--iiic-text-muted);
+}
+
+.statement {
+  margin-top: 40px;
+}
+
+.statement h3 {
+  margin: 0 0 12px;
+}
