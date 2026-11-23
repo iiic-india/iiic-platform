@@ -27,3 +27,4 @@ blob-report/
 # local uploads (production files live in R2)
 /media/
 .lighthouseci/
+/private-files/
