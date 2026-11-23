@@ -38,7 +38,6 @@ let person: Person
 let profileA: Practitioner
 let profileB: Practitioner
 let bookingA: Booking
-let bookingB: Booking
 let keys = 0
 
 /** A staff user as Payload sees them after they entered their two-factor code. */
@@ -132,7 +131,8 @@ beforeAll(async () => {
     data: { fullName: `Fake Person ${TAG}` } as Person,
   })
   bookingA = await booking(profileA, '2099-05-04')
-  bookingB = await booking(profileB, '2099-05-05')
+  // B's own session, so B is a practitioner with bookings of their own, not one without any.
+  await booking(profileB, '2099-05-05')
 })
 
 afterAll(async () => {

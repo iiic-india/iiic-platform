@@ -6,7 +6,6 @@ import type { AdminViewServerProps } from 'payload'
 
 import { viewRefusal } from '@/access/views'
 import type { ClockState } from '@/lib/privacy/breaches'
-import { CONSENT_PURPOSES } from '@/lib/privacy/purposes'
 import {
   loadPrivacyView,
   readConsentFilter,
@@ -14,6 +13,7 @@ import {
   type IncidentRow,
   type RequestRow,
 } from '@/lib/privacy/privacyView'
+import { CONSENT_PURPOSES } from '@/lib/privacy/purposes'
 import { formatIstDate, formatIstTime } from '@/lib/time/ist'
 
 import styles from './Privacy.module.css'
