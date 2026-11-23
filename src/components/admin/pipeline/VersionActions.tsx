@@ -85,7 +85,6 @@ export const VersionActions: UIFieldServerComponent = async ({ id, payload, req 
       )}
       {feesMayPrint ? null : <p className={styles.hint}>{PROPOSAL_PANEL_COPY.feesHidden}</p>}
       <VersionActionsPanel
-        feesMayPrint={feesMayPrint}
         isOffice={hasRole(user, ...POLICY.proposals.update.roles)}
         linkOpen={open}
         sendable={sendable}

@@ -4,36 +4,26 @@ import { env } from '@/lib/env'
 import { readFlags } from '@/lib/settings/source'
 
 import type { ProposalDeps } from './deps'
-import {
-  interimAddWorkingDays,
-  interimCreateTask,
-  interimEmit,
-  interimLogActivity,
-  interimMoveLead,
-} from './interim'
+import { kitProposalPrinter } from './kitPrinter'
 import { payloadProposalMailer } from './mailer'
-import { fakeProposalPrinter } from './print'
 import { makeProposals, type Proposals } from './service'
+import { logPlatformActivity } from '../core/activities'
+import { emitPipelineEvent } from '../core/emit'
+import { moveLead } from '../core/moves'
+import { createTask } from '../core/tasks'
+import { addWorkingDays } from '../core/workingDays'
 
 /**
- * The app's proposal actions, joined to this deployment's printer, mailer and the CRM's
- * operations (docs/17 §12).
- *
- * At the merge (the lead):
- * - the CRM's operations: `emit`, `logActivity`, `createTask`, `moveLead` and `addWorkingDays`
- *   from builder A's src/lib/pipeline/core/ in place of ./interim (then delete interim.ts);
- * - the printer: M3's documents slice (src/lib/pdf/documents.ts) in place of the stand-in,
- *   `page` from `proposalPage(snapshot, { pricesPublic: feesMayPrint })` and `pdf` from
- *   `renderProposalPdf(snapshot, { pricesPublic: feesMayPrint })` (a ProposalSnapshot is field
- *   for field its ProposalDocument), its `prices-hidden` read as `fees-hidden` and `no-fees` as
- *   `incomplete` with ['fees']; and, once the private bucket's DocumentStore is wired, the copy
- *   sent stored and served from there.
- *
- * Until then the stand-in printer prints a PDF only where no Vercel deployment runs it (local
- * and CI), as the fake payment gateway does, so no client can receive its copy.
+ * The app's proposal actions, joined to this deployment's printer, mailer and the CRM core's
+ * operations (docs/17 §12): M3's renderer through the kit's template (the serverless Chromium on
+ * Vercel), Payload's mail adapter, and src/lib/pipeline/core/. A proposal's timeline entries are
+ * the platform's (type `proposal`), recorded as the owner's or operator's whose action they
+ * record; the platform's own moves of the lead pass `by: null`. The tests pass their own
+ * dependencies, the fake printer and mailer among them.
  *
  * The collections' endpoints reach this module, so it is not marked `server-only`: the Payload
- * CLI loads the config outside Next.js (src/lib/env.ts says why). It reads no secret itself.
+ * CLI loads the config outside Next.js (src/lib/env.ts says why). It reads no secret itself, and
+ * the printer loads the renderer only when it prints.
  */
 
 let instance: Proposals | undefined
@@ -41,13 +31,13 @@ let instance: Proposals | undefined
 export function proposalDeps(): ProposalDeps {
   const config = env()
   return {
-    printer: fakeProposalPrinter({ printsPdf: !config.VERCEL_ENV }),
+    printer: kitProposalPrinter({ serverless: Boolean(config.VERCEL_ENV) }),
     mailerFor: (req) => payloadProposalMailer(req.payload),
-    emit: interimEmit,
-    logActivity: interimLogActivity,
-    createTask: interimCreateTask,
-    moveLead: interimMoveLead,
-    addWorkingDays: interimAddWorkingDays,
+    emit: emitPipelineEvent,
+    logActivity: logPlatformActivity,
+    createTask,
+    moveLead,
+    addWorkingDays,
     readFlags: (req: PayloadRequest) => readFlags(req.payload),
     siteUrl: config.siteUrl,
     now: () => new Date(),

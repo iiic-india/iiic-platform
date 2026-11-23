@@ -3,9 +3,9 @@ import { z } from 'zod'
 
 import { POLICY } from '@/access/policy'
 import { hasRole, isActive } from '@/access/roles'
+import { moveLead as coreMoveLead } from '@/lib/pipeline/core/moves'
 import type { MoveLead } from '@/lib/pipeline/leads'
 import { inTransaction } from '@/lib/pipeline/proposal/guard'
-import { interimMoveLead } from '@/lib/pipeline/proposal/interim'
 import { LEAD_STAGES, type LeadStage } from '@/lib/pipeline/stages'
 
 import { stageLabel } from './board'
@@ -15,12 +15,9 @@ import { MOVE_MESSAGES } from './copy'
  * The board's "Move to stage" (docs/17 §3, §12 C): `POST /api/pipeline/move` with the lead, the
  * stage and, for Lost or Closed, why it ended. It checks the user, the role and the two-factor code
  * first (CLAUDE.md #6), parses the body with Zod, and moves the lead through `MoveLead` in one
- * transaction, which holds the move to STAGE_MOVES and writes the stage-change activity. The
- * answer carries the lead's id and new stage only. Imported by the Payload config, so not marked
- * `server-only`.
- *
- * At the merge (the lead): `moveLead` is builder A's (src/lib/pipeline/core/moves.ts), which also
- * emits `lead.stageChanged`, in place of the interim stand-in.
+ * transaction (src/lib/pipeline/core/moves.ts), which holds the move to STAGE_MOVES, writes the
+ * stage-change activity and emits `lead.stageChanged`. The answer carries the lead's id and new
+ * stage only. Imported by the Payload config, so not marked `server-only`.
  */
 
 const json = (body: Record<string, unknown>, status = 200) =>
@@ -78,5 +75,5 @@ export function makeMoveHandler(moveLead: MoveLead): PayloadHandler {
 }
 
 export const pipelineEndpoints: Endpoint[] = [
-  { path: '/pipeline/move', method: 'post', handler: makeMoveHandler(interimMoveLead) },
+  { path: '/pipeline/move', method: 'post', handler: makeMoveHandler(coreMoveLead) },
 ]

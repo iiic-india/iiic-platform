@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { type BoardLead, buildBoard } from '@/components/admin/pipeline/board'
-import { interimHeatOf } from '@/lib/pipeline/proposal/interim'
+import { heatOf } from '@/lib/pipeline/core/heat'
 import { STAGES_BY_KIND } from '@/lib/pipeline/stages'
 
 // The Pipeline board (docs/17 §3, §7, §12 C): a column per stage in the stage table's order, each
@@ -39,7 +39,7 @@ describe('the board', () => {
       lead({ stage: 'won', closedAt: hoursAgo(5) }),
       lead({ kind: 'partnership', stage: 'mouDrafted' }),
     ]
-    const board = buildBoard('consultancy', leads, NOW, interimHeatOf)
+    const board = buildBoard('consultancy', leads, NOW, heatOf)
     expect(board.columns.map((column) => column.stage)).toEqual([...STAGES_BY_KIND.consultancy])
     const where = Object.fromEntries(
       board.columns.map((column) => [column.stage, column.cards.map((card) => card.id)]),
@@ -51,7 +51,7 @@ describe('the board', () => {
     expect(board.columns.flatMap((column) => column.cards).map((card) => card.id)).not.toContain(
       leads[3]?.id,
     )
-    const partnership = buildBoard('partnership', leads, NOW, interimHeatOf)
+    const partnership = buildBoard('partnership', leads, NOW, heatOf)
     expect(partnership.columns.map((column) => column.stage)).toEqual([
       ...STAGES_BY_KIND.partnership,
     ])
@@ -60,7 +60,7 @@ describe('the board', () => {
   it('offers every other stage of its board to an active lead and none to an ended one', () => {
     const active = lead({ stage: 'contacted', touchedAt: hoursAgo(1) })
     const ended = lead({ stage: 'lost', closedAt: hoursAgo(1) })
-    const board = buildBoard('consultancy', [active, ended], NOW, interimHeatOf)
+    const board = buildBoard('consultancy', [active, ended], NOW, heatOf)
     const cards = board.columns.flatMap((column) => column.cards)
     const activeCard = cards.find((card) => card.id === active.id)
     expect(activeCard?.moves).not.toContain('contacted')
@@ -93,7 +93,7 @@ describe('the board', () => {
       'consultancy',
       [fresh, amber, red, answered, stale, quiet, won],
       NOW,
-      interimHeatOf,
+      heatOf,
     )
     expect(board.attention.map((card) => card.id)).toEqual([red.id, amber.id, stale.id])
     expect(board.attention.map((card) => card.heat.state)).toEqual([
@@ -102,32 +102,41 @@ describe('the board', () => {
       'stale',
     ])
   })
+
+  it('lists the leads read for attention on their own, even those the columns do not show', () => {
+    const shown = lead({ stage: 'contacted', touchedAt: hoursAgo(1), lastActivityAt: hoursAgo(1) })
+    const beyond = lead({ stage: 'new', createdAt: hoursAgo(50) })
+    const other = lead({ kind: 'partnership', stage: 'new', createdAt: hoursAgo(50) })
+    const board = buildBoard('consultancy', [shown], NOW, heatOf, true, [beyond, other])
+    expect(board.columns.flatMap((column) => column.cards).map((card) => card.id)).toEqual([
+      shown.id,
+    ])
+    expect(board.attention.map((card) => card.id)).toEqual([beyond.id])
+    expect(board.truncated).toBe(true)
+  })
 })
 
 describe('a lead’s heat (P3, P4)', () => {
   const base = { kind: 'consultancy' as const, createdAt: hoursAgo(0) }
 
   it('is untouched in New from 24 hours, red from 48, until someone acts', () => {
-    expect(interimHeatOf({ ...base, stage: 'new', createdAt: hoursAgo(23) }, NOW).state).toBe(
-      'fine',
-    )
-    expect(interimHeatOf({ ...base, stage: 'new', createdAt: hoursAgo(24) }, NOW)).toMatchObject({
+    expect(heatOf({ ...base, stage: 'new', createdAt: hoursAgo(23) }, NOW).state).toBe('fine')
+    expect(heatOf({ ...base, stage: 'new', createdAt: hoursAgo(24) }, NOW)).toMatchObject({
       state: 'untouched',
       level: 'amber',
     })
-    expect(interimHeatOf({ ...base, stage: 'new', createdAt: hoursAgo(48) }, NOW)).toMatchObject({
+    expect(heatOf({ ...base, stage: 'new', createdAt: hoursAgo(48) }, NOW)).toMatchObject({
       state: 'untouched',
       level: 'red',
     })
     expect(
-      interimHeatOf({ ...base, stage: 'new', createdAt: hoursAgo(48), touchedAt: hoursAgo(1) }, NOW)
-        .state,
+      heatOf({ ...base, stage: 'new', createdAt: hoursAgo(48), touchedAt: hoursAgo(1) }, NOW).state,
     ).toBe('fine')
   })
 
   it('is stale in an active stage after seven quiet days, and never in an end', () => {
     const quietFor = (hours: number, stage: 'contacted' | 'won' | 'inConversation' | 'signed') =>
-      interimHeatOf(
+      heatOf(
         {
           kind: stage === 'inConversation' || stage === 'signed' ? 'partnership' : 'consultancy',
           stage,

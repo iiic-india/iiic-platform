@@ -1,5 +1,7 @@
 import type { TaskConfig } from 'payload'
 
+import { PIPELINE_TASKS } from '@/lib/pipeline/queue'
+
 /**
  * The CRM's tasks (docs/17 §12, builder A), each named by its automation ID and idempotent
  * (CLAUDE.md). Their slugs join the jobs table's enum, so the merge's one migration covers them
@@ -11,15 +13,15 @@ import type { TaskConfig } from 'payload'
 const RETRIES = { attempts: 3, backoff: { type: 'exponential' as const, delay: 60_000 } }
 
 /**
- * P2 · A proposal call booked creates or updates its lead, on M3's `booking.confirmed` (added to
- * LISTENERS in src/lib/booking/emit.ts at the merge). A booking that is not a proposal call is
- * not the CRM's and is left alone; a call already on a lead is not attached twice.
+ * P2 · A proposal call booked creates or updates its lead, on M3's `booking.confirmed` (in
+ * LISTENERS, src/lib/booking/emit.ts). A booking that is not a proposal call is not the CRM's and
+ * is left alone; a call already on a lead is not attached twice.
  */
 export const leadFromCallTask: TaskConfig<{
   input: { bookingId: number }
   output: { outcome: string; leadId?: number; created?: boolean }
 }> = {
-  slug: 'P2-lead-from-call',
+  slug: PIPELINE_TASKS.leadFromCall,
   label: 'P2 · Put a booked proposal call on its lead',
   retries: RETRIES,
   inputSchema: [{ name: 'bookingId', type: 'number', required: true }],
@@ -45,7 +47,7 @@ export const leadAlertsTask: TaskConfig<{
   input: object
   output: { untouched: number; stale: number }
 }> = {
-  slug: 'P3-P4-lead-alerts',
+  slug: PIPELINE_TASKS.leadAlerts,
   label: 'P3 · P4 · Raise untouched and stale leads, once each',
   retries: RETRIES,
   outputSchema: [

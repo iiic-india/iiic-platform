@@ -3,14 +3,15 @@ import type { Paise } from '@/lib/payments/money'
 import type { MayPrintFees } from '../proposals'
 
 /**
- * The fees rule (docs/17 §5, §10), in one place. D-21 keeps every price off every page, email
- * and template while `prices_public` is off. Whether a quote to one organisation stands outside
- * that rule, as a payment link's amount does (D-24), is IIIC's to decide; until it does, a
- * proposal's fees print only while prices are public, so its preview page and its PDF are
- * refused (`fees-hidden`) and nothing is sent. When IIIC rules, this function is the one edit:
- * every action that prints, previews or sends a proposal asks it, and nothing else decides.
- * The proposal email never carries an amount, whatever this answers (src/lib/pipeline/proposals.ts,
- * ProposalMailer).
+ * The fees rule (docs/17 §5), in one place. D-21 keeps every price off every page, email and
+ * template while `prices_public` is off, and the owner ruled on 23 November 2026 that no fee
+ * prints anywhere while it is, proposals included. So this answers whether a proposal's fees
+ * section prints: only while prices are public. With prices hidden a proposal is still made,
+ * previewed, printed, sent and tracked, with its fees section left out entirely (no amount, no
+ * total, nothing in its place); a version needs fees typed only when they will print. Every
+ * action that makes a version, previews, prints or sends asks this function, and nothing else
+ * decides. The proposal email never carries an amount, whatever this answers
+ * (src/lib/pipeline/proposals.ts, ProposalMailer).
  */
 export const mayPrintFees: MayPrintFees = (flags) => flags.pricesPublic
 

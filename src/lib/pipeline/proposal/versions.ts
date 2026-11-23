@@ -6,7 +6,7 @@ import type { CreateVersion, ProposalError } from '../proposals'
 import { PROPOSAL_ACTIVITY } from './copy'
 import type { ProposalDeps } from './deps'
 import { expireIfDue } from './expire'
-import { feeTotalPaise } from './fees'
+import { feeTotalPaise, mayPrintFees } from './fees'
 import { inTransaction, officeUser } from './guard'
 import { clientNameOf, findLead, findProposal, lastVersionNumber } from './load'
 import { newReference, versionReference } from './reference'
@@ -15,7 +15,8 @@ import { canMove } from './status'
 
 /**
  * "Create version" (docs/17 §5): freezes the working copy as its next version, with the server's
- * fee total and who made it. Refused as `incomplete` while a printed part is empty, and as
+ * fee total and who made it. Refused as `incomplete` while a printed part is empty (the fees only
+ * while the fees rule lets them print), and as
  * `bad-move` once the client has answered. A sent, viewed or expired proposal goes back to draft;
  * the version the client holds keeps its link until the new one is sent.
  */
@@ -34,7 +35,8 @@ export function makeCreateVersion(deps: ProposalDeps): CreateVersion {
       const lead = await findLead(req, proposal)
       if (!lead) return err({ code: 'not-found' })
       const clientName = await clientNameOf(req, lead)
-      const missing = missingParts(proposal, clientName)
+      const feesMayPrint = mayPrintFees(await deps.readFlags(req))
+      const missing = missingParts(proposal, clientName, { feesMayPrint })
       if (missing.length || !clientName) return err({ code: 'incomplete', missing })
 
       const reference = proposal.reference ?? newReference()

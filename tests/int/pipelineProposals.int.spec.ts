@@ -1,15 +1,13 @@
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { logPlatformActivity } from '@/lib/pipeline/core/activities'
+import { moveLead } from '@/lib/pipeline/core/moves'
+import { createTask } from '@/lib/pipeline/core/tasks'
+import { addWorkingDays } from '@/lib/pipeline/core/workingDays'
 import type { PipelineEvent } from '@/lib/pipeline/events'
 import { PROPOSAL_EMAIL } from '@/lib/pipeline/proposal/copy'
 import type { ProposalDeps } from '@/lib/pipeline/proposal/deps'
-import {
-  interimAddWorkingDays,
-  interimCreateTask,
-  interimLogActivity,
-  interimMoveLead,
-} from '@/lib/pipeline/proposal/interim'
 import { fakeProposalPrinter, rupees } from '@/lib/pipeline/proposal/print'
 import { makeProposals } from '@/lib/pipeline/proposal/service'
 import { hashLinkToken } from '@/lib/pipeline/proposal/tokens'
@@ -23,7 +21,8 @@ vi.mock('server-only', () => ({}))
 // A proposal generated, previewed, sent and tracked against the real Postgres (docs/17 §5, §11):
 // the reference and the server's total, owners alone changing fees, a version freezing the copy,
 // `incomplete` naming the empty parts, the preview holding every merge value, the fees rule
-// refusing the preview and the PDF while prices are hidden, the send recording the copy's hash
+// leaving the fees section out of the preview, the PDF and the sent copy while prices are hidden
+// (and needing no fees typed then), the send recording the copy's hash
 // and only the link's hash, the follow-up task in three working days, the lead at Proposal sent
 // and an email with no amount, the PDF's opening counted and the first moving the proposal to
 // viewed once, replaced, withdrawn and declined links closing alike, and P8 expiring a proposal
@@ -53,10 +52,11 @@ const deps: ProposalDeps = {
   emit: async (_req, event) => {
     emitted.push(event)
   },
-  logActivity: interimLogActivity,
-  createTask: interimCreateTask,
-  moveLead: interimMoveLead,
-  addWorkingDays: interimAddWorkingDays,
+  // The CRM core's operations, as the app's wiring passes them (src/lib/pipeline/proposal/wiring.ts).
+  logActivity: logPlatformActivity,
+  createTask,
+  moveLead,
+  addWorkingDays,
   readFlags: async () => ({ ...flags }),
   siteUrl: 'http://localhost:3000',
   now: () => clock.now,
@@ -73,6 +73,20 @@ const FEES = [
 ]
 
 const tokenOf = (linkUrl: string) => new URL(linkUrl).pathname.split('/').pop() ?? ''
+
+/** The stand-in printer's PDF as text: its lines are written into the file as they are. */
+const latin1 = (bytes: Uint8Array) => new TextDecoder('latin1').decode(bytes)
+
+/** No fees section, no item, no amount and no total (D-21, the owner's ruling). */
+function expectNoFees(words: string) {
+  for (const absent of ['Fees (', '₹', 'Rs.', 'Total, excluding GST']) {
+    expect(words).not.toContain(absent)
+  }
+  for (const fee of FEES) {
+    expect(words).not.toContain(fee.item)
+    expect(words).not.toContain(rupees(fee.amountPaise))
+  }
+}
 
 const named = (name: PipelineEvent['name']) => emitted.filter((event) => event.name === name)
 
@@ -312,26 +326,19 @@ describe('generated, previewed, sent and tracked', () => {
     expect(printed.value.sha256).toMatch(/^[0-9a-f]{64}$/)
   })
 
-  it('refuses the preview, the PDF and the send while prices are hidden', async () => {
+  it('previews and prints the same version without its fees section while prices are hidden', async () => {
     flags.pricesPublic = false
     try {
-      const req = await as(staff.operator)
-      expect(await proposals.preview(req, { versionId: first })).toMatchObject({
-        ok: false,
-        error: { code: 'fees-hidden' },
-      })
-      expect(await proposals.print(await as(staff.operator), { versionId: first })).toMatchObject({
-        ok: false,
-        error: { code: 'fees-hidden' },
-      })
-      const sent = await proposals.send(await as(staff.operator), {
-        versionId: first,
-        by: staff.operator.id,
-      })
-      expect(sent).toMatchObject({ ok: false, error: { code: 'fees-hidden' } })
-      expect((await version(first)).sending?.sentAt).toBeFalsy()
-      expect(mailed).toHaveLength(0)
-      expect((await reread(proposal.id)).status).toBe('draft')
+      const preview = await proposals.preview(await as(staff.operator), { versionId: first })
+      if (!preview.ok) throw new Error(preview.error.code)
+      const printed = await proposals.print(await as(staff.operator), { versionId: first })
+      if (!printed.ok) throw new Error(printed.error.code)
+      const pdfText = latin1(printed.value.pdf)
+      for (const words of [preview.value.html, pdfText]) {
+        expect(words).toContain('Fake proposal for the test')
+        expect(words).toContain('A fake next step.')
+        expectNoFees(words)
+      }
     } finally {
       flags.pricesPublic = true
     }
@@ -492,6 +499,61 @@ describe('generated, previewed, sent and tracked', () => {
     })
     const again = await proposals.createVersion(await as(staff.owner), { proposalId: proposal.id })
     expect(again).toMatchObject({ ok: false, error: { code: 'bad-move' } })
+  })
+})
+
+describe('with prices hidden (D-21; the owner’s ruling of 23 November 2026)', () => {
+  it('makes, previews, prints, sends and tracks a proposal with no fees typed and no fees section', async () => {
+    flags.pricesPublic = false
+    try {
+      const other = await makeLead('debriefHeld')
+      const plain = await makeProposal(other, { ...parts('Fake proposal without fees'), fees: [] })
+      // No fee is needed while fees do not print.
+      const made = await proposals.createVersion(await as(staff.operator), {
+        proposalId: plain.id,
+      })
+      if (!made.ok) throw new Error(made.error.code)
+      expect(made.value.feeTotalPaise).toBe(0)
+
+      const preview = await proposals.preview(await as(staff.operator), {
+        versionId: made.value.id,
+      })
+      if (!preview.ok) throw new Error(preview.error.code)
+      expect(preview.value.html).toContain('A fake next step.')
+      expectNoFees(preview.value.html)
+
+      const sent = await proposals.send(await as(staff.operator), {
+        versionId: made.value.id,
+        by: staff.operator.id,
+      })
+      if (!sent.ok) throw new Error(sent.error.code)
+      expect((await reread(plain.id)).status).toBe('sent')
+      const message = mailed.at(-1)
+      if (!message) throw new Error('no email')
+      expectNoFees(`${PROPOSAL_EMAIL.subject(message.reference)}\n${PROPOSAL_EMAIL.text(message)}`)
+
+      const opened = await proposals.open(await fresh(), {
+        token: tokenOf(sent.value.linkUrl),
+        now: clock.now,
+      })
+      if (!opened.ok) throw new Error(opened.error.code)
+      expectNoFees(latin1(opened.value.pdf))
+      expect((await version(made.value.id)).tracking?.viewCount).toBe(1)
+      expect((await reread(plain.id)).status).toBe('viewed')
+    } finally {
+      flags.pricesPublic = true
+    }
+  })
+
+  it('still needs the fees typed for a version once prices are public', async () => {
+    const other = await makeLead('debriefHeld')
+    const plain = await makeProposal(other, {
+      ...parts('Fake proposal without fees, prices on'),
+      fees: [],
+    })
+    expect(
+      await proposals.createVersion(await as(staff.operator), { proposalId: plain.id }),
+    ).toMatchObject({ ok: false, error: { code: 'incomplete', missing: ['fees'] } })
   })
 })
 

@@ -10,7 +10,6 @@ import styles from './Pipeline.module.css'
 type Props = {
   proposalId: number
   isOffice: boolean
-  feesMayPrint: boolean
   /** The client has it and may still answer (PROPOSAL_MOVES). */
   answerable: boolean
 }
@@ -47,7 +46,7 @@ function RefusalNote({ id, refusal }: { id: string; refusal: Refusal | null }) {
  * answer. It sits inside the proposal's own form, so it is not a form itself; each action is a
  * button that calls its endpoint, and a refusal is shown beside it and announced.
  */
-export function ProposalActionsPanel({ proposalId, isOffice, feesMayPrint, answerable }: Props) {
+export function ProposalActionsPanel({ proposalId, isOffice, answerable }: Props) {
   const {
     config: {
       routes: { admin, api },
@@ -112,14 +111,12 @@ export function ProposalActionsPanel({ proposalId, isOffice, feesMayPrint, answe
 
   return (
     <>
-      {feesMayPrint ? (
-        <div className={styles.panelRow}>
-          <a href={`${base}/preview`} rel="noopener" target="_blank">
-            {COPY.previewDraft}
-          </a>
-          <span className={styles.hint}>{COPY.previewHelp}</span>
-        </div>
-      ) : null}
+      <div className={styles.panelRow}>
+        <a href={`${base}/preview`} rel="noopener" target="_blank">
+          {COPY.previewDraft}
+        </a>
+        <span className={styles.hint}>{COPY.previewHelp}</span>
+      </div>
       {isOffice ? (
         <div className={styles.panelRow}>
           <Button

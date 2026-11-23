@@ -30,8 +30,6 @@ export const PROPOSAL_MESSAGES = {
   'bad-move':
     'The proposal’s status does not allow this now. Reload the page to see where it stands.',
   incomplete: 'Fill in these parts first:',
-  'fees-hidden':
-    'Proposals are not printed while prices are hidden (the prices setting). Nothing was sent.',
   placeholders: 'The proposal still waits for:',
   'no-recipient': 'The lead’s contact has no email address. Add one to their record, then send.',
   'not-sent': 'That version has not been sent.',
@@ -43,7 +41,6 @@ const STATUS: Record<ProposalError['code'], number> = {
   'not-allowed': 403,
   'bad-move': 409,
   incomplete: 422,
-  'fees-hidden': 409,
   placeholders: 422,
   'no-recipient': 422,
   'not-sent': 409,

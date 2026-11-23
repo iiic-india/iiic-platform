@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { feeTotalPaise, mayPrintFees } from '@/lib/pipeline/proposal/fees'
+import { fakeProposalPrinter, rupees } from '@/lib/pipeline/proposal/print'
 import {
   newReference,
   REFERENCE,
@@ -43,9 +44,39 @@ const COPY: WorkingCopy = {
 }
 
 describe('the fees rule (D-21; docs/17 §5)', () => {
-  it('lets fees print only while prices are public', () => {
+  it('prints the fees section only while prices are public', () => {
     expect(mayPrintFees({ pricesPublic: false })).toBe(false)
     expect(mayPrintFees({ pricesPublic: true })).toBe(true)
+  })
+
+  it('leaves the fees section out of the stand-in’s page and PDF while prices are hidden', async () => {
+    const printer = fakeProposalPrinter()
+    const snapshot = snapshotOf(COPY, {
+      clientName: 'Fake Client',
+      date: '2026-11-23',
+      reference: 'IIIC-P-24117',
+      number: 1,
+    })
+    const shown = await printer.page(snapshot, { feesMayPrint: true })
+    if (!shown.ok) throw new Error(shown.error.code)
+    expect(shown.value).toContain('Fake fee one')
+    expect(shown.value).toContain(rupees(3_500_50))
+    const hidden = { feesMayPrint: false }
+    const page = await printer.page(snapshot, hidden)
+    const pdf = await printer.pdf(snapshot, hidden)
+    if (!page.ok || !pdf.ok) throw new Error('not printed')
+    for (const words of [page.value, new TextDecoder('latin1').decode(pdf.value)]) {
+      expect(words).toContain('Fake next step.')
+      for (const absent of ['Fees (', 'Fake fee one', rupees(1_000_00), 'Total, excluding GST']) {
+        expect(words).not.toContain(absent)
+      }
+    }
+    // With fees to print and none typed, the stand-in refuses as the kit's renderer does.
+    expect(await printer.pdf({ ...snapshot, fees: [] }, { feesMayPrint: true })).toEqual({
+      ok: false,
+      error: { code: 'incomplete', missing: ['fees'] },
+    })
+    expect((await printer.pdf({ ...snapshot, fees: [] }, { feesMayPrint: false })).ok).toBe(true)
   })
 
   it('adds whole paise and refuses anything else', () => {
@@ -84,9 +115,12 @@ describe('the tracked link token', () => {
 })
 
 describe('the snapshot', () => {
+  const WITH_FEES = { feesMayPrint: true }
+  const WITHOUT_FEES = { feesMayPrint: false }
+
   it('names every empty printed part', () => {
-    expect(missingParts(COPY, 'Fake Client Pvt Ltd')).toEqual([])
-    expect(missingParts({ ...COPY, subtitle: ' ', fees: [] }, null)).toEqual([
+    expect(missingParts(COPY, 'Fake Client Pvt Ltd', WITH_FEES)).toEqual([])
+    expect(missingParts({ ...COPY, subtitle: ' ', fees: [] }, null, WITH_FEES)).toEqual([
       'clientName',
       'subtitle',
       'fees',
@@ -95,10 +129,19 @@ describe('the snapshot', () => {
       missingParts(
         { ...COPY, phases: [{ name: 'x', what: '', duration: 'y', outcome: 'z' }] },
         'Fake',
+        WITH_FEES,
       ),
     ).toEqual(['phases'])
-    expect(missingParts({ ...COPY, fees: [{ item: 'Fake', amountPaise: 0 }] }, 'Fake')).toEqual([
-      'fees',
+    expect(
+      missingParts({ ...COPY, fees: [{ item: 'Fake', amountPaise: 0 }] }, 'Fake', WITH_FEES),
+    ).toEqual(['fees'])
+  })
+
+  it('needs no fees while they do not print, and every other part all the same', () => {
+    expect(missingParts({ ...COPY, fees: [] }, 'Fake', WITHOUT_FEES)).toEqual([])
+    expect(missingParts({ ...COPY, fees: null }, 'Fake', WITHOUT_FEES)).toEqual([])
+    expect(missingParts({ ...COPY, nextStep: '', fees: [] }, 'Fake', WITHOUT_FEES)).toEqual([
+      'nextStep',
     ])
   })
 

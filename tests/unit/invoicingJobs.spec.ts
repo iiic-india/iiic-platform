@@ -30,6 +30,15 @@ describe('the documents’ jobs', () => {
     expect(LISTENERS['refund.processed']).toEqual(['B7-issue-credit-note'])
   })
 
+  it('leave a confirmed booking to the calendar and to P2, which puts a proposal call on its lead', () => {
+    const slugs = (jobs.tasks ?? []).map((task) => task.slug)
+    expect(LISTENERS['booking.confirmed']).toEqual([
+      'B2-B7-sync-calendar-event',
+      'P2-lead-from-call',
+    ])
+    expect(slugs).toEqual(expect.arrayContaining(['P2-lead-from-call', 'P3-P4-lead-alerts']))
+  })
+
   it('answer an outcome, and throw a code (never a name or an amount) when a document failed', async () => {
     wiring.issueInvoice.mockResolvedValueOnce(
       ok({ outcome: 'issued', invoiceId: 1, pdf: 'stored' }),

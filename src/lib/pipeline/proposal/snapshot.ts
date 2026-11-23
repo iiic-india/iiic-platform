@@ -45,8 +45,16 @@ export type WorkingCopy = Pick<
 
 const filled = (text: string | null | undefined) => typeof text === 'string' && text.trim() !== ''
 
-/** The printed parts still empty: `incomplete` names them, and no version is made. */
-export function missingParts(copy: WorkingCopy, clientName: string | null): PrintedPart[] {
+/**
+ * The printed parts still empty: `incomplete` names them, and no version is made. The fees are a
+ * printed part only while they print (fees.ts): with prices hidden the section is left out, so a
+ * version needs none typed.
+ */
+export function missingParts(
+  copy: WorkingCopy,
+  clientName: string | null,
+  { feesMayPrint }: { feesMayPrint: boolean },
+): PrintedPart[] {
   const present: Record<PrintedPart, boolean> = {
     clientName: filled(clientName),
     title: filled(copy.title),
@@ -66,10 +74,11 @@ export function missingParts(copy: WorkingCopy, clientName: string | null): Prin
       ),
     measures: filled(copy.measures),
     fees:
-      (copy.fees?.length ?? 0) > 0 &&
-      (copy.fees ?? []).every(
-        (fee) => filled(fee.item) && Number.isSafeInteger(fee.amountPaise) && fee.amountPaise > 0,
-      ),
+      !feesMayPrint ||
+      ((copy.fees?.length ?? 0) > 0 &&
+        (copy.fees ?? []).every(
+          (fee) => filled(fee.item) && Number.isSafeInteger(fee.amountPaise) && fee.amountPaise > 0,
+        )),
     nextStep: filled(copy.nextStep),
   }
   return PRINTED_PARTS.filter((part) => !present[part])

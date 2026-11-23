@@ -16,6 +16,7 @@ const PAGE = '/organisations/team-map'
 const copy = FORM_COPY.teamMap
 const FAKE_NOTICE =
   'Fake consent text for an end-to-end test: IIIC may keep these details and reply.'
+const FAKE_COMPANY = 'Fake Company for e2e'
 /** A person cannot fill a form faster than this (src/lib/enquiryForms/guards.ts). */
 const MIN_FILL_MS = 3_000
 
@@ -43,7 +44,7 @@ async function enquiriesFrom(email: string): Promise<number> {
 
 async function fill(page: Page, email: string, { tick = true } = {}) {
   const form = page.getByRole('form', { name: copy.heading })
-  await form.getByLabel('Company').fill('Fake Company for e2e')
+  await form.getByLabel('Company').fill(FAKE_COMPANY)
   await form.getByLabel('Team size').selectOption({ label: '11 to 50 people' })
   await form.getByLabel('Sector').fill('Fake sector')
   await form.getByLabel('Your name').fill('Fake Person')
@@ -85,14 +86,68 @@ test.describe('The Team Map request', () => {
 
   test.afterAll(async () => {
     const db = await cms()
+    // What ReceiveEnquiry made for a received request: the person, the organisation, the lead
+    // with its activity and task, and the enquiry; children first.
+    const { docs: people } = await db.find({
+      collection: 'people',
+      where: { email: { like: '@example.invalid' } },
+      depth: 0,
+      pagination: false,
+      overrideAccess: true,
+    })
+    const { docs: organisations } = await db.find({
+      collection: 'organisations',
+      where: { name: { equals: FAKE_COMPANY } },
+      depth: 0,
+      pagination: false,
+      overrideAccess: true,
+    })
+    const personIds = people.map((person) => person.id)
+    const organisationIds = organisations.map((organisation) => organisation.id)
+    const { docs: leads } = await db.find({
+      collection: 'leads',
+      where: {
+        or: [{ person: { in: personIds } }, { organisation: { in: organisationIds } }],
+      },
+      depth: 0,
+      pagination: false,
+      overrideAccess: true,
+    })
+    const leadIds = leads.map((lead) => lead.id)
+    if (leadIds.length) {
+      for (const collection of ['tasks', 'lead-activities', 'enquiries'] as const) {
+        await db.delete({ collection, where: { lead: { in: leadIds } }, overrideAccess: true })
+      }
+      await db.delete({ collection: 'leads', where: { id: { in: leadIds } }, overrideAccess: true })
+    }
     await db.delete({
       collection: 'enquiries',
       where: { 'submitted.email': { like: '@example.invalid' } },
       overrideAccess: true,
     })
-    // A version in force is kept by the collection's own hook (docs/04); this fake one is
-    // removed past it, straight from the database, as nothing names it.
+    // Deleting a person withdraws their consents and keeps the entries (docs/04).
+    if (personIds.length) {
+      await db.delete({
+        collection: 'people',
+        where: { id: { in: personIds } },
+        overrideAccess: true,
+      })
+    }
+    if (organisationIds.length) {
+      await db.delete({
+        collection: 'organisations',
+        where: { id: { in: organisationIds } },
+        overrideAccess: true,
+      })
+    }
+    // A version in force is kept by the collection's own hook (docs/04), and consent entries are
+    // never deleted through the API; this fake text and the test's entries under it are removed
+    // past them, straight from the test database, as nothing else names them.
     if (noticeId !== null) {
+      await db.db.deleteMany({
+        collection: 'consents',
+        where: { noticeVersion: { equals: noticeId } },
+      })
       await db.db.deleteOne({ collection: 'consent-versions', where: { id: { equals: noticeId } } })
     }
   })
@@ -158,7 +213,7 @@ test.describe('The Team Map request', () => {
           status: 'received',
           receivedAt: new Date(Date.now() - 60_000).toISOString(),
           submitted: {
-            organisationName: 'Fake Company for e2e',
+            organisationName: FAKE_COMPANY,
             contactName: 'Fake Person',
             email,
           },
@@ -173,9 +228,8 @@ test.describe('The Team Map request', () => {
     expect(await enquiriesFrom(email)).toBe(3)
   })
 
-  // ReceiveEnquiry is builder A's and is wired to the forms at the merge (docs/17 §12;
-  // src/lib/enquiryForms/wiring.ts). Until then the form refuses politely and stores nothing.
-  test.fixme('is received: the acknowledgement takes focus and the request is stored once', async ({
+  // Through the CRM core's ReceiveEnquiry (src/lib/enquiryForms/wiring.ts; docs/17 §4).
+  test('is received: the acknowledgement takes focus and the request is stored once', async ({
     page,
   }, testInfo) => {
     const email = fakeEmail(testInfo.project.name, 'received')

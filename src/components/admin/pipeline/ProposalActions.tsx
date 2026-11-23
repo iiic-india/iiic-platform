@@ -84,7 +84,6 @@ export const ProposalActions: UIFieldServerComponent = async ({ id, payload, req
       {feesMayPrint ? null : <p className={styles.hint}>{COPY.feesHidden}</p>}
       <ProposalActionsPanel
         answerable={PROPOSAL_MOVES[status].includes('accepted')}
-        feesMayPrint={feesMayPrint}
         isOffice={hasRole(user, ...POLICY.proposals.update.roles)}
         proposalId={Number(id)}
       />

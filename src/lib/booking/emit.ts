@@ -4,6 +4,7 @@ import type { PayloadRequest } from 'payload'
 
 import { CALENDAR_SUBSCRIPTIONS } from '@/lib/calendar/queue'
 import { DOCUMENT_SUBSCRIPTIONS } from '@/lib/invoicing/queue'
+import { PIPELINE_SUBSCRIPTIONS } from '@/lib/pipeline/queue'
 
 import type { DomainEvent, DomainEventName, EmitDomainEvent } from './events'
 
@@ -24,9 +25,13 @@ export type Listeners = { readonly [Name in DomainEventName]?: readonly string[]
 /**
  * M3's own listeners: the calendar write (B2, B7), after the booking's change commits, and the
  * documents in Zoho Books (B3's invoice on a capture, the credit note on a processed refund).
+ * M4's: a confirmed proposal call put on its lead (P2, docs/17 §8).
  */
 export const LISTENERS: Listeners = {
-  'booking.confirmed': [CALENDAR_SUBSCRIPTIONS['booking.confirmed']],
+  'booking.confirmed': [
+    CALENDAR_SUBSCRIPTIONS['booking.confirmed'],
+    PIPELINE_SUBSCRIPTIONS['booking.confirmed'],
+  ],
   'booking.rescheduled': [CALENDAR_SUBSCRIPTIONS['booking.rescheduled']],
   'booking.cancelled': [CALENDAR_SUBSCRIPTIONS['booking.cancelled']],
   'payment.captured': [DOCUMENT_SUBSCRIPTIONS['payment.captured']],

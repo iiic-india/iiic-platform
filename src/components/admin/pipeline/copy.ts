@@ -79,7 +79,7 @@ export const PROPOSAL_PANEL_COPY = {
   sentVersion: (number: number) => `Version ${number} is the one the client has.`,
   noVersion: 'No version yet.',
   feesHidden:
-    'Proposals are not previewed or printed while prices are hidden (the prices setting), so none can be sent yet.',
+    'Prices are hidden (the prices setting), so the preview and the PDF leave out the fees section. The client receives the proposal without it.',
   answer: {
     heading: 'What the client answered',
     help: 'Record it when the client accepts or declines. The signed acceptance stays outside the platform.',

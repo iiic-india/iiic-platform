@@ -22,7 +22,8 @@ import { linkPath, newLinkToken } from './tokens'
 
 /**
  * "Send" (docs/05 "Send a proposal"; P5; docs/17 §5). In one transaction: print the version
- * (refused with placeholders or hidden fees), record the copy's SHA-256, issue the tracked link
+ * (refused with placeholders; its fees section only while the fees rule lets it print), record
+ * the copy's SHA-256, issue the tracked link
  * (only its hash kept), close the link of a version sent before it, set the proposal sent, bring
  * a consultancy lead to Proposal sent if it is earlier, log the send, make the follow-up task due
  * in three working days and emit `proposal.sent`. Then, once that has committed, email the link

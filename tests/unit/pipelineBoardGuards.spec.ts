@@ -160,11 +160,16 @@ describe('the proposal endpoints', () => {
     expect(answer.body).toMatchObject({ code: 'incomplete', details: ['the situation'] })
   })
 
-  it('answer fees-hidden for a preview while prices are hidden', async () => {
-    actions.preview.mockResolvedValueOnce(err({ code: 'fees-hidden' }))
-    const answer = await call(readers[0] as PayloadHandler, request(staff(['finance'])))
-    expect(answer.status).toBe(409)
-    expect(answer.body).toMatchObject({ code: 'fees-hidden' })
+  it('name what a PDF still waits for when it is refused', async () => {
+    actions.print.mockResolvedValueOnce(
+      err({ code: 'placeholders', waitingFor: ['[[TODO: a fake fact, I-00]]'] }),
+    )
+    const answer = await call(readers[2] as PayloadHandler, request(staff(['finance'])))
+    expect(answer.status).toBe(422)
+    expect(answer.body).toMatchObject({
+      code: 'placeholders',
+      details: ['[[TODO: a fake fact, I-00]]'],
+    })
   })
 
   it('return the link once after a send, and nothing about the client', async () => {

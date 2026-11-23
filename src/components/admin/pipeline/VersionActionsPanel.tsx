@@ -11,7 +11,6 @@ import styles from './Pipeline.module.css'
 type Props = {
   versionId: number
   isOffice: boolean
-  feesMayPrint: boolean
   /** This version's link is the one the client holds, and it opens. */
   linkOpen: boolean
   /** The proposal has not been answered, so a version can still go out. */
@@ -26,13 +25,7 @@ type Refusal = { message: string; details: string[] }
  * stored anywhere, so a reload loses it (docs/17 §5). The panel sits inside the record's form, so
  * each action is a button, not a form.
  */
-export function VersionActionsPanel({
-  versionId,
-  isOffice,
-  feesMayPrint,
-  linkOpen,
-  sendable,
-}: Props) {
+export function VersionActionsPanel({ versionId, isOffice, linkOpen, sendable }: Props) {
   const {
     config: {
       routes: { api },
@@ -87,18 +80,16 @@ export function VersionActionsPanel({
 
   return (
     <>
-      {feesMayPrint ? (
-        <div className={styles.panelRow}>
-          <a href={`${base}/preview`} rel="noopener" target="_blank">
-            {COPY.preview}
-          </a>
-          <a href={`${base}/pdf`} rel="noopener" target="_blank">
-            {COPY.pdf}
-          </a>
-          <span className={styles.hint}>{COPY.openHelp}</span>
-        </div>
-      ) : null}
-      {isOffice && sendable && feesMayPrint ? (
+      <div className={styles.panelRow}>
+        <a href={`${base}/preview`} rel="noopener" target="_blank">
+          {COPY.preview}
+        </a>
+        <a href={`${base}/pdf`} rel="noopener" target="_blank">
+          {COPY.pdf}
+        </a>
+        <span className={styles.hint}>{COPY.openHelp}</span>
+      </div>
+      {isOffice && sendable ? (
         <div className={styles.panelRow}>
           <Button
             buttonStyle="primary"

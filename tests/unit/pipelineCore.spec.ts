@@ -2,7 +2,7 @@
 import type { PayloadRequest } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
 
-import { logActivity } from '@/lib/pipeline/core/activities'
+import { logActivity, logPlatformActivity } from '@/lib/pipeline/core/activities'
 import { heatOf, needsAttentionWhere, quietSince, staleWhere } from '@/lib/pipeline/core/heat'
 import { keysFor, nameKeyOf, organisationTypeFor, workDomainOf } from '@/lib/pipeline/core/match'
 import { canMoveLead, isEarlier, moveLead } from '@/lib/pipeline/core/moves'
@@ -234,6 +234,26 @@ describe('staff writes need the role and the code (CLAUDE.md #6)', () => {
         error: { code: 'not-allowed' },
       })
     }
+  })
+
+  it('writes the platform’s own entry as the signed-in staff member’s, and only as theirs', async () => {
+    for (const user of [null, operator(), finance, { ...operator('totp'), active: false }]) {
+      const { req, findByID } = requestBy(user)
+      expect(await logPlatformActivity(req, { leadId: 1, type: 'proposal', by: OPERATOR })).toEqual(
+        { ok: false, error: { code: 'not-allowed' } },
+      )
+      expect(findByID).not.toHaveBeenCalled()
+    }
+    const { req, findByID } = requestBy(operator('totp'))
+    expect(
+      await logPlatformActivity(req, { leadId: 1, type: 'proposal', by: OPERATOR + 1 }),
+    ).toEqual({ ok: false, error: { code: 'not-allowed' } })
+    // Theirs, of a platform type: through to the record (none here).
+    expect(await logPlatformActivity(req, { leadId: 1, type: 'proposal', by: OPERATOR })).toEqual({
+      ok: false,
+      error: { code: 'not-found' },
+    })
+    expect(findByID).toHaveBeenCalledTimes(1)
   })
 
   it('lets an operator with the code through to the record', async () => {

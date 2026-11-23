@@ -3,21 +3,17 @@ import { err, ok, type Result } from '@/lib/result'
 import type { ProposalSnapshot } from '../proposals'
 
 /**
- * The printer port (docs/17 §5, §12). The real printer is M3's documents slice (`proposalPage` and
- * `renderProposalPdf` in src/lib/pdf/documents.ts, on m3/join, D-09): it fills the kit's
+ * The printer port (docs/17 §5, §12). The real printer is M3's renderer (`kitPrinter.ts`, through
+ * `proposalPage` and `renderProposalPdf` in src/lib/pdf/documents.ts, D-09): it fills the kit's
  * `print/proposal.html` and prints it with Chromium, and refuses a PDF that still holds a
- * placeholder. Until that slice joins, the fake below stands in, and `wiring.ts` maps the
- * snapshot to the renderer's `ProposalDocument` at the merge (the two types are field for field
- * the same).
+ * placeholder. The fake below stands in for it in the tests.
  *
- * The caller decides whether fees may print (fees.ts) before it asks; `feesMayPrint` is passed on
- * because the renderer refuses on its own while it is false, as a second lock.
+ * The caller asks the fees rule (fees.ts) and passes its answer on: while `feesMayPrint` is false
+ * the page and the PDF leave the fees section out entirely, and nothing takes its place.
  */
 
 export type PrinterError =
-  | { code: 'fees-hidden' }
-  | { code: 'placeholders'; waitingFor: string[] }
-  | { code: 'incomplete'; missing: string[] }
+  { code: 'placeholders'; waitingFor: string[] } | { code: 'incomplete'; missing: string[] }
 
 export type PrintFlags = { feesMayPrint: boolean }
 
@@ -33,8 +29,11 @@ export type ProposalPrinter = {
 /** A placeholder as the kit's templates write it (src/lib/pdf/merge.ts on m3/join). */
 const TODO = /\[\[TODO: [^\]]+\]\]/g
 
-/** Every placeholder in a snapshot's words. */
-export function placeholdersInSnapshot(snapshot: ProposalSnapshot): string[] {
+/** Every placeholder in the words a snapshot prints (the fee items only while fees print). */
+export function placeholdersInSnapshot(
+  snapshot: ProposalSnapshot,
+  { feesMayPrint }: PrintFlags,
+): string[] {
   const words = [
     snapshot.clientName,
     snapshot.title,
@@ -46,7 +45,7 @@ export function placeholdersInSnapshot(snapshot: ProposalSnapshot): string[] {
     snapshot.approach,
     ...snapshot.phases.flatMap((phase) => [phase.name, phase.what, phase.duration, phase.outcome]),
     snapshot.measures,
-    ...snapshot.fees.map((fee) => fee.item),
+    ...(feesMayPrint ? snapshot.fees.map((fee) => fee.item) : []),
     snapshot.nextStep,
   ]
   return [...new Set(words.flatMap((text) => text.match(TODO) ?? []))]
@@ -67,9 +66,22 @@ export function rupees(paise: number): string {
   return `${GROUPING.format(Math.floor(paise / 100))}.${String(paise % 100).padStart(2, '0')}`
 }
 
-/** The snapshot as plain lines, in the template's order: what the fake prints. */
-function linesOf(snapshot: ProposalSnapshot): string[] {
+/** The fees section as the fake prints it: the items, their amounts and the total. */
+function feeLines(snapshot: ProposalSnapshot): string[] {
   const total = snapshot.fees.reduce((sum, fee) => sum + fee.amountPaise, 0)
+  return [
+    'Fees (₹)',
+    ...snapshot.fees.map((fee) => `${fee.item}: ${rupees(fee.amountPaise)}`),
+    `Total, excluding GST: ${rupees(total)}`,
+    '',
+  ]
+}
+
+/**
+ * The snapshot as plain lines, in the template's order: what the fake prints. Without fees, the
+ * fees section is left out, as the kit's renderer leaves it out.
+ */
+function linesOf(snapshot: ProposalSnapshot, { feesMayPrint }: PrintFlags): string[] {
   return [
     snapshot.title,
     snapshot.subtitle,
@@ -91,10 +103,7 @@ function linesOf(snapshot: ProposalSnapshot): string[] {
     'How progress is measured',
     snapshot.measures,
     '',
-    'Fees (₹)',
-    ...snapshot.fees.map((fee) => `${fee.item}: ${rupees(fee.amountPaise)}`),
-    `Total, excluding GST: ${rupees(total)}`,
-    '',
+    ...(feesMayPrint ? feeLines(snapshot) : []),
     'The next step',
     snapshot.nextStep,
   ]
@@ -104,8 +113,8 @@ function linesOf(snapshot: ProposalSnapshot): string[] {
 export const FAKE_PRINT_NOTE = 'Printed by the stand-in printer, not the kit’s template.'
 
 /** The stand-in's page: the snapshot's words, escaped, in plain HTML. */
-function fakePage(snapshot: ProposalSnapshot): string {
-  const body = linesOf(snapshot)
+function fakePage(snapshot: ProposalSnapshot, flags: PrintFlags): string {
+  const body = linesOf(snapshot, flags)
     .map((line) => (line === '' ? '' : `<p>${escapeHtml(line)}</p>`))
     .join('\n')
   return `<!doctype html><html lang="en-IN"><head><meta charset="utf-8"><title>${escapeHtml(
@@ -177,31 +186,26 @@ export function plainPdf(lines: readonly string[]): Uint8Array {
 }
 
 /**
- * The stand-in printer, for the tests and for local work until M3's documents slice joins. It
- * keeps the renderer's two refusals (hidden fees; placeholders in a PDF). `printsPdf` is false on
- * a Vercel deployment (`wiring.ts`), where a client must never receive the stand-in's copy: the
- * PDF is then refused as waiting for the real printer, and nothing can be sent.
+ * The stand-in printer, for the tests: no browser, plain lines. It keeps the renderer's rules: the
+ * fees section only while fees may print, a proposal with fees to print and none typed refused as
+ * `incomplete`, and a PDF holding a placeholder refused.
  */
-export function fakeProposalPrinter({
-  printsPdf = true,
-}: { printsPdf?: boolean } = {}): ProposalPrinter {
+export function fakeProposalPrinter(): ProposalPrinter {
   return {
     fake: true,
-    async page(snapshot, { feesMayPrint }) {
-      if (!feesMayPrint) return err({ code: 'fees-hidden' })
-      return ok(fakePage(snapshot))
-    },
-    async pdf(snapshot, { feesMayPrint }) {
-      if (!feesMayPrint) return err({ code: 'fees-hidden' })
-      const waitingFor = placeholdersInSnapshot(snapshot)
-      if (waitingFor.length) return err({ code: 'placeholders', waitingFor })
-      if (!printsPdf) {
-        return err({ code: 'placeholders', waitingFor: [PRINTER_PENDING] })
+    async page(snapshot, flags) {
+      if (flags.feesMayPrint && !snapshot.fees.length) {
+        return err({ code: 'incomplete', missing: ['fees'] })
       }
-      return ok(plainPdf(linesOf(snapshot)))
+      return ok(fakePage(snapshot, flags))
+    },
+    async pdf(snapshot, flags) {
+      if (flags.feesMayPrint && !snapshot.fees.length) {
+        return err({ code: 'incomplete', missing: ['fees'] })
+      }
+      const waitingFor = placeholdersInSnapshot(snapshot, flags)
+      if (waitingFor.length) return err({ code: 'placeholders', waitingFor })
+      return ok(plainPdf(linesOf(snapshot, flags)))
     },
   }
 }
-
-/** What a PDF waits for on a deployment until the documents slice's printer joins. */
-export const PRINTER_PENDING = '[[TODO: the PDF printer, M3 documents slice]]'

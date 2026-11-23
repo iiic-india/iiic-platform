@@ -1,6 +1,6 @@
 import type { PayloadRequest } from 'payload'
 
-import { interimHeatOf } from '@/lib/pipeline/proposal/interim'
+import { heatOf as coreHeatOf, needsAttentionWhere } from '@/lib/pipeline/core/heat'
 import {
   FINAL_STAGES,
   LEAD_STAGES,
@@ -15,11 +15,10 @@ import type { Lead } from '@/payload-types'
 /**
  * The Pipeline board's data (docs/05 Pipeline; docs/17 §3, §7, §12 C): one board per kind, a
  * column per stage in STAGES_BY_KIND's order, each lead's heat worked out from its own fields as
- * it is read (`HeatOf`), and the "Needs attention" list of the untouched and the stale. Leads are
- * read with the user's own access; nothing about the contact person is read at all.
- *
- * At the merge (the lead): `heatOf` comes from builder A's src/lib/pipeline/core/heat.ts in place
- * of the interim stand-in.
+ * it is read (`HeatOf`, src/lib/pipeline/core/heat.ts), and the "Needs attention" list of the
+ * untouched and the stale, read on its own (`needsAttentionWhere`) so that none is missed when a
+ * board holds more leads than it shows. Leads are read with the user's own access; nothing about
+ * the contact person is read at all.
  */
 
 export const ACTIVE_LIMIT = 300
@@ -73,28 +72,34 @@ function urgency(heat: LeadHeat): number {
   return heat.state === 'stale' ? 2 : 3
 }
 
-/** The board from the leads read (pure; tests/unit/pipelineBoard.spec.ts). */
+/**
+ * The board from the leads read (pure; tests/unit/pipelineBoard.spec.ts). The "Needs attention"
+ * list is worked out from `attentionLeads` when they were read on their own, else from `leads`.
+ */
 export function buildBoard(
   kind: LeadKind,
   leads: BoardLead[],
   now: Date,
   heatOf: HeatOf,
   truncated = false,
+  attentionLeads?: BoardLead[],
 ): Board {
-  const cards: BoardCard[] = leads
-    .filter((lead) => lead.kind === kind)
-    .map((lead) => ({
-      ...lead,
-      heat: heatOf(lead, now),
-      moves: STAGE_MOVES[kind][lead.stage] ?? [],
-    }))
+  const cardOf = (lead: BoardLead): BoardCard => ({
+    ...lead,
+    heat: heatOf(lead, now),
+    moves: STAGE_MOVES[kind][lead.stage] ?? [],
+  })
+  const cards: BoardCard[] = leads.filter((lead) => lead.kind === kind).map(cardOf)
   const columns = STAGES_BY_KIND[kind].map((stage) => ({
     stage,
     label: stageLabel(stage),
     final: isFinal(stage),
     cards: cards.filter((card) => card.stage === stage),
   }))
-  const attention = cards
+  const candidates = attentionLeads
+    ? attentionLeads.filter((lead) => lead.kind === kind).map(cardOf)
+    : cards
+  const attention = candidates
     .filter((card) => card.heat.state !== 'fine')
     .sort((a, b) => {
       const order = urgency(a.heat) - urgency(b.heat)
@@ -127,14 +132,15 @@ const idOf = (value: number | { id: number } | null | undefined): number | null 
 
 /**
  * Reads one board with the user's own access (owner or operator; the view has checked). The
- * active stages in one read, each final stage's most recent few in another. Staff names are
- * read for the owners shown, and nothing else about them.
+ * active stages in one read, each final stage's most recent few in another, and the leads that
+ * need attention in a third. Staff names are read for the owners shown, and nothing else about
+ * them.
  */
 export async function loadBoard(
   req: PayloadRequest,
   kind: LeadKind,
   now: Date,
-  heatOf: HeatOf = interimHeatOf,
+  heatOf: HeatOf = coreHeatOf,
 ): Promise<Board> {
   const stages: readonly LeadStage[] = STAGES_BY_KIND[kind]
   const active = stages.filter((stage) => !isFinal(stage))
@@ -163,9 +169,20 @@ export async function loadBoard(
       }),
     ),
   )
+  const waiting = await req.payload.find({
+    ...common,
+    where: { and: [{ kind: { equals: kind } }, needsAttentionWhere(now)] },
+    sort: 'createdAt',
+    limit: ACTIVE_LIMIT,
+  })
   const read = [...open.docs, ...ended.flatMap((page) => page.docs)] as ReadLead[]
+  const attentionRead = waiting.docs as ReadLead[]
 
-  const ownerIds = [...new Set(read.map((lead) => idOf(lead.owner)).filter((id) => id !== null))]
+  const ownerIds = [
+    ...new Set(
+      [...read, ...attentionRead].map((lead) => idOf(lead.owner)).filter((id) => id !== null),
+    ),
+  ]
   const names = new Map<number, string>()
   if (ownerIds.length > 0) {
     const { docs } = await req.payload.find({
@@ -180,7 +197,7 @@ export async function loadBoard(
     for (const user of docs) names.set(user.id, user.name)
   }
 
-  const leads: BoardLead[] = read.map((lead) => {
+  const toBoardLead = (lead: ReadLead): BoardLead => {
     const organisation = lead.organisation
     const ownerId = idOf(lead.owner)
     return {
@@ -199,6 +216,13 @@ export async function loadBoard(
         organisation && typeof organisation === 'object' ? (organisation.name ?? null) : null,
       ownerName: ownerId === null ? null : (names.get(ownerId) ?? null),
     }
-  })
-  return buildBoard(kind, leads, now, heatOf, open.totalDocs > open.docs.length)
+  }
+  return buildBoard(
+    kind,
+    read.map(toBoardLead),
+    now,
+    heatOf,
+    open.totalDocs > open.docs.length,
+    attentionRead.map(toBoardLead),
+  )
 }

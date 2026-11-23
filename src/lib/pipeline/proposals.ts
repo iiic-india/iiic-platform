@@ -9,13 +9,13 @@ import type { ProposalVersion } from '@/payload-types'
  * Proposals from draft to answer (docs/17 §5), as contracts for builder C. Every word and fee is
  * typed by IIIC's staff; the platform adds only the reference, the date, the total and the client's
  * name, and never a price, a term or a validity of its own (CLAUDE.md #1). Printing goes through
- * the documents slice's renderer (`renderProposalPdf` in src/lib/pdf/, built on branch
- * m3/documents, D-09), which refuses a page that still holds a placeholder.
+ * M3's renderer (`proposalPage` and `renderProposalPdf` in src/lib/pdf/documents.ts, D-09), which
+ * refuses a PDF that still holds a placeholder.
  */
 
 /**
  * A version's frozen merge fields: what the kit's `print/proposal.html` prints, field for field
- * the documents slice's `ProposalDocument`, which builder C maps it to once that slice has joined.
+ * the renderer's `ProposalDocument` (src/lib/pdf/proposal.ts).
  */
 export type ProposalSnapshot = {
   clientName: string
@@ -41,17 +41,16 @@ export type ProposalError =
   | { code: 'not-allowed' } // role, two-factor code, or fees changed by someone not an owner
   | { code: 'bad-move'; from: string; to: string } // not in PROPOSAL_MOVES
   | { code: 'incomplete'; missing: string[] } // a part the template prints is empty
-  | { code: 'fees-hidden' } // fees may not print (MayPrintFees), so no page and no PDF
   | { code: 'placeholders'; waitingFor: string[] } // the renderer's refusal, for a client copy
   | { code: 'no-recipient' } // the lead's contact has no email address
   | { code: 'not-sent' } // tracking or answering a version never sent
   | { code: 'link-closed' } // a withdrawn, replaced or answered version's link
 
 /**
- * Whether a proposal's fees may print. D-21 keeps every price off every page, email and template
- * while `prices_public` is off; whether a quote to one organisation stands outside it, as a
- * payment link's amount does (D-24), is proposed for IIIC (docs/17 §10). Until IIIC decides, the
- * answer is `flags.pricesPublic`, and the documents slice's renderer refuses the same way.
+ * Whether a proposal's fees section prints. D-21 keeps every price off every page, email and
+ * template while `prices_public` is off, and the owner ruled (23 November 2026) that proposals are
+ * no exception: the answer is `flags.pricesPublic`. While it is false a proposal is still made,
+ * previewed, printed, sent and tracked, and the renderer leaves its fees section out entirely.
  */
 export type MayPrintFees = (flags: Pick<Flags, 'pricesPublic'>) => boolean
 
@@ -82,7 +81,8 @@ export type PrintVersion = (
 
 /**
  * Sends a version to the lead's contact (docs/05 "Send a proposal"; P5; docs/17 §5). First, in
- * one transaction: prints it (refused with placeholders or hidden fees), records its SHA-256,
+ * one transaction: prints it (refused with placeholders; the fees section only while fees may
+ * print), records its SHA-256,
  * issues the tracked link (a token of 32 random bytes, kept only as its SHA-256), marks any
  * version sent before it as replaced (its link closes), sets the proposal `sent` with
  * `sentVersion`, moves a consultancy lead to Proposal sent if it is earlier, logs a `proposal`

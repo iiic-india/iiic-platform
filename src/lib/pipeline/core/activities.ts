@@ -1,3 +1,5 @@
+import type { PayloadRequest } from 'payload'
+
 import { POLICY } from '@/access/policy'
 import { err, ok } from '@/lib/result'
 import { IST } from '@/lib/time/ist'
@@ -17,21 +19,12 @@ export function isStaffActivityType(type: unknown): type is (typeof STAFF_ACTIVI
   return (STAFF_ACTIVITY_TYPES as readonly unknown[]).includes(type)
 }
 
-/**
- * LogActivity: an entry by a member of the staff (`by` set) is one of STAFF_ACTIVITY_TYPES, by an
- * owner or an operator who has entered the code, and is theirs; the platform's own entries
- * (`by: null`) are any type.
- */
-export const logActivity: LogActivity = async (req, input) => {
-  if (input.by !== null) {
-    if (
-      !isStaffActivityType(input.type) ||
-      !staffWithCode(req.user, POLICY.leadActivities.create.roles) ||
-      req.user?.id !== input.by
-    ) {
-      return err({ code: 'not-allowed' })
-    }
-  }
+/** Whether `by` is the signed-in owner or operator, with the code. */
+function isTheSignedInStaff(req: PayloadRequest, by: number): boolean {
+  return staffWithCode(req.user, POLICY.leadActivities.create.roles) && req.user?.id === by
+}
+
+const write: LogActivity = async (req, input) => {
   const lead = await req.payload.findByID({
     collection: 'leads',
     id: input.leadId,
@@ -61,4 +54,31 @@ export const logActivity: LogActivity = async (req, input) => {
     }),
   )
   return ok(activity as LeadActivity)
+}
+
+/**
+ * LogActivity: an entry by a member of the staff (`by` set) is one of STAFF_ACTIVITY_TYPES, by an
+ * owner or an operator who has entered the code, and is theirs; the platform's own entries
+ * (`by: null`) are any type.
+ */
+export const logActivity: LogActivity = async (req, input) => {
+  if (input.by !== null) {
+    if (!isStaffActivityType(input.type) || !isTheSignedInStaff(req, input.by)) {
+      return err({ code: 'not-allowed' })
+    }
+  }
+  return write(req, input)
+}
+
+/**
+ * The platform's own entry for something a member of the staff did through one of its
+ * operations, such as a proposal version made, sent or answered (docs/17 §5): any type, since
+ * the server, not the person, chooses it, recorded as theirs. `by` must still be the signed-in
+ * owner or operator with the code; with `by: null` the entry is the platform's alone.
+ */
+export const logPlatformActivity: LogActivity = async (req, input) => {
+  if (input.by !== null && !isTheSignedInStaff(req, input.by)) {
+    return err({ code: 'not-allowed' })
+  }
+  return write(req, input)
 }
