@@ -89,7 +89,7 @@ export const newsletterConfirm: TemplateImplementation<ConfirmData> = {
         <Button href={siteLink(context.siteUrl, data.confirmPath)}>Confirm my subscription</Button>
         <Para>
           If you did not ask for it, ignore this email. Nothing more will be sent, and the address
-          is removed after 7 days.
+          is removed the day after the link stops working.
         </Para>
       </Frame>
     ),
