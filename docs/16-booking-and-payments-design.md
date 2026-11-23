@@ -147,6 +147,10 @@ Nothing waits on these: IIIC's values live in the admin, empty or behind the fla
 | Proposed: the counselling booking's SPDI written consent is recorded under the `bookingCommunications` purpose with the booking notice until the lawyer words it (I-22) | Built so; a purpose of its own needs a change to `consents` |
 | Proposed: a client may cancel a booking they have not paid for, before it starts, through the manage link; a paid one only under the service's refund rule (§6) | Built so |
 | Proposed: a hold is kept once more (its end moved to now + the hold minutes) when the gateway could not be reached (docs/03 F3: "keep the hold for one retry") | Built so |
+| Proposed: a reschedule or a cancellation closes the booking chain's open payment links, and is refused (tried again later) when the gateway cannot close one; the office sends a new link for the new booking (§5) | Built so |
+| Proposed: a client's cancellation whose refund the payments cannot wholly give back (an open refund holds part) is not offered online; the manage page sends the client to IIIC (§12, D) | Built so |
+| Proposed: a refund sent without an answer and not made at the gateway is moved to `failed` by the poll after fifteen minutes, for the office to send again (§5) | Built so |
+| Proposed: a booking is refused (`price-changed`) when the total in force differs from the one shown at step 1, and the visitor reloads to see the new total (§5) | Built so |
 | Proposed: the buffer is kept after every taken time, busy blocks included, using the buffer of the service being booked (§6) | Built so |
 | Proposed: the office's cancellation is refused when the refund the policy gives has changed since it was shown, so nobody confirms an amount they did not see; the refund is taken from the booking's latest payment first (§12, E) | Built so |
 | Proposed: a cancellation's reason stays on the booking only; the refund carries its reason code, not the text | Built so |
