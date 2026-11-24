@@ -1619,7 +1619,8 @@ export interface Consent {
     | 'mapSharing'
     | 'testimonialPublication'
     | 'relatedProgrammes'
-    | 'enquiryReplies';
+    | 'enquiryReplies'
+    | 'account';
   /**
    * Taken from the notice.
    */
@@ -1688,7 +1689,8 @@ export interface ConsentVersion {
     | 'mapSharing'
     | 'testimonialPublication'
     | 'relatedProgrammes'
-    | 'enquiryReplies';
+    | 'enquiryReplies'
+    | 'account';
   language: 'en-IN' | 'gu-IN' | 'hi-IN';
   /**
    * Numbered by the platform.
