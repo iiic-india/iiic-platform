@@ -161,7 +161,10 @@ const PAGE = 200
  * N4. Raised when an editor schedules an issue; before its time, the job queues a copy of itself
  * to wake at that time (keyed with the time, so a rescheduled issue's earlier copy finds the time
  * changed and does nothing). At its time it marks the issue `sending`, plans one message per
- * confirmed subscriber whose consent is in force, then marks it `sent` with the count.
+ * confirmed subscriber whose consent is in force, queued for the dispatcher (`queueOnly`): it
+ * sends none itself, so one job never holds every send of a list. Then it marks the issue `sent`.
+ * How many it reached is counted from the messages log as the dispatcher sends them
+ * (`recipientCount` in src/collections/NewsletterIssues.ts), not from this plan.
  */
 export async function runN4(req: PayloadRequest, input: unknown, now: Date): Promise<Outcome> {
   const { issueId, at } = IssueEvent.parse(input)
@@ -210,7 +213,6 @@ export async function runN4(req: PayloadRequest, input: unknown, now: Date): Pro
   }
 
   let planned = 0
-  let recipients = 0
   for (let page = 1; ; page += 1) {
     const { docs, hasNextPage } = await req.payload.find({
       collection: 'subscribers',
@@ -224,16 +226,19 @@ export async function runN4(req: PayloadRequest, input: unknown, now: Date): Pro
     })
     for (const subscriber of docs) {
       if (!(await stillSubscribed(req, subscriber))) continue
-      recipients += 1
-      const result = await plan(req, {
-        automation: 'N4',
-        template: 'newsletter-issue',
-        channel: 'email',
-        recipient: { kind: 'subscriber', id: subscriber.id },
-        subject: { collection: 'newsletter-issues', id: issueId },
-        variant: `s${subscriber.id}`,
-        sendAt: now,
-      })
+      const result = await plan(
+        req,
+        {
+          automation: 'N4',
+          template: 'newsletter-issue',
+          channel: 'email',
+          recipient: { kind: 'subscriber', id: subscriber.id },
+          subject: { collection: 'newsletter-issues', id: issueId },
+          variant: `s${subscriber.id}`,
+          sendAt: now,
+        },
+        { queueOnly: true },
+      )
       if (!result.ok) {
         // A refusal mid-way is a fault: the task's retries run it again, and the messages already
         // planned are not planned twice (one row per key). The issue stays `sending` meanwhile.
@@ -247,7 +252,7 @@ export async function runN4(req: PayloadRequest, input: unknown, now: Date): Pro
   await req.payload.update({
     collection: 'newsletter-issues',
     id: issueId,
-    data: { status: 'sent', sentAt: now.toISOString(), recipientCount: recipients },
+    data: { status: 'sent', sentAt: now.toISOString() },
     overrideAccess: true,
     context: { [NEWSLETTER_SEND_CONTEXT]: true },
     req,

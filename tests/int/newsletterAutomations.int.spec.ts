@@ -312,12 +312,16 @@ describe('an issue (N4)', () => {
       subject: { collection: 'newsletter-issues', id: scheduled.id },
     })
     expect(fake.of('N4').some((m) => m.recipient.id === gone.id)).toBe(false)
+    // Planned for the dispatcher only: N4 sends none itself, so no job holds a whole list.
+    expect(fake.optionsOf('N4').every((options) => options?.queueOnly === true)).toBe(true)
     const sent = await payload.findByID({
       collection: 'newsletter-issues',
       id: scheduled.id,
       overrideAccess: true,
     })
     expect(sent.status).toBe('sent')
+    // "Sent to" counts the messages that left, from the log: none yet with the fake core.
+    expect(sent.recipientCount).toBe(0)
 
     // A second run of the same job plans nothing more.
     const before = fake.of('N4').length

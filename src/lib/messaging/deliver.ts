@@ -123,6 +123,7 @@ export function deliverWith(deps: MessagingDeps): Deliver {
     if (
       created &&
       status === 'queued' &&
+      !options?.queueOnly &&
       sendAt.getTime() <= deps.now().getTime() &&
       !(await inCallersTransaction(req))
     ) {

@@ -2,6 +2,7 @@ import {
   ValidationError,
   type CollectionAfterChangeHook,
   type CollectionBeforeChangeHook,
+  type FieldHook,
 } from 'payload'
 
 import { queueFromHook } from '@/lib/automations/operations/hookEvents'
@@ -16,6 +17,33 @@ import { issueChangeProblem, issueNeedsSend, type IssueState } from './issueRule
 
 /** The flag N4 sets on its own updates, so these rules let the send through. */
 export const NEWSLETTER_SEND_CONTEXT = 'newsletterSend'
+
+/** The states of a message that left for its subscriber. */
+export const REACHED: readonly string[] = ['sent', 'delivered', 'read']
+
+/**
+ * An issue's "Sent to", read from the messages log: N4 only plans one message per subscriber and
+ * the dispatcher sends them over the next minutes, so the figure is the messages about this issue
+ * that have left, counted when the issue is read. Nothing before the issue is sending.
+ */
+export const countIssueSends: FieldHook = async ({ data, req, value }) => {
+  const doc = (data ?? {}) as Record<string, unknown>
+  const id = doc.id
+  if (typeof id !== 'number' || (doc.status !== 'sending' && doc.status !== 'sent')) return value
+  const { totalDocs } = await req.payload.count({
+    collection: 'messages',
+    where: {
+      and: [
+        { subjectCollection: { equals: 'newsletter-issues' } },
+        { subjectId: { equals: id } },
+        { status: { in: [...REACHED] } },
+      ],
+    },
+    overrideAccess: true,
+    req,
+  })
+  return totalDocs
+}
 
 const state = (doc: Record<string, unknown> | undefined): IssueState | null =>
   doc

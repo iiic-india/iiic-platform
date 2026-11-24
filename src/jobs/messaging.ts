@@ -13,6 +13,12 @@ import { onFail, TASK_RETRIES } from '@/lib/automations/failures'
 /** How many due messages one dispatch tries; the next minute takes the rest. */
 export const DISPATCH_BATCH = 50
 
+/**
+ * How long one dispatch keeps taking new messages. With a provider's 15-second timeout on the one
+ * in hand, a run ends within about 45 seconds, inside the cron function's 60.
+ */
+export const DISPATCH_BUDGET_MS = 30_000
+
 export const dispatchTask: TaskConfig<{
   input: object
   output: {
@@ -39,7 +45,9 @@ export const dispatchTask: TaskConfig<{
   ],
   handler: async ({ req }) => {
     const { dispatch } = await import('@/lib/messaging/dispatch')
-    return { output: await dispatch(req, new Date(), DISPATCH_BATCH) }
+    return {
+      output: await dispatch(req, new Date(), DISPATCH_BATCH, { ms: DISPATCH_BUDGET_MS }),
+    }
   },
   onFail: (args) => onFail(args),
 }

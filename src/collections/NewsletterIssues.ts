@@ -2,7 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
-import { guardIssue, raiseIssueScheduled } from '@/lib/newsletter/hooks'
+import { countIssueSends, guardIssue, raiseIssueScheduled } from '@/lib/newsletter/hooks'
 import { IST_FIELD } from '@/lib/time/ist'
 
 const serverOnly = {
@@ -149,11 +149,16 @@ export const NewsletterIssues: CollectionConfig = {
           admin: { readOnly: true, date: { pickerAppearance: 'dayAndTime' } },
         },
         {
+          // Counted from the messages log when the issue is read: the subscribers it has reached.
           name: 'recipientCount',
           type: 'number',
           label: 'Sent to',
           access: serverOnly,
-          admin: { readOnly: true },
+          hooks: { afterRead: [countIssueSends] },
+          admin: {
+            readOnly: true,
+            description: 'Subscribers this issue has reached so far, from the Messages log.',
+          },
         },
       ],
     },
