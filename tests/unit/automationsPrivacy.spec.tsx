@@ -364,6 +364,10 @@ describe('O7 · a complaint or grievance', () => {
     const mail = await renderEmail(complaintAck.email, loaded.value, CONTEXT)
     expect(mail.subject).toBe('We have received your complaint')
     expect(mail.text).toContain('Fake complaint text, as the office recorded it.')
+    // The complaint is the person's own words: the price guard leaves them out (D-111).
+    expect(complaintAck.email.quoted?.(loaded.value)).toEqual([
+      'Fake complaint text, as the office recorded it.',
+    ])
     const sent = {
       id: 77,
       template: 'complaint-ack',

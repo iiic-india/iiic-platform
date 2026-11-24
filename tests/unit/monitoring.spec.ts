@@ -93,6 +93,10 @@ describe('scrubText', () => {
     expect(scrubText('/book/pay/IIIC-S-00001')).toBe('/book/pay/[token]')
     expect(scrubText('/b/abcdefghij/cancel')).toBe('/b/[token]/cancel')
     expect(scrubText('/p/abcdefghij/pdf')).toBe('/p/[token]/pdf')
+    expect(scrubText('/w/abcdefghij/withdraw')).toBe('/w/[token]/withdraw')
+    expect(scrubText('GET /newsletter/confirm/abcdefghij')).toBe('GET /newsletter/confirm/[token]')
+    expect(scrubText('/newsletter/unsubscribe/abcdefghij')).toBe('/newsletter/unsubscribe/[token]')
+    expect(scrubText('/newsletter')).toBe('/newsletter')
     // The pages themselves, and short words, stay readable.
     expect(scrubText('/institute/verify')).toBe('/institute/verify')
     expect(scrubText('/api/bookings/12/reschedule')).toBe('/api/bookings/12/reschedule')

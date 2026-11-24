@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { getPayload } from 'payload'
 
 import { CandidateMark } from '@/components/blocks/PageBlocks'
+import { turnstileKeys } from '@/lib/enquiryForms/turnstile'
+import { env } from '@/lib/env'
 import {
   CONFIRM_COPY,
   NEWSLETTER_COPY_STATUS,
@@ -28,6 +30,7 @@ type Tone = 'green' | 'yellow' | 'red'
 const OUTCOMES: Record<string, { text: string; tone: Tone; form: boolean }> = {
   sent: { text: SIGNUP_COPY.sent, tone: 'green', form: false },
   busy: { text: SIGNUP_COPY.busy, tone: 'yellow', form: true },
+  'check-failed': { text: SIGNUP_COPY.checkFailed, tone: 'yellow', form: true },
   closed: { text: SIGNUP_COPY.closed, tone: 'yellow', form: false },
   failed: { text: SIGNUP_COPY.failed, tone: 'red', form: true },
   confirmed: { text: CONFIRM_COPY.done, tone: 'green', form: false },
@@ -75,7 +78,12 @@ export default async function NewsletterPage({ searchParams }: Props) {
       {!outcome || outcome.form ? (
         <>
           <p>{SIGNUP_COPY.lead}</p>
-          <SignupForm notice={notice?.text ?? null} source="/newsletter" invalid={invalid} />
+          <SignupForm
+            notice={notice?.text ?? null}
+            source="/newsletter"
+            invalid={invalid}
+            turnstileSiteKey={turnstileKeys(env())?.siteKey ?? null}
+          />
         </>
       ) : null}
     </section>

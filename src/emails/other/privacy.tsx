@@ -151,6 +151,8 @@ export const complaintAck: TemplateImplementation<AckData> = {
   email: {
     key: 'complaint-ack',
     schema: AckData,
+    // The complaint as recorded is the person's own words (D-111).
+    quoted: (data) => (data.asRecorded ? [data.asRecorded] : []),
     subject: (data) => `We have received ${data.askedFor}`,
     preheader: (data) => `IIIC will reply by ${data.replyBy}. A copy of it is inside.`,
     element: (data, context) => (

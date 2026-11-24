@@ -57,6 +57,17 @@ describe('the tracked link’s page', () => {
     expect(actions.open).not.toHaveBeenCalled()
   })
 
+  it('looks nothing up on a preview, which shares production’s database, and reads as closed (D-102)', async () => {
+    actions.read.mockResolvedValue(
+      ok({ title: 'Fake proposal', clientName: 'Fake Org', reference: 'IIIC-P-00001 v1' }),
+    )
+    deployment.VERCEL_ENV = 'preview'
+    const html = await draw(TOKEN)
+    expect(html).toContain('This link no longer opens a proposal')
+    expect(html).not.toContain('Fake proposal')
+    expect(actions.read).not.toHaveBeenCalled()
+  })
+
   it('reads alike for every closed or unknown link', async () => {
     actions.read.mockResolvedValue(err({ code: 'link-closed' }))
     const closed = await draw(TOKEN)
@@ -86,7 +97,7 @@ describe('the tracked link’s PDF', () => {
     })
   })
 
-  it('serves the PDF to signed-in staff and on a preview without counting a client view', async () => {
+  it('serves the PDF to signed-in staff without counting a client view, and nothing on a preview', async () => {
     const pdf = new TextEncoder().encode('%PDF-1.4 fake')
     actions.open.mockResolvedValue(ok({ versionId: 1, pdf, filename: 'IIIC-P-00001-v1.pdf' }))
     signedIn.auth.mockResolvedValueOnce({ user: { id: 1, collection: 'users' } })
@@ -96,12 +107,13 @@ describe('the tracked link’s PDF', () => {
       now: expect.any(Date),
       countView: false,
     })
+    // A preview shares production's database: it opens nothing and sends the link to its page,
+    // which reads as closed there (D-102).
     deployment.VERCEL_ENV = 'preview'
-    expect((await get(TOKEN)).status).toBe(200)
-    expect(actions.open).toHaveBeenLastCalledWith(
-      expect.anything(),
-      expect.objectContaining({ countView: false }),
-    )
+    const preview = await get(TOKEN)
+    expect(preview.status).toBe(303)
+    expect(preview.headers.get('Location')).toBe(`/p/${TOKEN}`)
+    expect(actions.open).toHaveBeenCalledTimes(1)
     deployment.VERCEL_ENV = 'production'
     expect((await get(TOKEN)).status).toBe(200)
     expect(actions.open).toHaveBeenLastCalledWith(

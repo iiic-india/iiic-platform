@@ -36,6 +36,7 @@ export class FakeMessagingCore implements MessagingCore {
       if (subject.collection !== scope.subject.collection || subject.id !== scope.subject.id)
         continue
       if (scope.automations && !scope.automations.includes(automation)) continue
+      if (scope.keepKeys?.includes(row.key)) continue
       row.status = 'cancelled'
       cancelled += 1
     }

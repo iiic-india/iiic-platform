@@ -38,7 +38,7 @@ export const timeRequestReceived: TemplateImplementation<TimeRequestData> = {
         preheader={words.preheader(data)}
         eyebrow={words.eyebrow}
         heading={words.heading(data)}
-        counselling={false}
+        counselling={data.counselling}
       >
         <Paragraph>{words.lead(data)}</Paragraph>
         <Details rows={rows(data)} />

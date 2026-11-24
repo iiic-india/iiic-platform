@@ -9,7 +9,7 @@ import type { TemplateImplementation } from '@/emails/types'
 import { FakeEmailSender, FakeWhatsAppSender } from '@/lib/messaging/fakes'
 import type { PlannedMessage } from '@/lib/messaging/operations'
 import { quietHoursEnd } from '@/lib/messaging/policy'
-import { ok } from '@/lib/result'
+import { err, ok } from '@/lib/result'
 import type { ConsentVersion, Message, MessageTemplate, Person } from '@/payload-types'
 import config from '@/payload.config'
 
@@ -229,6 +229,90 @@ afterAll(async () => {
       })
     }
   }
+})
+
+describe('a message whose data is gone, or whose subject moved on', () => {
+  const withLoad = (at: Date, load: TemplateImplementation<{ ref: string }>['load']) => ({
+    ...depsAt(at),
+    implementation: () => ({ ...fakeTemplate, load }) as unknown as TemplateImplementation<never>,
+  })
+
+  it('fails as data-missing and raises message.failed when the data is not found', async () => {
+    const at = ist('13:00')
+    const planned = await deliverWith(withLoad(at, async () => err({ code: 'not-found' })))(
+      await req(),
+      plan(people.b, { variant: 'data-gone', sendAt: at }),
+    )
+    if (!planned.ok) throw new Error('not planned')
+    expect(await row(planned.value.messageId)).toMatchObject({
+      status: 'failed',
+      lastError: 'data-missing',
+    })
+    expect(events).toContainEqual({ name: 'message.failed', messageId: planned.value.messageId })
+    expect(sentWith(email, (await row(planned.value.messageId)).dedupeKey)).toHaveLength(0)
+  })
+
+  it('is skipped as stale, with no alarm, when its subject moved on', async () => {
+    const at = ist('13:00')
+    const planned = await deliverWith(withLoad(at, async () => err({ code: 'stale' })))(
+      await req(),
+      plan(people.b, { variant: 'moved-on', sendAt: at }),
+    )
+    if (!planned.ok) throw new Error('not planned')
+    expect(await row(planned.value.messageId)).toMatchObject({
+      status: 'skipped',
+      skipReason: 'stale',
+    })
+    expect(events).not.toContainEqual({
+      name: 'message.failed',
+      messageId: planned.value.messageId,
+    })
+  })
+})
+
+describe('a price where the template allows none (D-111)', () => {
+  const pricedTemplate = (quoted?: string) =>
+    ({
+      ...fakeTemplate,
+      email: {
+        ...fakeTemplate.email,
+        element: (data: { ref: string }, context: Parameters<typeof Frame>[0]) =>
+          createElement(
+            Frame,
+            {
+              preheader: 'Fake preheader',
+              heading: 'Fake heading',
+              assetUrl: context.assetUrl,
+              footer: context.footer,
+            } as Parameters<typeof Frame>[0],
+            createElement(Paragraph, null, `Fake line ${data.ref}: it cost Rs 500.`),
+          ),
+        ...(quoted ? { quoted: () => [quoted] } : {}),
+      },
+    }) as unknown as TemplateImplementation<never>
+
+  it('fails the message and raises message.failed, never a silent skip', async () => {
+    const at = ist('14:00')
+    const planned = await deliverWith({ ...depsAt(at), implementation: () => pricedTemplate() })(
+      await req(),
+      plan(people.c, { variant: 'priced', sendAt: at }),
+    )
+    if (!planned.ok) throw new Error('not planned')
+    const message = await row(planned.value.messageId)
+    expect(message).toMatchObject({ status: 'failed', lastError: 'price-hidden' })
+    expect(sentWith(email, message.dedupeKey)).toHaveLength(0)
+    expect(events).toContainEqual({ name: 'message.failed', messageId: message.id })
+  })
+
+  it('sends when the amount is in the person’s own words quoted back to them', async () => {
+    const at = ist('14:00')
+    const planned = await deliverWith({
+      ...depsAt(at),
+      implementation: () => pricedTemplate('Fake line INT-MSG: it cost Rs 500.'),
+    })(await req(), plan(people.c, { variant: 'quoted', sendAt: at }))
+    if (!planned.ok) throw new Error('not planned')
+    expect(await row(planned.value.messageId)).toMatchObject({ status: 'sent' })
+  })
 })
 
 describe('fires once (docs/19 §2)', () => {

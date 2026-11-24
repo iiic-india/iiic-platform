@@ -54,6 +54,7 @@ const paymentLink: PaymentLinkData = {
   firstName: 'Testname',
   serviceName: 'Fake session',
   reference: 'IIIC-S-00000',
+  counselling: false,
   startsAt: STARTS,
   amountPaise: 150000,
   linkUrl: 'https://pay.example.invalid/fake',
@@ -66,6 +67,7 @@ const FAKE: Record<keyof typeof BOOKING_COPY_STATUS, unknown> = {
   'booking-receipt': {
     firstName: 'Testname',
     reference: 'IIIC-S-00000',
+    counselling: false,
     document: 'taxInvoice',
     number: 'FAKE-0001',
     issuedAt: STARTS,
@@ -88,6 +90,7 @@ const FAKE: Record<keyof typeof BOOKING_COPY_STATUS, unknown> = {
   'refund-processed': {
     firstName: 'Testname',
     reference: 'IIIC-S-00000',
+    counselling: false,
     amountPaise: 150000,
     processedAt: STARTS,
   } satisfies RefundData,
@@ -106,6 +109,7 @@ const FAKE: Record<keyof typeof BOOKING_COPY_STATUS, unknown> = {
     firstName: 'Testname',
     serviceName: 'Fake session',
     serviceType: 'session',
+    counselling: false,
     startsAt: STARTS,
     amountPaise: 150000,
   } satisfies SlotLostData,
@@ -113,6 +117,7 @@ const FAKE: Record<keyof typeof BOOKING_COPY_STATUS, unknown> = {
     firstName: 'Testname',
     serviceName: 'Fake session',
     reference: 'IIIC-S-00000',
+    counselling: false,
     preferredDays: ['2030-01-04', '2030-01-07'],
   } satisfies TimeRequestData,
   'payment-link': paymentLink,
@@ -193,15 +198,16 @@ describe('the booking templates', () => {
       const data = FAKE[key] as Record<string, unknown>
       if (!implementation(key)?.email) continue
       if (!('counselling' in data)) {
-        // The consent receipt is sent for counselling bookings only (B3a); the money messages
-        // and the staff notice are about a payment or a reference, not a session.
+        // The consent receipt is sent for counselling bookings only (B3a); the staff notice is
+        // internal and names a reference only.
         const rendered = await render(key, data)
         if (key === 'consent-receipt') carriesScope(rendered.text, key)
         else expect(rendered.text, key).not.toContain(SCOPE_STATEMENT[1])
         continue
       }
-      // The registry's `counsellingScope` templates must carry it; every other one about a
-      // counselling session does too (VOICE.md, counselling emails).
+      // Every email to the client about a counselling booking carries it, the time request and
+      // the money messages included (docs/08 §7; VOICE.md, counselling copy).
+      expect(templateSpec(key).counsellingScope, key).toBe(true)
       carriesScope((await render(key, { ...data, counselling: true })).text, key)
       const other = await render(key, { ...data, counselling: false })
       expect(other.text, key).not.toContain(SCOPE_STATEMENT[1])
@@ -354,6 +360,15 @@ describe('the WhatsApp templates', () => {
   it('carry the scope line for a counselling booking, and its reference for any', () => {
     const counselling = WHATSAPP_PARAMS['reminder-short'](session({ counselling: true }))
     expect(counselling.at(-1)).toBe(`Booking ID IIIC-S-00000. ${WHATSAPP_SCOPE_LINE}`)
+    // The time request and the payment link too (docs/08 §7).
+    const request = FAKE['time-request-received'] as TimeRequestData
+    expect(WHATSAPP_PARAMS['time-request-received']({ ...request, counselling: true }).at(-1)).toBe(
+      `Booking ID IIIC-S-00000. ${WHATSAPP_SCOPE_LINE}`,
+    )
+    expect(WHATSAPP_PARAMS['payment-link']({ ...paymentLink, counselling: true }).at(-1)).toBe(
+      `Booking ID IIIC-S-00000. ${WHATSAPP_SCOPE_LINE}`,
+    )
+    expect(WHATSAPP_PARAMS['payment-link'](paymentLink).at(-1)).toBe('Booking ID IIIC-S-00000.')
     expect(WHATSAPP_SCOPE_LINE).toContain('Tele-MANAS 14416')
     const other = WHATSAPP_PARAMS['reminder-short'](session())
     expect(other.at(-1)).toBe('Booking ID IIIC-S-00000.')

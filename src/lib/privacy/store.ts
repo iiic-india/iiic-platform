@@ -1,9 +1,16 @@
 import 'server-only'
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { GetObjectCommand, NoSuchKey, PutObjectCommand, type S3Client } from '@aws-sdk/client-s3'
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
+  NoSuchKey,
+  PutObjectCommand,
+  type S3Client,
+} from '@aws-sdk/client-s3'
 
 import { env, type ServerEnv } from '@/lib/env'
 import { privateBucketOf } from '@/lib/storage/privateBucket'
@@ -18,6 +25,8 @@ import { privateBucketOf } from '@/lib/storage/privateBucket'
 export type PrivateStore = {
   put: (key: string, body: string, contentType: string) => Promise<void>
   get: (key: string) => Promise<Buffer | null>
+  /** Removes every file under a folder, such as one request's exports; none there is no error. */
+  removeAll: (folder: string) => Promise<void>
 }
 
 /** A key the store accepts: lower-case segments, no way out of its folder. */
@@ -29,6 +38,20 @@ function checked(key: string): string {
   if (!isSafeKey(key)) throw new Error('The private store refused a key outside its folder.')
   return key
 }
+
+/** A folder the store removes: lower-case segments ending in a slash, never the store's root. */
+const SAFE_FOLDER = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+\/$/
+
+export const isSafeFolder = (folder: string): boolean =>
+  SAFE_FOLDER.test(folder) && !folder.includes('..')
+
+function checkedFolder(folder: string): string {
+  if (!isSafeFolder(folder)) throw new Error('The private store refused a folder outside its own.')
+  return folder
+}
+
+/** The folder of one privacy request's access exports (src/lib/privacy/export.ts). */
+export const exportFolderOf = (requestId: number) => `privacy-exports/request-${requestId}/`
 
 /** The folder implementation: local development, CI and the integration tests. */
 export function folderStore(root: string): PrivateStore {
@@ -46,6 +69,10 @@ export function folderStore(root: string): PrivateStore {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
         throw error
       }
+    },
+    async removeAll(folder) {
+      const parts = checkedFolder(folder).split('/').filter(Boolean)
+      await rm(path.join(root, ...parts), { recursive: true, force: true })
     },
   }
 }
@@ -73,6 +100,21 @@ export function bucketStore(client: S3Client, bucket: string): PrivateStore {
         if (error instanceof NoSuchKey) return null
         throw error
       }
+    },
+    async removeAll(folder) {
+      const prefix = checkedFolder(folder)
+      let token: string | undefined
+      do {
+        const page = await client.send(
+          new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }),
+        )
+        for (const object of page.Contents ?? []) {
+          if (object.Key?.startsWith(prefix)) {
+            await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: object.Key }))
+          }
+        }
+        token = page.IsTruncated ? page.NextContinuationToken : undefined
+      } while (token)
     },
   }
 }

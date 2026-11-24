@@ -150,6 +150,7 @@ export const REPORT_FIGURES = {
   noShowRate: null,
   leadResponseTime: null,
   funnel: null,
+  messageDelivery: null,
 } as const satisfies Record<string, string | null>
 
 export type ReportKey = keyof typeof REPORT_FIGURES

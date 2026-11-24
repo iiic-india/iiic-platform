@@ -10,6 +10,7 @@ import {
   planNoShow,
   planPaymentLink,
   planPaymentLinkCancelled,
+  planPaymentLinkMoved,
   planReceipt,
   planRefundNotice,
   planReminder24h,
@@ -39,6 +40,7 @@ const booking = (over: Partial<BookingSnapshot> = {}): BookingSnapshot => ({
   counselling: false,
   recipientId: 7,
   prefersEmail: false,
+  consents: 2,
   staffId: 3,
   ...over,
 })
@@ -88,6 +90,8 @@ describe('B3a · the counselling consent receipt', () => {
       'B3a:bookings:41:email',
     ])
     expect(planConsentReceipt(booking({ counselling: false }), now).deliver).toEqual([])
+    // A counselling booking with no consents recorded (the office entered it): nothing to list.
+    expect(planConsentReceipt(booking({ counselling: true, consents: 0 }), now).deliver).toEqual([])
   })
 })
 
@@ -362,6 +366,44 @@ describe('B13 · a payment link', () => {
       { subject: { collection: 'payments', id: 10 }, automations: ['B13'] },
       { subject: { collection: 'payments', id: 11 }, automations: ['B13'] },
     ])
+  })
+
+  it('a move keeps the link and plans its one reminder for the new time, which a retry keeps', () => {
+    // Booking 41 moved to 52, two days later; the link (12) stays on the first booking.
+    const moved = booking({ id: 52, startsAt: ist('2026-12-12T11:00:00') })
+    const plan = planPaymentLinkMoved(link, moved, [10, 12], context('2026-12-01T12:00:00'))
+    expect(keys(plan)).toEqual(['B13:payments:12:reminder-52:email'])
+    expect(only(plan)).toMatchObject({
+      template: 'payment-link-reminder',
+      channel: 'email',
+      sendAt: ist('2026-12-11T11:00:00'),
+      sendBefore: ist('2026-12-12T11:00:00'),
+    })
+    // Every link's queued B13 rows go, the old time's reminder with them, but not this one.
+    expect(plan.cancel).toEqual(
+      [10, 12].map((id) => ({
+        subject: { collection: 'payments', id },
+        automations: ['B13'],
+        keepKeys: ['B13:payments:12:reminder-52:email'],
+      })),
+    )
+  })
+
+  it('a move plans no reminder for a paid or closed link, or a new time under 24 hours away', () => {
+    const moved = booking({ id: 52, startsAt: ist('2026-12-12T11:00:00') })
+    for (const payment of [
+      { ...link, status: 'captured' },
+      { ...link, status: 'cancelled' },
+      null,
+    ]) {
+      const plan = planPaymentLinkMoved(payment, moved, [12], context('2026-12-01T12:00:00'))
+      expect(plan.deliver).toEqual([])
+      expect(plan.cancel).toEqual([
+        { subject: { collection: 'payments', id: 12 }, automations: ['B13'] },
+      ])
+    }
+    const soon = planPaymentLinkMoved(link, moved, [12], context('2026-12-11T12:00:00'))
+    expect(soon.deliver).toEqual([])
   })
 
   it('a cancelled booking cancels its payment links’ queued messages', () => {

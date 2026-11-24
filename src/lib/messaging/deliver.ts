@@ -123,6 +123,7 @@ export function deliverWith(deps: MessagingDeps): Deliver {
     if (
       created &&
       status === 'queued' &&
+      !options?.queueOnly &&
       sendAt.getTime() <= deps.now().getTime() &&
       !(await inCallersTransaction(req))
     ) {
@@ -147,4 +148,4 @@ export const deliver: Deliver = (req, planned, options) =>
 
 /** Cancels the queued messages about a subject (docs/19 §6): a reschedule, a cancellation, a payment. */
 export const cancelQueued: CancelQueued = (req, scope) =>
-  cancelQueuedRows(req, scope.subject, scope.automations, new Date())
+  cancelQueuedRows(req, scope.subject, scope.automations, new Date(), scope.keepKeys)

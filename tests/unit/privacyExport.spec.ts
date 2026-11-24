@@ -1,4 +1,8 @@
 // @vitest-environment node
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+
 import type { PayloadRequest } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -6,7 +10,8 @@ vi.mock('server-only', () => ({}))
 
 const { EXPORT_SECTIONS, exportKeys, exportPersonDataWith, pageKeyOf, renderExportPage } =
   await import('@/lib/privacy/export')
-const { isSafeKey, privateStoreFor } = await import('@/lib/privacy/store')
+const { exportFolderOf, folderStore, isSafeFolder, isSafeKey, privateStoreFor } =
+  await import('@/lib/privacy/store')
 const { planOf, PLAN_LINES } = await import('@/lib/privacy/erasure')
 const { codeEnteredRecently } = await import('@/lib/privacy/stepUp')
 
@@ -34,6 +39,19 @@ describe('the export’s readable page', () => {
     expect(page).toContain('Fake &lt;script&gt;')
     expect(page).toContain('1 February 2027, 12:15 AM IST')
     expect(page).toContain('1 March 2027, 10 AM IST')
+  })
+
+  it('holds what M4 and M6 keep about the person: enquiries, the newsletter, suppressions, messages', () => {
+    expect(EXPORT_SECTIONS.map(({ key }) => key)).toEqual(
+      expect.arrayContaining(['enquiries', 'newsletter', 'suppressions', 'messages']),
+    )
+    const page = renderExportPage({
+      ...empty,
+      generatedAt: '2027-03-01T04:30:00.000Z',
+      messages: [{ id: 3, template: 'booking-confirmed', channel: 'email', status: 'delivered' }],
+    })
+    expect(page).toContain('<h2>Messages we sent you (1)</h2>')
+    expect(page).toContain('<h2>Enquiries you sent through the site (0)</h2>')
   })
 
   it('has no section for session notes (D-11, assumed not disclosed)', () => {
@@ -83,6 +101,11 @@ describe('the private store’s keys', () => {
 })
 
 const survey = {
+  exports: 1,
+  enquiries: 2,
+  pipelineLinks: 3,
+  subscribers: 1,
+  suppressions: 1,
   bookingIds: [1, 2],
   ownBookings: 2,
   notes: 3,
@@ -109,6 +132,46 @@ describe('the erasure plan', () => {
 
   it('says why each kept record is kept', () => {
     for (const line of planOf(survey, true).keeps) expect(line.why.length).toBeGreaterThan(10)
+  })
+
+  it('names what M4 and M6 hold: enquiries, links, the subscription and exports go, suppressions stay', () => {
+    const plan = planOf(survey, false)
+    expect(plan.deletes).toEqual(
+      expect.arrayContaining([
+        { entity: PLAN_LINES.enquiries, count: 2 },
+        { entity: PLAN_LINES.pipelineLinks, count: 3 },
+        { entity: PLAN_LINES.subscriber, count: 1 },
+        { entity: PLAN_LINES.exports, count: 1 },
+      ]),
+    )
+    expect(plan.keeps).toContainEqual(
+      expect.objectContaining({ entity: PLAN_LINES.suppressions, count: 1 }),
+    )
+  })
+})
+
+describe('the private store’s folders', () => {
+  it('removes one request’s exports and nothing beside them', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'iiic-store-unit-'))
+    try {
+      const store = folderStore(root)
+      await store.put('privacy-exports/request-7/export-1.json', '{}', 'application/json')
+      await store.put('privacy-exports/request-8/export-1.json', '{}', 'application/json')
+      await store.removeAll(exportFolderOf(7))
+      expect(await store.get('privacy-exports/request-7/export-1.json')).toBeNull()
+      expect(await store.get('privacy-exports/request-8/export-1.json')).not.toBeNull()
+      // A folder already gone is no error.
+      await expect(store.removeAll(exportFolderOf(7))).resolves.toBeUndefined()
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses the store’s root and any folder that could leave it', async () => {
+    for (const folder of ['', '/', 'privacy-exports/', '../x/', 'privacy-exports/../x/', 'a\\b/']) {
+      expect(isSafeFolder(folder), folder).toBe(false)
+    }
+    await expect(folderStore('/never-written').removeAll('privacy-exports/')).rejects.toThrow()
   })
 })
 

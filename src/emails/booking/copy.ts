@@ -275,8 +275,8 @@ export const STAFF_CHANGE: Record<StaffChangeData['change'], string> = {
 }
 
 /**
- * The scope and the crisis numbers on one line, for a counselling booking's WhatsApp confirmation
- * and reminders (docs/06, counselling guardrail), in the words of src/lib/counselling/scope.ts.
+ * The scope and the crisis numbers on one line, for every WhatsApp message about a counselling
+ * booking (docs/08 §7), in the words of src/lib/counselling/scope.ts.
  * A WhatsApp variable may not hold a line break, so it is one line.
  */
 export const WHATSAPP_SCOPE_LINE = [
@@ -288,9 +288,10 @@ export const WHATSAPP_SCOPE_LINE = [
 ].join(' ')
 
 /**
- * The closing variable of the five templates about a booking's time (confirmed, the reminders, rescheduled, cancelled): the booking's reference, and
- * for a counselling booking the scope and crisis line after it. One approved text serves both,
- * and a variable is never empty (Meta refuses an empty one).
+ * The closing variable of the seven templates about a booking (confirmed, the reminders,
+ * rescheduled, cancelled, the time request and the payment link): the booking's reference, and for
+ * a counselling booking the scope and crisis line after it. One approved text serves both, and a
+ * variable is never empty (Meta refuses an empty one).
  */
 export function whatsappClosing(d: Pick<SessionData, 'reference' | 'counselling'>): string {
   const reference = `Booking ID ${d.reference}.`
@@ -345,12 +346,13 @@ export const WHATSAPP_PARAMS = {
     whatsappClosing(d),
   ],
   // 'feedback-request' gets its WhatsApp variables with M5's feedback link (docs/19 §10).
-  'time-request-received': (d: TimeRequestData) => [d.firstName, d.serviceName, d.reference],
+  'time-request-received': (d: TimeRequestData) => [d.firstName, d.serviceName, whatsappClosing(d)],
   'payment-link': (d: PaymentLinkData) => [
     d.firstName,
     d.serviceName,
     longDay(d.startsAt),
     rupees(d.amountPaise),
     d.linkUrl,
+    whatsappClosing(d),
   ],
 } as const

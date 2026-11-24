@@ -1,6 +1,7 @@
-import { getPayload } from 'payload'
+import { createLocalReq, getPayload } from 'payload'
 
 import { JOBS_PER_ROUND, refuseCron, RUN_BUDGET_MS, runRounds } from '@/lib/automations/runner'
+import { releaseStaleJobs } from '@/lib/automations/staleJobs'
 import { env } from '@/lib/env'
 import { reportError } from '@/lib/monitoring/sentry'
 import config from '@payload-config'
@@ -18,8 +19,10 @@ const HEADERS = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' }
  * token (the minute cron lands in vercel.json with the move to Pro; until then an owner calls it).
  * It refuses before touching the database (src/lib/automations/runner.ts): 503 without a secret,
  * 404 on a preview, which shares production's database, 401 without the right token. Then it
- * queues each scheduled task whose time has come (once per slot), and runs the queue in rounds of
- * 25 until it is empty or 45 seconds have passed. It answers counts only.
+ * releases the jobs an earlier run left `processing` when its function was stopped
+ * (src/lib/automations/staleJobs.ts), queues each scheduled task whose time has come (once per
+ * slot), and runs the queue in rounds of 25 until it is empty or 45 seconds have passed. It
+ * answers counts only.
  */
 export async function GET(request: Request) {
   const settings = env()
@@ -36,6 +39,7 @@ export async function GET(request: Request) {
   }
   const payload = await getPayload({ config })
   try {
+    const stale = await releaseStaleJobs(await createLocalReq({}, payload), new Date())
     const scheduled = await payload.jobs.handleSchedules({ allQueues: true })
     const summary = await runRounds(
       async () => {
@@ -50,6 +54,8 @@ export async function GET(request: Request) {
     return Response.json(
       {
         ran: true,
+        released: stale.released,
+        stopped: stale.stopped,
         scheduled: scheduled.queued.length,
         rounds: summary.rounds,
         jobs: summary.ran,

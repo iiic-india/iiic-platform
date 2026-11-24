@@ -307,7 +307,10 @@ export default buildConfig({
     // ignores session settings.
     // A request that cannot get a connection within 5 s fails instead of waiting forever:
     // a sign-in holds one connection while it reads the committed deactivation flag on another.
-    pool: { connectionString, max: 3, connectionTimeoutMillis: 5_000 },
+    // The adapter keeps one client checked out for good, to hear a dropped connection
+    // (connectWithReconnect in @payloadcms/db-postgres), so four leave three for requests: two
+    // bookings at once on one instance, each in its transaction, still leave one for the rest.
+    pool: { connectionString, max: 4, connectionTimeoutMillis: 5_000 },
     migrationDir: path.resolve(dirname, 'migrations'),
     // Schema changes go through migrations in every environment, never push (docs/07).
     push: false,

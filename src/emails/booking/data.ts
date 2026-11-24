@@ -58,10 +58,17 @@ export const FeedbackData = SessionData.extend({
 })
 export type FeedbackData = z.infer<typeof FeedbackData>
 
+/**
+ * Whether the booking is a counselling one: every message about it then carries the scope and the
+ * crisis numbers (docs/08 §7; VOICE.md, counselling copy), the money messages included.
+ */
+const Counselling = z.boolean()
+
 export const TimeRequestData = z.object({
   firstName: Name,
   serviceName: ServiceName,
   reference: Reference,
+  counselling: Counselling,
   /** The days the person offered, in India, as YYYY-MM-DD. */
   preferredDays: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(14),
 })
@@ -88,6 +95,7 @@ export type ConsentReceiptData = z.infer<typeof ConsentReceiptData>
 export const ReceiptData = z.object({
   firstName: Name,
   reference: Reference,
+  counselling: Counselling,
   document: z.enum(['taxInvoice', 'receiptVoucher', 'refundVoucher', 'creditNote']),
   number: z.string().trim().min(1).max(40),
   issuedAt: z.date(),
@@ -98,6 +106,7 @@ export type ReceiptData = z.infer<typeof ReceiptData>
 export const RefundData = z.object({
   firstName: Name,
   reference: Reference,
+  counselling: Counselling,
   amountPaise: Paise,
   processedAt: z.date(),
 })
@@ -107,6 +116,7 @@ export const SlotLostData = z.object({
   firstName: Name,
   serviceName: ServiceName,
   serviceType: ServiceType,
+  counselling: Counselling,
   startsAt: z.date().nullable(),
   amountPaise: Paise,
 })
@@ -116,6 +126,7 @@ export const PaymentLinkData = z.object({
   firstName: Name,
   serviceName: ServiceName,
   reference: Reference,
+  counselling: Counselling,
   startsAt: z.date(),
   amountPaise: z.number().int().positive(),
   linkUrl: z.url(),

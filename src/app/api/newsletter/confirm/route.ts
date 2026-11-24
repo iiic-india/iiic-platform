@@ -2,6 +2,8 @@ import { after } from 'next/server'
 import { createLocalReq, getPayload } from 'payload'
 
 import { recordEventQuietly } from '@/lib/analytics/record'
+import { env } from '@/lib/env'
+import { actsHere } from '@/lib/messaging/deployment'
 import { reportError } from '@/lib/monitoring/sentry'
 import { clientKey, formEvidence, readFields, seeOther } from '@/lib/newsletter/http'
 import { WindowLimit } from '@/lib/newsletter/limit'
@@ -20,9 +22,12 @@ const page = (state: string) => `/newsletter?state=${state}`
  * The confirmation's button (docs/19 §8; D-10): only this POST confirms, so a link scanner that
  * opens the email's link confirms nothing. The token is the person's proof that the address is
  * theirs; the consent to marketing email is recorded first, with this form's evidence, then the
- * person is found or added and the entry confirmed (src/lib/newsletter/subscriptions.ts).
+ * person is found or added and the entry confirmed (src/lib/newsletter/subscriptions.ts). On a
+ * preview, which shares production's database, it looks nothing up and answers as for a link
+ * that does not work (D-102).
  */
 export async function POST(request: Request) {
+  if (!actsHere(env().VERCEL_ENV)) return seeOther(request, page('invalid-link'))
   if (!limit.take(clientKey(request.headers), Date.now())) return seeOther(request, page('busy'))
   const fields = await readFields(request)
   const token = fields?.token

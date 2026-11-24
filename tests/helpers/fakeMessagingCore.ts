@@ -1,5 +1,5 @@
 import type { MessagingCore } from '@/lib/automations/operations/core'
-import { messageKey, type PlannedMessage } from '@/lib/messaging/operations'
+import { messageKey, type DeliverOptions, type PlannedMessage } from '@/lib/messaging/operations'
 import { err, ok } from '@/lib/result'
 
 /**
@@ -10,10 +10,11 @@ import { err, ok } from '@/lib/result'
  */
 export function fakeMessagingCore() {
   const planned = new Map<string, PlannedMessage>()
+  const options = new Map<string, DeliverOptions | undefined>()
   let nextId = 1
   const ids = new Map<string, number>()
   const core: MessagingCore = {
-    deliver: async (_req, message) => {
+    deliver: async (_req, message, given) => {
       const key = messageKey(message)
       const existing = ids.get(key)
       if (existing !== undefined)
@@ -21,6 +22,7 @@ export function fakeMessagingCore() {
       const id = nextId++
       ids.set(key, id)
       planned.set(key, message)
+      options.set(key, given)
       return ok({ messageId: id, created: true, status: 'queued' })
     },
     cancelQueued: async () => 0,
@@ -37,8 +39,14 @@ export function fakeMessagingCore() {
     planned,
     /** The planned messages of one automation, in the order they were planned. */
     of: (automation: string) => [...planned.values()].filter((m) => m.automation === automation),
+    /** The options each of an automation's messages was planned with, in the same order. */
+    optionsOf: (automation: string) =>
+      [...planned.entries()]
+        .filter(([, m]) => m.automation === automation)
+        .map(([key]) => options.get(key)),
     reset: () => {
       planned.clear()
+      options.clear()
       ids.clear()
     },
   }

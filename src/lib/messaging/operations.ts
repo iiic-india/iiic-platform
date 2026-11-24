@@ -46,7 +46,12 @@ export type PlanError =
  * What only the caller holds for the first try (src/emails/types.ts, `transient`): never written
  * to the row, the job queue or a log; a later try goes without it.
  */
-export type DeliverOptions = { transient?: Readonly<Record<string, string>> }
+/**
+ * `transient`: values given to the first try only, never stored. `queueOnly`: record the row and
+ * leave the sending to the dispatcher, even when it is due now (a run that plans many, as N4 does,
+ * must not send them one by one inside its own job).
+ */
+export type DeliverOptions = { transient?: Readonly<Record<string, string>>; queueOnly?: boolean }
 
 /**
  * Records the message (one row in `messages`, key from `messageKey`) and, when it is due now,
@@ -66,7 +71,12 @@ export type Deliver = (
  */
 export type CancelQueued = (
   req: PayloadRequest,
-  scope: { subject: Subject; automations?: readonly AutomationId[] },
+  scope: {
+    subject: Subject
+    automations?: readonly AutomationId[]
+    /** Message keys to leave queued: what the same run plans again, so a retry keeps them. */
+    keepKeys?: readonly string[]
+  },
 ) => Promise<number>
 
 /** One run of `messages-dispatch`: what it sent, deferred, skipped, failed and found stale. */
@@ -78,7 +88,18 @@ export type DispatchSummary = {
   retried: number
   unknown: number
 }
-export type Dispatch = (req: PayloadRequest, now: Date, limit: number) => Promise<DispatchSummary>
+/**
+ * How long one dispatch may keep taking new messages: past it, the run ends after the message in
+ * hand and the next minute takes the rest. `clock` is passed in so the tests need not wait.
+ */
+export type DispatchBudget = { ms: number; clock?: () => number }
+
+export type Dispatch = (
+  req: PayloadRequest,
+  now: Date,
+  limit: number,
+  budget?: DispatchBudget,
+) => Promise<DispatchSummary>
 
 /** A provider's report about a message, from a verified webhook (docs/19 §4). */
 export type ProviderReport = {

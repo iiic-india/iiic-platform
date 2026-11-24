@@ -97,7 +97,7 @@ export const refundProcessed: TemplateImplementation<RefundData> = {
         preheader={refund.preheader()}
         eyebrow={refund.eyebrow}
         heading={refund.heading(data)}
-        counselling={false}
+        counselling={data.counselling}
       >
         <Paragraph>{refund.lead(data, context)}</Paragraph>
         <Details

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { createLocalReq, getPayload } from 'payload'
 
+import { env } from '@/lib/env'
+import { actsHere } from '@/lib/messaging/deployment'
 import { PROPOSAL_PAGE } from '@/lib/pipeline/proposal/copy'
 import { linkPdfPath } from '@/lib/pipeline/proposal/tokens'
 import { proposals } from '@/lib/pipeline/proposal/wiring'
@@ -30,15 +32,16 @@ type Props = { params: Promise<{ token: string }> }
  * so a mail scanner that fetches it moves nothing; only the PDF's own address counts an opening.
  * A replaced, withdrawn, declined, expired or unknown link gets one page that says only that the
  * link no longer opens a proposal and how to reach IIIC. No sign-in: the token is the key. No
- * amount appears here.
+ * amount appears here. A preview, which shares production's database, looks nothing up (reading
+ * can expire a proposal) and shows the closed page (D-102).
  */
 export default async function ProposalLinkPage({ params }: Props) {
   const { token } = await params
-  const payload = await getPayload({ config })
-  const req = await createLocalReq({}, payload)
-  const found = await proposals().read(req, token)
+  const found = actsHere(env().VERCEL_ENV)
+    ? await proposals().read(await createLocalReq({}, await getPayload({ config })), token)
+    : null
 
-  if (!found.ok) {
+  if (!found?.ok) {
     return (
       <section className="iiic-page-narrow">
         <h1>{PROPOSAL_PAGE.closedTitle}</h1>

@@ -37,12 +37,16 @@ export const SCHEDULED = ['confirmed', 'completed', 'noShow'] as const
 /** What a practitioner's Today leaves to the office (docs/05: "practitioners see their schedule"). */
 const NOT_SHOWN = { state: 'not-shown' } as const
 
-/** The parts of the day not built yet (docs/18 §10, C). */
-export const TODAY_WAITS_ON = [
-  { part: 'Messages people sent, and replies waiting', on: 'M6 (messages)' },
-  { part: 'Messages that failed to send', on: 'M6 (messages)' },
-  { part: 'The daily digest by email', on: 'M6 (O1)' },
-] as const
+/**
+ * The parts of the day not built yet (docs/18 §10, C): none since M6. Failed and unanswered
+ * messages and suppressed addresses are under failures (docs/06 O3, O9), the digest is O1's
+ * email, and what people write on WhatsApp is answered in the provider's inbox: the platform
+ * never stores its words (docs/13 §7).
+ */
+export const TODAY_WAITS_ON: readonly { part: string; on: string }[] = []
+
+/** How far back Today shows newly suppressed addresses (docs/06 O9). */
+const SUPPRESSED_SINCE_MS = 7 * 24 * 60 * 60 * 1000
 
 /** The clock to show first for an open incident: the earliest that is still running or late. */
 export function firstOpenClock(clocks: ClockState[]): { dueAt: Date; hoursLeft: number } | null {
@@ -280,9 +284,25 @@ async function privacy(req: PayloadRequest, now: Date): Promise<PrivacyRow[]> {
   return rows.sort((a, b) => a.hoursLeft - b.hoursLeft)
 }
 
-async function failures(req: PayloadRequest): Promise<Count[]> {
+async function failures(req: PayloadRequest, now: Date): Promise<Count[]> {
   const admin = req.payload.config.routes.admin
+  const since = new Date(now.getTime() - SUPPRESSED_SINCE_MS).toISOString()
   return [
+    {
+      kind: 'Messages that failed to send',
+      count: await countOf(req, 'messages', { status: { equals: 'failed' } }),
+      href: listHref(admin, 'messages', { status: 'failed' }),
+    },
+    {
+      kind: 'Messages sent with no answer from the provider',
+      count: await countOf(req, 'messages', { status: { equals: 'unknown' } }),
+      href: listHref(admin, 'messages', { status: 'unknown' }),
+    },
+    {
+      kind: 'Addresses suppressed in the last 7 days',
+      count: await countOf(req, 'suppressions', { at: { greater_than_equal: since } }),
+      href: `${admin}/collections/suppressions`,
+    },
     {
       kind: 'Automations that stopped with an error',
       count: await countOf(req, 'payload-jobs', { hasError: { equals: true } }),
@@ -310,7 +330,7 @@ export async function loadToday(
     money: office ? await settle(() => money(req, now)) : NOT_SHOWN,
     proof: office ? await settle(() => proof(req, now)) : NOT_SHOWN,
     privacy: office ? await settle(() => privacy(req, now)) : NOT_SHOWN,
-    failures: office ? await settle(() => failures(req)) : NOT_SHOWN,
+    failures: office ? await settle(() => failures(req, now)) : NOT_SHOWN,
     waitsOn: office ? TODAY_WAITS_ON.map((entry) => ({ ...entry })) : [],
   })
 }

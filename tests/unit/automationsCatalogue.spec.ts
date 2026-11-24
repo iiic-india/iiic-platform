@@ -65,7 +65,13 @@ describe('the automation catalogue', () => {
       ]),
     )
     expect(AUTOMATION_LISTENERS['booking.rescheduled']).toEqual(
-      expect.arrayContaining(['B5-reminder-24h', 'B6-reminder-2h', 'B7-change-notice']),
+      expect.arrayContaining([
+        'B5-reminder-24h',
+        'B6-reminder-2h',
+        'B7-change-notice',
+        // The payment link's reminder follows the session to its new time (docs/06 B13).
+        'B13-payment-link',
+      ]),
     )
     const merged = withAutomationListeners({ 'booking.confirmed': ['B2-B7-sync-calendar-event'] })
     expect(merged['booking.confirmed']?.[0]).toBe('B2-B7-sync-calendar-event')
@@ -140,9 +146,10 @@ describe('the template registry (docs/19 §7)', () => {
     for (const spec of TEMPLATES) expect(spec.offers).toBe(false)
   })
 
-  it('carries the scope statement on counselling confirmations and reminders', () => {
-    for (const key of ['booking-confirmed', 'reminder-24h', 'reminder-short'] as const) {
-      expect(templateSpec(key).counsellingScope).toBe(true)
+  it('carries the scope statement on every booking message to the client (docs/08 §7)', () => {
+    for (const spec of TEMPLATES) {
+      if (spec.builder !== 'B') continue
+      expect(spec.counsellingScope, spec.key).toBe(spec.kind !== 'internal')
     }
   })
 

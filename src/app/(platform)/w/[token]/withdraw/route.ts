@@ -2,6 +2,8 @@ import { createLocalReq, getPayload } from 'payload'
 import { z } from 'zod'
 
 import { verifySignedLink } from '@/lib/automations/operations/core'
+import { env } from '@/lib/env'
+import { actsHere } from '@/lib/messaging/deployment'
 import { reportError } from '@/lib/monitoring/sentry'
 import { clientKey, formEvidence, readFields, seeOther } from '@/lib/newsletter/http'
 import { WindowLimit } from '@/lib/newsletter/limit'
@@ -26,12 +28,15 @@ type Context = { params: Promise<{ token: string }> }
  * The withdraw page's buttons (docs/19 §8; docs/08 §3). The signed link names the person; the
  * form names the purpose. Every consent of that purpose in force is withdrawn at once, channel
  * web, with this form's evidence; the ledger's hooks take reviews down and raise
- * `consent.withdrawn` (V2, N3) in the same transaction.
+ * `consent.withdrawn` (V2, N3) in the same transaction. On a preview, which shares production's
+ * database, it looks nothing up and answers as for a link that does not work (D-102).
  */
 export async function POST(request: Request, context: Context) {
   const { token } = await context.params
   const shape = SignedLinkToken.safeParse(token)
-  if (!shape.success) return seeOther(request, '/newsletter?state=invalid-link')
+  if (!shape.success || !actsHere(env().VERCEL_ENV)) {
+    return seeOther(request, '/newsletter?state=invalid-link')
+  }
   const back = (state: string) => seeOther(request, `/w/${shape.data}?state=${state}`)
   if (!limit.take(clientKey(request.headers), Date.now())) return back('failed')
 

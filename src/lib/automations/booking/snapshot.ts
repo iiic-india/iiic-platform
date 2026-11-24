@@ -68,6 +68,7 @@ export async function bookingSnapshot(
     counselling: service?.register === 'counselling',
     recipientId,
     prefersEmail: recipient?.preferredChannel === 'email',
+    consents: (booking.consents ?? []).length,
     staffId: idOf(practitioner?.staff),
   }
 }
@@ -93,11 +94,31 @@ export async function paymentSnapshot(
   }
 }
 
-/** The booking's payment links, newest last, for cancelling their queued messages (B13). */
+/**
+ * The bookings of one reschedule chain, from the first to this one. A reschedule makes a new
+ * booking linked back by `rescheduledFrom`, and the payment stays on the first (M3), so B13 reads
+ * the whole chain.
+ */
+export async function bookingChain(req: PayloadRequest, bookingId: number): Promise<number[]> {
+  const chain: number[] = []
+  let current: number | null = bookingId
+  while (current !== null && !chain.includes(current) && chain.length < 20) {
+    chain.unshift(current)
+    const booking: { rescheduledFrom?: Ref } | null = await byId(req, 'bookings', current)
+    current = booking ? idOf(booking.rescheduledFrom) : null
+  }
+  return chain
+}
+
+/**
+ * The payment links of a booking and of the bookings it was moved from, oldest first, for
+ * cancelling their queued messages (B13).
+ */
 export async function paymentLinkIds(req: PayloadRequest, bookingId: number): Promise<number[]> {
+  const chain = await bookingChain(req, bookingId)
   const { docs } = await req.payload.find({
     collection: 'payments',
-    where: { and: [{ booking: { equals: bookingId } }, { kind: { equals: 'paymentLink' } }] },
+    where: { and: [{ booking: { in: chain } }, { kind: { equals: 'paymentLink' } }] },
     sort: 'createdAt',
     pagination: false,
     depth: 0,

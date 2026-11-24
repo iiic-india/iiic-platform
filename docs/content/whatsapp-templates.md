@@ -6,7 +6,7 @@ Status: `[proposal]`. The words are drafts to `src/brand/VOICE.md`, for IIIC's a
 
 For every template: category **Utility**, language **English (en)**, no header, no buttons (a link is a variable in the body), no emoji. A variable never holds a line break and is never empty. The phone number is the one on both 2026 brochures (D-31); if it changes, the templates that carry it are submitted again.
 
-The closing variable of the five templates about a booking's time (`whatsappClosing`: confirmed, the two reminders, rescheduled and cancelled) is the booking's reference, and for a counselling booking the reference followed by the scope and crisis line: "Sessions at IIIC are non-clinical conversations based on the Subjective Self framework. They are not diagnosis or treatment, and they are not an emergency service. If you need help now: Tele-MANAS 14416 or 1-800-891-4416 (free, 24×7); Emergencies 112; Children 1098." So one approved text serves every booking, and a counselling one always carries the line.
+The closing variable of the seven templates about a booking (`whatsappClosing`: confirmed, the two reminders, rescheduled, cancelled, the time request and the payment link) is the booking's reference, and for a counselling booking the reference followed by the scope and crisis line: "Sessions at IIIC are non-clinical conversations based on the Subjective Self framework. They are not diagnosis or treatment, and they are not an emergency service. If you need help now: Tele-MANAS 14416 or 1-800-891-4416 (free, 24×7); Emergencies 112; Children 1098." So one approved text serves every booking, and a counselling one always carries the line.
 
 ## booking-confirmed · `iiic_booking_confirmed`
 
@@ -72,18 +72,20 @@ B8. Not submitted until M5's feedback page gives each booking its link; until th
 
 ## time-request-received · `iiic_time_request_received`
 
-B12. It promises no time. Variables: first name, service, the booking's reference.
+B12. It promises no time. Variables: first name, service, the closing.
 
 ```text
-{{1}}, we have your request for a {{2}}. Someone at IIIC will reply with a time, or with a question if none of the days you gave is free. Nothing is booked until we confirm a time with you. Booking ID {{3}}.
+{{1}}, we have your request for a {{2}}. Someone at IIIC will reply with a time, or with a question if none of the days you gave is free. Nothing is booked until we confirm a time with you.
+{{3}}
 ```
 
 ## payment-link · `iiic_payment_link`
 
-B13, sent when staff send a payment link (D-24): the person's own amount. Variables: first name, service, day, the amount, the payment link.
+B13, sent when staff send a payment link (D-24): the person's own amount. Variables: first name, service, day, the amount, the payment link, the closing.
 
 ```text
 {{1}}, here is the link to pay for your {{2}} on {{3}}. The amount is {{4}}.
 {{5}}
 Questions about the payment? Reply to this message or call +91 96240 46464.
+{{6}}
 ```

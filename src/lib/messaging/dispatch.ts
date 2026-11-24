@@ -12,7 +12,9 @@ import { tryMessage, type TryOutcome } from './try'
  * (the function that held them has ended): an email goes back in the queue, since Resend's
  * idempotency key keeps it from going twice within 24 hours; a WhatsApp message becomes `unknown`
  * and is never sent again on its own (at most once), and shows on Today. Each due message is then
- * tried; a claim makes two runs at once safe. Codes and counts only.
+ * tried; a claim makes two runs at once safe. With a budget, the run takes no new message once
+ * the budget is spent, so it ends well inside its function's time (the next minute takes the
+ * rest). Codes and counts only.
  */
 
 const EMPTY: DispatchSummary = {
@@ -34,7 +36,9 @@ const COUNTED: Partial<Record<TryOutcome, keyof DispatchSummary>> = {
 }
 
 export function dispatchWith(deps: MessagingDeps): Dispatch {
-  return async (req, now, limit) => {
+  return async (req, now, limit, budget) => {
+    const clock = budget?.clock ?? Date.now
+    const started = clock()
     const summary: DispatchSummary = { ...EMPTY }
     const at: MessagingDeps = { ...deps, now: () => now }
     const stale = await staleSending(req, new Date(now.getTime() - SENDING_STALE_AFTER_MS))
@@ -61,6 +65,7 @@ export function dispatchWith(deps: MessagingDeps): Dispatch {
       }
     }
     for (const id of await dueMessages(req, now, limit)) {
+      if (budget && clock() - started >= budget.ms) break
       const outcome = await tryMessage(req, at, id)
       const field = COUNTED[outcome]
       if (field) summary[field] += 1
@@ -82,5 +87,5 @@ async function attemptsOf(req: Parameters<Dispatch>[0], id: number): Promise<num
   return Number(found?.attempts ?? 0)
 }
 
-export const dispatch: Dispatch = (req, now, limit) =>
-  dispatchWith(defaultMessagingDeps())(req, now, limit)
+export const dispatch: Dispatch = (req, now, limit, budget) =>
+  dispatchWith(defaultMessagingDeps())(req, now, limit, budget)

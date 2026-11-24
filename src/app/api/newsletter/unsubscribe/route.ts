@@ -1,6 +1,8 @@
 import { createLocalReq, getPayload } from 'payload'
 
 import { verifySignedLink } from '@/lib/automations/operations/core'
+import { env } from '@/lib/env'
+import { actsHere } from '@/lib/messaging/deployment'
 import { reportError } from '@/lib/monitoring/sentry'
 import { PRIVATE_HEADERS, readFields, seeOther } from '@/lib/newsletter/http'
 import { isOneClick, NEWSLETTER_PATHS, SignedLinkToken } from '@/lib/newsletter/rules'
@@ -23,6 +25,8 @@ const plain = (status: number) => new Response(null, { status, headers: PRIVATE_
  * - a GET never unsubscribes (a link scanner opens links): it shows the page with the button.
  * The token is the core's signed link for `unsubscribe`, naming the subscriber. Withdrawing the
  * consent and marking the entry happen together (src/lib/newsletter/subscriptions.ts).
+ * On a preview, which shares production's database, a POST looks nothing up and answers as for a
+ * link that does not work (D-102).
  */
 export async function GET(request: Request) {
   const token = SignedLinkToken.safeParse(new URL(request.url).searchParams.get('token'))
@@ -35,7 +39,7 @@ export async function POST(request: Request) {
   const fields = await readFields(request)
   const oneClick = fromQuery !== null && isOneClick(fields)
   const token = SignedLinkToken.safeParse(oneClick ? fromQuery : fields?.token)
-  if (!token.success) {
+  if (!token.success || !actsHere(env().VERCEL_ENV)) {
     return oneClick ? plain(400) : seeOther(request, '/newsletter?state=invalid-link')
   }
 

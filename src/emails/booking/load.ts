@@ -100,6 +100,24 @@ async function serviceOf(req: PayloadRequest, booking: Booking): Promise<Service
   return { name: service.name, type: service.type, counselling: service.register === 'counselling' }
 }
 
+/**
+ * Whether a booking is a counselling one, for the messages about its money as well as its time
+ * (docs/08 §7). A course seat, or a service gone, is not.
+ */
+async function counsellingOf(req: PayloadRequest, booking: Booking): Promise<boolean> {
+  const id = idOf(booking.service)
+  if (id === null) return false
+  const service = await req.payload.findByID({
+    collection: 'services',
+    id,
+    depth: 0,
+    disableErrors: true,
+    overrideAccess: true,
+    req,
+  })
+  return service?.register === 'counselling'
+}
+
 /** The online link: the booking's own Meet link, or its info session's join link. */
 async function meetingUrlOf(req: PayloadRequest, booking: Booking): Promise<string | null> {
   if (booking.format !== 'online') return null
@@ -144,6 +162,30 @@ async function sessionOf(
 /** The booking a message is about, when its subject is a booking. */
 async function subjectBooking(req: PayloadRequest, subject: Subject): Promise<Booking | null> {
   return subject.collection === 'bookings' ? bookingById(req, subject.id) : null
+}
+
+/**
+ * The booking a booking became: itself, or after one reschedule or more, the newest of the chain
+ * (a reschedule makes a new booking linked back by `rescheduledFrom`; the payment stays on the
+ * first, docs/16 §5). B13's messages are about the payment, so they read the booking it is for now.
+ */
+async function currentOf(req: PayloadRequest, booking: Booking): Promise<Booking> {
+  let current = booking
+  for (let step = 0; step < 20 && current.status === 'rescheduled'; step += 1) {
+    const { docs } = await req.payload.find({
+      collection: 'bookings',
+      where: { rescheduledFrom: { equals: current.id } },
+      sort: '-createdAt',
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+      req,
+    })
+    const next = docs[0]
+    if (!next) break
+    current = next
+  }
+  return current
 }
 
 /** A reminder planned for one start is stale once the booking starts at another time. */
@@ -257,6 +299,7 @@ export async function loadTimeRequest(
     firstName,
     serviceName: service.name,
     reference: booking.reference,
+    counselling: service.counselling,
     preferredDays: (booking.timeRequest?.preferredDays ?? []).map((entry) => entry.day),
   })
 }
@@ -329,6 +372,7 @@ export async function loadReceipt(req: PayloadRequest, input: LoadInput): Loaded
   return ok({
     firstName,
     reference: booking.reference,
+    counselling: await counsellingOf(req, booking),
     document: invoice.kind,
     number: invoice.number,
     issuedAt: new Date(invoice.issuedAt),
@@ -356,6 +400,7 @@ export async function loadRefund(req: PayloadRequest, input: LoadInput): Loaded<
   return ok({
     firstName,
     reference: booking.reference,
+    counselling: await counsellingOf(req, booking),
     amountPaise: refund.amountPaise,
     processedAt: new Date(refund.processedAt),
   })
@@ -376,6 +421,7 @@ export async function loadSlotLost(req: PayloadRequest, input: LoadInput): Loade
     firstName,
     serviceName: service.name,
     serviceType: service.type,
+    counselling: service.counselling,
     startsAt: booking.startsAt ? new Date(booking.startsAt) : null,
     amountPaise: payment.amountPaise,
   })
@@ -392,8 +438,9 @@ export async function loadPaymentLink(
   if (input.subject.collection !== 'payments') return NOT_FOUND
   const payment = await paymentById(req, input.subject.id)
   if (!payment || payment.kind !== 'paymentLink') return NOT_FOUND
-  const booking = await bookingById(req, idOf(payment.booking))
-  if (!booking) return NOT_FOUND
+  const first = await bookingById(req, idOf(payment.booking))
+  if (!first) return NOT_FOUND
+  const booking = await currentOf(req, first)
   if (
     payment.status !== 'created' ||
     booking.status !== 'confirmed' ||
@@ -411,6 +458,7 @@ export async function loadPaymentLink(
     firstName,
     serviceName: service.name,
     reference: booking.reference,
+    counselling: service.counselling,
     startsAt: new Date(booking.startsAt),
     amountPaise: payment.amountPaise,
     linkUrl: payment.linkUrl,
