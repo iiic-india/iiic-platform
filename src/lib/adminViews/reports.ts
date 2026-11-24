@@ -73,6 +73,11 @@ const LABELS: Record<ReportKey, { label: string; definition: string }> = {
     definition:
       'The median hours from a lead’s arrival to the first time someone on the staff acted on it, for leads received in the period.',
   },
+  messageDelivery: {
+    label: 'Message delivery',
+    definition:
+      'Of the messages to people that left in the period, how many their provider reported delivered, with the bounces, the complaints and the sends that never had an answer, by channel (the messages log, as the weekly report counts it).',
+  },
   funnel: {
     label: 'Booking funnel',
     definition:
@@ -80,12 +85,24 @@ const LABELS: Record<ReportKey, { label: string; definition: string }> = {
   },
 }
 
-/** Parts of the health strip that wait on later milestones (docs/05, Reports). */
-export const HEALTH_WAITS_ON = [
-  { part: 'Email delivery', on: 'M6 (messages)' },
-  { part: 'WhatsApp delivery', on: 'M6 (messages)' },
-  { part: 'Uptime', on: 'M7 (monitoring)' },
-] as const
+/**
+ * Parts of the health strip that wait on later milestones (docs/05, Reports). Email and WhatsApp
+ * delivery are a figure of their own now, from the messages log (`messageDelivery`).
+ */
+export const HEALTH_WAITS_ON = [{ part: 'Uptime', on: 'M7 (monitoring)' }] as const
+
+/** The states of a message that left for a person, and what became of it. */
+const LEFT = ['sent', 'delivered', 'read', 'bounced', 'complained', 'unknown'] as const
+const REACHED: readonly string[] = ['delivered', 'read']
+
+const CHANNEL_LABELS: Record<string, string> = { email: 'Email', whatsapp: 'WhatsApp' }
+
+/** The delivery counts of one channel, as a line of the figure's table. */
+export function deliveryLine(statuses: readonly string[]): string {
+  const of = (status: string) => statuses.filter((each) => each === status).length
+  const reached = statuses.filter((status) => REACHED.includes(status)).length
+  return `${reached} of ${statuses.length} delivered (${percent(reached, statuses.length)}); ${of('bounced')} bounced, ${of('complained')} marked as spam, ${of('unknown')} with no answer`
+}
 
 /** The longest period one report covers: a year and a day. */
 const MAX_DAYS = 366
@@ -360,6 +377,28 @@ export async function loadReports(
     ...user,
   })
   const eventCount = (name: string) => events.docs.filter((doc) => doc.name === name).length
+
+  // What left for people in the period: ids, channels and states only, never a body.
+  const messages = await req.payload.find({
+    collection: 'messages',
+    where: {
+      and: [
+        { kind: { not_equals: 'internal' } },
+        { status: { in: [...LEFT] } },
+        { sentAt: { greater_than_equal: range.gte } },
+        { sentAt: { less_than: range.lt } },
+      ],
+    },
+    pagination: false,
+    depth: 0,
+    select: { channel: true, status: true },
+    ...user,
+  })
+  const byChannel = new Map<string, string[]>()
+  for (const doc of messages.docs) {
+    byChannel.set(doc.channel, [...(byChannel.get(doc.channel) ?? []), doc.status])
+  }
+  const reachedCount = messages.docs.filter((doc) => REACHED.includes(doc.status)).length
   const started = eventCount('booking_started')
   const confirmedEvents = eventCount('booking_confirmed')
 
@@ -473,6 +512,21 @@ export async function loadReports(
               ? `No lead received in the period has been acted on yet (${allLeads.docs.length} received).`
               : `The median of ${responseHours.length} leads acted on is ${Math.round(medianHours * 10) / 10} hours; ${untouched} received in the period are not acted on yet.`,
             `${admin}/collections/leads`,
+          ),
+        )
+        break
+      case 'messageDelivery':
+        figures.push(
+          figure(
+            key,
+            period,
+            { kind: 'rate', numerator: reachedCount, denominator: messages.docs.length },
+            `${reachedCount} of ${messages.docs.length} messages that left for people in the period were reported delivered (${percent(reachedCount, messages.docs.length)}).`,
+            `${admin}/collections/messages`,
+            [...byChannel.entries()].map(([channel, statuses]) => ({
+              label: CHANNEL_LABELS[channel] ?? channel,
+              value: deliveryLine(statuses),
+            })),
           ),
         )
         break

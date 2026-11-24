@@ -164,7 +164,7 @@ describe('Today', () => {
     expect(waitsOn).toEqual([])
   })
 
-  it('shows the office everyone’s day, its panels, and what waits on M6', async () => {
+  it('shows the office everyone’s day, its panels, and the messages that failed', async () => {
     const result = await loadToday(await reqAs('operator'), NOW)
     if (!result.ok) throw new Error(`refused: ${JSON.stringify(result.error)}`)
     const { schedule, money, privacy, failures, waitsOn } = result.value
@@ -174,8 +174,17 @@ describe('Today', () => {
     )
     expect(money.state).toBe('ready')
     expect(privacy.state).toBe('ready')
-    expect(failures.state).toBe('ready')
-    expect(waitsOn.map((entry) => entry.on).join(' ')).toMatch(/M6/)
+    if (failures.state !== 'ready') throw new Error(`failures ${failures.state}`)
+    // M6 is joined: failed and unanswered messages and suppressed addresses are on Today (O3,
+    // O9), and nothing waits on it any more.
+    expect(failures.value.map((row) => row.kind)).toEqual(
+      expect.arrayContaining([
+        'Messages that failed to send',
+        'Messages sent with no answer from the provider',
+        'Addresses suppressed in the last 7 days',
+      ]),
+    )
+    expect(waitsOn).toEqual([])
   })
 })
 

@@ -6,9 +6,10 @@ vi.mock('@/lib/notes/notes', () => ({ countNotesForOwner: vi.fn() }))
 vi.mock('@/lib/privacy/stepUp', () => ({ enterCodeAgain: vi.fn() }))
 
 const shared = await import('@/lib/adminViews/shared')
-const { firstOpenClock } = await import('@/lib/adminViews/today')
+const { firstOpenClock, TODAY_WAITS_ON } = await import('@/lib/adminViews/today')
 const { readCalendarQuery } = await import('@/lib/adminViews/calendar')
-const { bookingFigures, readPeriod, revenueBy } = await import('@/lib/adminViews/reports')
+const { bookingFigures, deliveryLine, HEALTH_WAITS_ON, readPeriod, revenueBy } =
+  await import('@/lib/adminViews/reports')
 const { kindsFor, normaliseQuery } = await import('@/lib/adminViews/search')
 const { consentsInForce, notShownFor } = await import('@/lib/adminViews/timeline')
 const { auditCsv, auditWhere, csvCell, integrationStates, readAuditFilter } =
@@ -192,6 +193,20 @@ describe('Reports’ arithmetic', () => {
       total: 175_000,
       byRegister: { consultancy: 50_000, education: 0, counselling: 125_000 },
     })
+  })
+})
+
+describe('what waits on M6, now it is joined', () => {
+  it('leaves nothing on Today and no delivery line on the health strip', () => {
+    expect(TODAY_WAITS_ON).toEqual([])
+    expect(HEALTH_WAITS_ON.map((entry) => entry.part)).not.toContain('Email delivery')
+    expect(HEALTH_WAITS_ON.map((entry) => entry.part)).not.toContain('WhatsApp delivery')
+  })
+
+  it('counts a channel’s delivery from the states the log keeps', () => {
+    expect(
+      deliveryLine(['delivered', 'read', 'sent', 'bounced', 'complained', 'unknown', 'delivered']),
+    ).toBe('3 of 7 delivered (43%); 1 bounced, 1 marked as spam, 1 with no answer')
   })
 })
 
