@@ -132,6 +132,17 @@ const rowsFor = (bookingId: number, automation?: string) =>
 beforeAll(async () => {
   payload = await getPayload({ config })
   await removeTestData()
+  // An owner first: on an empty database the first account becomes the owner
+  // (src/collections/Users.ts), and an owner is not a practitioner's staff account.
+  await payload.create({
+    collection: 'users',
+    data: {
+      name: 'Fake owner',
+      email: `${TAG}.owner@example.invalid`,
+      password: 'test-only-password-messages',
+      roles: ['owner'],
+    } as User,
+  })
   staff = await payload.create({
     collection: 'users',
     data: {

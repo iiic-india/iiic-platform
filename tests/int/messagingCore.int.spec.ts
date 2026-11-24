@@ -37,7 +37,8 @@ const people: Record<'a' | 'b' | 'c', Person> = {} as never
 const email = new FakeEmailSender()
 const whatsapp = new FakeWhatsAppSender()
 const events: { name: string }[] = []
-let templateRow: { id: number; created: boolean; before?: MessageTemplate }
+type TemplateRow = { id: number; created: boolean; before?: MessageTemplate }
+const templateRows: TemplateRow[] = []
 
 /** A time in India on 3 March 2099, a day no other test uses: `ist('22:30')`. */
 const ist = (clock: string, day = 3) => new Date(`2099-03-0${day}T${clock}:00+05:30`)
@@ -178,50 +179,55 @@ beforeAll(async () => {
   people.a = await make('a', '+919000000101')
   people.b = await make('b', '+919000000102')
   people.c = await make('c', '+919000000103')
-  // An approved WhatsApp template for the reminder, kept as it was if one is there already.
-  const { docs } = await payload.find({
-    collection: 'message-templates',
-    where: { and: [{ key: { equals: 'reminder-24h' } }, { channel: { equals: 'whatsapp' } }] },
-    limit: 1,
-    depth: 0,
-  })
-  const existing = docs[0]
-  if (existing) {
-    templateRow = { id: existing.id, created: false, before: existing }
-    await payload.update({
+  // Approved WhatsApp templates for the two reminders (B5, B6), each kept as it was if one is
+  // there already, so a reminder is held by the rule under test and not by a missing approval.
+  for (const key of ['reminder-24h', 'reminder-short'] as const) {
+    const { docs } = await payload.find({
       collection: 'message-templates',
-      id: existing.id,
-      data: {
-        status: 'approved',
-        providerTemplateName: existing.providerTemplateName ?? 'fake_reminder',
-      },
+      where: { and: [{ key: { equals: key } }, { channel: { equals: 'whatsapp' } }] },
+      limit: 1,
+      depth: 0,
     })
-  } else {
-    const made = await payload.create({
-      collection: 'message-templates',
-      data: {
-        key: 'reminder-24h',
-        channel: 'whatsapp',
-        language: 'en-IN',
-        status: 'approved',
-        providerTemplateName: 'fake_reminder',
-      } as MessageTemplate,
-    })
-    templateRow = { id: made.id, created: true }
+    const existing = docs[0]
+    if (existing) {
+      templateRows.push({ id: existing.id, created: false, before: existing })
+      await payload.update({
+        collection: 'message-templates',
+        id: existing.id,
+        data: {
+          status: 'approved',
+          providerTemplateName: existing.providerTemplateName ?? `fake_${key}`,
+        },
+      })
+    } else {
+      const made = await payload.create({
+        collection: 'message-templates',
+        data: {
+          key,
+          channel: 'whatsapp',
+          language: 'en-IN',
+          status: 'approved',
+          providerTemplateName: `fake_${key}`,
+        } as MessageTemplate,
+      })
+      templateRows.push({ id: made.id, created: true })
+    }
   }
 })
 
 afterAll(async () => {
   await removeTestData()
-  if (templateRow?.created) {
-    await payload.delete({ collection: 'message-templates', id: templateRow.id })
-  } else if (templateRow?.before) {
-    const { status, providerTemplateName } = templateRow.before
-    await payload.update({
-      collection: 'message-templates',
-      id: templateRow.id,
-      data: { status, providerTemplateName },
-    })
+  for (const templateRow of templateRows) {
+    if (templateRow.created) {
+      await payload.delete({ collection: 'message-templates', id: templateRow.id })
+    } else if (templateRow.before) {
+      const { status, providerTemplateName } = templateRow.before
+      await payload.update({
+        collection: 'message-templates',
+        id: templateRow.id,
+        data: { status, providerTemplateName },
+      })
+    }
   }
 })
 
@@ -356,20 +362,32 @@ describe('quiet hours (docs/06, docs/19 §6)', () => {
     const quiet = await readQuietHours(payload)
     const end = quietHoursEnd(ist('12:00', 5), quiet)
     const inQuiet = new Date(end.getTime() - 2 * 3_600_000)
-    const deliver = deliverWith(depsAt(inQuiet))
-    const planned = await deliver(
+    const session = new Date(end.getTime() - 60 * 60_000)
+    // Planned at noon the day before, for a time inside the quiet hours that their end would
+    // push past the session: queued for its own time, not refused when planned (D-103).
+    const planning = new Date(inQuiet.getTime() - 12 * 3_600_000)
+    const planned = await deliverWith(depsAt(planning))(
       await req(),
       plan(people.b, {
         automation: 'B6',
         template: 'reminder-short',
         channel: 'whatsapp',
         sendAt: inQuiet,
-        sendBefore: new Date(end.getTime() - 60 * 60_000),
+        sendBefore: session,
       }),
     )
     if (!planned.ok) throw new Error('not planned')
+    expect(await row(planned.value.messageId)).toMatchObject({ status: 'queued' })
+    // When it is due, the quiet hours then in force drop it: not sent, not moved to email.
+    await dispatchWith(depsAt(inQuiet))(await req(), inQuiet, 50)
     const message = await row(planned.value.messageId)
     expect(message).toMatchObject({ status: 'skipped', skipReason: 'quiet-hours-late' })
+    expect(sentWith(whatsapp, message.dedupeKey)).toHaveLength(0)
+    const { totalDocs: fallbacks } = await payload.count({
+      collection: 'messages',
+      where: { fallbackOf: { equals: message.id } },
+    })
+    expect(fallbacks).toBe(0)
   })
 })
 

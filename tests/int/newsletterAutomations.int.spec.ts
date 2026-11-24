@@ -59,12 +59,18 @@ async function removeTestData() {
   await removeQueuedJobs()
 }
 
+/**
+ * The entry as stored, its relations as ids (depth 0), as the application reads it: at Payload's
+ * default depth `person` and `consent` come back as whole records, and a record passed where an
+ * id belongs reaches the ledger's query as NaN.
+ */
 const entry = async (address: string) =>
   (
     await payload.find({
       collection: 'subscribers',
       where: { email: { equals: address } },
       limit: 1,
+      depth: 0,
       overrideAccess: true,
     })
   ).docs[0] as Subscriber | undefined
