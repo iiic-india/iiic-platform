@@ -57,13 +57,46 @@ async function chainOf(req: PayloadRequest, booking: Booking): Promise<number[]>
   return chain
 }
 
-export type ClientRefund = { refundIds: number[]; toSend: number[]; awaitingOwner: boolean }
+export type ClientRefund = {
+  refundIds: number[]
+  toSend: number[]
+  awaitingOwner: boolean
+  /** What the refunds asked for add up to: never more than the payments can still give back. */
+  requestedPaise: number
+}
+
+const CAPTURED = ['captured', 'partRefunded'] as const
+
+/**
+ * What the payments of a booking's chain can still give back: less what went back and what open
+ * refunds hold. The manage page offers a cancellation online only when its refund fits in this,
+ * as the cancellation itself does (docs/16 §5: a request never promises more).
+ */
+export async function refundableOnChain(req: PayloadRequest, booking: Booking): Promise<number> {
+  const { docs } = await req.payload.find({
+    collection: 'payments',
+    where: {
+      and: [{ booking: { in: await chainOf(req, booking) } }, { status: { in: [...CAPTURED] } }],
+    },
+    pagination: false,
+    req,
+    ...SERVER,
+  })
+  let total = 0
+  for (const payment of docs) total += await refundablePaise(req, payment)
+  return total
+}
 
 export async function requestClientRefund(
   req: PayloadRequest,
   input: { booking: Booking; amountPaise: number },
 ): Promise<ClientRefund> {
-  const result: ClientRefund = { refundIds: [], toSend: [], awaitingOwner: false }
+  const result: ClientRefund = {
+    refundIds: [],
+    toSend: [],
+    awaitingOwner: false,
+    requestedPaise: 0,
+  }
   if (!Number.isInteger(input.amountPaise) || input.amountPaise < MIN_REFUND_PAISE) return result
   const chain = await chainOf(req, input.booking)
   const { docs: payments } = await req.payload.find({
@@ -90,6 +123,7 @@ export async function requestClientRefund(
     })
     if (existing[0]) {
       result.refundIds.push(existing[0].id)
+      result.requestedPaise += existing[0].amountPaise
       left -= existing[0].amountPaise
       continue
     }
@@ -125,6 +159,7 @@ export async function requestClientRefund(
       ...SERVER,
     })
     result.refundIds.push(refund.id)
+    result.requestedPaise += amountPaise
     left -= amountPaise
     if (status === 'approved') result.toSend.push(refund.id)
     else {

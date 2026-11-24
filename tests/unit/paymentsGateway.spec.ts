@@ -217,6 +217,23 @@ describe('gatewayFor', () => {
     expect(result.ok && result.value.publicKeyId).toBe(KEYS.keyId)
   })
 
+  it('takes no payment on a preview, which shares production’s database', () => {
+    const keys = {
+      ...BASE_ENV,
+      RAZORPAY_KEY_ID: KEYS.keyId,
+      RAZORPAY_KEY_SECRET: KEYS.keySecret,
+      RAZORPAY_WEBHOOK_SECRET: KEYS.webhookSecret,
+    }
+    for (const VERCEL_ENV of ['preview', 'development']) {
+      expect(gatewayFor(parseEnv({ ...keys, VERCEL_ENV }))).toEqual({
+        ok: false,
+        error: { code: 'not-configured' },
+      })
+    }
+    const production = gatewayFor(parseEnv({ ...keys, VERCEL_ENV: 'production' }))
+    expect(production.ok && production.value.name).toBe('razorpay')
+  })
+
   it('uses one fake per process when asked, and only then', () => {
     const one = gatewayFor(parseEnv({ ...BASE_ENV, PAYMENT_GATEWAY: 'fake' }))
     const two = gatewayFor(parseEnv({ ...BASE_ENV, PAYMENT_GATEWAY: 'fake' }))

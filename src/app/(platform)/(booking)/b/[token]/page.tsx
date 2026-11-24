@@ -6,6 +6,7 @@ import { ManageBooking, type RefundPreview } from '@/components/booking/ManageBo
 import { findByManageToken, viewBooking } from '@/lib/booking/api'
 import { loadRules, loadService, paidPaiseFor } from '@/lib/booking/load'
 import { refundForCancellation } from '@/lib/booking/policies'
+import { refundableOnChain } from '@/lib/bookingFlow/clientRefund'
 import { whenOf } from '@/lib/bookingFlow/format'
 import { flowRequest } from '@/lib/bookingFlow/server'
 import { readPaymentSettings } from '@/lib/payments/records'
@@ -51,7 +52,8 @@ export default async function ManagePage({ params }: { params: Promise<{ token: 
       </section>
     )
   }
-  const { booking: summary, canReschedule, canCancel } = view.value
+  const { booking: summary, canReschedule } = view.value
+  let canCancel = view.value.canCancel
   const booking = await findByManageToken(req, token, now)
   const service = await loadService(req, summary.serviceId)
   const practitionerId = idOf(booking?.practitioner)
@@ -78,6 +80,9 @@ export default async function ManagePage({ params }: { params: Promise<{ token: 
         steps: rules.ok ? rules.value.refundSteps : [],
         by: 'client',
       })
+      // Offered online only when the payments can give it all back: an open refund may hold part
+      // of it, and the cancellation then refuses rather than promise more (docs/16 §5).
+      if (refundPaise > (await refundableOnChain(req, booking))) canCancel = false
       const settings = await readPaymentSettings(req)
       const awaitsOwner =
         statusOnRequest({

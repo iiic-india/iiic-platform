@@ -15,6 +15,7 @@ import {
   staffRefundKey,
   statusOnRequest,
 } from '@/lib/payments/refundRules'
+import { stuckRefundOutcome } from '@/lib/payments/refunds'
 import type { GatewayEvent, Payment, PriceHistory, Refund } from '@/payload-types'
 
 vi.mock('server-only', () => ({}))
@@ -240,10 +241,58 @@ describe('B11’s findings', () => {
     expect(findingFor({ ...found, status: 'failed' }, null, null)).toBeNull()
   })
 
+  it('names a second capture on an order whose first the platform recorded', () => {
+    const first = {
+      status: 'captured' as const,
+      amountPaise: 50_000,
+      gatewayPaymentId: 'pay_fakefirst',
+    }
+    expect(findingFor({ ...found, paymentId: 'pay_fakesecond' }, first, 'paid')).toBe(
+      'second-capture',
+    )
+    expect(findingFor({ ...found, paymentId: 'pay_fakefirst' }, first, 'paid')).toBeNull()
+  })
+
   it('reads a day in India from its midnight to the next', () => {
     expect(istDayWindow('2026-12-01')).toEqual({
       from: new Date('2026-11-30T18:30:00.000Z'),
       to: new Date('2026-12-01T18:30:00.000Z'),
     })
+  })
+})
+
+describe('a refund sent without an answer (docs/16 §5)', () => {
+  const made = (status: 'pending' | 'processed' | 'failed', receipt: string | null) => ({
+    refundId: 'rfnd_fake1',
+    paymentId: 'pay_fake1',
+    amountPaise: 10_000,
+    status,
+    receipt,
+  })
+
+  it('records what the gateway made under its receipt', () => {
+    expect(stuckRefundOutcome('fake:key', [made('processed', 'fake:key')])).toEqual({
+      kind: 'complete',
+      refundId: 'rfnd_fake1',
+    })
+    expect(stuckRefundOutcome('fake:key', [made('pending', 'fake:key')])).toEqual({
+      kind: 'pending',
+      refundId: 'rfnd_fake1',
+    })
+    expect(stuckRefundOutcome('fake:key', [made('failed', 'fake:key')])).toEqual({
+      kind: 'failed',
+      refundId: 'rfnd_fake1',
+      failureCode: 'gateway-failed',
+    })
+  })
+
+  it('fails one the gateway never made, so the office can send it again', () => {
+    for (const found of [[], [made('processed', 'fake:other')], [made('processed', null)]]) {
+      expect(stuckRefundOutcome('fake:key', found)).toEqual({
+        kind: 'failed',
+        refundId: null,
+        failureCode: 'not-sent',
+      })
+    }
   })
 })

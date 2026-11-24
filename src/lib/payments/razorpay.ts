@@ -15,6 +15,7 @@ import type {
   GatewayPayment,
   GatewayPaymentLink,
   GatewayRefund,
+  GatewayRefundFound,
   PaymentGateway,
 } from './gateway'
 
@@ -60,6 +61,9 @@ const RefundAnswer = z.object({
 })
 
 const PaymentList = z.object({ items: z.array(PaymentAnswer) })
+const RefundList = z.object({
+  items: z.array(RefundAnswer.extend({ receipt: z.string().max(100).nullable().optional() })),
+})
 
 /** Razorpay's largest page of a list. */
 const PAGE = 100
@@ -195,6 +199,21 @@ export class RazorpayGateway implements PaymentGateway {
         amountPaise: answer.amount,
         status: answer.status,
       }),
+    )
+  }
+
+  fetchRefunds(paymentId: string): Promise<Result<GatewayRefundFound[], GatewayError>> {
+    return call(
+      () => this.client.payments.fetchMultipleRefund(paymentId, { count: PAGE }),
+      RefundList,
+      (answer) =>
+        answer.items.map((item) => ({
+          refundId: item.id,
+          paymentId: item.payment_id,
+          amountPaise: item.amount,
+          status: item.status,
+          receipt: item.receipt ?? null,
+        })),
     )
   }
 

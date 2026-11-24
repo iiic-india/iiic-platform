@@ -1,13 +1,15 @@
 import 'server-only'
 
-import { Forbidden } from 'payload'
+import { Forbidden, type PayloadRequest } from 'payload'
 
 import { hasRole } from '@/access/roles'
-import { err, ok } from '@/lib/result'
+import { err, ok, type Result } from '@/lib/result'
+import type { Payment } from '@/payload-types'
 
 import type { PaymentsDeps } from './deps'
-import type { SendPaymentLink } from './operations'
-import { bookingById, setBookingPaymentStatus, updatePayment } from './records'
+import { CAPTURED_STATES } from './moves'
+import type { PaymentError, SendPaymentLink } from './operations'
+import { bookingById, idOf, setBookingPaymentStatus, updatePayment } from './records'
 import { inTransaction, lockRow } from './store'
 
 /**
@@ -16,12 +18,84 @@ import { inTransaction, lockRow } from './store'
  * they pay; it is the one place a price reaches a client while prices_public is off (D-24). The
  * gateway's own SMS and email are off: the platform's message carries the link (M6), on
  * `payment.linkSent`. One open link per booking: sending again cancels the old one first.
+ *
+ * A reschedule leaves the payment on the first booking of its chain (docs/16 §6), so a link
+ * counts for the whole chain: none is sent when a booking of the chain is paid, sending one
+ * cancels any open link of the chain, and a cancellation or a reschedule closes the chain's
+ * open links before it commits (`closeOpenLinks`), so no link is left to pay for a booking that
+ * moved or ended.
  */
 
 /** Razorpay refuses a link that expires sooner than this after it is made. */
 const MIN_LINK_LIFETIME_MS = 16 * 60 * 1000
 
 const PAID: readonly string[] = ['paid', 'partRefunded', 'refunded']
+
+/** A booking and the bookings it replaced, newest first. */
+async function chainOf(req: PayloadRequest, bookingId: number): Promise<number[]> {
+  const chain = [bookingId]
+  let from = idOf((await bookingById(req, bookingId))?.rescheduledFrom)
+  while (from !== null && !chain.includes(from) && chain.length < 50) {
+    chain.push(from)
+    from = idOf((await bookingById(req, from))?.rescheduledFrom)
+  }
+  return chain
+}
+
+function paymentsOn(req: PayloadRequest, chain: number[]): Promise<Payment[]> {
+  return req.payload
+    .find({
+      collection: 'payments',
+      where: { booking: { in: chain } },
+      sort: 'createdAt',
+      pagination: false,
+      depth: 0,
+      overrideAccess: true,
+      req,
+    })
+    .then(({ docs }) => docs)
+}
+
+/** Cancels the open links among `found` at the gateway, then here. */
+async function cancelLinks(
+  req: PayloadRequest,
+  deps: PaymentsDeps,
+  found: Payment[],
+): Promise<Result<void, PaymentError>> {
+  const open = found.filter((p) => p.kind === 'paymentLink' && p.status === 'created')
+  if (!open.length) return ok(undefined)
+  const gateway = deps.gateway()
+  if (!gateway.ok) return gateway
+  for (const link of open) {
+    if (!link.gatewayPaymentLinkId) continue
+    const cancelled = await gateway.value.cancelPaymentLink(link.gatewayPaymentLinkId)
+    // A link already paid cannot be cancelled: its own event settles the booking.
+    if (!cancelled.ok) return cancelled
+    await updatePayment(req, link.id, { status: 'cancelled' })
+  }
+  return ok(undefined)
+}
+
+/**
+ * Closes the open payment links of a booking's chain, in the caller's transaction, for a
+ * cancellation or a reschedule (given the booking that remains, the new one for a reschedule).
+ * A chain booking left `linkSent` goes back to `unpaid`. A gateway that does not answer, or a
+ * link paid meanwhile, refuses: the caller's change is undone, and tried again later.
+ */
+export function makeCloseOpenLinks(deps: PaymentsDeps) {
+  return (req: PayloadRequest, bookingId: number): Promise<Result<void, PaymentError>> =>
+    inTransaction(req, async () => {
+      const chain = await chainOf(req, bookingId)
+      const closed = await cancelLinks(req, deps, await paymentsOn(req, chain))
+      if (!closed.ok) return closed
+      for (const id of chain) {
+        if ((await bookingById(req, id))?.paymentStatus === 'linkSent') {
+          await setBookingPaymentStatus(req, id, 'unpaid')
+        }
+      }
+      return ok(undefined)
+    })
+}
 
 export function makeSendPaymentLink(deps: PaymentsDeps): SendPaymentLink {
   return async (req, input) => {
@@ -49,23 +123,15 @@ export function makeSendPaymentLink(deps: PaymentsDeps): SendPaymentLink {
         return err({ code: 'bad-move', from: booking.paymentStatus, to: 'linkSent' })
       }
 
-      const { docs: earlier } = await req.payload.find({
-        collection: 'payments',
-        where: { and: [{ booking: { equals: booking.id } }, { kind: { equals: 'paymentLink' } }] },
-        pagination: false,
-        depth: 0,
-        overrideAccess: true,
-        req,
-      })
-      for (const link of earlier) {
-        if (link.status !== 'created' || !link.gatewayPaymentLinkId) continue
-        const cancelled = await gateway.value.cancelPaymentLink(link.gatewayPaymentLinkId)
-        // A link already paid cannot be cancelled: its own event settles the booking.
-        if (!cancelled.ok) return cancelled
-        await updatePayment(req, link.id, { status: 'cancelled' })
-      }
+      // The whole chain of reschedules: a payment taken on an earlier booking pays for this one.
+      const onChain = await paymentsOn(req, await chainOf(req, booking.id))
+      const captured = onChain.find((payment) => CAPTURED_STATES.includes(payment.status))
+      if (captured) return err({ code: 'bad-move', from: captured.status, to: 'linkSent' })
+      const closed = await cancelLinks(req, deps, onChain)
+      if (!closed.ok) return closed
 
-      const receipt = `booking:${booking.id}:link:${earlier.length + 1}`
+      const own = onChain.filter((p) => p.kind === 'paymentLink' && idOf(p.booking) === booking.id)
+      const receipt = `booking:${booking.id}:link:${own.length + 1}`
       const link = await gateway.value.createPaymentLink({
         amountPaise: total,
         receipt,

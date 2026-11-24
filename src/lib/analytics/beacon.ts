@@ -29,9 +29,16 @@ export function beaconToken(
   return parsed.success ? parsed.data : null
 }
 
-/** Whether a path is one of the public pages the beacon may count: never the admin's. */
+/**
+ * The pages never counted: the admin, and the booking pages whose address carries a manage
+ * link's token or a booking's reference (`/b/<token>`, `/book/pay/<ref>`, `/book/confirmed/<ref>`),
+ * since the beacon reports the path and the token must never leave the page (docs/16 §6).
+ */
+const UNCOUNTED = /^\/(?:admin(?:\/|$)|b\/|book\/(?:pay|confirmed)\/)/i
+
+/** Whether a path is one of the public pages the beacon may count. */
 export function countsPath(pathname: string): boolean {
-  return !/^\/admin(?:\/|$)/i.test(pathname)
+  return !UNCOUNTED.test(pathname)
 }
 
 /** What the beacon adds to a page's policy: its two origins where it loads, nothing elsewhere. */

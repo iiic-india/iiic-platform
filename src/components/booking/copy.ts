@@ -130,6 +130,8 @@ export const FLOW_COPY = {
     'rule-missing': 'This session cannot be booked online yet. Ask for a time instead.',
     'not-found': 'That choice is no longer available. Start again from the first step.',
     full: 'That info session is full. Choose another one.',
+    'price-changed':
+      'The price of this session changed while you were booking. Nothing was booked. Reload the page to see the new total.',
     'consent-text-missing':
       'IIIC has not published the booking-messages consent text yet, so bookings cannot be taken online.',
     'payments-off': 'Online payment is not available right now. Please contact IIIC to pay.',
@@ -159,6 +161,10 @@ export const PAY_COPY = {
   gatewayDown: 'The payment provider is not answering. We have kept your time a little longer.',
   tryAgain: 'Try again',
   expired: 'The time held for you ran out before the payment arrived. Nothing was taken.',
+  // A checkout was opened, so a late payment may still arrive (docs/16 §3): no fresh booking is
+  // offered here, so nobody pays twice.
+  expiredMayPay:
+    'The time held for you ran out. If a payment went through, we confirm this booking if its time is still free, or refund the payment in full if not.',
   startAgain: 'Pick a time again',
   slotLost:
     'Someone else booked this time before your payment arrived. Your payment is being refunded in full to the way you paid, and nothing more is needed from you.',

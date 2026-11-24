@@ -4,11 +4,16 @@ import type { Payload } from 'payload'
 
 import { makeOpenCheckout, makeVerifyReturnedPayment } from './checkout'
 import type { PaymentsDeps } from './deps'
-import { makeSendPaymentLink } from './links'
+import { makeCloseOpenLinks, makeSendPaymentLink } from './links'
 import { makePollPendingOrders } from './poll'
 import { quotePrice } from './prices'
 import { makeReconcileDay } from './reconcile'
-import { makeDecideRefund, makeRequestRefund, makeSendRefund } from './refunds'
+import {
+  makeDecideRefund,
+  makeRequestRefund,
+  makeSendRefund,
+  makeSettleStuckRefund,
+} from './refunds'
 import { makeProcessGatewayEvent } from './webhook'
 
 /**
@@ -19,7 +24,8 @@ import { makeProcessGatewayEvent } from './webhook'
  * - `quotePrice`: the price in force for an option, with its tax (step 1 and step 3).
  * - `openCheckout` and `checkoutParams`: the order for a held booking, and what the browser needs.
  * - `verifyReturnedPayment`: the server's check of the order when the browser comes back.
- * - `sendPaymentLink`: staff's link for a confirmed booking (D-24).
+ * - `sendPaymentLink`: staff's link for a confirmed booking (D-24); `closeOpenLinks`, a
+ *   booking chain's open links closed before a cancellation or a reschedule commits.
  * - `processGatewayEvent`: one verified event, once (the webhook route, the poll).
  * - `requestRefund`, `decideRefund`, `sendRefund`: refunds, under the Settings threshold.
  * - `pollPendingOrders`, `reconcileDay`: the B2 poll and B11, run as jobs.
@@ -47,12 +53,18 @@ export function makePayments(deps: PaymentsDeps) {
     openCheckout: makeOpenCheckout(deps),
     verifyReturnedPayment: makeVerifyReturnedPayment(deps, processGatewayEvent, sendRefunds),
     sendPaymentLink: makeSendPaymentLink(deps),
+    closeOpenLinks: makeCloseOpenLinks(deps),
     processGatewayEvent,
     requestRefund: makeRequestRefund(deps),
     decideRefund: makeDecideRefund(deps),
     sendRefund,
     sendRefunds,
-    pollPendingOrders: makePollPendingOrders(deps, processGatewayEvent, sendRefunds),
+    pollPendingOrders: makePollPendingOrders(
+      deps,
+      processGatewayEvent,
+      sendRefunds,
+      makeSettleStuckRefund(deps),
+    ),
     reconcileDay: makeReconcileDay(deps),
   }
 }
