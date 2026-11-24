@@ -34,8 +34,15 @@ const owner = {
 const PERSON = 'Example Certificate Learner'
 const PROGRAMME = 'Example Programme (e2e, fake)'
 
+/**
+ * A frame sandboxed without scripts, as the issue screen's preview is, runs no timers, and axe
+ * needs them: its run inside such a frame never ends and holds the test until it times out. Such
+ * frames are left out of a page's run, and the test checks each one's document on a page of its own.
+ */
+const SCRIPTLESS_FRAMES = 'iframe[sandbox]:not([sandbox~="allow-scripts"])'
+
 async function blockingViolations(page: Page): Promise<string[]> {
-  const results = await new AxeBuilder({ page }).analyze()
+  const results = await new AxeBuilder({ page }).exclude(SCRIPTLESS_FRAMES).analyze()
   return results.violations
     .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
     .map((violation) => violation.id)
@@ -159,8 +166,16 @@ test.describe('An owner issues, the QR code verifies, a revoke shows at once', (
     await page.getByRole('button', { name: `Add ${PERSON}` }).click()
     await page.getByRole('button', { name: 'Preview certificates' }).click()
     await expect(page.getByRole('heading', { name: 'Preview' })).toBeFocused()
-    await expect(page.locator(`iframe[title="Certificate preview for ${PERSON}"]`)).toBeVisible()
+    const preview = page.locator(`iframe[title="Certificate preview for ${PERSON}"]`)
+    await expect(preview).toBeVisible()
     expect(await blockingViolations(page)).toEqual([])
+
+    // The certificate page the preview shows, checked on a page of its own.
+    const sheet = await page.context().newPage()
+    await sheet.setContent((await preview.getAttribute('srcdoc')) ?? '')
+    await expect(sheet.locator('.iiic-cert')).toBeVisible()
+    expect(await blockingViolations(sheet)).toEqual([])
+    await sheet.close()
   })
 
   test('an issued PDF’s QR code opens a page that says Valid, then Revoked', async ({ page }) => {
