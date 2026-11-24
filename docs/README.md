@@ -38,7 +38,7 @@ Everything needed to build the IIIC platform with Claude Code: what the product 
 | 18 | `18-admin-experience-design.md` | M5's design: session notes (author-only, encrypted, read-audited), certificates and their verify pages, privacy requests and the breach register, the custom views, global search and Reports, open items with what is assumed, the test plan and who builds what | M5 |
 | — | `runbook.md` | What the team does when something goes wrong or must be rotated: the session notes key's rotation, the breach response with its CERT-In and Board clocks | M5, M7 |
 | — | `content/` | `copy-architecture.md` (every page, section by section) and `sources/` (IIIC's texts, brochures, feedback, the copy system, the old site, verbatim) | M2 |
-| — | `decisions.md` | D-A to D-C and D-01 to D-98 with status | Every milestone |
+| — | `decisions.md` | D-A to D-C and D-01 to D-99 with status | Every milestone |
 | — | `research/` | The four research reports behind `07` and `08` (messaging, architecture, compliance, payments), verbatim, with sources, October 2026; and the research behind the admin console's components (D-78) and the public site's motion kit (`11` §11), November 2026 | When a choice is questioned |
 | — | `prototype-prompt.md` | Optional: a clickable HTML prototype to test the flows with real people before M3 | Before M1 (optional) |
 
