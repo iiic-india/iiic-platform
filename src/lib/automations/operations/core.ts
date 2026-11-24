@@ -71,7 +71,7 @@ export async function plan(
 ): Promise<Result<Planned, PlanError | CoreMissing>> {
   const core = await current()
   if (!core) return err({ code: 'core-missing' })
-  return core.deliver(req, planned, options)
+  return options ? core.deliver(req, planned, options) : core.deliver(req, planned)
 }
 
 /** Cancels queued messages about a subject; nothing to cancel without the core. */

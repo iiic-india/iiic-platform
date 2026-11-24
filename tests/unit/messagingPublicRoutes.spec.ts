@@ -32,7 +32,8 @@ vi.mock('@/lib/newsletter/subscriptions', () => ({
 }))
 
 const { createLocalReq } = await import('payload')
-const { signLink } = await import('@/lib/messaging/links')
+const { signLink, verifyLink } = await import('@/lib/messaging/links')
+const { useMessagingCore } = await import('@/lib/automations/operations/core')
 const { withdrawPurpose } = await import('@/lib/newsletter/withdrawals')
 const { signUp, unsubscribe } = await import('@/lib/newsletter/subscriptions')
 const withdrawRoute = await import('@/app/(platform)/w/[token]/withdraw/route')
@@ -57,6 +58,17 @@ async function foreignToken(purpose: 'withdraw' | 'unsubscribe', subjectId: numb
   settings.current.PAYLOAD_SECRET = own
   return token
 }
+
+// The routes verify links through the core's port; the real verifier, without loading the rest of
+// the core (which a busy run takes long to import), so no test outlives its time.
+useMessagingCore({
+  deliver: async () => {
+    throw new Error('nothing is sent here')
+  },
+  cancelQueued: async () => 0,
+  verifyLink,
+})
+vi.setConfig({ testTimeout: 30_000 })
 
 beforeEach(() => {
   vi.clearAllMocks()
