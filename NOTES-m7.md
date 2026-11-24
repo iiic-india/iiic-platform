@@ -25,9 +25,14 @@ Payload config, and makes no schema change. Decisions D-108 onward, inputs I-60 
    - [x] Invoice PDFs stored in the private bucket; audited download for owners and finance.
 3. Lighthouse budgets
    - [x] Every assertion is `error` again: all passed on main's run of 24 November (none printed).
-4. [ ] Security pass (ASVS 5.0 L2) into `docs/security-review.md`, fixes with tests.
-5. [ ] Booking concurrency integration test.
-6. [ ] Docs: `docs/runbook.md`, operator guide, accessibility statement (if `docs/12` §9 gives it).
+4. [x] Security pass (ASVS 5.0 L2) in `docs/security-review.md`: safe error serializer for Payload's
+       logger, name-only catches on the booking actions and the certificate and invoice routes,
+       refusal before input on notes and the audit export, the calendar feed's token scrubbed, ids
+       parsed, the reviews import scrubbed. Tests with each.
+5. [x] Booking concurrency integration test: `tests/int/bookingConcurrency.int.spec.ts` (CI only).
+6. [x] Docs: `docs/runbook.md` (deploy, roll back, restore, rotate, containment), `docs/operator-guide.md`.
+       The accessibility statement is not drafted: `docs/12` §9 gives the target and the method,
+       not the manual pass's results (I-61).
 
 ## Checks
 
@@ -38,3 +43,5 @@ D-100 to D-107 arrive with M6, and the template row stays M6's to raise.
 ## Log
 
 - 2026-11-24: branch made, plan written; items 1, 2 (but the 404) and 3 done and pushed.
+- 2026-11-24: items 4 to 6 done and pushed; lint, format, types and unit tests pass but for
+  `decisions.spec.ts` (expected until M6 merges).
