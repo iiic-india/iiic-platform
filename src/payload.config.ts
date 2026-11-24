@@ -9,6 +9,7 @@ import { buildConfig, type EmailAdapter } from 'payload'
 import { payloadTotp } from 'payload-totp'
 import sharp from 'sharp'
 
+import { Accounts } from './collections/Accounts'
 import { AnalyticsEvents } from './collections/AnalyticsEvents'
 import { AuditLog } from './collections/AuditLog'
 import { Automations } from './collections/Automations'
@@ -49,6 +50,7 @@ import { redirects } from './collections/Redirects'
 import { Refunds } from './collections/Refunds'
 import { Services } from './collections/Services'
 import { SessionNotes } from './collections/SessionNotes'
+import { SignInRequests } from './collections/SignInRequests'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Subscribers } from './collections/Subscribers'
 import { Suppressions } from './collections/Suppressions'
@@ -283,6 +285,10 @@ export default buildConfig({
     Suppressions,
     Subscribers,
     NewsletterIssues,
+    // Customer accounts and My IIIC (Release 2; docs/20-accounts-design.md): the account that
+    // links Better Auth's user to the person, and the rows the sign-in rate limits count.
+    Accounts,
+    SignInRequests,
   ],
   globals: [Settings],
   // Automations (src/jobs/index.ts): never run on their own here.

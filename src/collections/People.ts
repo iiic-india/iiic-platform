@@ -152,6 +152,22 @@ export const People: CollectionConfig = {
     verifiedAt('mobileVerifiedAt', 'Mobile verified'),
     verifiedAt('emailVerifiedAt', 'Email verified'),
     {
+      // The My IIIC account this record belongs to (Release 2; docs/20-accounts-design.md §6):
+      // the account's own record, or an earlier one attached because it holds a detail the
+      // account verified (docs/03 F7; D-122). Set and cleared by the server only; one account
+      // at most. The office's alone to read, like every field but the name and contacts (D-89).
+      name: 'account',
+      type: 'relationship',
+      relationTo: 'accounts',
+      index: true,
+      access: { ...OFFICE_ONLY, create: () => false, update: () => false },
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        description: 'The My IIIC account that shows this record to the person.',
+      },
+    },
+    {
       type: 'row',
       fields: [
         {

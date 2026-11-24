@@ -474,6 +474,27 @@ export const POLICY = {
     update: {},
     delete: { roles: ['owner'] },
   },
+
+  // ---- Customer accounts (Release 2; docs/20-accounts-design.md §8) ----
+
+  // A person's My IIIC account (docs/04 `accounts`, S2 · "the person; owners"): owners read it.
+  // Only the server writes one, as the person signs in, adds a detail or closes it; an owner ends
+  // an account's sessions through its own endpoint, with the two-factor code (D-127). Customers
+  // are never Payload users: what a person reads of their own goes through src/lib/accounts.
+  accounts: {
+    read: { roles: ['owner'] },
+    create: {},
+    update: {},
+    delete: {},
+  },
+  // One row per sign-in code asked for (docs/20 §4.8): keyed hashes and times only, for the rate
+  // limits and as the subject of the code's message. No one reads them; the server purges them.
+  signInRequests: {
+    read: {},
+    create: {},
+    update: {},
+    delete: {},
+  },
 } as const satisfies Record<string, Record<string, Rule>>
 
 /**

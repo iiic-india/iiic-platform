@@ -113,6 +113,8 @@ export interface Config {
     suppressions: Suppression;
     subscribers: Subscriber;
     'newsletter-issues': NewsletterIssue;
+    accounts: Account;
+    'sign-in-requests': SignInRequest;
     'search-index': SearchIndex;
     redirects: Redirect;
     'totp-attempts': TotpAttempt;
@@ -143,6 +145,9 @@ export interface Config {
     };
     proposals: {
       versions: 'proposal-versions';
+    };
+    accounts: {
+      records: 'people';
     };
   };
   collectionsSelect: {
@@ -192,6 +197,8 @@ export interface Config {
     suppressions: SuppressionsSelect<false> | SuppressionsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'newsletter-issues': NewsletterIssuesSelect<false> | NewsletterIssuesSelect<true>;
+    accounts: AccountsSelect<false> | AccountsSelect<true>;
+    'sign-in-requests': SignInRequestsSelect<false> | SignInRequestsSelect<true>;
     'search-index': SearchIndexSelect<false> | SearchIndexSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
@@ -1195,6 +1202,10 @@ export interface Person {
   mobileVerifiedAt_tz?: 'Asia/Kolkata' | null;
   emailVerifiedAt?: string | null;
   emailVerifiedAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * The My IIIC account that shows this record to the person.
+   */
+  account?: (number | null) | Account;
   preferredChannel?: ('email' | 'whatsapp') | null;
   language: 'en-IN' | 'gu-IN' | 'hi-IN';
   /**
@@ -1248,6 +1259,33 @@ export interface Person {
   };
   whatsappLastInboundAt?: string | null;
   whatsappLastInboundAt_tz?: 'Asia/Kolkata' | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Accounts people made to sign in to My IIIC. Their sign-in details and sessions are kept by the sign-in service, not here.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accounts".
+ */
+export interface Account {
+  id: number;
+  /**
+   * The sign-in service’s id for this account.
+   */
+  authUserId?: string | null;
+  person: number | Person;
+  lastSignInAt?: string | null;
+  lastSignInAt_tz?: 'Asia/Kolkata' | null;
+  lastSignInChannel?: ('email' | 'whatsapp') | null;
+  /**
+   * The records of this person that My IIIC shows: their own and earlier ones.
+   */
+  records?: {
+    docs?: (number | Person)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -2998,6 +3036,18 @@ export interface NewsletterIssue {
   createdAt: string;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sign-in-requests".
+ */
+export interface SignInRequest {
+  id: number;
+  purpose: 'signIn' | 'addDetail';
+  channel: 'email' | 'whatsapp';
+  identifierHash: string;
+  networkHash: string;
+  requestedAt: string;
+}
+/**
  * What /search finds: an entry for each published page, offered service, published article and published question, kept up to date as they are published, changed and unpublished. "Reindex" builds a kind again from what is published.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3428,6 +3478,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'newsletter-issues';
         value: number | NewsletterIssue;
+      } | null)
+    | ({
+        relationTo: 'accounts';
+        value: number | Account;
       } | null)
     | ({
         relationTo: 'search-index';
@@ -4010,6 +4064,7 @@ export interface PeopleSelect<T extends boolean = true> {
   mobileVerifiedAt_tz?: T;
   emailVerifiedAt?: T;
   emailVerifiedAt_tz?: T;
+  account?: T;
   preferredChannel?: T;
   language?: T;
   ageBand?: T;
@@ -5074,6 +5129,31 @@ export interface NewsletterIssuesSelect<T extends boolean = true> {
   recipientCount?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accounts_select".
+ */
+export interface AccountsSelect<T extends boolean = true> {
+  authUserId?: T;
+  person?: T;
+  lastSignInAt?: T;
+  lastSignInAt_tz?: T;
+  lastSignInChannel?: T;
+  records?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sign-in-requests_select".
+ */
+export interface SignInRequestsSelect<T extends boolean = true> {
+  purpose?: T;
+  channel?: T;
+  identifierHash?: T;
+  networkHash?: T;
+  requestedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -18,7 +18,9 @@ import { recordAudit } from '@/lib/audit/record'
  * The search index is left out too: its entries are copies the server makes of what was
  * published, and the publishing itself is in the log (src/plugins/searchIndex.ts). So are the
  * busy times copied from practitioners' calendars every 15 minutes: start and end only, nobody's
- * details, and the connection they come from is logged (src/collections/BusyBlocks.ts).
+ * details, and the connection they come from is logged (src/collections/BusyBlocks.ts). And the
+ * sign-in requests, keyed hashes and times the rate limits count, purged within two days; the
+ * sign-in itself is logged as `sign-in` (src/collections/SignInRequests.ts; docs/20 §8).
  */
 const NOT_AUDITED = new Set([
   'audit-log',
@@ -34,6 +36,7 @@ const NOT_AUDITED = new Set([
   'analytics-events',
   'search-index',
   'busy-blocks',
+  'sign-in-requests',
 ])
 
 /** Globals that hold no one's change: Payload's own job statistics. */
