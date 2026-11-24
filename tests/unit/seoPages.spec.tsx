@@ -207,6 +207,12 @@ const OWN = [
 /** Proof, which draws itself too: tests/unit/proofPage.spec.tsx. */
 const PROOF = ['(default)/proof/page.tsx']
 
+/** The certificate verify pages, never indexed: tests/unit/certificatesVerifyPages.spec.tsx. */
+const VERIFY = [
+  '(education)/institute/verify/page.tsx',
+  '(education)/institute/verify/[token]/page.tsx',
+]
+
 /**
  * A proposal's tracked link, never indexed and never canonical, which draws itself too:
  * tests/unit/pipelineProposalPage.spec.tsx.
@@ -259,6 +265,7 @@ describe('the pages under src/app/(platform)', () => {
       [
         ...OWN,
         ...PROOF,
+        ...VERIFY,
         ...PROPOSAL_LINK,
         ...JOURNAL,
         ...DOORS,

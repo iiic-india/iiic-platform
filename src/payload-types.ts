@@ -101,6 +101,12 @@ export interface Config {
     enquiries: Enquiry;
     proposals: Proposal;
     'proposal-versions': ProposalVersion;
+    'session-notes': SessionNote;
+    certificates: Certificate;
+    'data-requests': DataRequest;
+    incidents: Incident;
+    feedback: Feedback;
+    'case-studies': CaseStudy;
     'search-index': SearchIndex;
     redirects: Redirect;
     'totp-attempts': TotpAttempt;
@@ -167,6 +173,12 @@ export interface Config {
     enquiries: EnquiriesSelect<false> | EnquiriesSelect<true>;
     proposals: ProposalsSelect<false> | ProposalsSelect<true>;
     'proposal-versions': ProposalVersionsSelect<false> | ProposalVersionsSelect<true>;
+    'session-notes': SessionNotesSelect<false> | SessionNotesSelect<true>;
+    certificates: CertificatesSelect<false> | CertificatesSelect<true>;
+    'data-requests': DataRequestsSelect<false> | DataRequestsSelect<true>;
+    incidents: IncidentsSelect<false> | IncidentsSelect<true>;
+    feedback: FeedbackSelect<false> | FeedbackSelect<true>;
+    'case-studies': CaseStudiesSelect<false> | CaseStudiesSelect<true>;
     'search-index': SearchIndexSelect<false> | SearchIndexSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
@@ -1238,6 +1250,9 @@ export interface Lead {
    */
   title?: string | null;
   kind: 'consultancy' | 'partnership';
+  /**
+   * Moved on the pipeline board.
+   */
   stage:
     | 'new'
     | 'contacted'
@@ -2314,6 +2329,212 @@ export interface Invoice {
   createdAt: string;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "session-notes".
+ */
+export interface SessionNote {
+  id: number;
+  booking: number | Booking;
+  person: number | Person;
+  author: number | User;
+  sealed:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  keyId: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "certificates".
+ */
+export interface Certificate {
+  id: number;
+  certificateId: string;
+  status: 'valid' | 'revoked';
+  person: number | Person;
+  nameAsPrinted: string;
+  programmeName: string;
+  programmeDetails?: string | null;
+  /**
+   * The day in India, as YYYY-MM-DD.
+   */
+  completedOn: string;
+  issuedAt?: string | null;
+  issuedAt_tz?: 'Asia/Kolkata' | null;
+  issuedBy?: (number | null) | User;
+  batch?: string | null;
+  verifyTokenHash: string;
+  pdfKey?: string | null;
+  pdfSha256?: string | null;
+  revocation?: {
+    at?: string | null;
+    at_tz?: 'Asia/Kolkata' | null;
+    by?: (number | null) | User;
+    reason?: string | null;
+  };
+  replaces?: (number | null) | Certificate;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "data-requests".
+ */
+export interface DataRequest {
+  id: number;
+  type: 'access' | 'correction' | 'erasure' | 'withdrawal' | 'nomination' | 'consumerComplaint' | 'privacyGrievance';
+  status: 'received' | 'acknowledged' | 'verified' | 'preparing' | 'awaitingOwner' | 'closed';
+  assignee?: (number | null) | User;
+  person: number | Person;
+  channel: 'web' | 'email' | 'whatsapp' | 'phone' | 'letter' | 'inPerson';
+  receivedAt: string;
+  receivedAt_tz: 'Asia/Kolkata';
+  /**
+   * In the person’s words where possible. Nothing said in a counselling session belongs here.
+   */
+  summary: string;
+  acknowledgeBy?: string | null;
+  acknowledgeBy_tz?: 'Asia/Kolkata' | null;
+  resolveBy?: string | null;
+  resolveBy_tz?: 'Asia/Kolkata' | null;
+  acknowledgedAt?: string | null;
+  acknowledgedAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * Complaints only: the copy as recorded (from 1 January 2027).
+   */
+  complaintCopySentAt?: string | null;
+  complaintCopySentAt_tz?: 'Asia/Kolkata' | null;
+  verifiedAt?: string | null;
+  verifiedAt_tz?: 'Asia/Kolkata' | null;
+  verificationMethod?: ('oneTimeCode' | 'detailsMatch' | 'inPerson') | null;
+  exportKey?: string | null;
+  resolution?: {
+    outcome?: ('fulfilled' | 'partly' | 'refused' | 'withdrawn') | null;
+    closedAt?: string | null;
+    closedAt_tz?: 'Asia/Kolkata' | null;
+    note?: string | null;
+    /**
+     * An owner confirms an erasure after reading what it deletes.
+     */
+    erasureConfirmedAt?: string | null;
+    erasureConfirmedAt_tz?: 'Asia/Kolkata' | null;
+    decidedBy?: (number | null) | User;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "incidents".
+ */
+export interface Incident {
+  id: number;
+  title: string;
+  detectedAt: string;
+  detectedAt_tz: 'Asia/Kolkata';
+  status: 'open' | 'contained' | 'closed';
+  containedAt?: string | null;
+  containedAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * What happened. Name systems and kinds of data, never a person.
+   */
+  description: string;
+  systems?: string | null;
+  personalData?: {
+    affected?: boolean | null;
+    kinds?: string | null;
+    peopleAffected?: number | null;
+  };
+  certIn?: {
+    reportable?: boolean | null;
+    dueAt?: string | null;
+    dueAt_tz?: 'Asia/Kolkata' | null;
+    reportedAt?: string | null;
+    reportedAt_tz?: 'Asia/Kolkata' | null;
+    reference?: string | null;
+  };
+  people?: {
+    notifiedAt?: string | null;
+    notifiedAt_tz?: 'Asia/Kolkata' | null;
+    how?: string | null;
+    count?: number | null;
+  };
+  board?: {
+    dueAt?: string | null;
+    dueAt_tz?: 'Asia/Kolkata' | null;
+    notifiedAt?: string | null;
+    notifiedAt_tz?: 'Asia/Kolkata' | null;
+    detailedReportAt?: string | null;
+    detailedReportAt_tz?: 'Asia/Kolkata' | null;
+    reference?: string | null;
+  };
+  remediation?: string | null;
+  closedAt?: string | null;
+  closedAt_tz?: 'Asia/Kolkata' | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "feedback".
+ */
+export interface Feedback {
+  id: number;
+  booking: number | Booking;
+  person: number | Person;
+  rating: number;
+  submittedAt: string;
+  status: 'new' | 'read';
+  comment?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "case-studies".
+ */
+export interface CaseStudy {
+  id: number;
+  title: string;
+  slug: string;
+  clientName: string;
+  organisation?: (number | null) | Organisation;
+  sector?: string | null;
+  status: 'draft' | 'awaitingApproval' | 'approved' | 'published' | 'withdrawn';
+  problem: string;
+  approach: string;
+  outcomes?:
+    | {
+        statement: string;
+        evidence: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Required before publishing: who at the client approved the names and numbers, when, and where the signed approval is kept.
+   */
+  clientApproval?: {
+    approverName?: string | null;
+    approverRole?: string | null;
+    /**
+     * The day in India, as YYYY-MM-DD.
+     */
+    approvedOn?: string | null;
+    reference?: string | null;
+  };
+  publishedBy?: (number | null) | User;
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * What /search finds: an entry for each published page, offered service, published article and published question, kept up to date as they are published, changed and unpublished. "Reindex" builds a kind again from what is published.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2629,6 +2850,26 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'proposal-versions';
         value: number | ProposalVersion;
+      } | null)
+    | ({
+        relationTo: 'certificates';
+        value: number | Certificate;
+      } | null)
+    | ({
+        relationTo: 'data-requests';
+        value: number | DataRequest;
+      } | null)
+    | ({
+        relationTo: 'incidents';
+        value: number | Incident;
+      } | null)
+    | ({
+        relationTo: 'feedback';
+        value: number | Feedback;
+      } | null)
+    | ({
+        relationTo: 'case-studies';
+        value: number | CaseStudy;
       } | null)
     | ({
         relationTo: 'search-index';
@@ -3936,6 +4177,191 @@ export interface ProposalVersionsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "session-notes_select".
+ */
+export interface SessionNotesSelect<T extends boolean = true> {
+  booking?: T;
+  person?: T;
+  author?: T;
+  sealed?: T;
+  keyId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "certificates_select".
+ */
+export interface CertificatesSelect<T extends boolean = true> {
+  certificateId?: T;
+  status?: T;
+  person?: T;
+  nameAsPrinted?: T;
+  programmeName?: T;
+  programmeDetails?: T;
+  completedOn?: T;
+  issuedAt?: T;
+  issuedAt_tz?: T;
+  issuedBy?: T;
+  batch?: T;
+  verifyTokenHash?: T;
+  pdfKey?: T;
+  pdfSha256?: T;
+  revocation?:
+    | T
+    | {
+        at?: T;
+        at_tz?: T;
+        by?: T;
+        reason?: T;
+      };
+  replaces?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "data-requests_select".
+ */
+export interface DataRequestsSelect<T extends boolean = true> {
+  type?: T;
+  status?: T;
+  assignee?: T;
+  person?: T;
+  channel?: T;
+  receivedAt?: T;
+  receivedAt_tz?: T;
+  summary?: T;
+  acknowledgeBy?: T;
+  acknowledgeBy_tz?: T;
+  resolveBy?: T;
+  resolveBy_tz?: T;
+  acknowledgedAt?: T;
+  acknowledgedAt_tz?: T;
+  complaintCopySentAt?: T;
+  complaintCopySentAt_tz?: T;
+  verifiedAt?: T;
+  verifiedAt_tz?: T;
+  verificationMethod?: T;
+  exportKey?: T;
+  resolution?:
+    | T
+    | {
+        outcome?: T;
+        closedAt?: T;
+        closedAt_tz?: T;
+        note?: T;
+        erasureConfirmedAt?: T;
+        erasureConfirmedAt_tz?: T;
+        decidedBy?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "incidents_select".
+ */
+export interface IncidentsSelect<T extends boolean = true> {
+  title?: T;
+  detectedAt?: T;
+  detectedAt_tz?: T;
+  status?: T;
+  containedAt?: T;
+  containedAt_tz?: T;
+  description?: T;
+  systems?: T;
+  personalData?:
+    | T
+    | {
+        affected?: T;
+        kinds?: T;
+        peopleAffected?: T;
+      };
+  certIn?:
+    | T
+    | {
+        reportable?: T;
+        dueAt?: T;
+        dueAt_tz?: T;
+        reportedAt?: T;
+        reportedAt_tz?: T;
+        reference?: T;
+      };
+  people?:
+    | T
+    | {
+        notifiedAt?: T;
+        notifiedAt_tz?: T;
+        how?: T;
+        count?: T;
+      };
+  board?:
+    | T
+    | {
+        dueAt?: T;
+        dueAt_tz?: T;
+        notifiedAt?: T;
+        notifiedAt_tz?: T;
+        detailedReportAt?: T;
+        detailedReportAt_tz?: T;
+        reference?: T;
+      };
+  remediation?: T;
+  closedAt?: T;
+  closedAt_tz?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "feedback_select".
+ */
+export interface FeedbackSelect<T extends boolean = true> {
+  booking?: T;
+  person?: T;
+  rating?: T;
+  submittedAt?: T;
+  status?: T;
+  comment?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "case-studies_select".
+ */
+export interface CaseStudiesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  clientName?: T;
+  organisation?: T;
+  sector?: T;
+  status?: T;
+  problem?: T;
+  approach?: T;
+  outcomes?:
+    | T
+    | {
+        statement?: T;
+        evidence?: T;
+        id?: T;
+      };
+  clientApproval?:
+    | T
+    | {
+        approverName?: T;
+        approverRole?: T;
+        approvedOn?: T;
+        reference?: T;
+      };
+  publishedBy?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "search-index_select".
  */
 export interface SearchIndexSelect<T extends boolean = true> {
@@ -4174,6 +4600,10 @@ export interface PlatformSettings {
      */
     bridgesEnabled?: boolean | null;
   };
+  certificates?: {
+    signatoryName?: string | null;
+    signatoryTitle?: string | null;
+  };
   processors?:
     | {
         name: string;
@@ -4273,6 +4703,12 @@ export interface SettingsSelect<T extends boolean = true> {
         mapEnabled?: T;
         accountsEnabled?: T;
         bridgesEnabled?: T;
+      };
+  certificates?:
+    | T
+    | {
+        signatoryName?: T;
+        signatoryTitle?: T;
       };
   processors?:
     | T

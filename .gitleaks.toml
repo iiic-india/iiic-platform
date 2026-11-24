@@ -16,4 +16,7 @@ regexes = [
   # The hex digits in order, twice: the made-up Cloudflare Web Analytics token in the beacon's
   # tests (commits eb939f1 and ce88f0e). The real token is public by design: it ships in the page.
   '''0123456789abcdef0123456789abcdef''',
+  # A made-up link token with a signature of twenty As: the "guessed" token in M6's test of the
+  # unsubscribe and withdrawal links (commit 5857b51). It was never signed with any key.
+  '''eyJhbGciOiJIUzI1NiJ9\.eyJwIjoid2l0aGRyYXciLCJzIjo0Mn0\.AAAAAAAAAAAAAAAAAAAA''',
 ]
