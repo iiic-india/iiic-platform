@@ -39,7 +39,7 @@ Everything needed to build the IIIC platform with Claude Code: what the product 
 | 19 | `19-automations-and-messaging-design.md` | M6's design: the cron runner and its schedules, the messaging core (outbox, send-time consent and quiet hours, fallback, retries), the provider webhooks, the templates and what they may say, every R1 automation with trigger, timing, channel and owner, re-planning, the newsletter, digests, open items, tests and who builds what | M6 |
 | — | `runbook.md` | What the team does when something goes wrong or must be rotated: the session notes key's rotation, the breach response with its CERT-In and Board clocks | M5, M7 |
 | — | `content/` | `copy-architecture.md` (every page, section by section) and `sources/` (IIIC's texts, brochures, feedback, the copy system, the old site, verbatim) | M2 |
-| — | `decisions.md` | D-A to D-C and D-01 to D-99 with status | Every milestone |
+| — | `decisions.md` | D-A to D-C and D-01 to D-107 with status | Every milestone |
 | — | `research/` | The four research reports behind `07` and `08` (messaging, architecture, compliance, payments), verbatim, with sources, October 2026; and the research behind the admin console's components (D-78) and the public site's motion kit (`11` §11), November 2026 | When a choice is questioned |
 | — | `prototype-prompt.md` | Optional: a clickable HTML prototype to test the flows with real people before M3 | Before M1 (optional) |
 

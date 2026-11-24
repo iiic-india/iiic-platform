@@ -75,11 +75,11 @@ export const runP7 = (req: PayloadRequest, input: unknown, now: Date) =>
 /** docs/06 P6: "Proposal not opened or answered", five working days after it was sent. */
 export const FOLLOW_UP_DRAFT_WORKING_DAYS = 5
 
-/** The office's words for P6's task, and the placeholder for the drafted email (a new input). */
+/** The office's words for P6's task, and the placeholder for the drafted email (I-56, D-100). */
 export const P6_TASK = {
   title: (reference: string) =>
     `Proposal ${reference} not opened in five working days: send the follow-up`,
-  draft: '[[TODO: the words of the drafted follow-up email, for IIIC to supply]]',
+  draft: '[[TODO: the words of the drafted follow-up email, I-56]]',
 } as const
 
 export type FollowUpDeps = { createTask: CreateTask; addWorkingDays: AddWorkingDays }

@@ -84,6 +84,8 @@ Owners: Yash and Aum own what they can supply themselves; everything that comes 
 | I-53 | Who prepares proposals (the names and titles printed on them) and IIIC's standard proposal terms, if any (`17` §5) | R1 proposals (M4) | Team | Typed by the office on each proposal; no template text |
 | I-54 | The certificate's signatory: the name and title printed under the signature on every certificate of completion, entered in Settings → Certificates (`18` §4; with I-14 and I-22 for the wording) | R1 certificates (M5) | Team | The preview shows `[[TODO: signatory’s name as printed, I-54]]`; nothing is issued |
 | I-55 | IIIC's confirmation of how Reports counts each figure the plan names: the cross-path rate, the counselling return rate, revenue by application, the no-show rate, Team Map request to proposal and lead response time (`05`, Reports; `18` §7) | R1 Reports (M5) | Aum / Yash | Each figure counted as its definition on the page says, with its working shown |
+| I-56 | The words of the follow-up email the office sends when a proposal is still unopened five working days after it was sent (`06` P6; D-100) | R1 proposals (M6) | Team | The office's P6 task carries `[[TODO: the words of the drafted follow-up email, I-56]]`; the office writes its own |
+| I-57 | IIIC's LinkedIn organisation page, if there is one, so the certificate email's add-to-profile link names it (`06` C5; D-106) | R1 certificates (M6) | Aum / Yash | The link names IIIC by its full name only |
 
 ## Page content inventory (Release 1)
 
