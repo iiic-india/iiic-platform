@@ -20,6 +20,7 @@ export const SIGNUP_COPY = {
   summary: 'Check 1 answer',
   invalid: 'Enter an email address, like name@example.com.',
   busy: 'Too many tries from here. Try again in a few minutes.',
+  checkFailed: 'The spam check did not go through. Send the form again.',
   failed: 'That did not go through. Try again in a few minutes.',
 } as const
 

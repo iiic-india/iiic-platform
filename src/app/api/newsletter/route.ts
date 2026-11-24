@@ -1,11 +1,14 @@
 import { createLocalReq, getPayload } from 'payload'
 
+import { clientAddress } from '@/lib/analytics/session'
+import { isTokenShaped, siteverify, turnstileKeys } from '@/lib/enquiryForms/turnstile'
 import { env } from '@/lib/env'
 import { actsHere } from '@/lib/messaging/deployment'
 import { reportError } from '@/lib/monitoring/sentry'
 import { clientKey, json, readFields, seeOther, wantsJson } from '@/lib/newsletter/http'
 import { WindowLimit } from '@/lib/newsletter/limit'
 import { SignupInput } from '@/lib/newsletter/rules'
+import { signupsBusy } from '@/lib/newsletter/signupGuard'
 import { signUp } from '@/lib/newsletter/subscriptions'
 import config from '@payload-config'
 
@@ -13,8 +16,11 @@ export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 export const maxDuration = 15
 
-/** Ten signups from one address in ten minutes, then a pause (docs/12 §6). */
+/** Ten signups from one address in ten minutes, then a pause (docs/12 §6): the first line. */
 const limit = new WindowLimit(10, 10 * 60 * 1000)
+
+/** The field Cloudflare's widget puts its token in. */
+const TURNSTILE_FIELD = 'cf-turnstile-response'
 
 const PAGE = '/newsletter'
 const page = (state: string) => `${PAGE}?state=${state}`
@@ -22,7 +28,10 @@ const page = (state: string) => `${PAGE}?state=${state}`
 /**
  * The newsletter signup (docs/19 §8; D-10): a public form, so no user is asked for. The body is
  * checked with Zod; a burst from one address is refused; a filled trap field is answered as a
- * success and nothing is done. Every accepted address gets the same answer whether or not it is
+ * success and nothing is done. Where Turnstile's keys are set the widget's token is checked with
+ * Cloudflare before anything is looked up (src/lib/enquiryForms/turnstile.ts), and the database's
+ * count of signups waiting for confirmation bounds the site as a whole, whichever instance the
+ * request reaches (src/lib/newsletter/signupGuard.ts). Every accepted address gets the same answer whether or not it is
  * on the list, so the form tells nobody who subscribes. Nothing promotional is stored here: the
  * pending entry holds the address, the notice and the link's hash until the person confirms.
  * A plain form post is sent on to the page with its state; a script asking for JSON gets JSON.
@@ -41,9 +50,18 @@ export async function POST(request: Request) {
   // real confirmation email from production's runner. It stores nothing (src/lib/messaging/
   // deployment.ts), and the page says signing up is closed.
   if (!actsHere(env().VERCEL_ENV)) return answer(503, 'closed')
+  const keys = turnstileKeys(env())
+  if (keys) {
+    const token = fields?.[TURNSTILE_FIELD]
+    const passed =
+      isTokenShaped(token) &&
+      (await siteverify(keys.secretKey)(token, clientAddress(request.headers) || null))
+    if (!passed) return answer(400, 'check-failed')
+  }
 
   try {
     const payload = await getPayload({ config })
+    if (await signupsBusy(payload, new Date())) return answer(429, 'busy')
     const req = await createLocalReq({}, payload)
     const result = await signUp(
       req,

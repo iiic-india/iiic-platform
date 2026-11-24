@@ -1,8 +1,9 @@
 /**
  * A fixed-window limit on the newsletter's public forms (docs/19 §8; docs/12 §6), kept in the
  * function instance's memory: a burst from one address is refused before anything is looked up.
- * It is a first line only (each instance counts on its own); Turnstile comes with M7, and the
- * signup's own rule sends one email per address per two minutes whatever the limit lets through.
+ * It is a first line only (each instance counts on its own): the signup also checks Turnstile
+ * where its keys are set and a count the database keeps (src/lib/newsletter/signupGuard.ts), and
+ * its own rule sends one email per address per two minutes whatever the limits let through.
  * The key is a hash of the client's address, never the address. Pure apart from its map.
  */
 export class WindowLimit {

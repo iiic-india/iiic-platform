@@ -11,8 +11,13 @@ const settings = vi.hoisted(() => ({
     PAYLOAD_SECRET: 'fake-secret-for-the-public-routes-test-0123456789',
     PAYLOAD_SECRET_PREVIOUS: undefined as string | undefined,
     VERCEL_ENV: undefined as string | undefined,
+    TURNSTILE_SITE_KEY: undefined as string | undefined,
+    TURNSTILE_SECRET_KEY: undefined as string | undefined,
   },
 }))
+// The database's count of signups waiting for confirmation, and Cloudflare's check (faked).
+const database = vi.hoisted(() => ({ pending: 0 }))
+const cloudflare = vi.hoisted(() => ({ passing: ['fake-passing-token'], calls: [] as string[] }))
 
 vi.mock('server-only', () => ({}))
 vi.mock('@payload-config', () => ({ default: {} }))
@@ -20,8 +25,18 @@ vi.mock('@/lib/env', () => ({ env: () => settings.current }))
 vi.mock('@/lib/monitoring/sentry', () => ({ reportError: vi.fn(async () => {}) }))
 vi.mock('payload', async (original) => ({
   ...(await original<typeof import('payload')>()),
-  getPayload: vi.fn(async () => ({ fake: true })),
+  getPayload: vi.fn(async () => ({
+    fake: true,
+    count: vi.fn(async () => ({ totalDocs: database.pending })),
+  })),
   createLocalReq: vi.fn(async (options: Record<string, unknown>) => ({ ...options, user: null })),
+}))
+vi.mock('@/lib/enquiryForms/turnstile', async (original) => ({
+  ...(await original<typeof import('@/lib/enquiryForms/turnstile')>()),
+  siteverify: () => async (token: string) => {
+    cloudflare.calls.push(token)
+    return cloudflare.passing.includes(token)
+  },
 }))
 vi.mock('@/lib/newsletter/withdrawals', () => ({
   withdrawPurpose: vi.fn(async () => ({ withdrawn: 1 })),
@@ -42,6 +57,7 @@ const withdrawRoute = await import('@/app/(platform)/w/[token]/withdraw/route')
 const unsubscribeRoute = await import('@/app/api/newsletter/unsubscribe/route')
 const signupRoute = await import('@/app/api/newsletter/route')
 const confirmRoute = await import('@/app/api/newsletter/confirm/route')
+const { RECENT_SIGNUPS } = await import('@/lib/newsletter/signupGuard')
 
 const SITE = 'https://example.invalid'
 
@@ -76,6 +92,10 @@ vi.setConfig({ testTimeout: 30_000 })
 beforeEach(() => {
   vi.clearAllMocks()
   settings.current.VERCEL_ENV = undefined
+  settings.current.TURNSTILE_SITE_KEY = undefined
+  settings.current.TURNSTILE_SECRET_KEY = undefined
+  database.pending = 0
+  cloudflare.calls = []
 })
 
 describe('the withdraw link (docs/08 §3)', () => {
@@ -211,6 +231,44 @@ describe('the newsletter signup on a deployment that is not production', () => {
     expect(answer.status).toBe(503)
     expect(await answer.json()).toEqual({ state: 'closed' })
     expect(signUp).not.toHaveBeenCalled()
+  })
+
+  it('checks Turnstile where its keys are set, before anything is looked up', async () => {
+    settings.current.TURNSTILE_SITE_KEY = 'fake-site-key'
+    settings.current.TURNSTILE_SECRET_KEY = 'fake-secret-key'
+    const without = await signupRoute.POST(signup())
+    expect(without.status).toBe(400)
+    expect(await without.json()).toEqual({ state: 'check-failed' })
+    const failing = await signupRoute.POST(
+      form(
+        `${SITE}/api/newsletter`,
+        { email: 'fake@example.invalid', 'cf-turnstile-response': 'fake-failing-token' },
+        { accept: 'application/json' },
+      ),
+    )
+    expect(failing.status).toBe(400)
+    expect(signUp).not.toHaveBeenCalled()
+    expect(getPayload).not.toHaveBeenCalled()
+    const passing = await signupRoute.POST(
+      form(
+        `${SITE}/api/newsletter`,
+        { email: 'fake@example.invalid', 'cf-turnstile-response': 'fake-passing-token' },
+        { accept: 'application/json' },
+      ),
+    )
+    expect(passing.status).toBe(202)
+    expect(cloudflare.calls).toEqual(['fake-failing-token', 'fake-passing-token'])
+    expect(signUp).toHaveBeenCalledTimes(1)
+  })
+
+  it('is busy for everyone once the database holds as many recent pending signups as allowed', async () => {
+    database.pending = RECENT_SIGNUPS.max
+    const answer = await signupRoute.POST(signup())
+    expect(answer.status).toBe(429)
+    expect(await answer.json()).toEqual({ state: 'busy' })
+    expect(signUp).not.toHaveBeenCalled()
+    database.pending = RECENT_SIGNUPS.max - 1
+    expect((await signupRoute.POST(signup())).status).toBe(202)
   })
 
   it('signs up locally and on production', async () => {
