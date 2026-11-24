@@ -86,6 +86,13 @@ export async function loadReviewRequest(
   return parsed.success ? ok(parsed.data) : err({ code: 'not-found' })
 }
 
+/**
+ * The person's own words the request quotes back to them: the review, the part to be shown and
+ * its English rendering. The price guard does not read them (D-111).
+ */
+const reviewWords = (data: RequestData): string[] =>
+  [data.text, data.excerpt, data.translation].filter((words): words is string => Boolean(words))
+
 function RequestBody({ data }: { data: RequestData }) {
   return (
     <>
@@ -145,6 +152,7 @@ export const reviewConsentRequest: TemplateImplementation<RequestData> = {
   email: {
     key: 'review-consent-request',
     schema: RequestData,
+    quoted: reviewWords,
     subject: requestSubject,
     preheader: () => 'Reply with 1, 2 or 3. Nothing is published without your yes.',
     element: (data, context) => (
@@ -166,6 +174,7 @@ export const reviewConsentReminder: TemplateImplementation<RequestData> = {
   email: {
     key: 'review-consent-reminder',
     schema: RequestData,
+    quoted: reviewWords,
     subject: (data) => `Reminder: ${requestSubject(data)}`,
     preheader: () => 'One reminder only. No reply means nothing is published.',
     element: (data, context) => (

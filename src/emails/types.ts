@@ -35,6 +35,11 @@ export type EmailTemplate<Data> = {
   preheader: (data: Data, shown: PriceShown) => string
   /** The email as React Email elements inside the Frame (src/emails/components/Frame.tsx). */
   element: (data: Data, context: EmailContext) => ReactElement
+  /**
+   * The person's own words the email quotes back to them (a complaint as recorded, a review they
+   * wrote): the price guard does not read them, as IIIC did not write them as a price (D-111).
+   */
+  quoted?: (data: Data) => readonly string[]
 }
 
 /** A WhatsApp template's variables, in the order the approved template numbers them. */

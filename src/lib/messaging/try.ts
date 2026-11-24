@@ -17,7 +17,7 @@ import type { Message } from '@/payload-types'
 import { afterSent } from './afterSent'
 import type { SendError, Sent } from './channels'
 import type { MessagingDeps } from './deps'
-import { hasPlaceholder, showsPrice, storedProviderId } from './guards'
+import { hasPlaceholder, showsPrice, storedProviderId, withoutQuotes } from './guards'
 import { LINK_DAYS, linkUrls, signLink } from './links'
 import { messageKey } from './operations'
 import { messageById, recordRow } from './outbox'
@@ -186,7 +186,8 @@ async function render(
     const data = impl.whatsapp.schema.safeParse(loaded.value)
     if (!data.success) return { fail: 'invalid-data' }
     const params = impl.whatsapp.params(data.data)
-    if (!pricesOk && showsPrice(...params)) return { skip: 'price-hidden' }
+    // A price where its rule allows none is a fault to fix, never a silent skip (D-111).
+    if (!pricesOk && !internal && showsPrice(...params)) return { fail: 'price-hidden' }
     if (site.blockPlaceholders && !internal && hasPlaceholder(...params)) {
       return { fail: 'placeholder' }
     }
@@ -203,8 +204,15 @@ async function render(
     priceAllowed: pricesOk,
   }
   const rendered = await renderEmail(impl.email, data.data, context)
-  if (!pricesOk && showsPrice(rendered.subject, rendered.preheader, rendered.text)) {
-    return { skip: 'price-hidden' }
+  // Internal mail to the staff and the person's own words quoted back to them are not read for a
+  // price; anything else that shows one where its rule allows none fails, loudly (D-111).
+  const ownWords = impl.email.quoted?.(data.data) ?? []
+  if (
+    !pricesOk &&
+    !internal &&
+    showsPrice(...withoutQuotes([rendered.subject, rendered.preheader, rendered.text], ownWords))
+  ) {
+    return { fail: 'price-hidden' }
   }
   if (
     site.blockPlaceholders &&

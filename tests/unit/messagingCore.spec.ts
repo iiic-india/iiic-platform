@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { automationOfTask, retriesSpent, TASK_RETRIES } from '@/lib/automations/failures'
-import { hasPlaceholder, showsPrice, storedProviderId } from '@/lib/messaging/guards'
+import { hasPlaceholder, showsPrice, storedProviderId, withoutQuotes } from '@/lib/messaging/guards'
 
 vi.mock('server-only', () => ({}))
 
@@ -23,6 +23,16 @@ describe('the last checks before a message leaves', () => {
     expect(showsPrice('INR 1200')).toBe(true)
     expect(showsPrice('Friday, 6 November at 3 PM', 'Reference IIIC-S-00012')).toBe(false)
   })
+  it('reads no price in the person’s own words quoted back to them, and still finds IIIC’s (D-111)', () => {
+    const complaint = 'I was charged Rs 500 twice\nfor one session.'
+    // The plain-text part wraps lines; the quote is found whatever the spacing.
+    const text = 'This is how we recorded it:\nI was charged Rs 500 twice for\none session.'
+    expect(showsPrice(text)).toBe(true)
+    expect(showsPrice(...withoutQuotes([text], [complaint]))).toBe(false)
+    expect(showsPrice(...withoutQuotes([`${text} The fee is ₹2,500.`], [complaint]))).toBe(true)
+    expect(withoutQuotes(['Nothing quoted'], [])).toEqual(['Nothing quoted'])
+  })
+
   it('finds a placeholder anywhere', () => {
     expect(hasPlaceholder('Hello', 'Call [[TODO: the phone number, I-03]]')).toBe(true)
     expect(hasPlaceholder('Hello')).toBe(false)

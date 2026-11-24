@@ -270,6 +270,51 @@ describe('a message whose data is gone, or whose subject moved on', () => {
   })
 })
 
+describe('a price where the template allows none (D-111)', () => {
+  const pricedTemplate = (quoted?: string) =>
+    ({
+      ...fakeTemplate,
+      email: {
+        ...fakeTemplate.email,
+        element: (data: { ref: string }, context: Parameters<typeof Frame>[0]) =>
+          createElement(
+            Frame,
+            {
+              preheader: 'Fake preheader',
+              heading: 'Fake heading',
+              assetUrl: context.assetUrl,
+              footer: context.footer,
+            } as Parameters<typeof Frame>[0],
+            createElement(Paragraph, null, `Fake line ${data.ref}: it cost Rs 500.`),
+          ),
+        ...(quoted ? { quoted: () => [quoted] } : {}),
+      },
+    }) as unknown as TemplateImplementation<never>
+
+  it('fails the message and raises message.failed, never a silent skip', async () => {
+    const at = ist('14:00')
+    const planned = await deliverWith({ ...depsAt(at), implementation: () => pricedTemplate() })(
+      await req(),
+      plan(people.c, { variant: 'priced', sendAt: at }),
+    )
+    if (!planned.ok) throw new Error('not planned')
+    const message = await row(planned.value.messageId)
+    expect(message).toMatchObject({ status: 'failed', lastError: 'price-hidden' })
+    expect(sentWith(email, message.dedupeKey)).toHaveLength(0)
+    expect(events).toContainEqual({ name: 'message.failed', messageId: message.id })
+  })
+
+  it('sends when the amount is in the person’s own words quoted back to them', async () => {
+    const at = ist('14:00')
+    const planned = await deliverWith({
+      ...depsAt(at),
+      implementation: () => pricedTemplate('Fake line INT-MSG: it cost Rs 500.'),
+    })(await req(), plan(people.c, { variant: 'quoted', sendAt: at }))
+    if (!planned.ok) throw new Error('not planned')
+    expect(await row(planned.value.messageId)).toMatchObject({ status: 'sent' })
+  })
+})
+
 describe('fires once (docs/19 §2)', () => {
   it('writes one row and sends once when the same message is delivered twice', async () => {
     const deliver = deliverWith(depsAt(ist('11:00')))
