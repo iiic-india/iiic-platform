@@ -2,6 +2,7 @@ import type { PayloadRequest } from 'payload'
 import { z } from 'zod'
 
 import { articlePath, JOURNAL_PATH } from '@/lib/journal/addresses'
+import { SIGNUP_COPY } from '@/lib/newsletter/copy'
 import { linkLive, NEWSLETTER_PATHS } from '@/lib/newsletter/rules'
 import { tokenFor } from '@/lib/newsletter/subscriptions'
 import { idOf } from '@/lib/privacy/consentLedger'
@@ -121,10 +122,8 @@ export const newsletterWelcome: TemplateImplementation<WelcomeData> = {
         footer={context.footer}
         assetUrl={context.assetUrl}
       >
-        <Para>
-          Thank you for confirming. Once a month, IIIC sends one email from the Journal: a lead
-          story, two short items and one link.
-        </Para>
+        {/* What an issue holds, in the signup page's own words, so both promise the same. */}
+        <Para>Thank you for confirming. {SIGNUP_COPY.lead}</Para>
         <Para>
           Every issue has an unsubscribe link at the foot. One click takes you off the list.
         </Para>
