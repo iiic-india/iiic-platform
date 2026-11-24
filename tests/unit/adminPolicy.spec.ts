@@ -185,6 +185,8 @@ describe('M5 views: the user, the code and the role first (CLAUDE.md #6)', () =>
       certificatesIssue: ['owner', 'operator'],
       certificatesRevoke: ['owner'],
       invoicePdf: ['owner', 'finance'],
+      // Release 2 (docs/20 §8; D-127): ending a My IIIC account's sessions.
+      accountSessions: ['owner'],
     }
     for (const view of views) {
       const allowed = ROLES.filter((role) => viewRefusal(staff([role]), view) === null)
