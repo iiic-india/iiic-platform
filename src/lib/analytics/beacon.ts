@@ -32,10 +32,13 @@ export function beaconToken(
 /**
  * The pages never counted: the admin, the booking pages whose address carries a manage link's
  * token or a booking's reference (`/b/<token>`, `/book/pay/<ref>`, `/book/confirmed/<ref>`,
- * docs/16 §6), and a proposal's tracked link (`/p/<token>`, docs/17 §5), since the beacon reports
- * the path and an address that is a key must never reach a third party.
+ * docs/16 §6), a proposal's tracked link (`/p/<token>`, docs/17 §5), and a certificate's verify
+ * pages (`/institute/verify`, the QR code's `/institute/verify/<token>`, and `/verify` as the
+ * institute host serves them, docs/18 §4), since the beacon reports the path, and an address that
+ * is a key, or a page that shows a person's name, must never reach a third party.
  */
-const UNCOUNTED = /^\/(?:admin(?:\/|$)|b\/|book\/(?:pay|confirmed)\/|p(?:\/|$))/i
+const UNCOUNTED =
+  /^\/(?:admin(?:\/|$)|b\/|book\/(?:pay|confirmed)\/|p(?:\/|$)|(?:institute\/)?verify(?:\/|$))/i
 
 /** Whether a path is one of the public pages the beacon may count. */
 export function countsPath(pathname: string): boolean {

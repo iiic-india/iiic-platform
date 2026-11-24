@@ -29,8 +29,22 @@ const sameInstant = (a: unknown, b: unknown) => instant(a)?.getTime() === instan
 const group = (value: unknown): Data =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Data) : {}
 
-const refuse = (path: string, message: string): never => {
-  throw new ValidationError({ collection: 'data-requests', errors: [{ path, message }] })
+const refuse = (path: string, message: string, collection = 'data-requests'): never => {
+  throw new ValidationError({ collection, errors: [{ path, message }] })
+}
+
+/**
+ * How far ahead of the server's clock a typed time may be (a slow device's clock). The time a
+ * request was received, or an incident noticed, sets deadlines that no role may write, so it can
+ * never lie in the future: a time ahead would push those deadlines back.
+ */
+export const AHEAD_LEEWAY_MS = 5 * 60 * 1000
+
+export const TIME_AHEAD = 'Enter a time that has already passed: the deadlines are counted from it.'
+
+const ahead = (value: unknown) => {
+  const at = instant(value)
+  return at !== null && at.getTime() > Date.now() + AHEAD_LEEWAY_MS
 }
 
 /**
@@ -54,6 +68,7 @@ export const requestRules: CollectionBeforeChangeHook = ({
 
   if (operation === 'create') {
     draft.status = 'received'
+    if (ahead(draft.receivedAt)) refuse('receivedAt', TIME_AHEAD)
     const received = instant(draft.receivedAt)
     if (received && typeof draft.type === 'string') {
       const { acknowledgeBy, resolveBy } = deadlinesFor(draft.type as RequestType, received)
@@ -97,6 +112,7 @@ export const incidentRules: CollectionBeforeChangeHook = ({ data, operation, ori
   const moved =
     operation === 'create' || !sameInstant(draft.detectedAt ?? before.detectedAt, before.detectedAt)
   if (!detected || !moved) return draft
+  if (ahead(detected)) refuse('detectedAt', TIME_AHEAD, 'incidents')
   const { certInBy, boardBy } = incidentClocks(detected)
   draft.certIn = {
     ...group(before.certIn),

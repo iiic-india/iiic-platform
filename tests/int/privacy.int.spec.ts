@@ -150,7 +150,8 @@ async function record(person: Person, type: DataRequest['type']) {
       type,
       person: person.id,
       channel: 'email',
-      receivedAt: '2099-01-31T04:30:00.000Z',
+      // A time that has passed: a time received ahead of now is refused (it would push the clocks).
+      receivedAt: '2026-01-31T04:30:00.000Z',
       summary: `Fake request ${TAG}`,
       // A typed deadline or state is not the operator's to set.
       resolveBy: '2199-01-01T00:00:00.000Z',
@@ -177,7 +178,7 @@ async function prepare(id: number) {
   await move(id, { status: 'acknowledged' })
   await move(id, {
     status: 'verified',
-    verifiedAt: '2099-02-01T04:30:00.000Z',
+    verifiedAt: '2026-02-01T04:30:00.000Z',
     verificationMethod: 'oneTimeCode',
   })
   return move(id, { status: 'preparing' })
@@ -219,15 +220,15 @@ describe('a requestâ€™s clocks and moves on save', () => {
     const person = await newPerson('clocks')
     const request = await record(person, 'consumerComplaint')
     expect(request.status).toBe('received')
-    expect(request.acknowledgeBy).toBe('2099-02-02T04:30:00.000Z')
+    expect(request.acknowledgeBy).toBe('2026-02-02T04:30:00.000Z')
     // One calendar month in India: 31 January ends on the last day of February.
-    expect(request.resolveBy).toBe('2099-02-28T04:30:00.000Z')
+    expect(request.resolveBy).toBe('2026-02-28T04:30:00.000Z')
   })
 
   it('never moves the clocks and refuses a step out of order', async () => {
     const person = await newPerson('moves')
     const request = await record(person, 'access')
-    await expect(move(request.id, { receivedAt: '2099-02-15T04:30:00.000Z' })).rejects.toThrow()
+    await expect(move(request.id, { receivedAt: '2026-02-15T04:30:00.000Z' })).rejects.toThrow()
     await expect(move(request.id, { status: 'preparing' })).rejects.toThrow()
     await expect(
       move(request.id, { status: 'closed', resolution: { outcome: 'fulfilled' } }),
@@ -243,15 +244,15 @@ describe('a requestâ€™s clocks and moves on save', () => {
       data: {
         title: `Fake incident ${TAG}`,
         status: 'open',
-        detectedAt: '2099-06-01T17:10:00.000Z',
+        detectedAt: '2026-06-01T17:10:00.000Z',
         description: 'Fake description: a test system, no person named.',
         certIn: { reportable: true },
       } as Incident,
       user: verified(staff.operator),
       overrideAccess: false,
     })
-    expect(incident.certIn?.dueAt).toBe('2099-06-01T23:10:00.000Z')
-    expect(incident.board?.dueAt).toBe('2099-06-04T17:10:00.000Z')
+    expect(incident.certIn?.dueAt).toBe('2026-06-01T23:10:00.000Z')
+    expect(incident.board?.dueAt).toBe('2026-06-04T17:10:00.000Z')
     await payload.delete({ collection: 'incidents', id: incident.id })
   })
 })

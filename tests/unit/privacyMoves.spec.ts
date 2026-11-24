@@ -1,8 +1,14 @@
 // @vitest-environment node
 import type { PayloadRequest } from 'payload'
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { ERASURE_CONTEXT, incidentRules, requestRules } from '@/lib/privacy/hooks'
+import {
+  AHEAD_LEEWAY_MS,
+  ERASURE_CONTEXT,
+  incidentRules,
+  requestRules,
+  TIME_AHEAD,
+} from '@/lib/privacy/hooks'
 import { MOVE_MESSAGES, refusedMove, type RequestState } from '@/lib/privacy/requestMoves'
 
 // The moves of a privacy request and the clocks set on save (docs/18 §5): what the office may do
@@ -129,6 +135,13 @@ const run = (
   }) as Record<string, unknown>
 
 describe('the clocks set on save', () => {
+  // The times below have passed by then: a time received or detected may not lie ahead.
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2027-07-01T00:00:00.000Z'))
+  })
+  afterAll(() => vi.useRealTimers())
+
   it('records a new request as received, with both clocks from its kind and receipt', () => {
     const saved = run(requestRules, {
       operation: 'create',
@@ -213,5 +226,35 @@ describe('the clocks set on save', () => {
       dueAt_tz: 'Asia/Kolkata',
     })
     expect((saved.board as { dueAt: string }).dueAt).toBe('2027-06-04T17:10:00.000Z')
+  })
+
+  it('refuses a request received in the future, which would push its deadlines back', () => {
+    expect(TIME_AHEAD).toMatch(/already passed/)
+    const data = {
+      type: 'access',
+      receivedAt: new Date(Date.now() + AHEAD_LEEWAY_MS + 60_000).toISOString(),
+    }
+    expect(() => run(requestRules, { operation: 'create', data })).toThrow(/receivedAt/)
+    // A device's clock a minute or two ahead is no change of deadline.
+    const close = { ...data, receivedAt: new Date(Date.now() + 60_000).toISOString() }
+    expect(() => run(requestRules, { operation: 'create', data: close })).not.toThrow()
+  })
+
+  it('refuses an incident detected in the future, on record or on correction', () => {
+    const later = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    expect(() =>
+      run(incidentRules, { operation: 'create', data: { title: 'Fake', detectedAt: later } }),
+    ).toThrow(/detectedAt/)
+    const originalDoc = { title: 'Fake', detectedAt: '2027-06-01T17:10:00.000Z' }
+    expect(() =>
+      run(incidentRules, { operation: 'update', originalDoc, data: { detectedAt: later } }),
+    ).toThrow(/detectedAt/)
+    // Correcting it to an earlier time makes the clocks stricter, and is kept.
+    const earlier = run(incidentRules, {
+      operation: 'update',
+      originalDoc,
+      data: { detectedAt: '2027-06-01T15:10:00.000Z' },
+    })
+    expect((earlier.certIn as { dueAt: string }).dueAt).toBe('2027-06-01T21:10:00.000Z')
   })
 })

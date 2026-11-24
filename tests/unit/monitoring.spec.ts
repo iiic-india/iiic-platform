@@ -85,6 +85,26 @@ describe('scrubText', () => {
     }
   })
 
+  it('takes the key out of an address whose last part is one, however short', () => {
+    // A certificate's QR token is 22 characters (docs/18 §4): shorter than a long token.
+    const verify = 'AbCdEfGhIjKlMnOpQrStUv'
+    expect(scrubText(`GET /institute/verify/${verify}`)).toBe('GET /institute/verify/[token]')
+    expect(scrubText(`GET /verify/${verify}`)).toBe('GET /verify/[token]')
+    expect(scrubText('/book/pay/IIIC-S-00001')).toBe('/book/pay/[token]')
+    expect(scrubText('/b/abcdefghij/cancel')).toBe('/b/[token]/cancel')
+    expect(scrubText('/p/abcdefghij/pdf')).toBe('/p/[token]/pdf')
+    // The pages themselves, and short words, stay readable.
+    expect(scrubText('/institute/verify')).toBe('/institute/verify')
+    expect(scrubText('/api/bookings/12/reschedule')).toBe('/api/bookings/12/reschedule')
+    const event = scrubEvent({
+      request: { url: `https://site.invalid/institute/verify/${verify}?id=IIIC-C-2027-1-7` },
+      transaction: `GET /institute/verify/${verify}`,
+      contexts: { nextjs: { request_path: `/institute/verify/${verify}` } },
+    })
+    expect(JSON.stringify(event)).not.toContain(verify)
+    expect(JSON.stringify(event)).not.toContain('IIIC-C-')
+  })
+
   it('drops the values of a failed database query', () => {
     expect(
       scrubText('Failed query: select * from "users" where "email" = $1\nparams: a@b.invalid,7'),
