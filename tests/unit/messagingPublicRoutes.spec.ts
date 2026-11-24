@@ -33,7 +33,8 @@ vi.mock('@/lib/newsletter/subscriptions', () => ({
 
 const { createLocalReq } = await import('payload')
 const { signLink, verifyLink } = await import('@/lib/messaging/links')
-const { useMessagingCore } = await import('@/lib/automations/operations/core')
+// Not a React hook, whatever its name says: the core's port takes a stand-in for the tests.
+const { useMessagingCore: registerCore } = await import('@/lib/automations/operations/core')
 const { withdrawPurpose } = await import('@/lib/newsletter/withdrawals')
 const { signUp, unsubscribe } = await import('@/lib/newsletter/subscriptions')
 const withdrawRoute = await import('@/app/(platform)/w/[token]/withdraw/route')
@@ -61,7 +62,7 @@ async function foreignToken(purpose: 'withdraw' | 'unsubscribe', subjectId: numb
 
 // The routes verify links through the core's port; the real verifier, without loading the rest of
 // the core (which a busy run takes long to import), so no test outlives its time.
-useMessagingCore({
+registerCore({
   deliver: async () => {
     throw new Error('nothing is sent here')
   },
