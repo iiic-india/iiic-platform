@@ -50,7 +50,7 @@ export const paymentLink: TemplateImplementation<PaymentLinkData> = {
         preheader={link.preheader(data)}
         eyebrow={link.eyebrow}
         heading={link.heading(data)}
-        counselling={false}
+        counselling={data.counselling}
       >
         <Paragraph>{link.lead(data)}</Paragraph>
         <Details rows={linkRows(data, context)} />
@@ -81,7 +81,7 @@ export const paymentLinkReminder: TemplateImplementation<PaymentLinkData> = {
         preheader={reminder.preheader(data)}
         eyebrow={reminder.eyebrow}
         heading={reminder.heading(data)}
-        counselling={false}
+        counselling={data.counselling}
       >
         <Paragraph>{reminder.lead(data)}</Paragraph>
         <Details rows={linkRows(data, context)} />
@@ -107,7 +107,7 @@ export const slotLost: TemplateImplementation<SlotLostData> = {
         preheader={lost.preheader(data, context)}
         eyebrow={lost.eyebrow}
         heading={lost.heading(data)}
-        counselling={false}
+        counselling={data.counselling}
       >
         <Paragraph>{lost.lead(data)}</Paragraph>
         <Paragraph>{lost.refund(data, context)}</Paragraph>

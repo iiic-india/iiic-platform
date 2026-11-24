@@ -100,6 +100,24 @@ async function serviceOf(req: PayloadRequest, booking: Booking): Promise<Service
   return { name: service.name, type: service.type, counselling: service.register === 'counselling' }
 }
 
+/**
+ * Whether a booking is a counselling one, for the messages about its money as well as its time
+ * (docs/08 §7). A course seat, or a service gone, is not.
+ */
+async function counsellingOf(req: PayloadRequest, booking: Booking): Promise<boolean> {
+  const id = idOf(booking.service)
+  if (id === null) return false
+  const service = await req.payload.findByID({
+    collection: 'services',
+    id,
+    depth: 0,
+    disableErrors: true,
+    overrideAccess: true,
+    req,
+  })
+  return service?.register === 'counselling'
+}
+
 /** The online link: the booking's own Meet link, or its info session's join link. */
 async function meetingUrlOf(req: PayloadRequest, booking: Booking): Promise<string | null> {
   if (booking.format !== 'online') return null
@@ -257,6 +275,7 @@ export async function loadTimeRequest(
     firstName,
     serviceName: service.name,
     reference: booking.reference,
+    counselling: service.counselling,
     preferredDays: (booking.timeRequest?.preferredDays ?? []).map((entry) => entry.day),
   })
 }
@@ -329,6 +348,7 @@ export async function loadReceipt(req: PayloadRequest, input: LoadInput): Loaded
   return ok({
     firstName,
     reference: booking.reference,
+    counselling: await counsellingOf(req, booking),
     document: invoice.kind,
     number: invoice.number,
     issuedAt: new Date(invoice.issuedAt),
@@ -356,6 +376,7 @@ export async function loadRefund(req: PayloadRequest, input: LoadInput): Loaded<
   return ok({
     firstName,
     reference: booking.reference,
+    counselling: await counsellingOf(req, booking),
     amountPaise: refund.amountPaise,
     processedAt: new Date(refund.processedAt),
   })
@@ -376,6 +397,7 @@ export async function loadSlotLost(req: PayloadRequest, input: LoadInput): Loade
     firstName,
     serviceName: service.name,
     serviceType: service.type,
+    counselling: service.counselling,
     startsAt: booking.startsAt ? new Date(booking.startsAt) : null,
     amountPaise: payment.amountPaise,
   })
@@ -411,6 +433,7 @@ export async function loadPaymentLink(
     firstName,
     serviceName: service.name,
     reference: booking.reference,
+    counselling: service.counselling,
     startsAt: new Date(booking.startsAt),
     amountPaise: payment.amountPaise,
     linkUrl: payment.linkUrl,

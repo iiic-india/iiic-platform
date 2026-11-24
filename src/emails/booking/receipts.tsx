@@ -29,7 +29,7 @@ export const bookingReceipt: TemplateImplementation<ReceiptData> = {
         preheader={receipt.preheader(data, context)}
         eyebrow={receipt.eyebrow(data)}
         heading={receipt.heading(data)}
-        counselling={false}
+        counselling={data.counselling}
       >
         <Paragraph>{receipt.lead(data)}</Paragraph>
         <Details

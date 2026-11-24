@@ -33,7 +33,10 @@ export type TemplateSpec = {
   channels: readonly Channel[]
   sender: SenderKey
   kind: MessageKind
-  /** A counselling booking's message carries the scope statement and the crisis numbers. */
+  /**
+   * A message about a counselling booking carries the scope statement and the crisis numbers: every
+   * booking template to the client, never the internal one.
+   */
   counsellingScope: boolean
   /** No offer, bridge, story or cross-sell in any Release 1 message (docs/06, counselling guardrail). */
   offers: false
@@ -45,12 +48,19 @@ export type TemplateSpec = {
 
 export const TEMPLATES = [
   // ---- Bookings (builder B) ----
+  // Every message to the client about a counselling booking carries the scope and the crisis
+  // numbers, its money included (docs/08 §7; VOICE.md, counselling copy): `counsellingScope`.
   t('booking-confirmed', ['B2'], ['email', 'whatsapp'], 'bookings', 'transactional', {
     counsellingScope: true,
     price: 'whenPublic',
   }),
-  t('booking-receipt', ['B3'], ['email'], 'bookings', 'transactional', { price: 'whenPublic' }),
-  t('consent-receipt', ['B3a'], ['email'], 'bookings', 'transactional', {}),
+  t('booking-receipt', ['B3'], ['email'], 'bookings', 'transactional', {
+    counsellingScope: true,
+    price: 'whenPublic',
+  }),
+  t('consent-receipt', ['B3a'], ['email'], 'bookings', 'transactional', {
+    counsellingScope: true,
+  }),
   t('reminder-24h', ['B5'], ['whatsapp', 'email'], 'bookings', 'transactional', {
     counsellingScope: true,
   }),
@@ -60,19 +70,31 @@ export const TEMPLATES = [
   t('booking-rescheduled', ['B7'], ['email', 'whatsapp'], 'bookings', 'transactional', {
     counsellingScope: true,
   }),
-  t('booking-cancelled', ['B7'], ['email', 'whatsapp'], 'bookings', 'transactional', {}),
-  t('refund-processed', ['B7'], ['email'], 'bookings', 'transactional', { price: 'whenPublic' }),
-  t('booking-change-staff', ['B7', 'B10'], ['email'], 'platform', 'internal', { footer: 'none' }),
-  t('feedback-request', ['B8'], ['email', 'whatsapp'], 'bookings', 'transactional', {}),
-  t('no-show', ['B9'], ['email'], 'bookings', 'transactional', {}),
-  t('slot-lost', ['B10'], ['email'], 'bookings', 'transactional', {
+  t('booking-cancelled', ['B7'], ['email', 'whatsapp'], 'bookings', 'transactional', {
+    counsellingScope: true,
+  }),
+  t('refund-processed', ['B7'], ['email'], 'bookings', 'transactional', {
+    counsellingScope: true,
     price: 'whenPublic',
   }),
-  t('time-request-received', ['B12'], ['email', 'whatsapp'], 'bookings', 'transactional', {}),
+  t('booking-change-staff', ['B7', 'B10'], ['email'], 'platform', 'internal', { footer: 'none' }),
+  t('feedback-request', ['B8'], ['email', 'whatsapp'], 'bookings', 'transactional', {
+    counsellingScope: true,
+  }),
+  t('no-show', ['B9'], ['email'], 'bookings', 'transactional', { counsellingScope: true }),
+  t('slot-lost', ['B10'], ['email'], 'bookings', 'transactional', {
+    counsellingScope: true,
+    price: 'whenPublic',
+  }),
+  t('time-request-received', ['B12'], ['email', 'whatsapp'], 'bookings', 'transactional', {
+    counsellingScope: true,
+  }),
   t('payment-link', ['B13'], ['email', 'whatsapp'], 'bookings', 'operator', {
+    counsellingScope: true,
     price: 'paymentLink',
   }),
   t('payment-link-reminder', ['B13'], ['email'], 'bookings', 'operator', {
+    counsellingScope: true,
     price: 'paymentLink',
   }),
   // ---- Pipeline (builder C, on M4's records) ----
