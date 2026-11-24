@@ -2502,6 +2502,7 @@ export interface CaseStudy {
   title: string;
   slug: string;
   clientName: string;
+  organisation?: (number | null) | Organisation;
   sector?: string | null;
   status: 'draft' | 'awaitingApproval' | 'approved' | 'published' | 'withdrawn';
   problem: string;
@@ -4331,6 +4332,7 @@ export interface CaseStudiesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   clientName?: T;
+  organisation?: T;
   sector?: T;
   status?: T;
   problem?: T;

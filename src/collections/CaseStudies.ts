@@ -33,7 +33,7 @@ const serverWritten: { create: FieldAccess; update: FieldAccess } = {
  * problem, IIIC's approach and the outcomes, each outcome with its evidence; published only with
  * the client's written approval recorded and by an owner (src/lib/proof/caseStudies.ts, as
  * Testimonials has its own). Anyone reads a published one, never the approval record. The
- * client is named as text until M4's `organisations` joins, when the link is added beside it.
+ * client is named as text, with the link to M4's `organisations` record beside it.
  */
 export const CaseStudies: CollectionConfig = {
   slug: 'case-studies',
@@ -72,6 +72,15 @@ export const CaseStudies: CollectionConfig = {
       type: 'row',
       fields: [
         { name: 'clientName', type: 'text', label: 'Client', required: true, maxLength: 160 },
+        {
+          // The client's record in the pipeline (M4), beside the name as printed (docs/18 §8):
+          // the staff's link, never on the public card.
+          name: 'organisation',
+          type: 'relationship',
+          relationTo: 'organisations',
+          index: true,
+          access: { read: approval.read },
+        },
         { name: 'sector', type: 'text', maxLength: 100 },
         {
           name: 'status',
