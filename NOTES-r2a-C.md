@@ -4,33 +4,31 @@ Branch `r2a/privacy`, cut from `r2a/foundation` (8c33dcc). Spec: `docs/20-accoun
 
 ## Files (slice C only)
 
-- `src/lib/accounts/privacy/**`: `ListOwnConsents`, `GiveConsent`, `WithdrawConsent`, `CreateOwnRequest`, `ListOwnRequests`; pure rules; the seams to A's and B's functions.
-- `src/app/(platform)/(account)/account/privacy/**`: the page and its server actions.
-- `src/components/account/privacy/**`: the page's sections.
+- `src/lib/accounts/privacy/`: `seams.ts` (A's and B's functions, stubs until the join), `rules.ts` (pure), `copy.ts` (candidate copy), `outcome.ts` (the page's addresses and outcome codes), `state.ts` (the two action-state forms), `consents.ts` (`listOwnConsents`, `giveConsent`, `withdrawConsent`), `requests.ts` (`createOwnRequest`, `listOwnRequests`), `actions.ts` (server actions).
+- `src/app/(platform)/(account)/account/privacy/`: `page.tsx`, `close/page.tsx`, `closed/page.tsx`, `contact/page.tsx` (the placeholder README went).
+- `src/components/account/privacy/`: `PrivacySections.tsx`, `OutcomeNote.tsx`, `OwnRequestForm.tsx`, `AddDetailFlow.tsx`, `SignInAgain.tsx`, `privacy.module.css`.
 - Tests: `tests/unit/accountsPrivacy.spec.ts`, `tests/int/accountsPrivacy.int.spec.ts`, `tests/e2e/myIiicPrivacy.e2e.spec.ts`.
-
-## Plan
-
-1. Seams (`src/lib/accounts/privacy/seams.ts`): typed stand-ins for A's `requireAccount`, `listDevices`, `signOutEverywhere`, `closeAccount`, `requestDetailCode`, `confirmDetail` and B's `ownPersonIds`, each marked STUB, so the lead swaps one import per function at the join.
-2. Pure rules (`rules.ts`): consent rows from the ledger, what may be given or withdrawn, recent sign-in, one open request per kind.
-3. Server functions (`consents.ts`, `requests.ts`), scoped to the account's own records, Zod at the boundary, results not throws.
-4. Copy (`copy.ts`): candidate copy to VOICE.md; the account notice and consent text as `[[TODO …, I-65]]`.
-5. Page and server actions; components for each section; works without JavaScript; focus on the error summary.
-6. Tests: unit, integration, e2e.
-7. Checks: typecheck, lint, format:check, build, unit tests.
 
 ## Checklist
 
 - [x] Branch and notes
-- [ ] Seams
-- [ ] Rules and server functions
-- [ ] Copy
-- [ ] Page, actions and components
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] E2E spec
-- [ ] Checks green locally
+- [x] Seams
+- [x] Rules and server functions
+- [x] Copy (copy check run; fixes applied)
+- [x] Page, actions and components
+- [x] Unit tests (31)
+- [x] Integration tests (CI only; need `r2a_accounts`)
+- [x] E2E spec (CI only; needs A and `ACCOUNTS_TEST_CODE`)
+- [x] Checks green locally: typecheck, lint, format:check, build, unit tests
 
 ## For the lead (at the join)
 
-- (filled in as found)
+- **Seams.** In `src/lib/accounts/privacy/seams.ts`, replace each stub with an import from its owner: `getAccountSession`, `requireAccount` (A, `session.ts`); `signOut`, `listDevices`, `signOutEverywhere` (A); `closeAccount` (A, `lifecycle.ts`); `requestDetailCode`, `confirmDetail` (A, `details.ts`); `ownPersonIds` (B, `scope.ts`; the copy here is a working query the int test relies on). Nothing else in the slice imports A or B.
+- **`whatsAppCodesOpen`.** The contract has no "are WhatsApp codes open here" function, so the seam answers false (D-126: email only) and "Add a mobile number" never shows. When A exposes one, wire it here.
+- **Contract gaps** (not edited): `GiveConsent` has no code for "not offered here" (under 18, no verified detail, WhatsApp not set up, no notice), so those answer `closed-here`; `ownRequestInput` allows 4,000 characters but `data-requests.summary` keeps 2,000, so the server and the form cap it at 2,000 (`SUMMARY_MAX`).
+- **Audit actor.** Consent and request writes from My IIIC reach the audit log through the plugin by field name, but with no actor: the plugin reads `req.user`, and a customer is never one (D-127). `account:<id>` on those entries needs a change to `src/plugins/auditLog.ts` (for example reading an account actor from `req.context`), which is not slice C's file.
+- **`/account/privacy/closed`** reads the session first and sends a signed-in person back to the page, otherwise shows fixed words. If B's `(account)` layout redirects every signed-out visitor, this page needs an exception there, or the closing action should lead elsewhere.
+- **Layout.** The pages use `iiic-page-narrow`; drop it if B's layout already wraps children in a page container.
+- **Int test.** Closing ("keeps bookings, payments and invoices and removes the user, sessions and links") is an `it.todo`: it is A's `CloseAccount`, to write against the real function after the join.
+- **E2E.** Skipped without `ACCOUNTS_TEST_CODE`; CI needs it set (and `BETTER_AUTH_SECRET`). The sign-in helper reads A's steps by docs/20 §4.1's labels ("Email address", "Send me a code", "Six-digit code", "Sign in", "Full name", the account notice's words as the box's label, "I am 18 or older", "Create my account"); adjust if A's markup differs.
+- **I-67.** A request made here is marked verified by `oneTimeCode` at creation, as docs/20 §7.5 says; the lawyer confirms whether a session's code verifies a data request.
