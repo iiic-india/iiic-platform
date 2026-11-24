@@ -12,7 +12,7 @@ Branch `m6/join`, pushed to `origin m6/core`. No PR, no merge to main.
 ## This round (M5 landed on main at 52e0590)
 
 1. [x] Merge origin/main (M5) into m6/join (0d3d53c)
-2. [x] Wire O4, O7, O8, C5, B8, B9 (a09aafc); tests still to write
+2. [x] Wire O4, O7, O8, C5, B8, B9 (a09aafc); tests tests/unit/automationsPrivacy.spec.tsx
    - M5 emitted no dataRequest/incident events and no attendance events: M6 added afterChange
      hooks (src/lib/automations/privacy/hooks.ts, booking/attendance.ts) on DataRequests,
      Incidents, Bookings; CERTIFICATE_LISTENERS reads the catalogue (C5).
@@ -20,7 +20,7 @@ Branch `m6/join`, pushed to `origin m6/core`. No PR, no merge to main.
      `waits-on-feedback-page`.
    - O7 complaint-ack sets complaintCopySentAt after send (src/lib/messaging/afterSent.ts).
    - Template loads now get the message's variant (privacy-deadline, incident-alert steps).
-3. [ ] Check O5-purge-missing-pages registered and scheduled nightly
+3. [x] O5-purge-missing-pages: registered and scheduled 02:00 IST (asserted in the catalogue test)
 4. [ ] One migration `m6_messaging` (job slugs, `enquiries` subject)
 5. [ ] D-100 to D-107 in docs/decisions.md (template row to D-108); I-56 onward in docs/09;
        docs/README.md; docs/19 true to the build

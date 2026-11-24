@@ -100,6 +100,11 @@ describe('the automation catalogue', () => {
     // 08:30 IST is 03:00 UTC; Monday 09:00 IST is Monday 03:30 UTC.
     expect(SCHEDULES['O1-daily-digest']?.cron).toBe('0 0 3 * * *')
     expect(SCHEDULES['O2-weekly-report']?.cron).toBe('0 30 3 * * 1')
+    // M2's 404-log purge (O5) runs nightly at 02:00 IST, registered with the other tasks.
+    expect(SCHEDULES['O5-purge-missing-pages']?.cron).toBe('0 30 20 * * *')
+    expect(jobs.tasks?.find((task) => task.slug === 'O5-purge-missing-pages')?.schedule).toEqual([
+      { cron: '0 30 20 * * *', queue: 'default' },
+    ])
     expect(
       withSchedule({ slug: 'B4-expire-holds', handler: async () => ({ output: {} }) }).schedule,
     ).toEqual([{ cron: '0 * * * * *', queue: 'default' }])
