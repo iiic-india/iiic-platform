@@ -503,6 +503,21 @@ describe('generated, previewed, sent and tracked', () => {
     expect(named('proposal.viewed')).toHaveLength(1)
   })
 
+  it('gives staff and previews the PDF without counting it as the client’s view', async () => {
+    const before = await version(first)
+    const opened = await proposals.open(await fresh(), {
+      token: tokenOf(firstLink),
+      now: clock.now,
+      countView: false,
+    })
+    if (!opened.ok) throw new Error(opened.error.code)
+    expect(new TextDecoder().decode(opened.value.pdf.slice(0, 5))).toBe('%PDF-')
+    const after = await version(first)
+    expect(after.tracking?.viewCount).toBe(before.tracking?.viewCount)
+    expect(after.tracking?.lastViewedAt).toBe(before.tracking?.lastViewedAt)
+    expect(named('proposal.viewed')).toHaveLength(1)
+  })
+
   it('closes a replaced link once the next version is sent, and a withdrawn one', async () => {
     const made = await proposals.createVersion(await as(staff.owner), { proposalId: proposal.id })
     if (!made.ok) throw new Error(made.error.code)
