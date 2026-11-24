@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 
 import { toFlags, type Flags } from './flags'
 import { toLegalInformation, type LegalInformation } from './legal'
@@ -23,12 +23,18 @@ export async function readLegalInformation(payload: Payload): Promise<LegalInfor
   return toLegalInformation(settings)
 }
 
-export async function readFlags(payload: Payload): Promise<Flags> {
+/**
+ * The feature flags. Given the request, they are read on its transaction's connection: a caller
+ * that holds a transaction must pass it, or it waits for a second connection from a pool that
+ * concurrent requests may have emptied (src/payload.config.ts).
+ */
+export async function readFlags(payload: Payload, req?: PayloadRequest): Promise<Flags> {
   const settings = await payload.findGlobal({
     slug: 'settings',
     select: { flags: true },
     depth: 0,
     overrideAccess: true,
+    ...(req ? { req } : {}),
   })
   return toFlags(settings)
 }

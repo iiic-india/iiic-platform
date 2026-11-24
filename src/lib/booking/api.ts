@@ -388,7 +388,8 @@ export async function bookSlot(
     context.price,
   )
   if (!price.ok) return price
-  const flags = await readFlags(req.payload)
+  // On the request's own connection: the booking flow calls this inside its transaction.
+  const flags = await readFlags(req.payload, req)
   // A free option shows no total, as the flow's review draws none for it.
   const inForce = price.value && price.value.totalPaise > 0 ? price.value.totalPaise : null
   if (

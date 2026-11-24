@@ -23,5 +23,5 @@ Working notes; deleted in the last commit of this batch. One commit per finding.
 - [ ] B8 · welcome email promises more than an issue holds
 
 ## CI
-- [ ] First joined run (45390762347) checked and anything it found fixed
+- [x] First joined run (45390762347): bookingConcurrency timed out at 5 s. Cause: two transactions plus the adapter's permanently held client filled the pool of 3, and bookSlot read the flags on a second connection. Fixed: flags read on the transaction, pool 4 (docs/12).
 - [ ] Final run green
