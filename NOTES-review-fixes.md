@@ -22,7 +22,7 @@ Working notes; deleted in the last commit of this batch. One commit per finding.
 - [x] A6 · newsletter signup has no Turnstile and only an in-memory limit
 - [x] B3 · price guard scope; a hit fails instead of skipping silently (decision row)
 - [x] B5 · Today and Reports still say messaging waits on M6
-- [ ] B7 · one-click unsubscribe as multipart/form-data
+- [x] B7 · one-click unsubscribe as multipart/form-data
 - [ ] B8 · welcome email promises more than an issue holds
 
 ## CI

@@ -20,7 +20,11 @@ export const PRIVATE_HEADERS = {
   'X-Robots-Tag': 'noindex, nofollow',
 } as const
 
-/** The body as plain fields, from a form post or JSON; null when it is too large or unreadable. */
+/**
+ * The body as plain fields, from a form post (URL-encoded or multipart: RFC 8058 lets a mail
+ * client send its one-click unsubscribe either way) or JSON; null when it is too large or
+ * unreadable. A multipart body's files are ignored: only its text fields count.
+ */
 export async function readFields(request: Request): Promise<Record<string, unknown> | null> {
   const length = Number(request.headers.get('content-length') ?? '0')
   if (Number.isFinite(length) && length > MAX_BODY_BYTES) return null
@@ -33,6 +37,14 @@ export async function readFields(request: Request): Promise<Record<string, unkno
       return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
         ? (parsed as Record<string, unknown>)
         : null
+    }
+    if (type.includes('multipart/form-data')) {
+      const form = await new Response(raw, { headers: { 'content-type': type } }).formData()
+      const fields: Record<string, unknown> = {}
+      for (const [key, value] of form.entries()) {
+        if (typeof value === 'string') fields[key] = value
+      }
+      return fields
     }
     return Object.fromEntries(new URLSearchParams(raw))
   } catch {

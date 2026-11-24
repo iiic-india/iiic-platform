@@ -151,6 +151,36 @@ describe('the one-click unsubscribe (RFC 8058)', () => {
     )
   })
 
+  it('unsubscribes from a multipart one-click body as from a URL-encoded one (RFC 8058)', async () => {
+    const token = await signLink({ purpose: 'unsubscribe', subjectId: 9, expiresInDays: 1 })
+    const body = new FormData()
+    body.set('List-Unsubscribe', 'One-Click')
+    const multipart = new Request(
+      `${SITE}/api/newsletter/unsubscribe?token=${encodeURIComponent(token)}`,
+      { method: 'POST', body },
+    )
+    expect(multipart.headers.get('content-type')).toMatch(/^multipart\/form-data; boundary=/)
+    const answer = await unsubscribeRoute.POST(multipart)
+    expect(answer.status).toBe(200)
+    expect(unsubscribe).toHaveBeenCalledWith(
+      expect.objectContaining({ user: null }),
+      9,
+      'email',
+      expect.any(Date),
+    )
+  })
+
+  it('reads the visible page’s form sent as multipart too', async () => {
+    const token = await signLink({ purpose: 'unsubscribe', subjectId: 9, expiresInDays: 1 })
+    const body = new FormData()
+    body.set('token', token)
+    const answer = await unsubscribeRoute.POST(
+      new Request(`${SITE}/api/newsletter/unsubscribe`, { method: 'POST', body }),
+    )
+    expect(answer.headers.get('location')).toBe(`${SITE}/newsletter?state=unsubscribed`)
+    expect(unsubscribe).toHaveBeenCalledWith(expect.anything(), 9, 'web', expect.any(Date))
+  })
+
   it('refuses a token it did not sign, unsubscribing nobody', async () => {
     const foreign = await foreignToken('unsubscribe', 9)
     const withdrawOnly = await signLink({ purpose: 'withdraw', subjectId: 9, expiresInDays: 1 })
