@@ -14,6 +14,7 @@ import {
 import { inTransaction, keepOk } from '@/lib/booking/guard'
 import { extendHold } from '@/lib/booking/holds'
 import { loadBooking, loadService } from '@/lib/booking/load'
+import { siteverify, turnstileKeys } from '@/lib/enquiryForms/turnstile'
 import { env } from '@/lib/env'
 import { FakeGateway } from '@/lib/payments/fakeGateway'
 import { gatewayFor } from '@/lib/payments/gatewayFor'
@@ -24,6 +25,7 @@ import { readFlags } from '@/lib/settings/source'
 import { consentTextsInForce } from './catalogue'
 import { requestClientRefund } from './clientRefund'
 import { consentsGiven, isFlowType, parseDetails, REQUIRED_CONSENT } from './details'
+import { bookingLimitsOn, bookingsStoreHere, guardBooking, recentBookings } from './guards'
 import { bookInfoSession } from './info'
 import { recordPersonAndConsents } from './people'
 import {
@@ -39,9 +41,12 @@ import {
  * The booking flow's server actions (docs/03 F3, F4; docs/16 §5, §6). Each one checks its input
  * with Zod first, and then who is asking: a visitor may list times and book; the payment step and
  * the confirmation act only for the browser that made the booking (the booking cookie); the
- * manage page acts only with its link's token. The booking module and the payments module do the
- * work, on the server; the browser's word confirms nothing (CLAUDE.md #5). No answer carries a
- * person's details, a token hash or, while prices are hidden, a price.
+ * manage page acts only with its link's token. A booking, a reschedule and a cancellation are
+ * refused on a preview, which shares production's database, and a new booking passes Turnstile
+ * (where its keys are set) and the rate limits first (src/lib/bookingFlow/guards.ts, D-108). The
+ * booking module and the payments module do the work, on the server; the browser's word confirms
+ * nothing (CLAUDE.md #5). No answer carries a person's details, a token hash or, while prices are
+ * hidden, a price.
  */
 
 export type ActionError =
@@ -58,6 +63,9 @@ export type ActionError =
   | { code: 'payments-off' }
   | { code: 'price-changed' }
   | { code: 'failed' }
+  | { code: 'preview' }
+  | { code: 'turnstile' }
+  | { code: 'limit' }
 
 type Answer<T> = { ok: true; value: T } | { ok: false; error: ActionError }
 
@@ -147,6 +155,8 @@ const SubmitInput = z.strictObject({
   checkoutKey: CheckoutKey,
   choice: Choice,
   details: z.record(z.string(), z.unknown()),
+  // Turnstile's token, where its keys are set (src/lib/bookingFlow/guards.ts).
+  turnstileToken: z.string().max(2048).optional(),
 })
 
 export type Submitted = {
@@ -168,8 +178,23 @@ export async function submitBookingAction(raw: unknown): Promise<Answer<Submitte
   }
 
   const payload = await flowPayload()
-  const req = await flowRequest(payload)
   const now = new Date()
+  const config = env()
+  const keys = turnstileKeys(config)
+  const evidence = await requestEvidence()
+  const refusal = await guardBooking(
+    { email: details.value.email, turnstileToken: input.data.turnstileToken },
+    {
+      storesHere: bookingsStoreHere(config),
+      limitsOn: bookingLimitsOn(config),
+      turnstile: keys ? siteverify(keys.secretKey) : null,
+      address: evidence.ip,
+      now,
+      recent: recentBookings(payload),
+    },
+  )
+  if (refusal) return fail({ code: refusal })
+  const req = await flowRequest(payload)
   if (choice.kind !== 'event') {
     const service = await loadService(req, choice.serviceId)
     if (!service || service.type !== type) return fail({ code: 'not-found' })
@@ -179,7 +204,6 @@ export async function submitBookingAction(raw: unknown): Promise<Answer<Submitte
   if (!texts.some((text) => text.purpose === REQUIRED_CONSENT)) {
     return fail({ code: 'consent-text-missing' })
   }
-  const evidence = await requestEvidence()
   const sessionDetails = details.value.type === 'session' ? details.value : null
   const callDetails = details.value.type === 'call' ? details.value : null
   const flowDetails = {
@@ -474,6 +498,7 @@ export async function rescheduleAction(
 ): Promise<Answer<{ ref: string; startsAt: string | null; manageToken: string | null }>> {
   const input = RescheduleInput.safeParse(raw)
   if (!input.success) return fail({ code: 'invalid-input', fields: [] })
+  if (!bookingsStoreHere(env())) return fail({ code: 'preview' })
   const req = await flowRequest()
   return inTransaction(
     req,
@@ -518,6 +543,7 @@ export type Cancelled = {
 export async function cancelAction(raw: unknown): Promise<Answer<Cancelled>> {
   const input = CancelInput.safeParse(raw)
   if (!input.success) return fail({ code: 'invalid-input', fields: [] })
+  if (!bookingsStoreHere(env())) return fail({ code: 'preview' })
   const payload = await flowPayload()
   const req = await flowRequest(payload)
   const now = new Date()

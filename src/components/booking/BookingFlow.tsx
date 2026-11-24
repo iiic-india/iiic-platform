@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 
+import { TurnstileWidget } from '@/components/forms/TurnstileWidget'
 import { listTimesAction, submitBookingAction } from '@/lib/bookingFlow/actions'
 import type { FlowCatalogue, FlowOption, FlowService } from '@/lib/bookingFlow/catalogue'
 import { dayLong, whenOf } from '@/lib/bookingFlow/format'
@@ -106,11 +107,14 @@ export function BookingFlow({
   catalogue,
   checkoutKey,
   today,
+  turnstileSiteKey = null,
 }: {
   type: FlowType
   catalogue: FlowCatalogue
   checkoutKey: string
   today: string
+  /** Turnstile's site key where both its keys are set (src/lib/bookingFlow/guards.ts). */
+  turnstileSiteKey?: string | null
 }) {
   const router = useRouter()
   const isInfo = type === 'info'
@@ -144,6 +148,8 @@ export function BookingFlow({
   const [errors, setErrors] = useState<FieldError[]>([])
   const [problem, setProblem] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
+  // A Turnstile token is good for one check: the widget is drawn again after each refusal.
+  const [attempt, setAttempt] = useState(0)
 
   const heading = useRef<HTMLHeadingElement>(null)
   // The new step's heading takes the focus; the first step's does not, on arrival.
@@ -268,8 +274,15 @@ export function BookingFlow({
           }
     setSending(true)
     setProblem(null)
+    const turnstileToken = turnstileSiteKey ? read('cf-turnstile-response') : undefined
     try {
-      const answer = await submitBookingAction({ type, checkoutKey, choice, details })
+      const answer = await submitBookingAction({
+        type,
+        checkoutKey,
+        choice,
+        details,
+        ...(turnstileToken ? { turnstileToken } : {}),
+      })
       if (answer.ok) {
         router.push(
           answer.value.next === 'pay'
@@ -287,6 +300,7 @@ export function BookingFlow({
     } catch {
       setProblem(errorMessage('failed'))
     }
+    setAttempt((count) => count + 1)
     setSending(false)
   }
 
@@ -794,6 +808,14 @@ export function BookingFlow({
                 {review.pay && !asking ? FLOW_COPY.payAfter : FLOW_COPY.noPaymentNow}
               </p>
             </div>
+
+            {turnstileSiteKey ? (
+              <TurnstileWidget
+                key={attempt}
+                siteKey={turnstileSiteKey}
+                action={`booking-${type}`}
+              />
+            ) : null}
 
             <div className="full iiic-row">
               <button

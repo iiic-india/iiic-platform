@@ -1,4 +1,5 @@
 import type { FlowType } from '@/lib/bookingFlow/details'
+import { CONTACT } from '@/lib/site/contact'
 
 /**
  * Every string the booking flow and the manage page show (en-IN), in one place (CLAUDE.md,
@@ -138,6 +139,10 @@ export const FLOW_COPY = {
     'not-allowed': 'This change cannot be made online. Please contact IIIC.',
     failed: 'Something went wrong on our side. Nothing was booked. Please try again.',
     'invalid-input': 'Some answers need checking.',
+    // On a preview of the site, whose visitors are IIIC's team (src/lib/bookingFlow/guards.ts).
+    preview: `This preview of the site takes no bookings and changes none. Write to ${CONTACT.email} instead.`,
+    turnstile: 'The spam check did not go through. Nothing was booked. Press the button again.',
+    limit: `Nothing was booked: the site takes only a few bookings a day from one person. To book another, write to ${CONTACT.email}.`,
   } as Record<string, string>,
 } as const
 
