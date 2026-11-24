@@ -236,3 +236,38 @@ test('public pages run under the policy without a violation', async ({ page }) =
   }
   expect(violations).toEqual([])
 })
+
+// My IIIC (docs/20 §5, §10; D-67): every page and file under /account is never indexed and never
+// cached, whoever asks: signed out (the way to sign in), with accounts switched off (the 404) or
+// signed in (tests/e2e/myIiic.e2e.spec.ts checks the pages themselves). The beacon is left off
+// them, so the policy names no analytics origin there.
+const MY_IIIC_PATHS = [
+  '/account',
+  '/account/bookings',
+  '/account/bookings/IIIC-S-00000',
+  '/account/bookings/IIIC-S-00000/invite.ics',
+  '/account/documents',
+  '/account/documents/certificates/1/pdf',
+  '/account/invoices',
+  '/account/invoices/1/pdf',
+]
+
+test.describe('My IIIC’s headers', () => {
+  test.skip(
+    ({ isMobile }) => isMobile,
+    'These checks only make requests: the desktop project runs them',
+  )
+
+  test('are noindex and private, no-store on every page and file, signed in or not', async ({
+    request,
+  }) => {
+    for (const path of MY_IIIC_PATHS) {
+      const response = await request.get(path, { maxRedirects: 0 })
+      const headers = response.headers()
+      expect(headers['x-robots-tag'], path).toBe('noindex')
+      expect(headers['cache-control'], path).toMatch(/private/)
+      expect(headers['cache-control'], path).toMatch(/no-store/)
+      expect(headers['content-security-policy'] ?? '', path).not.toContain('cloudflareinsights')
+    }
+  })
+})

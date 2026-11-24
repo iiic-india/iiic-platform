@@ -1,10 +1,5 @@
 import type { AccountSession } from '@/lib/accounts/contract'
-import {
-  DOCUMENT_HEADERS,
-  documentId,
-  documentResponse,
-  downloadOwnDocument,
-} from '@/lib/accounts/documents'
+import { documentId, documentResponse, downloadOwnDocument } from '@/lib/accounts/documents'
 import { accountRequest, openMyIiicRoute } from '@/lib/accounts/scope'
 import { answeringFaults } from '@/lib/monitoring/routeFaults'
 
@@ -29,6 +24,6 @@ const send = answeringFaults(
  */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const account = await openMyIiicRoute('/account/invoices')
-  if (!account) return new Response('Not found', { status: 404, headers: DOCUMENT_HEADERS })
+  if (account instanceof Response) return account
   return send(account, documentId((await params).id))
 }

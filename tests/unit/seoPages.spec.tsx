@@ -251,6 +251,21 @@ const NEWSLETTER = [
   'w/[token]/page.tsx',
 ]
 
+/**
+ * My IIIC's records (Release 2; docs/20 §5), which are never indexed: each lies under the private
+ * route /account, which sends noindex and stays out of the sitemap (src/lib/security/headers.ts),
+ * and sets robots noindex in its own metadata; the 404 there is the site's own. They draw
+ * themselves in tests/unit/accountsScope.spec.ts and end to end in tests/e2e/myIiic.e2e.spec.ts.
+ */
+const MY_IIIC = [
+  { file: '(account)/account/page.tsx', path: '/account' },
+  { file: '(account)/account/bookings/page.tsx', path: '/account/bookings' },
+  { file: '(account)/account/bookings/[ref]/page.tsx', path: '/account/bookings/IIIC-S-00000' },
+  { file: '(account)/account/documents/page.tsx', path: '/account/documents' },
+  { file: '(account)/account/invoices/page.tsx', path: '/account/invoices' },
+  { file: '(account)/account/not-found.tsx', path: '/account/no-such-page' },
+]
+
 beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_SITE_URL', ORIGIN)
   request.path = ''
@@ -281,6 +296,7 @@ describe('the pages under src/app/(platform)', () => {
         ...SECTIONS,
         ...NOT_FOUND,
         ...BOOKING,
+        ...MY_IIIC,
       ]
         .map((entry) => (typeof entry === 'string' ? entry : entry.file))
         .sort(),
@@ -288,6 +304,10 @@ describe('the pages under src/app/(platform)', () => {
   })
 
   it.each(BOOKING)('keeps the booking page $path out of search', ({ path }) => {
+    expect(isNoindexPath(path), path).toBe(true)
+  })
+
+  it.each(MY_IIIC)('keeps My IIIC’s $path out of search', ({ path }) => {
     expect(isNoindexPath(path), path).toBe(true)
   })
 })

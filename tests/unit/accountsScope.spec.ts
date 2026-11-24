@@ -747,7 +747,11 @@ describe('the door', () => {
     const actual = await door()
     vi.mocked(getFlags).mockResolvedValue({ accountsEnabled: false } as never)
     await expect(actual.openMyIiic('/account')).rejects.toThrow(/NEXT_HTTP_ERROR_FALLBACK;404/)
-    expect(await actual.openMyIiicRoute('/account')).toBeNull()
+    const answer = await actual.openMyIiicRoute('/account/documents')
+    expect(answer instanceof Response && answer.status).toBe(404)
+    expect(answer instanceof Response && answer.headers.get('cache-control')).toBe(
+      'private, no-store',
+    )
   })
 
   it('sends a person with no session to sign in, with the page to come back to', async () => {
@@ -756,6 +760,14 @@ describe('the door', () => {
     await expect(actual.openMyIiic('/account/bookings')).rejects.toThrow(/NEXT_REDIRECT/)
     await expect(actual.requireAccount({ next: 'https://elsewhere.invalid' })).rejects.toThrow(
       /NEXT_REDIRECT/,
+    )
+    const answer = await actual.openMyIiicRoute('/account/invoices')
+    expect(answer instanceof Response && answer.status).toBe(303)
+    expect(answer instanceof Response && answer.headers.get('location')).toBe(
+      '/login?next=%2Faccount%2Finvoices',
+    )
+    expect(answer instanceof Response && answer.headers.get('cache-control')).toBe(
+      'private, no-store',
     )
   })
 })

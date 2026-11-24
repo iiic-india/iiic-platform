@@ -1,6 +1,6 @@
 import { ownBookingInvite } from '@/lib/accounts/bookings'
 import type { AccountSession } from '@/lib/accounts/contract'
-import { accountRequest, openMyIiicRoute } from '@/lib/accounts/scope'
+import { accountRequest, openMyIiicRoute, PRIVATE_FILE_HEADERS } from '@/lib/accounts/scope'
 import { env } from '@/lib/env'
 import { answeringFaults } from '@/lib/monitoring/routeFaults'
 
@@ -8,19 +8,15 @@ export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 export const maxDuration = 15
 
-const HEADERS = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' }
-
-const notFound = () => new Response('Not found', { status: 404, headers: HEADERS })
-
 const send = answeringFaults(
   'Sending a My IIIC calendar invite',
   async (account: AccountSession, reference: string) => {
     const invite = await ownBookingInvite(await accountRequest(), account, reference, env().siteUrl)
-    if (!invite) return notFound()
+    if (!invite) return new Response('Not found', { status: 404, headers: PRIVATE_FILE_HEADERS })
     return new Response(invite.ics, {
       status: 200,
       headers: {
-        ...HEADERS,
+        ...PRIVATE_FILE_HEADERS,
         'Content-Type': 'text/calendar; charset=utf-8',
         'Content-Disposition': `attachment; filename="${invite.reference}.ics"`,
       },
@@ -36,6 +32,6 @@ const send = answeringFaults(
  */
 export async function GET(_request: Request, { params }: { params: Promise<{ ref: string }> }) {
   const account = await openMyIiicRoute('/account/bookings')
-  if (!account) return notFound()
+  if (account instanceof Response) return account
   return send(account, (await params).ref)
 }

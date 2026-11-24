@@ -61,13 +61,32 @@ export async function openMyIiic(next: string): Promise<AccountSession> {
   return requireAccount({ next })
 }
 
+/** What a My IIIC route sends besides its body: never cached, never indexed, no referrer. */
+export const PRIVATE_FILE_HEADERS = {
+  'Cache-Control': 'private, no-store',
+  'Referrer-Policy': 'no-referrer',
+  'X-Robots-Tag': 'noindex, nofollow',
+  'X-Content-Type-Options': 'nosniff',
+} as const
+
 /**
- * The same door for a route handler, which answers with a response of its own: null while
- * `accountsEnabled` is off (the route answers 404), else the session or the way to sign in.
+ * The same door for a route handler (a file to download), which answers with a response of its
+ * own and never a cached one: the 404 while `accountsEnabled` is off, a 303 to /login (with the
+ * page to come back to) for nobody signed in, else the session.
  */
-export async function openMyIiicRoute(next: string): Promise<AccountSession | null> {
-  if (!(await getFlags()).accountsEnabled) return null
-  return requireAccount({ next })
+export async function openMyIiicRoute(next: string): Promise<AccountSession | Response> {
+  if (!(await getFlags()).accountsEnabled) {
+    return new Response('Not found', { status: 404, headers: PRIVATE_FILE_HEADERS })
+  }
+  const account = await getAccountSession()
+  if (account) return account
+  return new Response(null, {
+    status: 303,
+    headers: {
+      ...PRIVATE_FILE_HEADERS,
+      Location: next.startsWith('/account') ? `/login?next=${encodeURIComponent(next)}` : '/login',
+    },
+  })
 }
 
 /** The audit log's actor for a customer's own act: the account, never an address (docs/20 §8). */

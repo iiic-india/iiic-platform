@@ -20,7 +20,13 @@ import type {
   ListOwnCertificates,
   ListOwnInvoices,
 } from './contract'
-import { accountActor, findOwnCertificates, findOwnInvoices, ownPersonIds } from './scope'
+import {
+  accountActor,
+  findOwnCertificates,
+  findOwnInvoices,
+  ownPersonIds,
+  PRIVATE_FILE_HEADERS,
+} from './scope'
 
 /**
  * My IIIC's documents and invoices (docs/20 §7.3, §7.4; D-118, D-124).
@@ -163,14 +169,6 @@ function audit(
   return recordAudit(req, { action, entity, entityId }, accountActor({ accountId }))
 }
 
-/** What the PDF routes send besides the file: never cached, never indexed, no referrer. */
-export const DOCUMENT_HEADERS = {
-  'Cache-Control': 'private, no-store',
-  'Referrer-Policy': 'no-referrer',
-  'X-Robots-Tag': 'noindex, nofollow',
-  'X-Content-Type-Options': 'nosniff',
-} as const
-
 /**
  * A download's answer: the PDF as an attachment; a 404 for a document that is not the account's,
  * not available (revoked, no PDF) or, for an invoice, while prices are hidden, so none of these
@@ -181,7 +179,7 @@ export function documentResponse(result: Awaited<ReturnType<DownloadOwnDocument>
     return new Response(Buffer.from(result.value.pdf), {
       status: 200,
       headers: {
-        ...DOCUMENT_HEADERS,
+        ...PRIVATE_FILE_HEADERS,
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${result.value.filename}"`,
       },
@@ -190,7 +188,7 @@ export function documentResponse(result: Awaited<ReturnType<DownloadOwnDocument>
   const status = result.error.code === 'storage-missing' ? 503 : 404
   return new Response(status === 503 ? 'Not available here' : 'Not found', {
     status,
-    headers: DOCUMENT_HEADERS,
+    headers: PRIVATE_FILE_HEADERS,
   })
 }
 
