@@ -169,7 +169,7 @@ export function AddDetailFlow({
           </form>
         ) : null}
         <a className="iiic-link" href={permalink}>
-          {DETAIL_COPY.different}
+          {copy.different}
         </a>
       </div>
     </>

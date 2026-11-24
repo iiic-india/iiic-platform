@@ -1,4 +1,5 @@
 import type { GivablePurpose, OwnRequestType } from '@/lib/accounts/contract'
+import { SIGNUP_COPY } from '@/lib/newsletter/copy'
 import { purposeLabel } from '@/lib/privacy/purposes'
 import { CONTACT } from '@/lib/site/contact'
 
@@ -32,7 +33,7 @@ export function countWord(count: number): string {
 export const PAGE_COPY = {
   title: 'Privacy and settings · My IIIC',
   heading: 'Privacy and settings',
-  lead: 'What you have agreed to, the messages you get from IIIC, your requests about your data, and how you sign in.',
+  lead: 'Change what you have agreed to, ask about your data, and see where you are signed in.',
   sections: 'On this page',
 } as const
 
@@ -40,14 +41,13 @@ export const AGREED_COPY = {
   heading: 'What you have agreed to',
   lead: 'Every consent on record for you, and when it last changed. A withdrawal takes effect at once.',
   purpose: 'Consent',
-  state: 'Now',
+  state: 'Status',
   since: 'Since',
   action: 'Change',
   granted: 'Given',
   withdrawn: 'Withdrawn',
   withdraw: 'Withdraw',
   close: 'Close your account',
-  closeHelp: 'Closing your account ends this one.',
   none: 'No consent of yours is on record.',
 } as const
 
@@ -55,8 +55,9 @@ export const MESSAGES_COPY = {
   heading: 'Messages from IIIC',
   offers: {
     marketingEmail: {
-      title: 'The Journal by email',
-      lead: 'Once a month: a lead article from the Journal and up to two short pieces.',
+      // The newsletter signup's own words for the Journal (docs/19 §8).
+      title: SIGNUP_COPY.title,
+      lead: SIGNUP_COPY.lead,
       button: 'Send me the Journal',
       given: 'Recorded. The Journal comes to your email address from its next issue.',
       held: 'You get the Journal by email. To stop it, withdraw it above.',
@@ -73,16 +74,15 @@ export const MESSAGES_COPY = {
     GivablePurpose,
     { title: string; lead: string | null; button: string; given: string; held: string }
   >,
-  agree: 'What you agree to',
   needsEmail: 'To get the Journal by email, add an email address under Your contact details.',
-  nothing: 'Nothing more to choose here.',
+  nothing: 'No messages are offered here just now.',
 } as const
 
 export const REQUEST_TYPE_LABELS: Record<OwnRequestType | 'withdrawal', string> = {
   access: 'A copy of your data',
   correction: 'A correction to your data',
   erasure: 'Erasure of your data',
-  nomination: 'A nominee to act for you',
+  nomination: 'A nominee for your data',
   privacyGrievance: 'A privacy grievance',
   consumerComplaint: 'A consumer complaint',
   withdrawal: 'Withdrawal of a consent',
@@ -103,7 +103,7 @@ export const REQUEST_COPY = {
   lead: 'Ask for a copy of your data, a correction or its erasure, name a nominee, or raise a privacy grievance or a complaint. IIIC’s office acknowledges every request within 48 hours.',
   type: 'What you are asking for',
   choose: 'Choose one',
-  summary: 'Tell us more',
+  summary: 'Details',
   summaryHelp:
     'What you would like done. The office reads it and replies to you. Up to 2,000 characters.',
   button: 'Send the request',
@@ -116,9 +116,10 @@ export const REQUEST_COPY = {
   received: 'Received',
   status: 'Status',
   due: 'Due by',
-  none: 'You have made no requests about your data.',
+  none: 'Requests you send appear here, with the day each is due.',
   checkOne: 'Check 1 answer',
-  checkMany: (count: number) => `Check ${countWord(count)} answers`,
+  // As the kit's error summary and the site's other forms word it (src/brand/gallery.html).
+  checkMany: (count: number) => `Check ${count} answers`,
   notSent: 'The request was not sent',
   errors: {
     type: 'Choose what you are asking for.',
@@ -152,12 +153,14 @@ export const DETAIL_COPY = {
     label: 'Email address',
     help: 'We send a six-digit code to this address.',
     invalid: 'Enter an email address, like name@example.com.',
+    different: 'Use a different address',
   },
   whatsapp: {
     heading: 'Add a mobile number',
     label: 'Mobile number',
     help: 'We send a six-digit code to this number on WhatsApp.',
     invalid: 'Enter a 10-digit mobile number.',
+    different: 'Use a different number',
   },
   send: 'Send me a code',
   codeHeading: 'Enter your code',
@@ -166,7 +169,6 @@ export const DETAIL_COPY = {
   code: 'Six-digit code',
   confirm: 'Add it to my account',
   resend: 'Send a new code',
-  different: 'Use a different one',
   back: 'Back to privacy and settings',
   checkOne: 'Check 1 answer',
   notDone: 'That did not go through',
@@ -181,7 +183,7 @@ export const DETAIL_COPY = {
       'Codes on WhatsApp are not available just now. Add an email address instead.',
     'check-failed': 'The spam check did not go through. Send the form again.',
     'too-many': (at: string) =>
-      `We’ve sent several codes to this address. Use the latest, or ask again after ${at}.`,
+      `We’ve sent several codes already. Use the latest, or ask again after ${at}.`,
     busy: 'Many codes were asked for in the last few minutes. Try again shortly.',
     'already-yours': 'This is already on your account.',
     expired: 'That code has run out. Send a new code.',
@@ -197,7 +199,7 @@ export const DEVICES_COPY = {
   lead: 'Where you are signed in to My IIIC.',
   device: 'Device',
   signedIn: 'Signed in',
-  ends: 'Signed out by',
+  ends: 'Session ends',
   thisDevice: 'This device',
   aBrowser: 'A browser',
   browserCloses: 'When the browser closes',
@@ -234,8 +236,6 @@ export const CLOSE_COPY = {
     'Closing your account needs a sign-in within the last 10 minutes. Sign in again first, then close it.',
   button: 'Close my account',
   decline: 'No, thanks',
-  failed: 'That did not go through. Try again in a few minutes.',
-  closedHere: `This cannot be done from here just now. Write to ${OFFICE_EMAIL} instead.`,
 } as const
 
 export const CLOSED_COPY = {
@@ -263,8 +263,8 @@ export function outcomeText(outcome: Outcome): string {
   switch (outcome.code as DoneCode) {
     case 'withdrawn':
       return outcome.purpose
-        ? `Withdrawn: ${purposeLabel(outcome.purpose)}. It takes effect at once.`
-        : 'Withdrawn. It takes effect at once.'
+        ? `Withdrawn: ${purposeLabel(outcome.purpose)}. We have recorded it.`
+        : 'Withdrawn. We have recorded it.'
     case 'given':
       return outcome.purpose === 'marketingEmail' || outcome.purpose === 'marketingWhatsapp'
         ? MESSAGES_COPY.offers[outcome.purpose].given
