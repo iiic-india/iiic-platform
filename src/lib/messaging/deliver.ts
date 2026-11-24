@@ -11,7 +11,7 @@ import { IST } from '@/lib/time/ist'
 import { defaultMessagingDeps, type MessagingDeps } from './deps'
 import { messageKey, type CancelQueued, type Deliver, type PlannedMessage } from './operations'
 import { recordRow } from './outbox'
-import { plannedSendTime } from './policy'
+import { queueTiming } from './policy'
 import { cancelQueuedRows, inCallersTransaction } from './store'
 import { tryMessage } from './try'
 import type { SkipReason } from './types'
@@ -54,18 +54,13 @@ async function isCounsellingBooking(req: PayloadRequest, bookingId: number): Pro
 const validId = (id: unknown): id is number =>
   typeof id === 'number' && Number.isInteger(id) && id > 0
 
-/** When the planned message goes, or why it never will (its use has passed, or quiet hours). */
+/** When the planned message is queued for (src/lib/messaging/policy.ts, `queueTiming`). */
 async function timing(
   req: PayloadRequest,
   planned: PlannedMessage,
 ): Promise<{ sendAt: Date; skip?: SkipReason }> {
-  const sendBefore = planned.sendBefore ?? null
-  if (sendBefore && planned.sendAt.getTime() >= sendBefore.getTime()) {
-    return { sendAt: planned.sendAt, skip: 'too-late' }
-  }
   const quiet = planned.channel === 'whatsapp' ? await readQuietHours(req.payload) : undefined
-  const when = plannedSendTime(planned.sendAt, planned.channel, quiet, sendBefore)
-  return when ? { sendAt: when } : { sendAt: planned.sendAt, skip: 'quiet-hours-late' }
+  return queueTiming(planned, quiet)
 }
 
 export function deliverWith(deps: MessagingDeps): Deliver {

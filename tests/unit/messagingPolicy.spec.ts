@@ -7,6 +7,7 @@ import { messageKey } from '@/lib/messaging/operations'
 import {
   decideSend,
   plannedSendTime,
+  queueTiming,
   quietHoursEnd,
   type SendContext,
 } from '@/lib/messaging/policy'
@@ -150,6 +151,40 @@ describe('quiet hours', () => {
     expect(plannedSendTime(due, 'whatsapp')).toEqual(ist('2026-12-02T08:00:00'))
     expect(plannedSendTime(due, 'email')).toEqual(due)
     expect(plannedSendTime(due, 'whatsapp', undefined, ist('2026-12-02T08:00:00'))).toBeNull()
+  })
+
+  it('leaves the quiet hours’ last word to send time: a reminder is never dropped when queued', () => {
+    const due = ist('2026-12-01T22:00:00')
+    const session = ist('2026-12-02T07:30:00')
+    // Planned under the default window (to 08:00), which would deliver it after the session:
+    // it is queued for its own time, not skipped.
+    expect(
+      queueTiming({ sendAt: due, sendBefore: session, channel: 'whatsapp' }, undefined),
+    ).toEqual({ sendAt: due })
+    // By then the office has narrowed the quiet hours to end at 07:00: it goes at 07:00.
+    const narrowed = { start: '22:30', end: '07:00' }
+    expect(
+      decideSend({
+        ...base,
+        channel: 'whatsapp',
+        now: ist('2026-12-01T23:00:00'),
+        sendBefore: session,
+        quietHours: narrowed,
+      }),
+    ).toEqual({ action: 'defer', until: ist('2026-12-02T07:00:00'), reason: 'quiet-hours' })
+    // Under the window as planned, it is dropped then, at send time.
+    expect(decideSend({ ...base, channel: 'whatsapp', now: due, sendBefore: session })).toEqual({
+      action: 'skip',
+      reason: 'quiet-hours-late',
+    })
+    // A message whose use has already passed is the one thing refused when it is queued.
+    expect(
+      queueTiming({ sendAt: session, sendBefore: session, channel: 'whatsapp' }, undefined),
+    ).toEqual({ sendAt: session, skip: 'too-late' })
+    // Still in time: moved to the window's end, and checked again when it is due.
+    expect(queueTiming({ sendAt: due, channel: 'whatsapp' }, undefined)).toEqual({
+      sendAt: ist('2026-12-02T08:00:00'),
+    })
   })
 })
 

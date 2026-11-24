@@ -137,3 +137,22 @@ export function plannedSendTime(
   if (sendBefore && when.getTime() >= sendBefore.getTime()) return null
   return when
 }
+
+/**
+ * When a planned message is queued for, or why it never can go (its use has already passed).
+ * Quiet hours move a WhatsApp message to their end when that is still in time; when it is not,
+ * the message is queued for its own time all the same and the quiet hours as they stand when it
+ * is due decide (`decideSend`): a reminder is dropped as `quiet-hours-late` at send time, never at
+ * planning, so the settings in force when it would go are the ones that count.
+ */
+export function queueTiming(
+  planned: { sendAt: Date; sendBefore?: Date | null; channel: Channel },
+  quiet: QuietHours | undefined,
+): { sendAt: Date; skip?: SkipReason } {
+  const sendBefore = planned.sendBefore ?? null
+  if (sendBefore && planned.sendAt.getTime() >= sendBefore.getTime()) {
+    return { sendAt: planned.sendAt, skip: 'too-late' }
+  }
+  const when = plannedSendTime(planned.sendAt, planned.channel, quiet, sendBefore)
+  return { sendAt: when ?? planned.sendAt }
+}
