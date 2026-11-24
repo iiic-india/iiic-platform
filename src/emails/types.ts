@@ -64,6 +64,8 @@ export type LoadTemplateData<Data> = (
     subject: Subject
     recipient: Recipient
     sendBefore?: Date | null
+    /** The message's variant (a reminder's step, a day), as planned. */
+    variant?: string | null
     transient?: Readonly<Record<string, string>>
   },
 ) => Promise<Result<Data, LoadError>>

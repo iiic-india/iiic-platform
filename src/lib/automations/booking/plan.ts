@@ -262,6 +262,13 @@ export function planReceipt(
 
 // ---- B8, B9 · after the session ----
 
+/**
+ * Whether the feedback page B8 links to exists (`/feedback/[token]`, its tokens and its form). It
+ * does not yet (docs/19 §10; I-17): M5 built the `feedback` collection the form writes to, not the
+ * public page, so B8 is wired to `booking.completed` and plans nothing until this is true.
+ */
+export const FEEDBACK_PAGE_BUILT = false
+
 /** B8: 2 hours after the session is marked completed, by email. */
 export function planFeedbackRequest(booking: BookingSnapshot | null, context: PlanContext): Plan {
   if (booking?.status !== 'completed') return EMPTY_PLAN

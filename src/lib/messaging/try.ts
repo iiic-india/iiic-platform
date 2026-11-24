@@ -169,6 +169,7 @@ async function render(
     subject,
     recipient,
     sendBefore: dateOf(message.sendBefore),
+    variant: message.variant ?? null,
     ...(transient ? { transient } : {}),
   })
   if (!loaded.ok) return { skip: 'stale' }

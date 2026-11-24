@@ -7,6 +7,7 @@ import { readQuietHours } from '@/lib/settings/source'
 
 import { runPlan, type CoreProvider, type PlanOutcome } from './core'
 import {
+  FEEDBACK_PAGE_BUILT,
   planChangeNotice,
   planConfirmation,
   planConsentReceipt,
@@ -75,8 +76,11 @@ export const BookingTaskEvent = z.discriminatedUnion('name', [
 export type BookingTaskEvent = z.infer<typeof BookingTaskEvent>
 
 export type BookingTaskOutput = PlanOutcome & {
-  /** `done`, or `ignored` for an event this task does not take, or `bad-input`. */
-  outcome: 'done' | 'ignored' | 'bad-input'
+  /**
+   * `done`, or `ignored` for an event this task does not take, or `bad-input`, or for B8
+   * `waits-on-feedback-page` until the page it links to exists.
+   */
+  outcome: 'done' | 'ignored' | 'bad-input' | 'waits-on-feedback-page'
 }
 
 export type BookingTaskDeps = { core?: CoreProvider; now?: Date }
@@ -169,6 +173,12 @@ export async function runBookingTask(
   if (!parsed.success) {
     req.payload.logger.warn({ msg: 'Booking message task input refused', task: slug })
     return { outcome: 'bad-input', ...NOTHING }
+  }
+  // B8 links to the feedback page, which is not built yet (docs/19 §10, I-17): until it is,
+  // the request would carry a placeholder that blocks it in production and fails it there, so
+  // nothing is planned and the job says why. The event is wired; the message waits on the page.
+  if (slug === 'B8-feedback-request' && !FEEDBACK_PAGE_BUILT) {
+    return { outcome: 'waits-on-feedback-page', ...NOTHING }
   }
   const core = await (deps.core ?? messagingCore)()
   if (!core.ok) throw new CoreNotWired()
