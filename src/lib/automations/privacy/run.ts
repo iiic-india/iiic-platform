@@ -131,7 +131,8 @@ async function runRequest(
   const steps = dueSteps(reminderTimes(automation, { received, acknowledgeBy, resolveBy }), now)
   for (const staffId of await requestKeepers(req, request.assignee)) {
     for (const { step, at, before } of steps) {
-      if (at.getTime() >= before.getTime()) continue
+      // Nothing to remind of once its deadline has passed (a request recorded late).
+      if (at.getTime() >= before.getTime() || before.getTime() <= now.getTime()) continue
       messages.push({
         automation,
         template: 'privacy-deadline',
