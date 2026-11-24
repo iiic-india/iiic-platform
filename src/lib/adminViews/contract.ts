@@ -23,10 +23,16 @@ export type ViewError =
   | { code: 'invalid'; issues: string[] }
   /** A part this view waits on is not built yet (M3's second half, M4, M6, R2). */
   | { code: 'not-built'; waitsOn: string }
+  /** No such record, or none this role may read: the same answer for both. */
+  | { code: 'not-found' }
 
 /** A part of a view that could not load: drawn as "could not load", never as zero. */
 export type Panel<T> =
-  { state: 'ready'; value: T } | { state: 'failed' } | { state: 'waits-on'; on: string }
+  | { state: 'ready'; value: T }
+  | { state: 'failed' }
+  | { state: 'waits-on'; on: string }
+  /** Not this role's to see (a practitioner's Today shows their schedule only, docs/05). */
+  | { state: 'not-shown' }
 
 // ---- Today (docs/05, Today) ----
 
@@ -68,6 +74,8 @@ export type TodayData = {
   privacy: Panel<{ id: number; label: string; href: string; dueAt: string; hoursLeft: number }[]>
   /** Failed jobs, errored webhooks, bounced messages (M6) (office only). */
   failures: Panel<{ kind: string; count: number; href: string }[]>
+  /** The parts of the day not built yet, each with what it waits on (docs/18 §10, C). */
+  waitsOn: { part: string; on: string }[]
 }
 
 export type LoadToday = (req: PayloadRequest, now: Date) => Promise<Result<TodayData, ViewError>>
@@ -118,6 +126,8 @@ export type ReportFigure = {
     | { kind: 'hours'; median: number }
     | null
   working: string
+  /** The table behind the figure, where it has parts (revenue by application, the funnel). */
+  table?: { label: string; value: string }[]
   href: string | null
   waitsOn: string | null
 }
@@ -131,23 +141,23 @@ export const REPORT_FIGURES = {
   courseEnrolmentsPerMonth: 'R2 (enrolments)',
   infoSessionToEnrolment: 'R2 (enrolments)',
   proposalCallsPerMonth: null,
-  teamMapToProposal: 'M4 (leads, proposals)',
+  teamMapToProposal: null,
   counsellingSessionsPerMonth: null,
   counsellingReturnRate: null,
   mapCompletion: 'R2 (the Map)',
   mapToBooking: 'R2 (the Map)',
   revenueByApplication: null,
   noShowRate: null,
-  leadResponseTime: 'M4 (leads)',
+  leadResponseTime: null,
   funnel: null,
 } as const satisfies Record<string, string | null>
 
 export type ReportKey = keyof typeof REPORT_FIGURES
 
 export const reportQuery = z.object({
-  /** The first and last day of the period, India time; a month by default. */
-  from: z.string().refine(isIstDay),
-  to: z.string().refine(isIstDay),
+  /** The first and last day of the period, India time; the current month by default. */
+  from: z.string().refine(isIstDay, 'Enter the day as YYYY-MM-DD.').optional(),
+  to: z.string().refine(isIstDay, 'Enter the day as YYYY-MM-DD.').optional(),
 })
 
 export type LoadReports = (
@@ -190,6 +200,7 @@ export type TimelineEntry = {
     | 'note'
     | 'message'
     | 'lead'
+    | 'activity'
     | 'enrolment'
   label: string
   href: string | null
@@ -197,6 +208,15 @@ export type TimelineEntry = {
 
 export type PersonTimeline = {
   personId: number
+  /** What this role may read of the record: a practitioner reads the name, mobile and email. */
+  person: {
+    fullName: string
+    mobile: string | null
+    email: string | null
+    preferredChannel: string | null
+  }
+  /** The purposes in force now, from the ledger (the office only; null for other roles). */
+  consents: { purpose: string; since: string }[] | null
   entries: TimelineEntry[]
   /** For an owner: how many session notes exist, never their words (docs/05). */
   notes: { count: number; latestAt: string | null } | null

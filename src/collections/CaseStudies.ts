@@ -3,6 +3,7 @@ import type { CollectionConfig, FieldAccess } from 'payload'
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { istDayField } from '@/fields/istDay'
+import { checkCaseStudy } from '@/lib/proof/caseStudies'
 
 /** A case study's address under /proof: small letters, digits and single hyphens. */
 const CASE_STUDY_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -30,8 +31,8 @@ const serverWritten: { create: FieldAccess; update: FieldAccess } = {
 /**
  * A case study (docs/04 `case_studies`; docs/05, Proof; docs/08 §6; docs/18 §6): an organisation's
  * problem, IIIC's approach and the outcomes, each outcome with its evidence; published only with
- * the client's written approval recorded and by an owner (the publish rule is builder C's hook,
- * as Testimonials has its own). Anyone reads a published one, never the approval record. The
+ * the client's written approval recorded and by an owner (src/lib/proof/caseStudies.ts, as
+ * Testimonials has its own). Anyone reads a published one, never the approval record. The
  * client is named as text until M4's `organisations` joins, when the link is added beside it.
  */
 export const CaseStudies: CollectionConfig = {
@@ -49,6 +50,8 @@ export const CaseStudies: CollectionConfig = {
     update: allow(POLICY.caseStudies.update),
     delete: allow(POLICY.caseStudies.delete),
   },
+  // The publish rule (src/lib/proof/caseStudies.ts): the client's approval, and an owner.
+  hooks: { beforeChange: [checkCaseStudy] },
   defaultSort: '-updatedAt',
   disableBulkEdit: true,
   fields: [

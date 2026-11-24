@@ -182,8 +182,11 @@ describe('notes and views at the boundary', () => {
   })
 
   it('names what each report waits on instead of drawing zero', () => {
-    expect(REPORT_FIGURES.leadResponseTime).toMatch(/^M4/)
+    expect(REPORT_FIGURES.courseEnrolmentsPerMonth).toMatch(/^R2/)
     expect(REPORT_FIGURES.mapCompletion).toMatch(/^R2/)
+    // M4 is joined: its two figures are computed now.
+    expect(REPORT_FIGURES.leadResponseTime).toBeNull()
+    expect(REPORT_FIGURES.teamMapToProposal).toBeNull()
     expect(REPORT_FIGURES.noShowRate).toBeNull()
   })
 })
