@@ -8,7 +8,7 @@ Working notes; deleted in the last commit of this batch. One commit per finding.
 - [x] B1 · booking emails to counselling clients carry no scope statement or crisis numbers; WhatsApp time-request text has no closing
 
 ## Fix, first group
-- [ ] A4 · a privacy request's person can be changed after the identity check
+- [x] A4 · a privacy request's person can be changed after the identity check
 - [ ] A5 · four token routes act on preview hosts (extend D-102)
 - [ ] B2 · a killed job stays `processing` for good; runs are not bounded by time; N4 sends inline
 - [ ] B4 · `not-found` load errors become a silent `stale` skip; consent receipt with no consents

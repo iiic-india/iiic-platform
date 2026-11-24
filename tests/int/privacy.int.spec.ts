@@ -285,6 +285,16 @@ describe('a requestâ€™s clocks and moves on save', () => {
     expect(unchanged.resolveBy).toBe(request.resolveBy)
   })
 
+  it('never points a request at another person once recorded', async () => {
+    const person = await newPerson('repointed')
+    const other = await newPerson('someone-else')
+    const request = await record(person, 'erasure')
+    await move(request.id, { status: 'acknowledged' })
+    await expect(move(request.id, { person: other.id })).rejects.toThrow()
+    const kept = await payload.findByID({ collection: 'data-requests', id: request.id, depth: 0 })
+    expect(kept.person).toBe(person.id)
+  })
+
   it('sets an incidentâ€™s CERT-In and Board deadlines from its detection', async () => {
     const incident = await payload.create({
       collection: 'incidents',
