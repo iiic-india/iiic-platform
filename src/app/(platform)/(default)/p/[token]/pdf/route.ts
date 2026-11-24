@@ -1,6 +1,7 @@
 import { createLocalReq, getPayload, type Payload } from 'payload'
 
 import { env } from '@/lib/env'
+import { actsHere } from '@/lib/messaging/deployment'
 import { pdfResponse } from '@/lib/pipeline/proposal/endpoints'
 import { isLinkToken, linkPath } from '@/lib/pipeline/proposal/tokens'
 import { countsAsClientView } from '@/lib/pipeline/proposal/viewCounts'
@@ -38,14 +39,15 @@ async function staffSignedIn(payload: Payload, headers: Headers): Promise<boolea
 /**
  * A proposal's PDF through its tracked link (docs/17 §5; src/lib/pipeline/proposal/track.ts).
  * This address, not the page, counts an opening: the first moves a sent proposal to viewed. A
- * closed or unknown link goes back to the page, which reads alike for every case. Staff signed in,
- * and anyone on a preview deployment, get the PDF without it counting as the client's view
- * (src/lib/pipeline/proposal/viewCounts.ts). Nothing is logged about the token, the proposal or
+ * closed or unknown link goes back to the page, which reads alike for every case. Staff signed in
+ * get the PDF without it counting as the client's view (src/lib/pipeline/proposal/viewCounts.ts).
+ * A preview, which shares production's database, looks nothing up and sends the link back to its
+ * page, which reads as closed there (D-102). Nothing is logged about the token, the proposal or
  * the client.
  */
 export async function GET(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params
-  if (!isLinkToken(token)) return toPage(token)
+  if (!isLinkToken(token) || !actsHere(env().VERCEL_ENV)) return toPage(token)
   const payload = await getPayload({ config })
   const req = await createLocalReq({}, payload)
   try {

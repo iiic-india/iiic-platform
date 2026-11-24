@@ -9,7 +9,7 @@ Working notes; deleted in the last commit of this batch. One commit per finding.
 
 ## Fix, first group
 - [x] A4 · a privacy request's person can be changed after the identity check
-- [ ] A5 · four token routes act on preview hosts (extend D-102)
+- [x] A5 · four token routes act on preview hosts (extend D-102)
 - [ ] B2 · a killed job stays `processing` for good; runs are not bounded by time; N4 sends inline
 - [ ] B4 · `not-found` load errors become a silent `stale` skip; consent receipt with no consents
 - [ ] B6 · B13 payment-link reminder ignores `booking.rescheduled`

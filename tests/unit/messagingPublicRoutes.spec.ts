@@ -29,17 +29,19 @@ vi.mock('@/lib/newsletter/withdrawals', () => ({
 vi.mock('@/lib/newsletter/subscriptions', () => ({
   unsubscribe: vi.fn(async () => ({ ok: true, value: {} })),
   signUp: vi.fn(async () => ({ ok: true, value: {} })),
+  confirmSignup: vi.fn(async () => ({ ok: true, value: { already: false } })),
 }))
 
-const { createLocalReq } = await import('payload')
+const { createLocalReq, getPayload } = await import('payload')
 const { signLink, verifyLink } = await import('@/lib/messaging/links')
 // Not a React hook, whatever its name says: the core's port takes a stand-in for the tests.
 const { useMessagingCore: registerCore } = await import('@/lib/automations/operations/core')
 const { withdrawPurpose } = await import('@/lib/newsletter/withdrawals')
-const { signUp, unsubscribe } = await import('@/lib/newsletter/subscriptions')
+const { confirmSignup, signUp, unsubscribe } = await import('@/lib/newsletter/subscriptions')
 const withdrawRoute = await import('@/app/(platform)/w/[token]/withdraw/route')
 const unsubscribeRoute = await import('@/app/api/newsletter/unsubscribe/route')
 const signupRoute = await import('@/app/api/newsletter/route')
+const confirmRoute = await import('@/app/api/newsletter/confirm/route')
 
 const SITE = 'https://example.invalid'
 
@@ -141,6 +143,57 @@ describe('the one-click unsubscribe (RFC 8058)', () => {
       expect(answer.status).toBe(400)
     }
     expect(unsubscribe).not.toHaveBeenCalled()
+  })
+})
+
+describe('the links from a message on a preview, which shares production’s database (D-102)', () => {
+  it('withdraw, unsubscribe and confirm nothing, look nothing up, and read as a link that does not work', async () => {
+    settings.current.VERCEL_ENV = 'preview'
+    const withdrawToken = await signLink({ purpose: 'withdraw', subjectId: 42, expiresInDays: 1 })
+    const withdrawn = await withdrawRoute.POST(
+      form(`${SITE}/w/${withdrawToken}/withdraw`, { purpose: 'marketingEmail' }),
+      { params: Promise.resolve({ token: withdrawToken }) },
+    )
+    expect(withdrawn.headers.get('location')).toBe(`${SITE}/newsletter?state=invalid-link`)
+
+    const unsubscribeToken = await signLink({
+      purpose: 'unsubscribe',
+      subjectId: 9,
+      expiresInDays: 1,
+    })
+    const oneClick = await unsubscribeRoute.POST(
+      form(`${SITE}/api/newsletter/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`, {
+        'List-Unsubscribe': 'One-Click',
+      }),
+    )
+    expect(oneClick.status).toBe(400)
+    const fromPage = await unsubscribeRoute.POST(
+      form(`${SITE}/api/newsletter/unsubscribe`, { token: unsubscribeToken }),
+    )
+    expect(fromPage.headers.get('location')).toBe(`${SITE}/newsletter?state=invalid-link`)
+
+    const confirmed = await confirmRoute.POST(
+      form(`${SITE}/api/newsletter/confirm`, { token: 'A'.repeat(43) }),
+    )
+    expect(confirmed.headers.get('location')).toBe(`${SITE}/newsletter?state=invalid-link`)
+
+    expect(withdrawPurpose).not.toHaveBeenCalled()
+    expect(unsubscribe).not.toHaveBeenCalled()
+    expect(confirmSignup).not.toHaveBeenCalled()
+    expect(getPayload).not.toHaveBeenCalled()
+  })
+
+  it('act locally and on production', async () => {
+    for (const vercelEnv of [undefined, 'production']) {
+      settings.current.VERCEL_ENV = vercelEnv
+      const token = await signLink({ purpose: 'withdraw', subjectId: 42, expiresInDays: 1 })
+      const answer = await withdrawRoute.POST(
+        form(`${SITE}/w/${token}/withdraw`, { purpose: 'marketingEmail' }),
+        { params: Promise.resolve({ token }) },
+      )
+      expect(answer.headers.get('location')).toBe(`${SITE}/w/${token}?state=done`)
+    }
+    expect(withdrawPurpose).toHaveBeenCalledTimes(2)
   })
 })
 
