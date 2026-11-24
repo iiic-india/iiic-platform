@@ -55,6 +55,7 @@ const LOADERS: Record<
     | 'notes'
     | 'certificatesIssue'
     | 'certificatesRevoke'
+    | 'invoicePdf'
   >,
   (req: PayloadRequest) => Promise<unknown>
 > = {

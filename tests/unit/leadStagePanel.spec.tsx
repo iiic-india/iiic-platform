@@ -34,7 +34,9 @@ vi.mock('@payloadcms/ui', () => ({
 }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }))
 
-const { LeadStage } = await import('@/components/admin/pipeline/LeadStage')
+const { LeadStage: LeadStageField } = await import('@/components/admin/pipeline/LeadStage')
+/** The server component as the admin calls it: a function of its props. */
+const LeadStage = LeadStageField as unknown as (props: never) => Promise<ReactElement | null>
 const { LeadStagePanel } = await import('@/components/admin/pipeline/LeadStagePanel')
 
 type Staff = { id: number; roles: string[]; active?: boolean; _strategy?: string } | null
@@ -43,9 +45,7 @@ function serverProps(user: Staff, lead: { kind: string; stage: string } | null) 
   const findByID = vi.fn(async () => lead)
   return {
     findByID,
-    props: { id: 7, payload: { findByID }, req: { user } } as unknown as Parameters<
-      typeof LeadStage
-    >[0],
+    props: { id: 7, payload: { findByID }, req: { user } } as never,
   }
 }
 

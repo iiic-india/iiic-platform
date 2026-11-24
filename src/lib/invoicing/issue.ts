@@ -23,6 +23,7 @@ import {
   type MirrorTotals,
   type SupplierDetails,
 } from './lines'
+import { invoicePdfKey } from './store'
 
 /**
  * B3 and the credit note on a refund (docs/06 B3, B7; docs/16 §2, §5; D-13). On a captured
@@ -197,7 +198,7 @@ async function attachPdf(
       pdf: rendered.error.code === 'placeholders' ? 'waiting-for-inputs' : 'not-stored',
     }
   }
-  const key = `invoices/${mirror.id}.pdf`
+  const key = invoicePdfKey(mirror.id)
   const stored = await deps.store.put(key, rendered.value.pdf)
   if (!stored.ok) return { mirror, pdf: 'not-stored' }
   return { mirror: await mark(payload, mirror, { pdfKey: key }), pdf: 'stored' }

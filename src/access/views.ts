@@ -36,6 +36,9 @@ export const VIEW_POLICY = {
   certificatesIssue: ['owner', 'operator'],
   // Revoking or reissuing one: a destructive act with a reason (docs/05, principle 4).
   certificatesRevoke: ['owner'],
+  // A client's invoice or credit-note PDF from the private bucket, audited (D-88, M7): the roles
+  // that read invoices (POLICY.invoices).
+  invoicePdf: ['owner', 'finance'],
 } as const satisfies Record<string, readonly Role[]>
 
 export type AdminView = keyof typeof VIEW_POLICY

@@ -5,7 +5,7 @@ import { hasRole, isActive } from '@/access/roles'
 import {
   LEAD_STAGES,
   type LeadKind,
-  type LeadStage,
+  type LeadStage as Stage,
   REASON_STAGES,
   STAGE_MOVES,
 } from '@/lib/pipeline/stages'
@@ -15,7 +15,7 @@ import { LeadStagePanel } from './LeadStagePanel'
 import styles from './Pipeline.module.css'
 
 const LABELS = Object.fromEntries(LEAD_STAGES.map(({ value, label }) => [value, label])) as Record<
-  LeadStage,
+  Stage,
   string
 >
 
@@ -42,7 +42,7 @@ export const LeadStage: UIFieldServerComponent = async ({ id, payload, req }) =>
   })
   if (!lead?.kind || !lead.stage) return null
   const kind = lead.kind as LeadKind
-  const stage = lead.stage as LeadStage
+  const stage = lead.stage as Stage
   const moves = STAGE_MOVES[kind][stage] ?? []
 
   return (
