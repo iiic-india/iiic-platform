@@ -12,13 +12,15 @@ import { zohoConfig } from '@/lib/zoho/config'
 
 import type { DocumentsDeps } from './deps'
 import { issueCreditNoteForRefund, issueInvoiceForPayment, type DocumentOutcome } from './issue'
+import { invoiceFilesFor } from './store'
 
 /**
  * The documents module this server runs with: Zoho Books when src/lib/env.ts holds its four
  * settings and this is not a preview (src/lib/zoho/config.ts), the PDF renderer with the
- * serverless Chromium on Vercel, and no PDF store yet: the private bucket's name is not among the
- * validated settings, so the client's PDF is not made and Zoho's own copy stands until it is
- * (proposed in the slice's report). One Zoho client per server, so its access token is reused.
+ * serverless Chromium on Vercel, and the private bucket for the client's PDF (src/lib/invoicing/
+ * store.ts, M7): R2's private bucket where it is configured, a local folder off Vercel, and none on
+ * a Vercel deployment without it, where the PDF is not made and Zoho's own copy stands. One Zoho
+ * client per server, so its access token is reused.
  */
 
 let zoho: Result<ZohoBooks, ZohoError> | undefined
@@ -33,7 +35,7 @@ function zohoBooks(): Result<ZohoBooks, ZohoError> {
 export function documentsDeps(): DocumentsDeps {
   return {
     zoho: zohoBooks,
-    store: null,
+    store: invoiceFilesFor(env()),
     renderPdf: (doc) => renderInvoicePdf(doc, { serverless: Boolean(env().VERCEL_ENV) }),
     now: () => new Date(),
   }

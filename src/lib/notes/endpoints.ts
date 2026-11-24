@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { PayloadHandler, PayloadRequest } from 'payload'
 
+import { viewRefusal } from '@/access/views'
 import { NOTES_COPY, type NoteErrorCode } from '@/components/admin/notes/notesCopy'
 
 import type { NoteError } from './contract'
@@ -16,8 +17,9 @@ import {
 } from './notes'
 
 /**
- * The notes panel's routes under /api/notes (docs/18 §3). Each calls the notes module, which asks
- * `viewRefusal` first, before it reads any input (CLAUDE.md #6). Answers are never cached; an
+ * The notes panel's routes under /api/notes (docs/18 §3). A practitioner's routes ask
+ * `viewRefusal` here, before the query or the body is read, and the notes module asks again; the
+ * owner's count is refused by the module before its one number is used (CLAUDE.md #6). Answers are never cached; an
  * error names what to do, never a note's words. A note is opened by POST, so no prefetch or
  * cache ever opens one.
  */
@@ -59,8 +61,11 @@ function failed(req: PayloadRequest, what: string, error: unknown) {
 }
 
 const guarded =
-  (what: string, handler: PayloadHandler): PayloadHandler =>
+  (what: string, handler: PayloadHandler, practitionersOnly = true): PayloadHandler =>
   async (req) => {
+    // The user, the code and the role, before the query or the body is read (CLAUDE.md #6).
+    const refusal = practitionersOnly ? viewRefusal(req.user, 'notes') : null
+    if (refusal) return refused({ code: 'refused', refusal })
     try {
       return await handler(req)
     } catch (error) {
@@ -132,5 +137,5 @@ export const notesHandlers = {
   write: guarded('Writing a note', write),
   update: guarded('Changing a note', update),
   open: guarded('Opening a note', open),
-  count: guarded('Counting notes', count),
+  count: guarded('Counting notes', count, false),
 } satisfies Record<string, PayloadHandler>

@@ -118,3 +118,10 @@ export const OFFICE_VIEW_COPY = {
     'The calendar is not connected, so clients are offered none of these yet (I-24).',
   minutes: (minutes: number) => `${minutes} minutes`,
 } as const
+
+/** The PDF link on an invoice's page (InvoicePdf, D-88). */
+export const INVOICE_PDF_COPY = {
+  download: 'Download the PDF',
+  help: 'The client’s copy, from the private documents bucket. Each download is recorded in the audit log.',
+  none: 'No PDF of this document yet. Zoho Books holds the issued copy.',
+} as const

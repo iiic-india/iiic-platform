@@ -184,6 +184,7 @@ describe('M5 views: the user, the code and the role first (CLAUDE.md #6)', () =>
       notes: ['practitioner'],
       certificatesIssue: ['owner', 'operator'],
       certificatesRevoke: ['owner'],
+      invoicePdf: ['owner', 'finance'],
     }
     for (const view of views) {
       const allowed = ROLES.filter((role) => viewRefusal(staff([role]), view) === null)

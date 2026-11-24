@@ -1,7 +1,9 @@
-import { createLocalReq, getPayload } from 'payload'
+import { createLocalReq, getPayload, type Payload } from 'payload'
 
+import { env } from '@/lib/env'
 import { pdfResponse } from '@/lib/pipeline/proposal/endpoints'
 import { isLinkToken, linkPath } from '@/lib/pipeline/proposal/tokens'
+import { countsAsClientView } from '@/lib/pipeline/proposal/viewCounts'
 import { proposals } from '@/lib/pipeline/proposal/wiring'
 import config from '@payload-config'
 
@@ -23,19 +25,35 @@ const toPage = (token: string) =>
     headers: { ...PRIVATE, Location: isLinkToken(token) ? linkPath(token) : '/' },
   })
 
+/** Whether someone on IIIC's staff is signed in on this browser (any staff session counts). */
+async function staffSignedIn(payload: Payload, headers: Headers): Promise<boolean> {
+  try {
+    const { user } = await payload.auth({ headers })
+    return user?.collection === 'users'
+  } catch {
+    return false
+  }
+}
+
 /**
  * A proposal's PDF through its tracked link (docs/17 §5; src/lib/pipeline/proposal/track.ts).
  * This address, not the page, counts an opening: the first moves a sent proposal to viewed. A
- * closed or unknown link goes back to the page, which reads alike for every case. Nothing is
- * logged about the token, the proposal or the client.
+ * closed or unknown link goes back to the page, which reads alike for every case. Staff signed in,
+ * and anyone on a preview deployment, get the PDF without it counting as the client's view
+ * (src/lib/pipeline/proposal/viewCounts.ts). Nothing is logged about the token, the proposal or
+ * the client.
  */
-export async function GET(_request: Request, context: { params: Promise<{ token: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params
   if (!isLinkToken(token)) return toPage(token)
   const payload = await getPayload({ config })
   const req = await createLocalReq({}, payload)
   try {
-    const opened = await proposals().open(req, { token, now: new Date() })
+    const countView = countsAsClientView({
+      vercelEnv: env().VERCEL_ENV,
+      staffSignedIn: await staffSignedIn(payload, request.headers),
+    })
+    const opened = await proposals().open(req, { token, now: new Date(), countView })
     if (!opened.ok) return toPage(token)
     const response = pdfResponse(opened.value.pdf, opened.value.filename)
     for (const [key, value] of Object.entries(PRIVATE)) response.headers.set(key, value)

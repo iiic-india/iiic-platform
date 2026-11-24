@@ -55,6 +55,7 @@ const LOADERS: Record<
     | 'notes'
     | 'certificatesIssue'
     | 'certificatesRevoke'
+    | 'invoicePdf'
   >,
   (req: PayloadRequest) => Promise<unknown>
 > = {
@@ -146,5 +147,14 @@ describe('the audit log CSV', () => {
     expect(response.status).toBe(401)
     expect(response.headers.get('cache-control')).toContain('no-store')
     expect(await response.json()).toMatchObject({ code: 'sign-in' })
+  })
+
+  it('refuses before it reads the body (M7)', async () => {
+    for (const user of [null, staff(['operator']), staff(['owner'], { _strategy: 'local-jwt' })]) {
+      const json = vi.fn(async () => ({ code: '123456' }))
+      const response = await auditCsvHandler(Object.assign(reqAs(user), { json }))
+      expect(response.status).toBeGreaterThanOrEqual(401)
+      expect(json).not.toHaveBeenCalled()
+    }
   })
 })

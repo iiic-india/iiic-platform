@@ -3,6 +3,8 @@ import { bookingInvite } from '@/lib/calendar/bookingInvite'
 import { env } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+export const maxDuration = 15
 
 const HEADERS = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' }
 

@@ -7,6 +7,7 @@ import {
   withoutBlanks,
 } from '@/lib/certificates/http'
 import { certificateActions } from '@/lib/certificates/wiring'
+import { answeringFaults } from '@/lib/monitoring/routeFaults'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -18,7 +19,7 @@ export const maxDuration = 60
  * page then names the new ID. Owners only, signed in with the code; checked before the body is
  * read. A field left blank keeps what printed.
  */
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+async function post(request: Request, context: { params: Promise<{ id: string }> }) {
   const staff = await staffRequest(request, 'certificatesRevoke')
   if (!staff.ok) return staff.response
   const body = await readJson(request)
@@ -31,3 +32,5 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (!reissued.ok) return refusalResponse(reissued.error)
   return json({ ...reissued.value, message: COPY.reissued(reissued.value.certificateId) })
 }
+
+export const POST = answeringFaults('Reissuing a certificate', post)

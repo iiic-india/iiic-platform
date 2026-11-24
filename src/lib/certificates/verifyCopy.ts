@@ -16,6 +16,7 @@ export const VERIFY_COPY = {
   button: 'Check',
   errorTitle: 'Check 1 answer',
   idInvalid: 'Enter the certificate ID as printed, such as IIIC-C-2027-0001-9.',
+  busy: 'Too many checks reached the site in the last minute, so this one was not made. Try again in a minute.',
 
   resultHeading: (id: string) => `Certificate ${id}`,
   notFoundHeading: 'No certificate matches',

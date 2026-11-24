@@ -101,11 +101,13 @@ export type SendVersion = (
  * The tracked link (`/p/[token]`): the version's PDF to whoever holds the token, while the
  * version is the one sent and the proposal is sent, viewed or accepted. Each opening of the PDF
  * counts; the first sets `firstViewedAt`, moves a sent proposal to viewed and emits
- * `proposal.viewed`. Anything else answers `link-closed`, which the page shows without saying why.
+ * `proposal.viewed`. An opening that is not the client's (`countView: false`: signed-in staff, or a
+ * preview deployment) gets the PDF and counts nothing. Anything else answers `link-closed`, which
+ * the page shows without saying why.
  */
 export type OpenTrackedLink = (
   req: PayloadRequest,
-  input: { token: string; now: Date },
+  input: { token: string; now: Date; countView?: boolean },
 ) => Promise<Result<{ versionId: number; pdf: Uint8Array; filename: string }, ProposalError>>
 
 /** What the client answered, recorded by the office: accepted or declined, with a note. */

@@ -43,8 +43,10 @@ const PHONE = new RegExp(
 const TOKEN = /\b[A-Za-z0-9_-]{32,}\b/g
 // The addresses whose last part is a key or a booking's reference, however short: a certificate's
 // verify link (a 22-character token, docs/18 §4; `/verify` on the institute host), a booking's
-// manage link and payment pages (docs/16 §6), a proposal's tracked link (docs/17 §5).
-const KEY_PATH = /(\/(?:institute\/)?verify|\/b|\/p|\/book\/(?:pay|confirmed))\/[A-Za-z0-9_-]{8,}/gi
+// manage link and payment pages (docs/16 §6), a proposal's tracked link (docs/17 §5), and a
+// practitioner's private calendar feed (a 22-character token, docs/16 §7).
+const KEY_PATH =
+  /(\/(?:institute\/)?verify|\/b|\/p|\/book\/(?:pay|confirmed)|\/api\/calendar\/feed)\/[A-Za-z0-9_-]{8,}/gi
 
 /** An error message without the personal data and secrets a library may have put in it. */
 export function scrubText(text: string): string {
