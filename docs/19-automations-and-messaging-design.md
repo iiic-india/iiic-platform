@@ -10,7 +10,7 @@ The design M6 is built to: the job runner, the messaging core, the provider webh
 - No price in any message while `prices_public` is off, except the person's own payment (§7; D-21, D-24). No dark patterns: no urgency words, no pre-ticked anything, unsubscribe in one click.
 - Everything builds, runs and tests without Resend, AiSensy or the cron secret: each channel answers `not-configured` and the message falls back or is skipped, visibly (§3).
 - Every route and admin action checks the user, the role and the two-factor session first, or its own secret (CLAUDE.md #6). The interface pass is parked: every admin view in M6 is plain Payload (lists, forms, buttons that work from the keyboard), accessible and correct; drag-and-drop and D-78's component stack come later.
-- This branch commits no migration. The lead generates M6's one migration when the branches are joined, in order (the six collections, the `people` fields, `payload-jobs`' concurrency key and the task-slug enum, and the `payload-jobs-stats` global that scheduling adds).
+- One migration, `src/migrations/20261124_100324_m6_messaging.ts`, generated after M3, M4 and M5 were merged (the six collections, the `people` fields, `payload-jobs`' concurrency key and every M6 task slug, `messages.subjectCollection` with `enquiries`, and the `payload-jobs-stats` global that scheduling adds); never edited by hand.
 
 ## 2. The job runner
 
@@ -70,8 +70,8 @@ The catalogue is code (`src/lib/automations/catalogue.ts`); listeners, schedules
 | B5 | `booking.confirmed`, `.rescheduled`, `.cancelled` | 24 h before; none if booked under 24 h ahead | W, E fallback | T | `B5-reminder-24h` · B | — |
 | B6 | same | 2 h before; online 30 min; dropped if quiet hours push past start | W | T | `B6-reminder-2h` · B | — |
 | B7 | `booking.rescheduled`, `.cancelled`, `refund.processed` | at once | E, W, A (staff email) | T | `B7-change-notice` · B | — |
-| B8 | `booking.completed` | +2 h | E | T | `B8-feedback-request` · B | attendance marking; the feedback page (M5) |
-| B9 | `booking.noShow` | +1 h | E (never W for counselling) | T | `B9-no-show` · B | attendance marking |
+| B8 | `booking.completed` (attendance marking, §15) | +2 h | E | T | `B8-feedback-request` · B | the feedback page and its tokens (I-17): plans nothing until then (D-107) |
+| B9 | `booking.noShow` (attendance marking, §15) | +1 h | E (never W for counselling) | T | `B9-no-show` · B | — |
 | B10 | `booking.slotLost` | at once | E, A (staff email) | T | `B10-slot-lost` · B | — |
 | B11 | schedule | 23:00 IST | A (digest) | — | M3 `B11-reconcile` | — |
 | B12 | `booking.requested` | at once; flagged on Today at 24 h | E, W, A | T | `B12-time-request-ack` · B | — |
@@ -90,15 +90,15 @@ The catalogue is code (`src/lib/automations/catalogue.ts`); listeners, schedules
 | O1 | schedule | 08:30 IST | E | I | `O1-daily-digest` · C | — |
 | O2, O10 | schedule | Monday 09:00 IST | E | I | `O2-weekly-report` · C | — |
 | O3 | `message.failed`, `automation.failed` | at once; owner emailed at 3 in an hour | A, E | I | `O3-failure-alert` · A | — |
-| O4 | `dataRequest.received` | at once; 50% and 80% of the deadline | E, A | T | `O4-data-request` · C | M5 |
+| O4 | `dataRequest.received` (any kind but a complaint) | at once; 50% and 80% of the time to resolve | E, A | T | `O4-data-request` · C | — |
 | O5 | schedule | nightly | — | — | `O5-retention` · C (and M2's purge) | — |
 | O6 | schedule | daily | A | I | `O6-backup-check` · C | a Supabase token |
-| O7 | `dataRequest.received` (complaint) | at once; 24 h; before each deadline | E, A | T | `O7-complaint` · C | M5 |
-| O8 | `incident.opened` | at once, 4, 6, 48, 72 h | A, E | I | `O8-incident-timers` · C | M5 |
+| O7 | `dataRequest.received` (complaint or grievance) | at once, with the copy as recorded; 24 h before the 48-hour and one-month marks | E, A | T | `O7-complaint` · C | — |
+| O8 | `incident.opened` | at once, 4, 6, 48, 72 h, each clock while it runs | A, E | I | `O8-incident-timers` · C | — |
 | O9 | `message.suppressed` | at once | A | — | `O9-bounce-complaint` · C | — |
 | V1 | `review.consentRequested` | at once; one reminder after 5 days | E (W by hand in an open window) | Op | `V1-review-consent-request` · C | — |
 | V2 | `consent.withdrawn` (publication) | at once | E, A | T | `V2-withdrawal-confirmation` · C | — |
-| C5 | `certificate.issued` | at once | E, D | T | `C5-certificate-email` · C | M5 |
+| C5 | `certificate.issued` | at once | E (the PDF by reply) | T | `C5-certificate-email` · C | a signed link to the private bucket, for the PDF |
 
 ## 6. Timing, rescheduling and cancellation
 
@@ -133,7 +133,7 @@ O1 (08:30 IST) goes to active owners and operators; O2 with O10 (Monday 09:00) t
 | Proposed: "three attempts with backoff (1 min, 10 min, 1 h)" read as a first try and three retries | Built so |
 | Proposed: a WhatsApp send whose answer never came is `unknown`, not resent (at most once) | Built so |
 | Proposed: a paused automation skips its due messages, which staff may queue again | Skipped as `paused`; queuing one again needs a `skipped → queued` move (for `paused` only) in `states.ts`, a foundation file: not built |
-| Proposed at the build, not taken at the M4 join: the price rule `ownPayment` (receipt, payment link, refund, slot lost) showing the person's own amount while prices are hidden. D-21 and the owner's D-94 hold: only the payment link staff send carries its amount (D-24, `paymentLink`); the receipt, the refund and the slot-lost notice leave it out while prices are hidden | Built so |
+| D-101 (not taken at the M4 join): the price rule `ownPayment` (receipt, payment link, refund, slot lost) showing the person's own amount while prices are hidden. D-21 and the owner's D-94 hold: only the payment link staff send carries its amount (D-24, `paymentLink`); the receipt, the refund and the slot-lost notice leave it out while prices are hidden | Built so |
 | Proposed: the newsletter goes by Resend's batch endpoint from the platform's own list, not a Resend audience, so the ledger stays the one record (amends D-10) | Built so |
 | Proposed: a pending signup keeps the address 7 days only to send the confirmation; the consent is recorded at confirmation, before the person is stored | Built so; the lawyer confirms (I-22) |
 | Proposed: STOP on WhatsApp suppresses WhatsApp for that number and withdraws `marketingWhatsapp`; booking messages then go by email | Built so |
@@ -147,13 +147,13 @@ O1 (08:30 IST) goes to active owners and operators; O2 with O10 (Monday 09:00) t
 | A read-only Supabase management token for O6 | O6 reports "not set up" on Today |
 | Cost lines and the WhatsApp quality rating for O10 | Placeholders in the report |
 | Working days and holidays for P1, P5, P6 | Monday to Friday, no holidays |
-| Attendance marking emitting `booking.completed` and `booking.noShow`; the feedback page | B8, B9 built and tested on the events; live when those land |
+| Attendance marking emitting `booking.completed` and `booking.noShow` | Built at the M5 join (§15; D-107) |
 | Proposed: a message about a booking that has no manage token yet issues one derived from a key under `PAYLOAD_SECRET` and the booking's id (§13), so a retry or a fallback gives the same link | Built so; a booking whose token the client's browser holds gets no link by email |
 | Proposed: every task, M3's included, takes the shared `onFail`, so a job that spends its retries raises `automation.failed` for O3 | Built so |
 | Proposed: `refund.awaitingApproval` sends no message; owners see it on Today and in O1's digest | Built so (no listener) |
 | Proposed: the manage link (`/b/[token]`) is not in the booking emails, since its token is not stored; they say "reply to this email or call" (the kit's words) until a signed `manage` link exists | Built so |
-| Proposed: B3's email states the document's number, date and total and offers the PDF by reply, until a signed link to the private documents bucket exists | Built so |
-| B8's link: the feedback page and its tokens (M5) | The email carries `[[TODO: …, I-17]]` where the button goes, which blocks the send in production; the WhatsApp feedback template is submitted with M5 |
+| Proposed: B3's email states the document's number and date (and its total only while prices are public, D-101) and offers the PDF by reply, until a signed link to the private documents bucket exists | Built so |
+| B8's link: the feedback page and its tokens (not built in M5) | B8 plans nothing until `FEEDBACK_PAGE_BUILT` is true (D-107); the email's placeholder `[[TODO: …, I-17]]` stays for that day; the WhatsApp feedback template is submitted with the page |
 | B13's message needs the payment link's address | `payments.linkUrl`, written when the link is made (`src/lib/payments/links.ts`) |
 
 ## 11. The test plan
@@ -177,7 +177,7 @@ The foundation is frozen for the builders: the collections' fields, `src/access/
 - **B · Templates and the B-series**: `src/emails/booking/` (every booking template, email and WhatsApp params, the `load` functions, the hosted PNGs in `public/email/`), `src/lib/automations/booking/` (planners and re-planning), `src/jobs/bookingMessages.ts`; the WhatsApp template texts for submission (`docs/content/whatsapp-templates.md`, for Meta).
 - **C · The rest and the newsletter**: `src/emails/other/`, `src/lib/automations/operations/` (digest sections, report, O5 retention, O6, O9), `src/lib/automations/reviews/` (V1, V2), `src/lib/automations/pipeline/` (P1 to P7 against `04`, live with M4), `src/lib/automations/privacy/` (O4, O7, O8, live with M5), `src/lib/newsletter/`, `src/app/api/newsletter/`, `src/app/(platform)/newsletter/`, `src/app/(platform)/w/[token]/`, hooks in `Subscribers.ts` and `NewsletterIssues.ts`, `src/jobs/operations.ts`, `src/jobs/newsletter.ts`; C5 (live with M5).
 
-Waits on other milestones: O4, O7, O8 and C5 on M5's data requests, incidents and certificates; B8 and B9 on attendance marking and the feedback page. Each is built and tested on its event now and goes live when the emitter lands.
+Waits on other milestones: none since the M5 join (§15). B8 waits on the feedback page (I-17); O6 on a Supabase token; B3 on Zoho Books; WhatsApp on the provider (I-03, I-40).
 
 ## 13. At the join (on M3)
 
@@ -202,3 +202,14 @@ M4 (docs/17) merged into this branch's base; what the join wired:
 - `messages.subjectCollection` gains `enquiries` (the join's migration covers it).
 
 **Review lessons applied at the M4 join** (M3's review, held to M6's own code): no amount in any message while prices are hidden but the payment link's (above, §7, §10); the Resend and WhatsApp webhooks and the newsletter's signup act on production only (`actsHere`, `src/lib/messaging/deployment.ts`), as the cron route already did; an office-made suppression is recorded as the office's (`source` is the server's); every server-owned field of M6's collections is held to that by a test (`tests/unit/messagingServerFields.spec.ts`); the withdraw and unsubscribe links work from the link alone and refuse any token this server did not sign (`tests/unit/messagingPublicRoutes.spec.ts`); quiet hours drop a message at send time only.
+
+## 15. At the join (on M5)
+
+M5 (docs/18) merged into this branch's base; what the join wired (D-106, D-107):
+
+- **Events.** M5 raised none of the events M6 listens to but `certificate.issued`, so the join adds them where the records change, each once, in the change's transaction, with the record's id only: a privacy request created raises `dataRequest.received`, an incident created raises `incident.opened` (`src/lib/automations/privacy/hooks.ts`, on `data-requests` and `incidents`), and a confirmed booking marked completed or a no-show raises `booking.completed` or `booking.noShow` (`src/lib/automations/booking/attendance.ts`, on `bookings`). M5's certificate listeners read C5 from the catalogue (`src/lib/certificates/events.ts`).
+- **O4 and O7** (`src/lib/automations/privacy/run.ts`, timing in `timing.ts`): the acknowledgement to the person at once (`data-request-ack`; `complaint-ack` with the complaint as recorded); reminders (`privacy-deadline`) to the assignee, else every active owner and the operator, at 50% and 80% of the time to resolve (O4) or 24 hours before the 48-hour and one-month marks (O7); a reminder whose deadline has passed is not planned, and of reminders already past only the latest is. A sent complaint acknowledgement records `complaintCopySentAt` (`src/lib/messaging/afterSent.ts`); the request's state stays the office's.
+- **O8**: every active owner, at once and at 4, 6, 48 and 72 hours from detection (`incident-alert`); a step already past when the incident is recorded is said in the opening alert, not sent on its own; each clock's step goes only while that clock runs (`incidentClockStates`).
+- **C5**: the holder's email (`certificate-issued`): the ID, the programme, the completion day, the verification page for the ID (`/institute/verify?id=`; the QR's token is kept as a hash only), LinkedIn's add-to-profile link, and the PDF by reply; a revoked certificate sends nothing.
+- **B8, B9**: B9 sends; B8 answers `waits-on-feedback-page` until the page exists.
+- **The core** passes a message's variant to its template's `load` (a reminder's step). Tests: `tests/unit/automationsPrivacy.spec.tsx`.
