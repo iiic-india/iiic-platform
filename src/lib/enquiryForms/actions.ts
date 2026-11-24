@@ -10,6 +10,7 @@ import { env } from '@/lib/env'
 import { reportError } from '@/lib/monitoring/sentry'
 import config from '@payload-config'
 
+import { formsStoreHere } from './deployment'
 import { recentEnquiries } from './limits'
 import { enquiryNotice } from './notice'
 import { registerOf } from './register'
@@ -24,7 +25,8 @@ import { receiveEnquiry } from './wiring'
  * form-builder plugin (OS-5). Each works without JavaScript, as a plain POST the page answers
  * with the form's next state, and with it, in place. A visitor needs no account, so there is no
  * user or role to check; what guards these is in submitEnquiry (src/lib/enquiryForms/submit.ts):
- * the trap, the timing, Turnstile where it is on, the rate limits and the consent in force.
+ * the trap, the timing, the consent in force, no storing on a preview, Turnstile where it is on
+ * and the rate limits.
  */
 
 async function send(
@@ -49,6 +51,7 @@ async function send(
     userAgent: request.get('user-agent'),
     referer: request.get('referer'),
     ownOrigin: (origin) => own.has(origin),
+    storesHere: formsStoreHere(settings),
     turnstile: keys ? siteverify(keys.secretKey) : null,
     recent: recentEnquiries(payload),
     noticeInForce: () => enquiryNotice(payload, now),
