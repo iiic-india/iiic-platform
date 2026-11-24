@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 
-import { CONSENT_PURPOSES, ENDED_IN_MY_IIIC } from '@/lib/privacy/purposes'
 import { RECIPIENT_KINDS, SUBJECT_COLLECTIONS } from '@/lib/messaging/types'
+import { CONSENT_PURPOSES, ENDED_IN_MY_IIIC } from '@/lib/privacy/purposes'
 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/accounts/purge', () => ({

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { createLocalReq, getPayload } from 'payload'
 
 import { FocusOnArrival } from '@/app/(platform)/newsletter/FocusOnArrival'
@@ -94,9 +95,9 @@ export default async function WithdrawPage({ params, searchParams }: Props) {
                 </span>
                 {ENDED_IN_MY_IIIC.includes(consent.purpose) ? (
                   // Withdrawing the account consent is closing the account, in My IIIC (D-113).
-                  <a className="iiic-btn iiic-btn-outline" href="/account/privacy">
+                  <Link className="iiic-btn iiic-btn-outline" href="/account/privacy">
                     {WITHDRAW_COPY.inMyIiic}
-                  </a>
+                  </Link>
                 ) : (
                   <form method="post" action={`/w/${token}/withdraw`}>
                     <input type="hidden" name="purpose" value={consent.purpose} />
