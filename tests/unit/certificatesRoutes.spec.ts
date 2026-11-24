@@ -71,37 +71,42 @@ describe('the routes refuse before they read anything', () => {
     ['finance', staff(['finance']), 403],
   ]
 
-  it.each(cases)('%s gets %i from every route', async (_who, user, status) => {
-    session.user = user
-    const { POST: preview } = await import('@/app/api/certificates/preview/route')
-    const { POST: issue } = await import('@/app/api/certificates/issue/route')
-    const { POST: revoke } = await import('@/app/api/certificates/[id]/revoke/route')
-    const { POST: reissue } = await import('@/app/api/certificates/[id]/reissue/route')
-    const { GET: pdf } = await import('@/app/api/certificates/[id]/pdf/route')
-    const { GET: recipients } = await import('@/app/api/certificates/recipients/route')
+  it.each(cases)(
+    '%s gets %i from every route',
+    async (_who, user, status) => {
+      session.user = user
+      const { POST: preview } = await import('@/app/api/certificates/preview/route')
+      const { POST: issue } = await import('@/app/api/certificates/issue/route')
+      const { POST: revoke } = await import('@/app/api/certificates/[id]/revoke/route')
+      const { POST: reissue } = await import('@/app/api/certificates/[id]/reissue/route')
+      const { GET: pdf } = await import('@/app/api/certificates/[id]/pdf/route')
+      const { GET: recipients } = await import('@/app/api/certificates/recipients/route')
 
-    const bodies = [
-      post('/api/certificates/preview', {}),
-      post('/api/certificates/issue', {}),
-      post('/api/certificates/1/revoke', { reason: 'Example reason' }),
-      post('/api/certificates/1/reissue', { reason: 'Example reason' }),
-    ]
-    const answers = [
-      await preview(bodies[0]!.request),
-      await issue(bodies[1]!.request),
-      await revoke(bodies[2]!.request, params('1')),
-      await reissue(bodies[3]!.request, params('1')),
-      await pdf(new Request('http://localhost:3000/api/certificates/1/pdf'), params('1')),
-      await recipients(new Request('http://localhost:3000/api/certificates/recipients?q=Ex')),
-    ]
-    for (const answer of answers) {
-      expect(answer.status).toBe(status)
-      expect(answer.headers.get('Cache-Control')).toContain('no-store')
-      expect(answer.headers.get('X-Robots-Tag')).toContain('noindex')
-    }
-    for (const { read } of bodies) expect(read).not.toHaveBeenCalled()
-    for (const action of Object.values(actions)) expect(action).not.toHaveBeenCalled()
-  })
+      const bodies = [
+        post('/api/certificates/preview', {}),
+        post('/api/certificates/issue', {}),
+        post('/api/certificates/1/revoke', { reason: 'Example reason' }),
+        post('/api/certificates/1/reissue', { reason: 'Example reason' }),
+      ]
+      const answers = [
+        await preview(bodies[0]!.request),
+        await issue(bodies[1]!.request),
+        await revoke(bodies[2]!.request, params('1')),
+        await reissue(bodies[3]!.request, params('1')),
+        await pdf(new Request('http://localhost:3000/api/certificates/1/pdf'), params('1')),
+        await recipients(new Request('http://localhost:3000/api/certificates/recipients?q=Ex')),
+      ]
+      for (const answer of answers) {
+        expect(answer.status).toBe(status)
+        expect(answer.headers.get('Cache-Control')).toContain('no-store')
+        expect(answer.headers.get('X-Robots-Tag')).toContain('noindex')
+      }
+      for (const { read } of bodies) expect(read).not.toHaveBeenCalled()
+      for (const action of Object.values(actions)) expect(action).not.toHaveBeenCalled()
+    },
+    // The first case imports the six routes cold, with Payload behind them.
+    60_000,
+  )
 
   it('lets the operator issue but not revoke or reissue', async () => {
     session.user = staff(['operator'])
