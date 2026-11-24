@@ -91,6 +91,8 @@ describe('the sign-in numbers', () => {
   it('limit code requests per address and per network address (docs/12 §5)', () => {
     expect(SIGN_IN_LIMITS.perIdentifier.length).toBeGreaterThan(0)
     expect(SIGN_IN_LIMITS.perNetwork.length).toBeGreaterThan(0)
+    // And across the site, as the newsletter's signup (A6): the busiest window stays the widest.
+    expect(SIGN_IN_LIMITS.site[0].count).toBeGreaterThan(SIGN_IN_LIMITS.perNetwork[0].count)
     // The sign-in cookie outlives the code, so the account step can follow the code step.
     expect(SIGN_IN_COOKIE.maxAgeSeconds).toBeGreaterThan(SIGN_IN.codeTtlSeconds)
     expect(SIGN_IN_COOKIE.path).toBe('/login')

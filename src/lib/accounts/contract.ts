@@ -41,8 +41,8 @@ export const SIGN_IN = {
 /**
  * Code requests (docs/03 F7: "rate-limited per number and per IP"; docs/12 §5), counted from the
  * `sign-in-requests` rows (D-116): per address typed, at most one a minute, five an hour and ten
- * a day; per network address, twenty an hour. The same answer comes whether or not the address
- * has an account (docs/20 §4.4).
+ * a day; per network address, twenty an hour; across the site, 120 in ten minutes. The same
+ * answer comes whether or not the address has an account (docs/20 §4.4).
  */
 export const SIGN_IN_LIMITS = {
   perIdentifier: [
@@ -51,6 +51,12 @@ export const SIGN_IN_LIMITS = {
     { count: 10, windowMs: 24 * 60 * 60 * 1000 },
   ],
   perNetwork: [{ count: 20, windowMs: 60 * 60 * 1000 }],
+  /**
+   * Across the site, as the newsletter's signup counts its pending entries (A6): a burst from
+   * many network addresses cannot make the platform mail strangers in bulk. Past it, `/login`
+   * says it is busy; it names no address.
+   */
+  site: [{ count: 120, windowMs: 10 * 60 * 1000 }],
 } as const
 
 /** A `sign-in-requests` row is kept this long, then purged (docs/20 §4.8; O5). */
@@ -159,6 +165,8 @@ export type CodeRequestError =
   /** Turnstile's check failed or was not answered. */
   | { code: 'check-failed' }
   | { code: 'too-many'; retryAt: Date }
+  /** The site-wide limit: many codes asked for in the last ten minutes, from anyone. */
+  | { code: 'busy' }
 
 export type RequestCode = (
   req: PayloadRequest,
