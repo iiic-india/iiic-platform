@@ -130,7 +130,9 @@ export const AUTOMATIONS = [
     basis: 'transactional',
     owner: 'B',
     task: 'B8-feedback-request',
-    waitsOn: 'booking.completed from attendance marking, and the feedback page (M5, Proof)',
+    // Attendance marking raises booking.completed (src/lib/automations/booking/attendance.ts);
+    // the task plans nothing until the page it links to exists (FEEDBACK_PAGE_BUILT).
+    waitsOn: 'the feedback page and its tokens (`/feedback/[token]`, I-17): not built',
   },
   {
     id: 'B9',
@@ -141,7 +143,6 @@ export const AUTOMATIONS = [
     basis: 'transactional',
     owner: 'B',
     task: 'B9-no-show',
-    waitsOn: 'booking.noShow from attendance marking',
   },
   {
     id: 'B10',
@@ -346,7 +347,6 @@ export const AUTOMATIONS = [
     basis: 'transactional',
     owner: 'C',
     task: 'O4-data-request',
-    waitsOn: 'M5 (data requests, dataRequest.received)',
   },
   {
     id: 'O5',
@@ -376,7 +376,6 @@ export const AUTOMATIONS = [
     basis: 'transactional',
     owner: 'C',
     task: 'O7-complaint',
-    waitsOn: 'M5 (data requests of type complaint or grievance)',
   },
   {
     id: 'O8',
@@ -387,7 +386,6 @@ export const AUTOMATIONS = [
     basis: 'internal',
     owner: 'C',
     task: 'O8-incident-timers',
-    waitsOn: 'M5 (incidents, incident.opened)',
   },
   {
     id: 'O9',
@@ -438,7 +436,6 @@ export const AUTOMATIONS = [
     basis: 'transactional',
     owner: 'C',
     task: 'C5-certificate-email',
-    waitsOn: 'M5 (certificates, certificate.issued)',
   },
 ] as const satisfies readonly Automation[]
 

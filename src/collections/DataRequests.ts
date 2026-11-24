@@ -2,6 +2,7 @@ import type { CollectionConfig, Field, FieldAccess } from 'payload'
 
 import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { raiseRequestReceived } from '@/lib/automations/privacy/hooks'
 import {
   REQUEST_CHANNELS,
   REQUEST_OUTCOMES,
@@ -50,6 +51,9 @@ export const DataRequests: CollectionConfig = {
     update: allow(POLICY.dataRequests.update),
     delete: allow(POLICY.dataRequests.delete),
   },
+  // A request recorded raises O4's or O7's event (M6, docs/19 §5); the clocks are set by
+  // src/plugins/notesAndPrivacy.ts.
+  hooks: { afterChange: [raiseRequestReceived] },
   defaultSort: 'resolveBy',
   disableBulkEdit: true,
   fields: [

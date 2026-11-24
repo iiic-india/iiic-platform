@@ -14,6 +14,7 @@ import { LEGAL_PLACEHOLDERS, typed } from '@/lib/settings/legal'
 import { readFlags, readLegalInformation, readQuietHours } from '@/lib/settings/source'
 import type { Message } from '@/payload-types'
 
+import { afterSent } from './afterSent'
 import type { SendError, Sent } from './channels'
 import type { MessagingDeps } from './deps'
 import { hasPlaceholder, showsPrice, storedProviderId } from './guards'
@@ -257,6 +258,7 @@ async function recordAnswer(
       now,
     )
     await countOutcome(req, message.automation as AutomationId, 'success', now)
+    await afterSent(req, message, now)
     return 'sent'
   }
   const { code, retryable } = answer.error
