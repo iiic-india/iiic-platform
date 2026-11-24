@@ -12,19 +12,19 @@ The design the first piece of Release 2 is built to: sign-in by one-time code ov
 
 - **Customers are not staff.** Staff sign in to `/admin` with Payload and TOTP, as before; customers sign in with Better Auth and never become Payload's `req.user`. Payload's access rules stay the staff's. What a customer reads or writes goes through server functions in `src/lib/accounts` that take the signed-in `AccountSession` and touch only that account's records (§8).
 - **Every route checks the session first** (CLAUDE.md #6): each page, server action and route handler under `/account` calls `requireAccount()` before it reads a parameter, a body or the database; a record that is not the account's answers exactly as one that does not exist.
-- **Consent before storage** (CLAUDE.md #4): no account, person or Better Auth user is stored for a new address until the account consent is recorded under the notice in force (D-115). Marketing preferences given from My IIIC are consents in the ledger, each with its notice.
-- **Counselling stays private** (CLAUDE.md #3): My IIIC shows a counselling booking's time, format, place or link and practitioner, as its confirmation does, and nothing else; no offer or recommendation appears in My IIIC in this piece (D-126); nothing about counselling routes or markets anything.
+- **Consent before storage** (CLAUDE.md #4): no account, person or Better Auth user is stored for a new address until the account consent is recorded under the notice in force (D-113). Marketing preferences given from My IIIC are consents in the ledger, each with its notice.
+- **Counselling stays private** (CLAUDE.md #3): My IIIC shows a counselling booking's time, format, place or link and practitioner, as its confirmation does, and nothing else; no offer or recommendation appears in My IIIC in this piece (D-124); nothing about counselling routes or markets anything.
 - **No dark patterns** (CLAUDE.md #9): no box is ticked in advance; "Keep me signed in" is off until chosen; every decline is "No, thanks" at equal weight; no urgency words; closing the account is as plain as opening it.
-- **No price while `prices_public` is off** (D-21, D-94, D-101): no amount on any My IIIC page or message, and no invoice PDF offered until prices are public (D-120).
-- **Previews act on nothing** (D-102, D-108): previews share production's database, so a preview sends no code, starts no session and reads no account (D-124).
+- **No price while `prices_public` is off** (D-21, D-94, D-101): no amount on any My IIIC page or message, and no invoice PDF offered until prices are public (D-118).
+- **Previews act on nothing** (D-102, D-108): previews share production's database, so a preview sends no code, starts no session and reads no account (D-122).
 - **Never invent a fact.** The account notice, the consent wording and the WhatsApp template's approval are IIIC's (I-65, I-66); until they exist the step that needs them shows its placeholder and refuses. Copy is drafted to `VOICE.md`, checked with `/copy-check`, and marked as candidate copy until IIIC approves it (I-41).
 - Results, not thrown strings; Zod at every boundary; `server-only` for every module that reads the database or a secret; times stored in UTC and shown in IST; phones in E.164; logs carry outcome codes only, never an address, a code, a name or a session token.
 
 ## 2. Scope, and what is left for later
 
-**In this piece:** sign-in by email code; sign-in by WhatsApp code, built and tested but off until the provider and its authentication template exist (D-128); the account and its link to `people`; attaching earlier records by verified email or mobile; My IIIC's overview, bookings (with reschedule and cancel within policy), documents (certificates), invoices, and privacy (consents, marketing preferences, requests about one's data, contact details, devices, closing the account); the owner's acts on an account in the admin; the messages A1 to A3.
+**In this piece:** sign-in by email code; sign-in by WhatsApp code, built and tested but off until the provider and its authentication template exist (D-126); the account and its link to `people`; attaching earlier records by verified email or mobile; My IIIC's overview, bookings (with reschedule and cancel within policy), documents (certificates), invoices, and privacy (consents, marketing preferences, requests about one's data, contact details, devices, closing the account); the owner's acts on an account in the admin; the messages A1 to A3.
 
-**Left for the pieces that build them** (`10`, Release 2): the Map and its history (`/account/map`, item 1), the course and progress (`/account/learning`, item 3), stories and their withdrawal from My IIIC (item 5), bridges with the "No, thanks" memory and the next recommended step (item 6; D-18), the Team Map (item 7). Their sections are left off My IIIC rather than drawn empty, as D-58 does for the site (D-126). Proposals stay on their tracked link (D-93) and are not listed in Documents yet (D-126). A booking made while signed in still goes through M3's flow as a guest; prefilling it from the account is a later change to `src/components/booking/` (`12` §9, redundant entry). SMS stays out (D-08).
+**Left for the pieces that build them** (`10`, Release 2): the Map and its history (`/account/map`, item 1), the course and progress (`/account/learning`, item 3), stories and their withdrawal from My IIIC (item 5), bridges with the "No, thanks" memory and the next recommended step (item 6; D-18), the Team Map (item 7). Their sections are left off My IIIC rather than drawn empty, as D-58 does for the site (D-124). Proposals stay on their tracked link (D-93) and are not listed in Documents yet (D-124). A booking made while signed in still goes through M3's flow as a guest; prefilling it from the account is a later change to `src/components/booking/` (`12` §9, redundant entry). SMS stays out (D-08).
 
 ## 3. Better Auth beside Payload
 
@@ -59,25 +59,25 @@ The repository runs Payload migrations only, and schema push is off. Better Auth
 | `user`, `session`, `account`, `verification` | `modelName` `users`, `sessions`, `identities`, `verifications` | §3.2 |
 | `verification.storeIdentifier` | `'hashed'` | No address in plain text in `verifications` |
 | `emailAndPassword`, `socialProviders`, `account.accountLinking` | off | Codes only (`03` F7: no passwords) |
-| `session` | `expiresIn` 30 days, `disableSessionRefresh: true`, `cookieCache.enabled: false` | D-117: thirty days from sign-in; a revoked session ends at once |
+| `session` | `expiresIn` 30 days, `disableSessionRefresh: true`, `cookieCache.enabled: false` | D-115: thirty days from sign-in; a revoked session ends at once |
 | `advanced.cookiePrefix` | `iiic-account` | §10 |
 | `advanced.useSecureCookies` | true when the site URL is https | `__Secure-` names |
 | `advanced.defaultCookieAttributes` | `httpOnly`, `sameSite: 'lax'`, `path: '/'` | §10 |
 | `advanced.ipAddress.disableIpTracking` | true | A session keeps no IP address; the devices list names the browser only |
 | `rateLimit.enabled` | false | Better Auth's limiter guards its HTTP routes, which are not mounted; the limits are the platform's (§4.8) |
-| `telemetry.enabled` | false | And `env.ts` refuses `BETTER_AUTH_TELEMETRY` (D-119) |
+| `telemetry.enabled` | false | And `env.ts` refuses `BETTER_AUTH_TELEMETRY` (D-117) |
 | `logger` | the platform's, level `error`, message only | Better Auth's arguments can carry an address; none is logged |
 | `plugins` | `emailOTP`, `phoneNumber`, IIIC's server-only plugin, `nextCookies()` last | below |
 
 - **`emailOTP`**: `otpLength` 6, `expiresIn` 600, `allowedAttempts` 5, `storeOTP: 'hashed'`, `resendStrategy: 'rotate'`, `disableSignUp: true` (users are made only by IIIC's plugin, after the consent), `generateOTP` returning `ACCOUNTS_TEST_CODE` where it is set (CI only), `sendVerificationOTP` unused (the code is sent by the platform, §4.3) and failing loudly if anything calls it.
-- **`phoneNumber`**: `otpLength` 6, `expiresIn` 600, `allowedAttempts` 5, `phoneNumberValidator` the platform's E.164 check (`src/lib/phone.ts`), `sendOTP` handing the code to the platform's sender (§4.3), no `signUpOnVerification` (an account is made by IIIC's plugin after the consent, §4.5). **The gap:** 1.7.27's phone plugin stores a WhatsApp code in plain text for its ten minutes (the email plugin hashes it); the identifier is hashed, the tries are counted, and the code is never logged. Accepted while WhatsApp is off, and checked again when it is switched on (D-119).
+- **`phoneNumber`**: `otpLength` 6, `expiresIn` 600, `allowedAttempts` 5, `phoneNumberValidator` the platform's E.164 check (`src/lib/phone.ts`), `sendOTP` handing the code to the platform's sender (§4.3), no `signUpOnVerification` (an account is made by IIIC's plugin after the consent, §4.5). **The gap:** 1.7.27's phone plugin stores a WhatsApp code in plain text for its ten minutes (the email plugin hashes it); the identifier is hashed, the tries are counted, and the code is never logged. Accepted while WhatsApp is off, and checked again when it is switched on (D-117).
 - **IIIC's plugin** (`src/lib/accounts/auth/plugin.ts`): three server-only endpoints (`createAuthEndpoint.serverOnly`, never reachable over HTTP), each a few lines on Better Auth's own internal adapter and cookie helpers: `startSession({ userId, trusted })` (a session, with `dontRememberMe` when the device is not kept, and its cookie), `createCustomer({ channel, value })` (a user with the proven email, or the proven mobile and a placeholder address of the form `wa-<digits>@accounts.invalid` that is never written to), `forgetCode({ channel, value })` (deletes the identifier's code, for "a new code replaces the old" and for using up a code that was checked).
 - **Better Auth's HTTP handler is not mounted.** There is no `/api/auth/*` route and no client SDK in a bundle: every call is `auth.api.*` from the platform's server actions and server components. Fewer public endpoints, CSRF covered by Next.js's own origin check on server actions, and no Better Auth script on the public pages' 170 KB budget (D-79).
 
 ### 3.5 Reading the session in App Router code
 
 - `getAccountSession()` (`src/lib/accounts/session.ts`, builder A; the contract's `GetAccountSession`): wrapped in React's `cache` for one request; answers null at once on a preview, while `accountsEnabled` is off or while `BETTER_AUTH_SECRET` is unset; otherwise `auth.api.getSession({ headers: await headers() })`, then the `accounts` row by `authUserId` and its person, and returns `AccountSession`. A Better Auth user with no account row is no session (the account step was not finished; §4.5).
-- `requireAccount({ next, recentMinutes })`: the session or `redirect('/login')`, with `next` kept only when it is a path under `/account`. With `recentMinutes`, a session older than that sends the person to sign in again first (D-123).
+- `requireAccount({ next, recentMinutes })`: the session or `redirect('/login')`, with `next` kept only when it is a path under `/account`. With `recentMinutes`, a session older than that sends the person to sign in again first (D-121).
 - Server components read; server actions write. Server components never set cookies, which is why sessions do not slide (`disableSessionRefresh`): the cookie written at sign-in is the cookie for the session's life.
 - The pages under `/account` and `/login` read cookies, so Next.js renders them per request with `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`, which `12` §1 asks for; a headers test holds it (§11).
 
@@ -93,7 +93,7 @@ An account has one **own record**: the `people` record that holds its verified e
 | --- | --- | --- | --- |
 | 1 Address | `/login` | "Sign in to My IIIC"; one form with "Email address" (`type=email`, `autocomplete=email`) and "Send me a code"; when WhatsApp codes are open (§4.3), a second form beside it with "Mobile number" (`type=tel`, `autocomplete=tel`, +91 assumed) and "Send a code on WhatsApp"; a line linking the account notice (I-65); Turnstile where its keys are set | The server action validates, checks the deployment, the flag, Turnstile and the limits, writes the `sign-in-requests` row, sends the code (§4.3), sets the sign-in cookie and answers `303` to `/login/verify` |
 | 2 Code | `/login/verify` | "Enter your code"; "If a••••@gmail.com can receive our messages, a six-digit code is on its way. It works for 10 minutes."; "Six-digit code" (`inputmode=numeric`, `autocomplete=one-time-code`, pasting allowed); "Keep me signed in on this device for 30 days", unticked; "Sign in"; "Send a new code" (a form of its own, answered with the time to wait when it is too early); "Use a different address" | Right code, account exists: a session, then `303` to `next` or `/account`. Right code, no account: step 3 on the same route. Wrong: the error, with the tries left |
-| 3 Account (new address only) | `/login/verify` | "Create your My IIIC account"; "Full name" (the newest earlier record's name filled in, if there is one); the account notice in force beside an unticked box (D-115); "I am 18 or older", unticked (D-116); "Create my account" and "No, thanks" of equal weight | The consent, the person, the account, Better Auth's user, the session, the attachments (§4.5), then `303` to `/account`. "No, thanks" clears the sign-in cookie and stores nothing |
+| 3 Account (new address only) | `/login/verify` | "Create your My IIIC account"; "Full name" (the newest earlier record's name filled in, if there is one); the account notice in force beside an unticked box (D-113); "I am 18 or older", unticked (D-114); "Create my account" and "No, thanks" of equal weight | The consent, the person, the account, Better Auth's user, the session, the attachments (§4.5), then `303` to `/account`. "No, thanks" clears the sign-in cookie and stores nothing |
 
 - **Errors.** Each step shows the kit's error summary at the top, linked to its field, and the message beside the field; focus moves to the summary when it appears and to the step's heading when a step opens (a small client component, as the newsletter's `FocusOnArrival`). Every message says what to do: "That code doesn't match. You have 3 tries left.", "That code has run out. Send a new code.", "That code had five wrong tries and no longer works. Send a new code.", "Codes on WhatsApp go between 8 AM and 9 PM. Use your email address now, or try again after 8 AM." The words are candidate copy (I-41).
 - **Without JavaScript** every step works: the forms post to server actions with progressive enhancement and the server answers with a redirect or the page with its errors (`12` §4). Turnstile is the exception, as on the enquiry forms (D-92): where its keys are set, a browser without JavaScript is told it needs JavaScript for the check, or to write to the office.
@@ -112,7 +112,7 @@ Both channels go through the core's one entry point, **`deliver(req, planned, { 
 
 - **Email**: the action asks Better Auth for the code with the server-only `auth.api.createVerificationOTP({ body: { email, type: 'sign-in' } })`, which stores it hashed and returns it, then calls `deliver` with automation `A1`, template `account-sign-in-code`, channel `email`, no fallback, recipient `{ kind: 'signIn', id: <sign-in-requests id> }`, subject `{ collection: 'sign-in-requests', id }`, `sendAt` now, `sendBefore` the code's expiry, and `transient: { address, code }`.
 - **WhatsApp**: the same, with channel `whatsapp`, through the phone plugin's `auth.api.sendPhoneNumberOTP`, whose `sendOTP` callback receives the code and calls `deliver` with the request and the row the action set in an `AsyncLocalStorage` (`node:async_hooks`) for that call. The template is Meta's **authentication** category: Meta's fixed words with the code and a copy-code button, so IIIC writes nothing in it (I-66).
-- **When WhatsApp codes are open**: the core's WhatsApp channel is configured (`channelsFor`), the authentication template is approved in `message-templates`, the time is outside quiet hours (`readQuietHours`, `inQuietHours`; D-103), and `accountsEnabled` is on. Otherwise `/login` shows email only, and a mobile typed elsewhere is answered `whatsapp-closed` with the email form. Quiet hours hold for codes too until IIIC decides otherwise (D-125).
+- **When WhatsApp codes are open**: the core's WhatsApp channel is configured (`channelsFor`), the authentication template is approved in `message-templates`, the time is outside quiet hours (`readQuietHours`, `inQuietHours`; D-103), and `accountsEnabled` is on. Otherwise `/login` shows email only, and a mobile typed elsewhere is answered `whatsapp-closed` with the email form. Quiet hours hold for codes too until IIIC decides otherwise (D-123).
 - The core's other checks apply as for every message: the A1 switch (an owner can pause sign-in codes in an emergency), the suppression list for the address (a bounced address gets nothing, and the answer to the person is the same), the channel's set-up, no price, no placeholder in production.
 - **The hooks the core needs** for a recipient with no `people` record are H2 to H6 (§12); until they land, builder A tests against the contract with the core's fakes.
 
@@ -127,7 +127,7 @@ Both channels go through the core's one entry point, **`deliver(req, planned, { 
 
 At step 3, in one Payload transaction, then Better Auth, then the link, so that the consent is first and a failure part-way leaves nothing that signs anyone in:
 
-1. Check the sign-in cookie: a proven address, within its fifteen minutes; the notice shown is still the account notice in force (`currentNotice('account', 'en-IN')`), else draw the step again (`notice-changed`); no earlier record of this address says under 18 (D-116).
+1. Check the sign-in cookie: a proven address, within its fifteen minutes; the notice shown is still the account notice in force (`currentNotice('account', 'en-IN')`), else draw the step again (`notice-changed`); no earlier record of this address says under 18 (D-114).
 2. In one transaction: the account consent (`consents`, purpose `account`, the notice version, channel `web`, evidence the form `/login/verify`, the IP address and browser the server read, `grantedAt` now); the own record (the newest earlier record holding the address, given the verified marker, or a new `people` record with the name, the address with its marker, `language` en-IN, `source` "My IIIC", `ageBand` adult); the `accounts` row with `person` and an empty `authUserId`; `create-account` in the audit log.
 3. Better Auth's user (`createCustomer`) and the session (`startSession`, trusted or not as ticked); `accounts.authUserId` set; `sign-in` in the audit log.
 4. The earlier records attached (§6).
@@ -136,17 +136,17 @@ If step 3 fails after step 2, the person has a consent, a record and an account 
 
 ### 4.6 A second detail
 
-From My IIIC (§7.5) a person adds the detail they did not sign in with: an email to a WhatsApp account, or a mobile to an email account once WhatsApp codes are open. The same code machinery runs (`RequestDetailCode`, `ConfirmDetail`; purpose `addDetail` in `sign-in-requests`, the same limits); a right code marks the detail verified on the account's own record, updates Better Auth's user (the email, or `phoneNumber` with `phoneNumberVerified`), attaches the records holding it (§6), writes `add-contact-detail`, and sends A3 to the detail held before. A detail already verified on another account answers `belongs-to-another-account` after the code (the person has proved it), with the office's address to sort it out; nothing is moved between accounts on its own (D-122).
+From My IIIC (§7.5) a person adds the detail they did not sign in with: an email to a WhatsApp account, or a mobile to an email account once WhatsApp codes are open. The same code machinery runs (`RequestDetailCode`, `ConfirmDetail`; purpose `addDetail` in `sign-in-requests`, the same limits); a right code marks the detail verified on the account's own record, updates Better Auth's user (the email, or `phoneNumber` with `phoneNumberVerified`), attaches the records holding it (§6), writes `add-contact-detail`, and sends A3 to the detail held before. A detail already verified on another account answers `belongs-to-another-account` after the code (the person has proved it), with the office's address to sort it out; nothing is moved between accounts on its own (D-120).
 
 ### 4.7 Sessions, devices and signing out
 
-- A session lasts thirty days from sign-in on a device the person keeps (`03` F7); otherwise it ends when the browser closes, and after a day at most on the server, Better Auth's own `dontRememberMe` path (D-117). It never slides.
+- A session lasts thirty days from sign-in on a device the person keeps (`03` F7); otherwise it ends when the browser closes, and after a day at most on the server, Better Auth's own `dontRememberMe` path (D-115). It never slides.
 - "Sign out" (every My IIIC page) ends this session (`auth.api.signOut`) and clears its cookies. "Sign out everywhere" (§7.5) ends every other session (`auth.api.revokeOtherSessions`), audited as `sign-out-everywhere`. "Devices" lists the sessions (`auth.api.listSessions`) by browser and system from the user agent, when each began and ends, and which is this one; never an address.
-- An owner ends every session of an account from its record in the admin (`EndAccountSessions`, `VIEW_POLICY.accountActions`, the two-factor code), audited as `end-account-sessions` (D-127). Closing an account or an erasure ends them too (§7.6).
+- An owner ends every session of an account from its record in the admin (`EndAccountSessions`, `VIEW_POLICY.accountActions`, the two-factor code), audited as `end-account-sessions` (D-125). Closing an account or an erasure ends them too (§7.6).
 
 ### 4.8 Rate limits and Turnstile
 
-- **Per address typed**: one code a minute, five an hour, ten a day; **per network address**: twenty an hour (`SIGN_IN_LIMITS`; D-118). Counted from `sign-in-requests` rows: the address as an HMAC under a key derived from `BETTER_AUTH_SECRET` for this alone, the network address as the day's keyed hash the enquiry forms use (`submitterHash`, `submitterHashesWithin` in `src/lib/enquiryForms/guards.ts`). A refused request writes nothing and counts for nothing, as D-92 and D-108 do. Past a limit the person reads when they can ask again ("We've sent several codes to this address. Use the latest, or ask again after 4:35 PM."), and the office's address.
+- **Per address typed**: one code a minute, five an hour, ten a day; **per network address**: twenty an hour (`SIGN_IN_LIMITS`; D-116). Counted from `sign-in-requests` rows: the address as an HMAC under a key derived from `BETTER_AUTH_SECRET` for this alone, the network address as the day's keyed hash the enquiry forms use (`submitterHash`, `submitterHashesWithin` in `src/lib/enquiryForms/guards.ts`). A refused request writes nothing and counts for nothing, as D-92 and D-108 do. Past a limit the person reads when they can ask again ("We've sent several codes to this address. Use the latest, or ask again after 4:35 PM."), and the office's address.
 - **Wrong codes**: five per code (Better Auth), and with ten codes a day at most, fifty guesses a day per address: one chance in twenty thousand of guessing a six-digit code in a day.
 - **Turnstile** on step 1 where both keys are set, checked on the server with the existing `siteverify` (`src/lib/enquiryForms/turnstile.ts`) before anything is stored. Steps 2 and 3 need the sign-in cookie, which only step 1 sets.
 - Locally and in CI the limits stay on, but `ACCOUNTS_TEST_CODE` fixes the code; the suite uses a fresh address per test. Vercel's firewall rule on `/login/*` comes with the move to Pro (D-109, `12` §5).
@@ -157,7 +157,7 @@ From My IIIC (§7.5) a person adds the detail they did not sign in with: an emai
 | Where | `/login` | `/account/*` | Codes, sessions |
 | --- | --- | --- | --- |
 | `accountsEnabled` off (any deployment) | 404 | 404 | None; the header shows no "Log in" |
-| A Vercel preview | "Sign-in is closed on this preview." No form | `303` to `/login` | None: actions answer `closed-here` before reading input, `getAccountSession` answers null without reading anything (D-124) |
+| A Vercel preview | "Sign-in is closed on this preview." No form | `303` to `/login` | None: actions answer `closed-here` before reading input, `getAccountSession` answers null without reading anything (D-122) |
 | Production or local, `BETTER_AUTH_SECRET` unset | "Sign-in is not open yet." No form | `303` to `/login` | None |
 | Production, local or CI, all set | The steps | My IIIC | Yes |
 
@@ -165,7 +165,7 @@ From My IIIC (§7.5) a person adds the detail they did not sign in with: an emai
 
 ### 4.10 Under 18
 
-My IIIC accounts are for people of 18 or older (D-116): `08` §3 needs a guardian's verified consent before a child's data is stored, which the platform cannot check yet, and D-87 already books an under-18 session in the parent's or guardian's own name. Step 3 asks "I am 18 or older" (an unticked box that must be ticked to go on; not a consent); an earlier record whose age band is under 18 is never the account's record and never attached (§6), and an account is refused for its address with "My IIIC accounts are for adults. A parent or guardian can book and sign in for their child." No marketing consent is offered to anyone whose record says under 18 (`06`, Engine rules), and no analytics event is recorded about a signed-in person (§8).
+My IIIC accounts are for people of 18 or older (D-114): `08` §3 needs a guardian's verified consent before a child's data is stored, which the platform cannot check yet, and D-87 already books an under-18 session in the parent's or guardian's own name. Step 3 asks "I am 18 or older" (an unticked box that must be ticked to go on; not a consent); an earlier record whose age band is under 18 is never the account's record and never attached (§6), and an account is refused for its address with "My IIIC accounts are for adults. A parent or guardian can book and sign in for their child." No marketing consent is offered to anyone whose record says under 18 (`06`, Engine rules), and no analytics event is recorded about a signed-in person (§8).
 
 ## 5. Routes
 
@@ -180,14 +180,14 @@ My IIIC accounts are for people of 18 or older (D-116): `08` §3 needs a guardia
 | `/account/documents` | B | Certificates: ID, programme, completion day, status, the verification page, the PDF | own certificates |
 | `/account/documents/certificates/[id]/pdf` | B | The certificate's PDF from the private bucket, audited | own certificate |
 | `/account/invoices` | B | Invoices and credit notes: number, kind, day, status; no amount while prices are hidden | own invoices |
-| `/account/invoices/[id]/pdf` | B | The PDF, audited; only while `prices_public` is on (D-120) | own invoice |
+| `/account/invoices/[id]/pdf` | B | The PDF, audited; only while `prices_public` is on (D-118) | own invoice |
 | `/account/privacy` | C | Consents and marketing preferences, requests about your data, contact details, devices, closing the account (§7.5) | own consents, requests, sessions |
 
 All are under `PRIVATE_ROUTES` already (`src/lib/security/headers.ts`: `/account/:path*`, `/login/:path*`; D-67), so they are never indexed, never in the sitemap and kept from the training crawlers. The `(account)` route group (`src/app/(platform)/(account)/`) has its own layout: the site's frame in the default register with My IIIC's section links (Overview · Bookings · Documents · Invoices · Privacy) and "Sign out"; `/login` lives in the `(default)` group. The site header shows "Log in" (`02`, Navigation) only while `accountsEnabled` is on; it does not read the session, so public pages do no more work than now, and `/login` sends a signed-in person on to `/account`.
 
 ## 6. Attaching earlier records
 
-`03` F7: "A booking made without an account is attached to the account with the same verified mobile or email." M3 makes a new `people` record for every booking (`src/lib/bookingFlow/people.ts`: "the details are not verified yet, so the office merges records"), so a returning client has several. Attaching (`AttachEarlierRecords`, builder A; D-122):
+`03` F7: "A booking made without an account is attached to the account with the same verified mobile or email." M3 makes a new `people` record for every booking (`src/lib/bookingFlow/people.ts`: "the details are not verified yet, so the office merges records"), so a returning client has several. Attaching (`AttachEarlierRecords`, builder A; D-120):
 
 - **When**: after a code proves a detail (a sign-in, a new account, a second detail), and when a `people` record is created holding a detail an account has verified (a hook on `people` create, builder A), so a booking made later shows at once.
 - **Which**: every `people` record whose `email` (an email code) or `mobile` (a WhatsApp code) equals the proven detail, that holds no account yet, and whose age band is not under 18. A record already attached to another account stays there.
@@ -199,7 +199,7 @@ All are under `PRIVATE_ROUTES` already (`src/lib/security/headers.ts`: `/account
 
 ### 7.1 The overview (`/account`)
 
-A heading with the person's first name from their own record; their next upcoming booking as a ticket (`.iiic-ticket`), with "Add to calendar" and "Change or cancel"; the sections with one line each; an empty state that says plainly that bookings made with this email or mobile appear here. `02` names "Next recommended step" as the main action: nothing is recommended in this piece, because a recommendation is a bridge and bridges come with their own rules (D-18, D-126).
+A heading with the person's first name from their own record; their next upcoming booking as a ticket (`.iiic-ticket`), with "Add to calendar" and "Change or cancel"; the sections with one line each; an empty state that says plainly that bookings made with this email or mobile appear here. `02` names "Next recommended step" as the main action: nothing is recommended in this piece, because a recommendation is a bridge and bridges come with their own rules (D-18, D-124).
 
 ### 7.2 Bookings
 
@@ -210,20 +210,20 @@ Upcoming (soonest first) and past (latest first) from every own record, as `Acco
 
 ### 7.3 Documents
 
-Certificates (`AccountCertificate`) from every own record: the ID, the programme, the completion day, Valid or Revoked, a link to the public verification page by ID (`/institute/verify?id=`), and the PDF for a valid one through `/account/documents/certificates/[id]/pdf` (`DownloadOwnDocument`): the session, then the certificate's person among the account's records, then the PDF from the private bucket (`certificateStoreFor`, M5), with `download-certificate` written to the audit log (actor `account:<id>`) before the file is handed back, `Cache-Control: private, no-store`, `Content-Disposition: attachment`. A revoked certificate has no download. Proposals are not listed here yet (D-126).
+Certificates (`AccountCertificate`) from every own record: the ID, the programme, the completion day, Valid or Revoked, a link to the public verification page by ID (`/institute/verify?id=`), and the PDF for a valid one through `/account/documents/certificates/[id]/pdf` (`DownloadOwnDocument`): the session, then the certificate's person among the account's records, then the PDF from the private bucket (`certificateStoreFor`, M5), with `download-certificate` written to the audit log (actor `account:<id>`) before the file is handed back, `Cache-Control: private, no-store`, `Content-Disposition: attachment`. A revoked certificate has no download. Proposals are not listed here yet (D-124).
 
 ### 7.4 Invoices
 
-Invoices and credit notes of the account's bookings (`AccountInvoice`): Zoho's number, the kind, the day, the status. While `prices_public` is off there is no amount and no PDF; the page says the PDF comes on request by replying to the receipt email (B3's words). Once prices are public, the total shows and the PDF downloads through `/account/invoices/[id]/pdf` with `download-invoice` audited, as `src/lib/invoicing/download.ts` does for finance (D-120).
+Invoices and credit notes of the account's bookings (`AccountInvoice`): Zoho's number, the kind, the day, the status. While `prices_public` is off there is no amount and no PDF; the page says the PDF comes on request by replying to the receipt email (B3's words). Once prices are public, the total shows and the PDF downloads through `/account/invoices/[id]/pdf` with `download-invoice` audited, as `src/lib/invoicing/download.ts` does for finance (D-118).
 
 ### 7.5 Privacy (`/account/privacy`, builder C)
 
 - **What you have agreed to**: every purpose of the account's records with its state and the day it changed (`ListOwnConsents`), the same list the withdraw page shows (`/w/[token]`, docs/19 §8). Each consent in force has its own "Withdraw" button, which records a withdrawal through `withdrawPurpose` (`src/lib/messaging/withdrawals.ts`) for each record that holds it, channel `web`, evidence "My IIIC"; a withdrawal of the consent to publish a testimonial takes reviews down at once, as the ledger already does (V2). Withdrawing the account consent is closing the account, and leads there.
-- **Messages from IIIC**: the Journal by email (`marketingEmail`) and, once WhatsApp is open, updates on WhatsApp (`marketingWhatsapp`), each with the notice in force beside an unticked box and its own button (`GiveConsent`; D-121). Giving the Journal's consent also adds the account's verified email to the newsletter as confirmed (the address is already proven, so no second confirmation email): the consent first, then the `subscribers` entry (confirmed, linked to the consent and the person, source "My IIIC"), then `newsletter.confirmed` once, as `/api/newsletter/confirm` does, so N2 welcomes them; an account with no verified email is offered it after adding one. Purposes for features not built yet (the Map, suggested programmes) are never offered, only withdrawn if held. Nothing is offered to a record under 18.
-- **Ask about your data**: access (a copy), correction, erasure, nomination, a privacy grievance or a consumer complaint (`CreateOwnRequest`), with a short text. It is recorded as a `data-requests` entry for the account's own record, channel `web`, received now, with the identity check the session's code gave (`verificationMethod` `oneTimeCode`, `verifiedAt` now); M5's rules start it as received with its clocks, M6's O4 or O7 acknowledges it, and the office moves it on. Access and erasure need a sign-in within ten minutes (D-123). One open request of each kind at a time. The page lists the account's requests with their state and the day each is due; the office answers as for every request (`05`, Privacy).
+- **Messages from IIIC**: the Journal by email (`marketingEmail`) and, once WhatsApp is open, updates on WhatsApp (`marketingWhatsapp`), each with the notice in force beside an unticked box and its own button (`GiveConsent`; D-119). Giving the Journal's consent also adds the account's verified email to the newsletter as confirmed (the address is already proven, so no second confirmation email): the consent first, then the `subscribers` entry (confirmed, linked to the consent and the person, source "My IIIC"), then `newsletter.confirmed` once, as `/api/newsletter/confirm` does, so N2 welcomes them; an account with no verified email is offered it after adding one. Purposes for features not built yet (the Map, suggested programmes) are never offered, only withdrawn if held. Nothing is offered to a record under 18.
+- **Ask about your data**: access (a copy), correction, erasure, nomination, a privacy grievance or a consumer complaint (`CreateOwnRequest`), with a short text. It is recorded as a `data-requests` entry for the account's own record, channel `web`, received now, with the identity check the session's code gave (`verificationMethod` `oneTimeCode`, `verifiedAt` now); M5's rules start it as received with its clocks, M6's O4 or O7 acknowledges it, and the office moves it on. Access and erasure need a sign-in within ten minutes (D-121). One open request of each kind at a time. The page lists the account's requests with their state and the day each is due; the office answers as for every request (`05`, Privacy).
 - **Your contact details**: the verified email and mobile, and "Add" for the missing one (§4.6).
 - **Devices**: the sessions, "Sign out everywhere" (§4.7).
-- **Close your account**: what closing does and keeps, then "Close my account" and "No, thanks" at equal weight, after a sign-in within ten minutes (D-123).
+- **Close your account**: what closing does and keeps, then "Close my account" and "No, thanks" at equal weight, after a sign-in within ten minutes (D-121).
 
 ### 7.6 Closing an account
 
@@ -235,7 +235,7 @@ Invoices and credit notes of the account's bookings (`AccountInvoice`): Zoho's n
 
 **Staff** (`src/access/policy.ts`, `src/access/views.ts`): owners read `accounts` and no one writes one through the API; no one reads or writes `sign-in-requests`; `people.account` is the office's to read, the server's to write; `VIEW_POLICY.accountActions` (owner, two-factor code) for ending an account's sessions and detaching a record. Practitioners see nothing of accounts (D-89 holds: a client's name, mobile and email only). Better Auth's tables are read by no Payload collection and appear in no admin screen; an owner sees an account's devices count and last sign-in on its record.
 
-**The audit log** (`src/lib/audit/record.ts`; actor `account:<id>`, no email, for a customer's own acts; the staff member for the owner's): `create-account`, `sign-in` (with the channel as the field changed), `sign-out-everywhere`, `attach-records`, `add-contact-detail`, `close-account`, `end-account-sessions`, `detach-record`, `download-certificate`, `download-invoice`; and, through the audit plugin, every write to `accounts`, `people`, `consents` and `data-requests` by field name. Not logged: a code request (its row is the record, kept 48 hours, D-118), a wrong code, a page view of My IIIC. Logs carry outcome codes (`sign-in:wrong-code`), never the address, the code or the token.
+**The audit log** (`src/lib/audit/record.ts`; actor `account:<id>`, no email, for a customer's own acts; the staff member for the owner's): `create-account`, `sign-in` (with the channel as the field changed), `sign-out-everywhere`, `attach-records`, `add-contact-detail`, `close-account`, `end-account-sessions`, `detach-record`, `download-certificate`, `download-invoice`; and, through the audit plugin, every write to `accounts`, `people`, `consents` and `data-requests` by field name. Not logged: a code request (its row is the record, kept 48 hours, D-116), a wrong code, a page view of My IIIC. Logs carry outcome codes (`sign-in:wrong-code`), never the address, the code or the token.
 
 **Analytics**: nothing about a signed-in person; `/login` and `/account` are out of the funnel's events and out of Cloudflare's beacon (`countsPath` in `src/lib/analytics/beacon.ts` gains them), as the booking confirmation and the verify pages are.
 
@@ -245,7 +245,7 @@ In the style of `06`; the templates live in `src/emails/accounts/` (builder A) a
 
 | ID | Template key | Trigger | Timing | Channels | Basis | Sender, footer | Words |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| A1 | `account-sign-in-code` | A code asked for at `/login` or for a second detail | At once; useless after ten minutes (`sendBefore`) | E; W (Meta's authentication template) when open (§4.3) | Transactional: the person asked for it | `hello@notify.` (replies reach `hello@`); footer `none`: it may go to an address with no record, and it is about no consent (D-125) | "Your IIIC sign-in code"; the code, that it works for 10 minutes, that IIIC never asks for it, and to ignore it if they did not ask. The code is in the body, never the subject (lock screens). WhatsApp: Meta's fixed text (I-66) |
+| A1 | `account-sign-in-code` | A code asked for at `/login` or for a second detail | At once; useless after ten minutes (`sendBefore`) | E; W (Meta's authentication template) when open (§4.3) | Transactional: the person asked for it | `hello@notify.` (replies reach `hello@`); footer `none`: it may go to an address with no record, and it is about no consent (D-123) | "Your IIIC sign-in code"; the code, that it works for 10 minutes, that IIIC never asks for it, and to ignore it if they did not ask. The code is in the body, never the subject (lock screens). WhatsApp: Meta's fixed text (I-66) |
 | A2 | `account-closed` | The person closes their account | At once | E | Transactional | `hello@`; footer `withdraw` | What was closed, what IIIC keeps and why, how to ask for erasure |
 | A3 | `account-detail-added` | A second detail added (§4.6) | At once | E, to the email held before (none for a WhatsApp-only account) | Transactional | `hello@`; footer `withdraw` | Which kind of detail was added (masked), and whom to tell if it was not them |
 
@@ -269,7 +269,7 @@ And in the same paragraph, "Better Auth's session cookie (R2, only after sign-in
 
 ## 11. Environment, fakes and the test plan
 
-**Environment** (`src/lib/env.ts`, `.env.example`; done here): `BETTER_AUTH_SECRET` (optional, 32+ characters; unset, sign-in is closed), `BETTER_AUTH_TELEMETRY` (refused unless unset, `0` or `false`), `ACCOUNTS_TEST_CODE` (six digits, refused on any Vercel deployment). `BETTER_AUTH_URL` is not read. Production and Preview get `BETTER_AUTH_SECRET` from an owner; previews never act whatever they hold (D-124). Rotating the secret signs every customer out; the runbook gains that line with builder A.
+**Environment** (`src/lib/env.ts`, `.env.example`; done here): `BETTER_AUTH_SECRET` (optional, 32+ characters; unset, sign-in is closed), `BETTER_AUTH_TELEMETRY` (refused unless unset, `0` or `false`), `ACCOUNTS_TEST_CODE` (six digits, refused on any Vercel deployment). `BETTER_AUTH_URL` is not read. Production and Preview get `BETTER_AUTH_SECRET` from an owner; previews never act whatever they hold (D-122). Rotating the secret signs every customer out; the runbook gains that line with builder A.
 
 **Fakes**: the messaging core's fake senders (`MESSAGING_TRANSPORT=fake`), `ACCOUNTS_TEST_CODE` for the end-to-end suite, Turnstile's fake (`fakeTurnstile`), M3's fake gateway for bookings, the certificate store's folder. Fixtures are obviously fake ("Example Client", `client@example.com`, `+91 90000 00000`).
 
@@ -295,7 +295,7 @@ PR #38's fixer is changing `src/lib/privacy/**`, `src/lib/messaging/**`, `src/em
 
 | Hook | File | Change |
 | --- | --- | --- |
-| H1 | `src/lib/privacy/purposes.ts` | `CONSENT_PURPOSES` gains `{ value: 'account', label: 'Keeping a My IIIC account' }` (D-115); the two purpose enums change in `r2a_accounts` |
+| H1 | `src/lib/privacy/purposes.ts` | `CONSENT_PURPOSES` gains `{ value: 'account', label: 'Keeping a My IIIC account' }` (D-113); the two purpose enums change in `r2a_accounts` |
 | H2 | `src/lib/messaging/types.ts` | `Recipient` gains `{ kind: 'signIn'; id: number }` (a `sign-in-requests` row); `SUBJECT_COLLECTIONS` gains `'sign-in-requests'` and `'accounts'` |
 | H3 | `src/lib/messaging/recipients.ts`, `try.ts`; `src/collections/Messages.ts` | `recipientFacts` takes the first try's `transient` and, for `signIn`, answers the address from `transient.address` only (null without it: `no-address`), no person, language en-IN; `recipientOf` maps `recipientKind: 'signIn'` to the subject's id; `messages.recipientKind` gains `signIn` |
 | H4 | `src/emails/registry.ts` | Templates `account-sign-in-code` (A1; email, WhatsApp; `hello`; transactional; footer `none`; price `never`), `account-closed` (A2) and `account-detail-added` (A3) (email; `hello`; transactional; footer `withdraw`; `never`); `builder` widened with `'R2a'`; `WHATSAPP_TEMPLATE_KEYS` gains `account-sign-in-code`, its category authentication |
@@ -335,24 +335,24 @@ The foundation is frozen for the builders: `src/lib/accounts/contract.ts`, the c
 
 | Item | Assumed until IIIC decides |
 | --- | --- |
-| D-115: an account needs its own consent, `account`, given with an unticked box under its notice | Built so; no notice in force (I-65), no new account |
-| D-116: accounts are for adults | Built so; the lawyer confirms with the under-18 rules (I-22, I-67) |
-| D-117: thirty days on a kept device, the browser session otherwise, no sliding | Built so |
-| D-118: the limits' numbers, counted from `sign-in-requests` | Built so; IIIC may change the numbers in the contract |
-| D-119: Better Auth beside Payload as §3, its handler not mounted, WhatsApp codes stored plain for ten minutes by 1.7.27's phone plugin | Built so; checked again before WhatsApp codes open |
-| D-120: no invoice PDF in My IIIC while prices are hidden | Built so; the PDF by reply to the receipt |
-| D-121: My IIIC offers only the two marketing consents; every consent in force can be withdrawn | Built so |
-| D-122: attaching by verified detail, linking without merging; the shared-mailbox case accepted; owners detach | Built so; the lawyer confirms the shared address (I-67) |
-| D-123: a sign-in within ten minutes before closing, access and erasure | Built so |
-| D-124: previews act on nothing | Built so |
-| D-125: A1 to A3; codes keep quiet hours on WhatsApp; A1 has no withdraw link | Built so; IIIC may exempt codes from quiet hours |
-| D-126: Map, learning, proposals and the next recommended step left off My IIIC until their pieces | Built so |
-| D-127: owners read accounts and end their sessions; no one edits one | Built so |
-| D-128: WhatsApp codes built, off until I-03, I-40 and I-66 | Email only |
-| D-129: customers are never Payload users; every My IIIC read is a scoped server function | Built so |
+| D-113: an account needs its own consent, `account`, given with an unticked box under its notice | Built so; no notice in force (I-65), no new account |
+| D-114: accounts are for adults | Built so; the lawyer confirms with the under-18 rules (I-22, I-67) |
+| D-115: thirty days on a kept device, the browser session otherwise, no sliding | Built so |
+| D-116: the limits' numbers, counted from `sign-in-requests` | Built so; IIIC may change the numbers in the contract |
+| D-117: Better Auth beside Payload as §3, its handler not mounted, WhatsApp codes stored plain for ten minutes by 1.7.27's phone plugin | Built so; checked again before WhatsApp codes open |
+| D-118: no invoice PDF in My IIIC while prices are hidden | Built so; the PDF by reply to the receipt |
+| D-119: My IIIC offers only the two marketing consents; every consent in force can be withdrawn | Built so |
+| D-120: attaching by verified detail, linking without merging; the shared-mailbox case accepted; owners detach | Built so; the lawyer confirms the shared address (I-67) |
+| D-121: a sign-in within ten minutes before closing, access and erasure | Built so |
+| D-122: previews act on nothing | Built so |
+| D-123: A1 to A3; codes keep quiet hours on WhatsApp; A1 has no withdraw link | Built so; IIIC may exempt codes from quiet hours |
+| D-124: Map, learning, proposals and the next recommended step left off My IIIC until their pieces | Built so |
+| D-125: owners read accounts and end their sessions; no one edits one | Built so |
+| D-126: WhatsApp codes built, off until I-03, I-40 and I-66 | Email only |
+| D-127: customers are never Payload users; every My IIIC read is a scoped server function | Built so |
 | I-65: the account notice and the account consent's text | The account step shows `[[TODO: the account notice and consent text, I-65]]` and refuses |
 | I-66: the WhatsApp authentication template approved for IIIC's number (with I-03) | Email codes only |
-| I-67: the lawyer on accounts: the consent's wording, adults only, the shared address, whether a session's code verifies a data request | As D-115, D-116, D-122, D-123 |
+| I-67: the lawyer on accounts: the consent's wording, adults only, the shared address, whether a session's code verifies a data request | As D-113, D-114, D-120, D-121 |
 | Not decided here: an email when a new device signs in | None sent; proposed for after launch if IIIC wants it |
 | Not decided here: whether a signed-in booking is prefilled and made under the account's own record | M3's flow unchanged; the hook attaches the new record |
 

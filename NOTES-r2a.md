@@ -10,7 +10,7 @@ Hands off while PR #38's fixer works: `src/lib/privacy/**`, `src/lib/messaging/*
 2. Look up Better Auth's current docs and source (version, email OTP and phone-number plugins, Postgres adapter, schema generation, session reads in App Router, rate limits, cookies) and choose an exact version.
 3. Write `docs/20-accounts-design.md` in the shape of 16 to 19.
 4. Scaffold: the dependency pinned; env vars; contract file; route folders with READMEs; collection and field additions with access rules.
-5. Decision rows from D-115 and inputs from I-65; README index; check `tests/unit/decisions.spec.ts` against the reserved gap D-110 to D-114.
+5. Decision rows from D-113 and inputs from I-65; README index; check `tests/unit/decisions.spec.ts` against the reserved gap D-110 to D-114.
 6. `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, unit tests; push `r2a/foundation`.
 
 ## Checklist
@@ -20,7 +20,7 @@ Hands off while PR #38's fixer works: `src/lib/privacy/**`, `src/lib/messaging/*
 - [x] Better Auth 1.7.27 chosen and pinned, with kysely 0.29.9 (its Postgres dialect)
 - [x] `docs/20-accounts-design.md`
 - [x] Scaffold: `src/lib/accounts/contract.ts`; `accounts` and `sign-in-requests` collections; `people.account`; `POLICY.accounts`, `POLICY.signInRequests`, `VIEW_POLICY.accountActions`; env (`BETTER_AUTH_SECRET`, `BETTER_AUTH_TELEMETRY` guard, `ACCOUNTS_TEST_CODE`); route folders; `tests/unit/accountsFoundation.spec.ts`
-- [x] Decisions D-115 to D-129, inputs I-65 to I-67, README
+- [x] Decisions D-113 to D-127, inputs I-65 to I-67, README
 - [x] Checks: typecheck, lint, format and unit tests green except `decisions.spec.ts`'s numbering case, which fails only on the reserved gap D-110 to D-114 and passes once they land
 - [ ] Pushed
 

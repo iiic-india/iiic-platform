@@ -30,17 +30,17 @@ export const SIGN_IN = {
   attemptsPerCode: 5,
   /** A session on a device the person chose to keep: thirty days from sign-in (docs/03 F7). */
   trustedSessionDays: 30,
-  /** Any other session: until the browser closes, and a day at most on the server (D-117). */
+  /** Any other session: until the browser closes, and a day at most on the server (D-115). */
   untrustedSessionHours: 24,
-  /** "Send a new code" waits this long after the last one (D-118). */
+  /** "Send a new code" waits this long after the last one (D-116). */
   resendAfterSeconds: 60,
-  /** Closing an account, an access or an erasure request: signed in within this long (D-123). */
+  /** Closing an account, an access or an erasure request: signed in within this long (D-121). */
   recentSignInMinutes: 10,
 } as const
 
 /**
  * Code requests (docs/03 F7: "rate-limited per number and per IP"; docs/12 §5), counted from the
- * `sign-in-requests` rows (D-118): per address typed, at most one a minute, five an hour and ten
+ * `sign-in-requests` rows (D-116): per address typed, at most one a minute, five an hour and ten
  * a day; per network address, twenty an hour. The same answer comes whether or not the address
  * has an account (docs/20 §4.4).
  */
@@ -201,7 +201,7 @@ export type VerifyCode = (
 
 /**
  * The account step (a new account only): the name, the account consent under the notice in
- * force (an unticked box, D-115), and "I am 18 or older" (D-116). The consent is recorded first,
+ * force (an unticked box, D-113), and "I am 18 or older" (D-114). The consent is recorded first,
  * then the person, the account and the session (CLAUDE.md #4).
  */
 export const createAccountInput = z.strictObject({
@@ -222,7 +222,7 @@ export type CreateAccountError =
   | { code: 'notice-missing' }
   /** The notice shown is no longer the one in force: the step is drawn again. */
   | { code: 'notice-changed' }
-  /** An earlier record of this address says under 18 (D-116). */
+  /** An earlier record of this address says under 18 (D-114). */
   | { code: 'not-for-under-18' }
 
 export type CreateAccount = (
@@ -282,8 +282,8 @@ export type CloseAccountsOfPerson = (req: PayloadRequest, personId: number) => P
 
 /**
  * The owner's acts on an account from the admin (`VIEW_POLICY.accountActions`, checked first;
- * D-127): ending all its sessions, and detaching an earlier record the person says is not
- * theirs (D-122). The account's own record cannot be detached; closing does that. Audited as
+ * D-125): ending all its sessions, and detaching an earlier record the person says is not
+ * theirs (D-120). The account's own record cannot be detached; closing does that. Audited as
  * `end-account-sessions` and `detach-record`.
  */
 export type EndAccountSessions = (
@@ -396,7 +396,7 @@ export type AccountInvoice = {
   status: string
   /** Only while `prices_public` is on (D-21, D-101); null otherwise. */
   totalPaise: number | null
-  /** Only while `prices_public` is on (D-120). */
+  /** Only while `prices_public` is on (D-118). */
   downloadable: boolean
 }
 
@@ -429,7 +429,7 @@ export type DownloadOwnDocument = (
 
 // ---- Privacy and the account's settings (builder C; docs/20 §7.5) ----
 
-/** Purposes a person may give from My IIIC; every purpose in force may be withdrawn (D-121). */
+/** Purposes a person may give from My IIIC; every purpose in force may be withdrawn (D-119). */
 export const GIVABLE_PURPOSES = ['marketingEmail', 'marketingWhatsapp'] as const
 export type GivablePurpose = (typeof GIVABLE_PURPOSES)[number]
 

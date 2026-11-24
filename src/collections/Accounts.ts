@@ -12,11 +12,11 @@ const serverWritten = { create: () => false, update: () => false }
  * A person's My IIIC account (docs/04 `accounts`, S2; docs/20-accounts-design.md §3): the link
  * between Better Auth's user, which holds the verified sign-in details and the sessions in the
  * `customer_auth` schema, and the person's own `people` record. Earlier records of the same
- * person are attached to the account through `people.account` (docs/03 F7; D-122), never merged.
+ * person are attached to the account through `people.account` (docs/03 F7; D-120), never merged.
  *
  * Owners read accounts; nobody writes one through the API. The server makes it at the first
- * sign-in (after the account consent, D-115), updates the last sign-in, and deletes it when the
- * person closes the account or an owner confirms an erasure (D-127). Every write is in the audit
+ * sign-in (after the account consent, D-113), updates the last sign-in, and deletes it when the
+ * person closes the account or an owner confirms an erasure (D-125). Every write is in the audit
  * log (src/plugins/auditLog.ts) with the account as its actor (`account:<id>`).
  */
 export const Accounts: CollectionConfig = {

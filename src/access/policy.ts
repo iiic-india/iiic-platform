@@ -479,7 +479,7 @@ export const POLICY = {
 
   // A person's My IIIC account (docs/04 `accounts`, S2 · "the person; owners"): owners read it.
   // Only the server writes one, as the person signs in, adds a detail or closes it; an owner ends
-  // an account's sessions through its own endpoint, with the two-factor code (D-127). Customers
+  // an account's sessions through its own endpoint, with the two-factor code (D-125). Customers
   // are never Payload users: what a person reads of their own goes through src/lib/accounts.
   accounts: {
     read: { roles: ['owner'] },

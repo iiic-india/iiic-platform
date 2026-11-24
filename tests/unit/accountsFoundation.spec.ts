@@ -123,7 +123,7 @@ describe('the sign-in numbers', () => {
 })
 
 describe('the collections', () => {
-  it('let owners read accounts and nobody write one through the API (D-127)', async () => {
+  it('let owners read accounts and nobody write one through the API (D-125)', async () => {
     expect(await answers(Accounts, 'read')).toEqual(only(['owner']))
     for (const operation of ['create', 'update', 'delete'] as const) {
       expect(await answers(Accounts, operation)).toEqual(only([]))

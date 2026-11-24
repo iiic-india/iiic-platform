@@ -4,7 +4,7 @@ import { allow, POLICY } from '@/access/policy'
 import { SIGN_IN_CHANNELS } from '@/lib/accounts/contract'
 
 /**
- * One row per sign-in code asked for (docs/20-accounts-design.md §4.8; D-118). It holds no
+ * One row per sign-in code asked for (docs/20-accounts-design.md §4.8; D-116). It holds no
  * address: the address typed is kept as a keyed hash (an HMAC under a key derived from
  * BETTER_AUTH_SECRET for this alone), the network address as the day's keyed hash the public
  * forms already use (src/lib/enquiryForms/guards.ts), and the times. The rate limits count these

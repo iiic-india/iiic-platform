@@ -154,7 +154,7 @@ export const People: CollectionConfig = {
     {
       // The My IIIC account this record belongs to (Release 2; docs/20-accounts-design.md §6):
       // the account's own record, or an earlier one attached because it holds a detail the
-      // account verified (docs/03 F7; D-122). Set and cleared by the server only; one account
+      // account verified (docs/03 F7; D-120). Set and cleared by the server only; one account
       // at most. The office's alone to read, like every field but the name and contacts (D-89).
       name: 'account',
       type: 'relationship',

@@ -185,7 +185,7 @@ describe('M5 views: the user, the code and the role first (CLAUDE.md #6)', () =>
       certificatesIssue: ['owner', 'operator'],
       certificatesRevoke: ['owner'],
       invoicePdf: ['owner', 'finance'],
-      // Release 2 (docs/20 §8; D-127): ending a My IIIC account's sessions, detaching a record.
+      // Release 2 (docs/20 §8; D-125): ending a My IIIC account's sessions, detaching a record.
       accountActions: ['owner'],
     }
     for (const view of views) {
