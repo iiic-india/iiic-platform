@@ -6,6 +6,7 @@ import { decideSend } from '@/lib/messaging/policy'
 import { consentState, type LedgerEntry } from '@/lib/privacy/consentLedger'
 import { deadlinesFor } from '@/lib/privacy/deadlines'
 import type { RequestType } from '@/lib/privacy/requests'
+import { isNoindexPath } from '@/lib/seo/paths'
 
 // My IIIC's privacy page (docs/20 §7.5; slice C): the ledger read over every record of the
 // account, what may be given or withdrawn, the recent sign-in a copy, an erasure or closing needs
@@ -629,6 +630,17 @@ describe('the page’s addresses carry codes, never the person', () => {
       outcome.readOutcome({ done: 'withdrawn', in: 'agreed', purpose: 'client@example.com' })
         ?.purpose,
     ).toBeNull()
+  })
+
+  it('are private: never indexed, never in the sitemap (D-67)', () => {
+    for (const path of [
+      outcome.PRIVACY_PATH,
+      outcome.CLOSE_PATH,
+      outcome.CLOSED_PATH,
+      `${outcome.CONTACT_PATH}?channel=email`,
+    ]) {
+      expect(isNoindexPath(path), path).toBe(true)
+    }
   })
 })
 
