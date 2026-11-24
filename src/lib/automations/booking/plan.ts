@@ -69,9 +69,12 @@ export function planConfirmation(booking: BookingSnapshot | null, context: PlanC
   }
 }
 
-/** B3a: with B2, by email, for a counselling booking only. */
+/**
+ * B3a: with B2, by email, for a counselling booking only, and only when consents were recorded
+ * with it (a booking the office entered has none, and a receipt would have nothing to list).
+ */
 export function planConsentReceipt(booking: BookingSnapshot | null, context: PlanContext): Plan {
-  if (!isConfirmed(booking) || !booking.counselling) return EMPTY_PLAN
+  if (!isConfirmed(booking) || !booking.counselling || booking.consents < 1) return EMPTY_PLAN
   return {
     cancel: [],
     deliver: [toClient(booking, 'B3a', 'consent-receipt', 'email', { sendAt: context.now })],

@@ -9,7 +9,7 @@ import type { TemplateImplementation } from '@/emails/types'
 import { FakeEmailSender, FakeWhatsAppSender } from '@/lib/messaging/fakes'
 import type { PlannedMessage } from '@/lib/messaging/operations'
 import { quietHoursEnd } from '@/lib/messaging/policy'
-import { ok } from '@/lib/result'
+import { err, ok } from '@/lib/result'
 import type { ConsentVersion, Message, MessageTemplate, Person } from '@/payload-types'
 import config from '@/payload.config'
 
@@ -229,6 +229,45 @@ afterAll(async () => {
       })
     }
   }
+})
+
+describe('a message whose data is gone, or whose subject moved on', () => {
+  const withLoad = (at: Date, load: TemplateImplementation<{ ref: string }>['load']) => ({
+    ...depsAt(at),
+    implementation: () => ({ ...fakeTemplate, load }) as unknown as TemplateImplementation<never>,
+  })
+
+  it('fails as data-missing and raises message.failed when the data is not found', async () => {
+    const at = ist('13:00')
+    const planned = await deliverWith(withLoad(at, async () => err({ code: 'not-found' })))(
+      await req(),
+      plan(people.b, { variant: 'data-gone', sendAt: at }),
+    )
+    if (!planned.ok) throw new Error('not planned')
+    expect(await row(planned.value.messageId)).toMatchObject({
+      status: 'failed',
+      lastError: 'data-missing',
+    })
+    expect(events).toContainEqual({ name: 'message.failed', messageId: planned.value.messageId })
+    expect(sentWith(email, (await row(planned.value.messageId)).dedupeKey)).toHaveLength(0)
+  })
+
+  it('is skipped as stale, with no alarm, when its subject moved on', async () => {
+    const at = ist('13:00')
+    const planned = await deliverWith(withLoad(at, async () => err({ code: 'stale' })))(
+      await req(),
+      plan(people.b, { variant: 'moved-on', sendAt: at }),
+    )
+    if (!planned.ok) throw new Error('not planned')
+    expect(await row(planned.value.messageId)).toMatchObject({
+      status: 'skipped',
+      skipReason: 'stale',
+    })
+    expect(events).not.toContainEqual({
+      name: 'message.failed',
+      messageId: planned.value.messageId,
+    })
+  })
 })
 
 describe('fires once (docs/19 §2)', () => {

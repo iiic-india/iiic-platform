@@ -23,6 +23,8 @@ export type BookingSnapshot = {
   recipientId: number
   /** The person asked for email: nothing goes by WhatsApp (docs/06, Engine rules). */
   prefersEmail: boolean
+  /** How many consents were recorded with the booking (the B3a receipt lists them). */
+  consents: number
   /** The practitioner's own staff account, told of a change (B7, B10), when one is linked. */
   staffId: number | null
 }

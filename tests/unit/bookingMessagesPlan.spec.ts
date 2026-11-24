@@ -39,6 +39,7 @@ const booking = (over: Partial<BookingSnapshot> = {}): BookingSnapshot => ({
   counselling: false,
   recipientId: 7,
   prefersEmail: false,
+  consents: 2,
   staffId: 3,
   ...over,
 })
@@ -88,6 +89,8 @@ describe('B3a · the counselling consent receipt', () => {
       'B3a:bookings:41:email',
     ])
     expect(planConsentReceipt(booking({ counselling: false }), now).deliver).toEqual([])
+    // A counselling booking with no consents recorded (the office entered it): nothing to list.
+    expect(planConsentReceipt(booking({ counselling: true, consents: 0 }), now).deliver).toEqual([])
   })
 })
 

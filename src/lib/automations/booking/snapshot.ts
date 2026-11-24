@@ -68,6 +68,7 @@ export async function bookingSnapshot(
     counselling: service?.register === 'counselling',
     recipientId,
     prefersEmail: recipient?.preferredChannel === 'email',
+    consents: (booking.consents ?? []).length,
     staffId: idOf(practitioner?.staff),
   }
 }

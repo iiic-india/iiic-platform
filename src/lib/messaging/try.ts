@@ -173,7 +173,10 @@ async function render(
     variant: message.variant ?? null,
     ...(transient ? { transient } : {}),
   })
-  if (!loaded.ok) return { skip: 'stale' }
+  // A subject that moved on (a booking moved or cancelled) is skipped; data that is missing (a
+  // record gone, a required field empty) is a fault the office must see: `message.failed`, O3.
+  if (!loaded.ok)
+    return loaded.error.code === 'stale' ? { skip: 'stale' } : { fail: 'data-missing' }
   const site = deps.site()
   const flags = await readFlags(req.payload)
   const pricesOk = priceAllowed(key, flags)
