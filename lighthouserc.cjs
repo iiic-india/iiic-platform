@@ -49,7 +49,8 @@ module.exports = {
       // D-80: budgets report as warnings while a part is being built; the hardening pass that
       // closes each milestone makes them failures again. M7 did (24 November 2026): every budget
       // below passed on all 23 pages in main's CI run of that day (best of three), so each one
-      // fails a pull request again. A new part may set one back to 'warn' only while it is built.
+      // fails a pull request again, except Total Blocking Time (D-112, below). A new part may set
+      // one back to 'warn' only while it is built.
       assertions: {
         'categories:performance': ['error', { minScore: 0.95 }],
         'categories:accessibility': ['error', { minScore: 1 }],
@@ -59,7 +60,11 @@ module.exports = {
         'cumulative-layout-shift': ['error', { maxNumericValue: 0.05 }],
         // A page load has no interaction, so INP has no lab value; Total Blocking Time stands in
         // for it, at Lighthouse's own line for a good TBT on its mobile profile (D-59).
-        'total-blocking-time': ['error', { maxNumericValue: 200 }],
+        // D-112: a warning in CI. The runner's noise is as large as the budget (99 to 695 ms on the
+        // same code; best of three between 201 and 208 ms on a different page each run), so as a
+        // failure it stopped unchanged pages. Read it in the report; the live site is measured
+        // before launch (docs/12 §14).
+        'total-blocking-time': ['warn', { maxNumericValue: 200 }],
         // The server's part of the 600 ms TTFB budget (D-42, D-59); the network from India is
         // measured on the live site.
         'server-response-time': ['error', { maxNumericValue: 600 }],
