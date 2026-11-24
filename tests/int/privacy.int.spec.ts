@@ -98,6 +98,14 @@ async function removeTestData() {
     await removeQueuedJobs(payload, { bookingIds: ids })
     await payload.delete({ collection: 'session-notes', where: { person: { in: everyone } } })
     await payload.delete({ collection: 'feedback', where: { person: { in: everyone } } })
+    // Recording a request queues M6's O4 or O7 (src/lib/automations/privacy/hooks.ts).
+    const requests = await payload.find({
+      collection: 'data-requests',
+      where: { person: { in: everyone } },
+      pagination: false,
+      depth: 0,
+    })
+    await removeQueuedJobs(payload, { dataRequestIds: requests.docs.map((doc) => doc.id) })
     await payload.delete({ collection: 'data-requests', where: { person: { in: everyone } } })
     if (ids.length) await payload.delete({ collection: 'bookings', where: { id: { in: ids } } })
     await payload.delete({ collection: 'people', where: { id: { in: everyone } } })
@@ -253,6 +261,7 @@ describe('a requestâ€™s clocks and moves on save', () => {
     })
     expect(incident.certIn?.dueAt).toBe('2026-06-01T23:10:00.000Z')
     expect(incident.board?.dueAt).toBe('2026-06-04T17:10:00.000Z')
+    await removeQueuedJobs(payload, { incidentIds: [incident.id] })
     await payload.delete({ collection: 'incidents', id: incident.id })
   })
 })

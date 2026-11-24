@@ -43,4 +43,3 @@ Branch `m6/join`, pushed to `origin m6/core`. No PR, no merge to main.
 - The words of P6's drafted follow-up email.
 
 ## Log
-
