@@ -148,6 +148,7 @@ export async function cancelQueuedRows(
   subject: Subject,
   automations: readonly AutomationId[] | undefined,
   now: Date,
+  keepKeys: readonly string[] = [],
 ): Promise<number> {
   if (automations && automations.length === 0) return 0
   const statuses = sql.join(
@@ -160,11 +161,17 @@ export async function cancelQueuedRows(
         sql`, `,
       )})`
     : sql``
+  const kept = keepKeys.length
+    ? sql` AND "dedupe_key" NOT IN (${sql.join(
+        keepKeys.map((key) => sql`${key}`),
+        sql`, `,
+      )})`
+    : sql``
   const cancelled = await rows<{ id: number }>(
     req,
     sql`UPDATE "messages" SET "status" = 'cancelled', "updated_at" = ${now.toISOString()}
       WHERE "subject_collection" = ${subject.collection} AND "subject_id" = ${subject.id}
-      AND "status" IN (${statuses})${only} RETURNING "id"`,
+      AND "status" IN (${statuses})${only}${kept} RETURNING "id"`,
   )
   return cancelled.length
 }

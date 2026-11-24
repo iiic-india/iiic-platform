@@ -2,7 +2,7 @@ import type { TemplateKey } from '@/emails/registry'
 import type { AutomationId } from '@/lib/automations/catalogue'
 import { after, OFFSETS, reminder24hAt, reminderShortAt } from '@/lib/automations/timing'
 import type { DomainEvent } from '@/lib/booking/events'
-import type { PlannedMessage } from '@/lib/messaging/operations'
+import { messageKey, type PlannedMessage } from '@/lib/messaging/operations'
 import { plannedSendTime } from '@/lib/messaging/policy'
 import type { Channel, Subject } from '@/lib/messaging/types'
 
@@ -379,6 +379,44 @@ export function planPaymentLink(
     }
   }
   return { cancel, deliver }
+}
+
+/**
+ * B13 on `booking.rescheduled`: the payment link stays as sent (it pays for the booking wherever it
+ * moves), but its reminder belongs to the old time. The queued B13 rows of every link in the
+ * chain are cancelled, and while the newest link is still open, one reminder is planned for the
+ * new time, keyed by the new booking so it is a new row; a retry of the same run keeps it.
+ */
+export function planPaymentLinkMoved(
+  payment: PaymentSnapshot | null,
+  booking: BookingSnapshot | null,
+  linkIds: readonly number[],
+  context: PlanContext,
+): Plan {
+  const reminder =
+    payment &&
+    payment.kind === 'paymentLink' &&
+    payment.status === 'created' &&
+    payment.amountPaise > 0 &&
+    isConfirmed(booking) &&
+    booking.startsAt
+      ? toClient(booking, 'B13', 'payment-link-reminder', 'email', {
+          subject: paymentSubject(payment.id),
+          variant: `reminder-${booking.id}`,
+          sendAt: new Date(booking.startsAt.getTime() - OFFSETS.paymentLinkReminder),
+          sendBefore: booking.startsAt,
+        })
+      : null
+  const deliver = reminder && reminder.sendAt.getTime() > context.now.getTime() ? [reminder] : []
+  const keepKeys = deliver.map((message) => messageKey(message))
+  return {
+    cancel: linkIds.map((id) => ({
+      subject: paymentSubject(id),
+      automations: ['B13'] as const,
+      ...(keepKeys.length ? { keepKeys } : {}),
+    })),
+    deliver,
+  }
 }
 
 /** B13 on `booking.cancelled`: every queued payment-link message of the booking is cancelled. */

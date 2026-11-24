@@ -372,6 +372,38 @@ describe('re-planning', () => {
   })
 })
 
+describe('B13 across a reschedule', () => {
+  it('plans the unpaid link’s reminder for the new time, and its loader reads the moved booking', async () => {
+    const oldStart = at('2099-06-20', '10:00')
+    const newStart = at('2099-06-22', '12:00')
+    const first = await confirmed(oldStart)
+    const payment = await paymentLinkFor(first)
+    const linkSent = { name: 'payment.linkSent', paymentId: payment.id, bookingId: first.id }
+    expect(await run('B13-payment-link', linkSent)).toMatchObject({ created: 3 })
+
+    await payload.update({ collection: 'bookings', id: first.id, data: { status: 'rescheduled' } })
+    const moved = await confirmed(newStart, { rescheduledFrom: first.id })
+    const event = { name: 'booking.rescheduled', bookingId: moved.id, fromBookingId: first.id }
+    expect(await run('B13-payment-link', event)).toMatchObject({ cancelled: 3, created: 1 })
+    const reminder = core.rows.find(
+      (row) => row.key === `B13:payments:${payment.id}:reminder-${moved.id}:email`,
+    )
+    expect(reminder?.status).toBe('queued')
+    expect(reminder?.planned.sendAt).toEqual(new Date(newStart.getTime() - 24 * HOUR))
+    // A retry of the same run keeps it.
+    expect(await run('B13-payment-link', event)).toMatchObject({ cancelled: 0, created: 0 })
+    expect(reminder?.status).toBe('queued')
+
+    // At send time the payment still points at the first booking; the loader follows the move.
+    const loaded = await loaders.loadPaymentLink(await fresh(), {
+      subject: { collection: 'payments', id: payment.id },
+      recipient: { kind: 'person', id: person.id },
+      sendBefore: newStart,
+    })
+    expect(loaded).toMatchObject({ ok: true, value: { startsAt: newStart } })
+  })
+})
+
 describe('the loaders, at send time', () => {
   const recipient = () => ({ kind: 'person' as const, id: person.id })
 

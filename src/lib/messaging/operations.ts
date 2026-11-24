@@ -71,7 +71,12 @@ export type Deliver = (
  */
 export type CancelQueued = (
   req: PayloadRequest,
-  scope: { subject: Subject; automations?: readonly AutomationId[] },
+  scope: {
+    subject: Subject
+    automations?: readonly AutomationId[]
+    /** Message keys to leave queued: what the same run plans again, so a retry keeps them. */
+    keepKeys?: readonly string[]
+  },
 ) => Promise<number>
 
 /** One run of `messages-dispatch`: what it sent, deferred, skipped, failed and found stale. */

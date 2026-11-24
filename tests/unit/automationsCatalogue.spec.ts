@@ -65,7 +65,13 @@ describe('the automation catalogue', () => {
       ]),
     )
     expect(AUTOMATION_LISTENERS['booking.rescheduled']).toEqual(
-      expect.arrayContaining(['B5-reminder-24h', 'B6-reminder-2h', 'B7-change-notice']),
+      expect.arrayContaining([
+        'B5-reminder-24h',
+        'B6-reminder-2h',
+        'B7-change-notice',
+        // The payment link's reminder follows the session to its new time (docs/06 B13).
+        'B13-payment-link',
+      ]),
     )
     const merged = withAutomationListeners({ 'booking.confirmed': ['B2-B7-sync-calendar-event'] })
     expect(merged['booking.confirmed']?.[0]).toBe('B2-B7-sync-calendar-event')

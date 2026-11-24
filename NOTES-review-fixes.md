@@ -14,7 +14,7 @@ Working notes; deleted in the last commit of this batch. One commit per finding.
 - [x] A5 · four token routes act on preview hosts (extend D-102)
 - [x] B2 · a killed job stays `processing` for good; runs are not bounded by time; N4 sends inline
 - [x] B4 · `not-found` load errors become a silent `stale` skip; consent receipt with no consents
-- [ ] B6 · B13 payment-link reminder ignores `booking.rescheduled`
+- [x] B6 · B13 payment-link reminder ignores `booking.rescheduled`
 
 ## Fix, second group
 

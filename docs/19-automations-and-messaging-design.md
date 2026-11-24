@@ -75,7 +75,7 @@ The catalogue is code (`src/lib/automations/catalogue.ts`); listeners, schedules
 | B10 | `booking.slotLost` | at once | E, A (staff email) | T | `B10-slot-lost` · B | — |
 | B11 | schedule | 23:00 IST | A (digest) | — | M3 `B11-reconcile` | — |
 | B12 | `booking.requested` | at once; flagged on Today at 24 h | E, W, A | T | `B12-time-request-ack` · B | — |
-| B13 | `payment.linkSent`; `booking.cancelled` | at once; one reminder 24 h before the session while unpaid | E, W | Op | `B13-payment-link` · B | — |
+| B13 | `payment.linkSent`; `booking.rescheduled`; `booking.cancelled` | at once; one reminder 24 h before the session while unpaid, moved with the session (the link stays on the first booking, so the reminder is re-planned for the new time and its loader follows `rescheduledFrom` to the booking now in force) | E, W | Op | `B13-payment-link` · B | — |
 | B14 | schedule, calendar notices | every 15 min | — | — | M3 `B14-refresh-busy-times` | — |
 | P1 | `enquiry.received` (team map) | at once; M4 makes the lead and the first-reply task (2 working days) | E, A | T | `P1-team-map-ack` · C | — |
 | P2 | `booking.confirmed` (a call) | at once | A | — | M4 `P2-lead-from-call` | — |

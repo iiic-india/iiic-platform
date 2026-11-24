@@ -15,6 +15,7 @@ import {
   planNoShow,
   planPaymentLink,
   planPaymentLinkCancelled,
+  planPaymentLinkMoved,
   planReceipt,
   planRefundNotice,
   planReminder24h,
@@ -152,6 +153,16 @@ async function planFor(
     case 'B13-payment-link': {
       if (event.name === 'booking.cancelled') {
         return planPaymentLinkCancelled(await paymentLinkIds(req, event.bookingId))
+      }
+      if (event.name === 'booking.rescheduled') {
+        const links = await paymentLinkIds(req, event.bookingId)
+        const newest = links.at(-1)
+        return planPaymentLinkMoved(
+          newest === undefined ? null : await paymentSnapshot(req, newest),
+          await bookingSnapshot(req, event.bookingId),
+          links,
+          context,
+        )
       }
       if (event.name !== 'payment.linkSent') return null
       const payment = await paymentSnapshot(req, event.paymentId)

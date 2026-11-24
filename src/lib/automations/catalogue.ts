@@ -176,7 +176,7 @@ export const AUTOMATIONS = [
   {
     id: 'B13',
     title: 'Payment link, and one reminder before the session',
-    on: ['payment.linkSent', 'booking.cancelled'],
+    on: ['payment.linkSent', 'booking.rescheduled', 'booking.cancelled'],
     timing: 'At once; one reminder before the session while unpaid',
     channels: ['email', 'whatsapp'],
     basis: 'operator',

@@ -164,6 +164,30 @@ async function subjectBooking(req: PayloadRequest, subject: Subject): Promise<Bo
   return subject.collection === 'bookings' ? bookingById(req, subject.id) : null
 }
 
+/**
+ * The booking a booking became: itself, or after one reschedule or more, the newest of the chain
+ * (a reschedule makes a new booking linked back by `rescheduledFrom`; the payment stays on the
+ * first, docs/16 §5). B13's messages are about the payment, so they read the booking it is for now.
+ */
+async function currentOf(req: PayloadRequest, booking: Booking): Promise<Booking> {
+  let current = booking
+  for (let step = 0; step < 20 && current.status === 'rescheduled'; step += 1) {
+    const { docs } = await req.payload.find({
+      collection: 'bookings',
+      where: { rescheduledFrom: { equals: current.id } },
+      sort: '-createdAt',
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+      req,
+    })
+    const next = docs[0]
+    if (!next) break
+    current = next
+  }
+  return current
+}
+
 /** A reminder planned for one start is stale once the booking starts at another time. */
 function movedSince(booking: Booking, sendBefore?: Date | null): boolean {
   if (!sendBefore || !booking.startsAt) return false
@@ -414,8 +438,9 @@ export async function loadPaymentLink(
   if (input.subject.collection !== 'payments') return NOT_FOUND
   const payment = await paymentById(req, input.subject.id)
   if (!payment || payment.kind !== 'paymentLink') return NOT_FOUND
-  const booking = await bookingById(req, idOf(payment.booking))
-  if (!booking) return NOT_FOUND
+  const first = await bookingById(req, idOf(payment.booking))
+  if (!first) return NOT_FOUND
+  const booking = await currentOf(req, first)
   if (
     payment.status !== 'created' ||
     booking.status !== 'confirmed' ||
