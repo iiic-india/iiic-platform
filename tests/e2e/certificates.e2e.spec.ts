@@ -3,6 +3,7 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { getPayload } from 'payload'
 import { renderPageAsImage } from 'unpdf'
 
+import { formatCertificateId } from '../../src/lib/certificates/ids'
 import { siteOrigin } from '../../src/lib/seo/site'
 import type { Person } from '../../src/payload-types'
 import config from '../../src/payload.config'
@@ -53,7 +54,8 @@ test.describe('The verify pages, for anyone', () => {
   })
 
   test('an unknown ID or link gets one plain answer', async ({ page }) => {
-    await page.goto('/institute/verify?id=IIIC-C-2099-9999-1')
+    // Well formed, with its check digit, so it is looked up; no certificate has it.
+    await page.goto(`/institute/verify?id=${formatCertificateId(2099, 9999)}`)
     await expect(page.getByRole('heading', { name: 'No certificate matches' })).toBeVisible()
     await page.goto('/institute/verify/AAAAAAAAAAAAAAAAAAAAAA')
     await expect(page.getByRole('heading', { name: 'No certificate matches' })).toBeVisible()
@@ -72,7 +74,8 @@ test.describe('The verify pages, for anyone', () => {
 test.describe('The certificates screen and routes refuse anonymous requests', () => {
   test('the screen sends a visitor to the sign-in', async ({ page }) => {
     await page.goto('/admin/certificates/issue')
-    await expect(page).toHaveURL(/\/admin\/login/)
+    // Payload sends a visitor to create the first account while there is none yet.
+    await expect(page).toHaveURL(/\/admin\/(login|create-first-user)/)
   })
 
   test('every route answers 401 without a session', async ({ request }) => {
@@ -151,7 +154,7 @@ test.describe('An owner issues, the QR code verifies, a revoke shows at once', (
     await expect(page.getByRole('heading', { level: 1, name: 'Issue certificates' })).toBeVisible()
     await page.getByLabel('Programme', { exact: true }).fill(PROGRAMME)
     await page.getByLabel('Completed on').fill('2099-03-30')
-    await page.getByLabel('Find a person').fill('Example Certificate')
+    await page.getByRole('searchbox', { name: 'Find a person' }).fill('Example Certificate')
     await page.getByRole('button', { name: 'Search' }).click()
     await page.getByRole('button', { name: `Add ${PERSON}` }).click()
     await page.getByRole('button', { name: 'Preview certificates' }).click()
