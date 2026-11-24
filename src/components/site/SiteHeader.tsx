@@ -25,7 +25,7 @@ export const LOG_IN = { href: '/login', label: 'Log in' } as const
  * settings reader is loaded here, on the server, so that this file still loads where it cannot
  * run.
  */
-async function LogInLink() {
+export async function LogInLink() {
   const { getFlags } = await import('@/lib/settings/read')
   if (!(await getFlags()).accountsEnabled) return null
   return (
