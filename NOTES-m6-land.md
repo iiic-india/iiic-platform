@@ -43,3 +43,10 @@ Branch `m6/join`, pushed to `origin m6/core`. No PR, no merge to main.
 - The words of P6's drafted follow-up email.
 
 ## Log
+
+## CI on PR #38
+
+- Run 45372951444 failed (3 integration files); fixed in 573e41f (test fixtures only).
+- Run 45375273091: green (integration, build, e2e 519 passed, Lighthouse).
+- The `cookies` errors in the log come from recoveryCodes, twoFactor and staffAccess int tests
+  and appear in main's green run 45368588125 too: noise.
