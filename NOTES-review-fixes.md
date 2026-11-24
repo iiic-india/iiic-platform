@@ -3,7 +3,7 @@
 Working notes; deleted in the last commit of this batch. One commit per finding.
 
 ## Blockers
-- [ ] A1 · confirmed erasure leaves M4 and M6 data (enquiries, links, organisation, job title, WhatsApp time, subscriber, export files); keep the suppressed address (decision row)
+- [x] A1 · confirmed erasure leaves M4 and M6 data (enquiries, links, organisation, job title, WhatsApp time, subscriber, export files); keep the suppressed address (decision row)
 - [ ] A2 · analytics beacon loads on `/w/`, `/newsletter/confirm/`, `/newsletter/unsubscribe/` token pages
 - [ ] B1 · booking emails to counselling clients carry no scope statement or crisis numbers; WhatsApp time-request text has no closing
 

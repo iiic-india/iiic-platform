@@ -15,6 +15,7 @@ export async function removeQueuedJobs(
     practitionerIds?: readonly number[]
     dataRequestIds?: readonly number[]
     incidentIds?: readonly number[]
+    suppressionIds?: readonly number[]
   },
 ): Promise<void> {
   const keys = [
@@ -22,6 +23,8 @@ export async function removeQueuedJobs(
     ...(ids.practitionerIds ?? []).map((id) => ['practitionerId', id] as const),
     ...(ids.dataRequestIds ?? []).map((id) => ['dataRequestId', id] as const),
     ...(ids.incidentIds ?? []).map((id) => ['incidentId', id] as const),
+    // A suppressed address queues O9 and N3 (src/collections/Suppressions.ts).
+    ...(ids.suppressionIds ?? []).map((id) => ['suppressionId', id] as const),
   ]
   for (const [key, id] of keys) {
     await payload.db.drizzle.execute(

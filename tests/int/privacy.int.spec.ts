@@ -24,7 +24,7 @@ vi.mock('server-only', () => ({}))
 const { notesWith } = await import('@/lib/notes/notes')
 const { loadKeyring } = await import('@/lib/notes/keys')
 const { recordAudit } = await import('@/lib/audit/record')
-const { planErasure, confirmErasure, ERASED_NAME, PLAN_LINES } =
+const { planErasure, confirmErasureWith, ERASED_NAME, PLAN_LINES } =
   await import('@/lib/privacy/erasure')
 const { exportPersonDataWith, downloadExportWith } = await import('@/lib/privacy/export')
 const { folderStore } = await import('@/lib/privacy/store')
@@ -56,6 +56,8 @@ const personIds: number[] = []
 const bookingIds: number[] = []
 const requestIds: number[] = []
 let keys = 0
+
+const confirmErasure = confirmErasureWith(() => folderStore(storeRoot))
 
 const verified = (user: User) => ({ ...user, collection: 'users', _strategy: 'totp' }) as User
 const reqAs = (who: Staff) => createLocalReq({ user: verified(staff[who]) }, payload)
@@ -108,8 +110,45 @@ async function removeTestData() {
     await removeQueuedJobs(payload, { dataRequestIds: requests.docs.map((doc) => doc.id) })
     await payload.delete({ collection: 'data-requests', where: { person: { in: everyone } } })
     if (ids.length) await payload.delete({ collection: 'bookings', where: { id: { in: ids } } })
+    // The pipeline's records about them, children first: versions, proposals, enquiries, leads.
+    const leads = await payload.find({
+      collection: 'leads',
+      where: { or: [{ person: { in: everyone } }, { title: { like: TAG } }] },
+      pagination: false,
+      depth: 0,
+    })
+    const leadIds = leads.docs.map((lead) => lead.id)
+    if (leadIds.length) {
+      const proposals = await payload.find({
+        collection: 'proposals',
+        where: { lead: { in: leadIds } },
+        pagination: false,
+        depth: 0,
+      })
+      const proposalIds = proposals.docs.map((proposal) => proposal.id)
+      if (proposalIds.length) {
+        await payload.delete({
+          collection: 'proposal-versions',
+          where: { proposal: { in: proposalIds } },
+        })
+        await payload.delete({ collection: 'proposals', where: { id: { in: proposalIds } } })
+      }
+      await payload.delete({ collection: 'enquiries', where: { lead: { in: leadIds } } })
+      await payload.delete({ collection: 'leads', where: { id: { in: leadIds } } })
+    }
+    await payload.delete({ collection: 'enquiries', where: { person: { in: everyone } } })
     await payload.delete({ collection: 'people', where: { id: { in: everyone } } })
   }
+  const suppressions = await payload.find({
+    collection: 'suppressions',
+    where: { address: { like: TAG } },
+    pagination: false,
+    depth: 0,
+  })
+  await removeQueuedJobs(payload, { suppressionIds: suppressions.docs.map((doc) => doc.id) })
+  await payload.delete({ collection: 'suppressions', where: { address: { like: TAG } } })
+  await payload.delete({ collection: 'subscribers', where: { email: { like: TAG } } })
+  await payload.delete({ collection: 'organisations', where: { name: { like: TAG } } })
   await payload.delete({ collection: 'practitioners', where: { publicName: { like: TAG } } })
   await payload.delete({ collection: 'services', where: { slug: { like: 'int-privacy' } } })
   await payload.delete({ collection: 'users', where: { email: { like: `${TAG}.` } } })
@@ -271,10 +310,92 @@ describe('an erasure', () => {
   let booking: Booking
   let request: DataRequest
   let noteId: number
+  // What M4 and M6 hold about the person (docs/17 §9; docs/19 §8).
+  let leadId: number
+  let versionId: number
+  let enquiryId: number
+  let subscriberId: number
+  let suppressionId: number
+  let exportKey: string
 
   beforeAll(async () => {
     person = await newPerson('erased')
     booking = await newBooking(person)
+    const organisation = await payload.create({
+      collection: 'organisations',
+      data: { name: `Fake Org ${TAG}`, type: 'business' },
+    })
+    await payload.update({
+      collection: 'people',
+      id: person.id,
+      data: {
+        organisation: organisation.id,
+        jobTitle: 'Fake role',
+        whatsappLastInboundAt: new Date().toISOString(),
+      },
+    })
+    const lead = await payload.create({
+      collection: 'leads',
+      data: {
+        kind: 'consultancy',
+        stage: 'new',
+        source: 'office',
+        organisation: organisation.id,
+        person: person.id,
+      } as never,
+    })
+    leadId = lead.id
+    const proposal = await payload.create({
+      collection: 'proposals',
+      data: { lead: lead.id, title: `Fake proposal ${TAG}` } as never,
+    })
+    const version = await payload.create({
+      collection: 'proposal-versions',
+      data: {
+        proposal: proposal.id,
+        number: 1,
+        document: { title: 'Fake' },
+        sending: { sentTo: person.id },
+      } as never,
+    })
+    versionId = version.id
+    const enquiry = await payload.create({
+      collection: 'enquiries',
+      data: {
+        kind: 'teamMap',
+        receivedAt: new Date().toISOString(),
+        submitted: {
+          organisationName: `Fake Org ${TAG}`,
+          contactName: person.fullName,
+          email: person.email,
+          message: `Fake words typed in a form ${TAG}`,
+        },
+        person: person.id,
+        lead: lead.id,
+      } as never,
+    })
+    enquiryId = enquiry.id
+    const subscriber = await payload.create({
+      collection: 'subscribers',
+      data: { email: person.email, status: 'confirmed', person: person.id } as never,
+    })
+    subscriberId = subscriber.id
+    const suppression = await payload.create({
+      collection: 'suppressions',
+      data: {
+        channel: 'email',
+        address: person.email,
+        reason: 'hardBounce',
+        person: person.id,
+      } as never,
+    })
+    suppressionId = suppression.id
+    await removeQueuedJobs(payload, { suppressionIds: [suppressionId] })
+    // An access export made earlier for the same person, in the private store.
+    const access = await record(person, 'access')
+    exportKey = `privacy-exports/request-${access.id}/export-20260201043000.json`
+    await folderStore(storeRoot).put(exportKey, '{"fake":true}', 'application/json')
+    await payload.update({ collection: 'data-requests', id: access.id, data: { exportKey } })
     const written = await notes.writeNote(await reqAs('author'), {
       bookingId: booking.id,
       body: WORDS,
@@ -310,6 +431,17 @@ describe('an erasure', () => {
     expect(forOwner.value.deletes).toContainEqual({ entity: PLAN_LINES.feedback, count: 1 })
     expect(forOwner.value.keeps).toContainEqual(
       expect.objectContaining({ entity: PLAN_LINES.bookings, count: 1 }),
+    )
+    for (const [entity, count] of [
+      [PLAN_LINES.enquiries, 1],
+      [PLAN_LINES.pipelineLinks, 2],
+      [PLAN_LINES.subscriber, 1],
+      [PLAN_LINES.exports, 1],
+    ] as const) {
+      expect(forOwner.value.deletes).toContainEqual({ entity, count })
+    }
+    expect(forOwner.value.keeps).toContainEqual(
+      expect.objectContaining({ entity: PLAN_LINES.suppressions, count: 1 }),
     )
     const forOperator = await planErasure(await reqAs('operator'), request.id)
     if (!forOperator.ok) throw new Error(forOperator.error.code)
@@ -361,23 +493,64 @@ describe('an erasure', () => {
     expect(
       await payload.count({ collection: 'session-notes', where: { id: { equals: noteId } } }),
     ).toEqual({ totalDocs: 1 })
+    expect(
+      await payload.count({ collection: 'enquiries', where: { id: { equals: enquiryId } } }),
+    ).toEqual({ totalDocs: 1 })
+    // The export files go last, after every write that can fail.
+    expect(await folderStore(storeRoot).get(exportKey)).not.toBeNull()
   })
 
   it('deletes and keeps what the plan said, in one go, and closes the request', async () => {
     const req = await reqAs('owner')
     await enterCodeAgain(req, ownerCode())
     const done = await confirmErasure(req, request.id)
-    expect(done).toEqual({ ok: true, value: { deleted: 2 } })
+    // A note, a feedback, an enquiry and a newsletter subscription.
+    expect(done).toEqual({ ok: true, value: { deleted: 4 } })
 
     const where = { person: { equals: person.id } }
     expect((await payload.count({ collection: 'session-notes', where })).totalDocs).toBe(0)
     expect((await payload.count({ collection: 'feedback', where })).totalDocs).toBe(0)
 
-    const emptied = await payload.findByID({ collection: 'people', id: person.id })
+    const emptied = await payload.findByID({ collection: 'people', id: person.id, depth: 0 })
     expect(emptied.fullName).toBe(ERASED_NAME)
     expect(emptied.email ?? null).toBeNull()
     expect(emptied.mobile ?? null).toBeNull()
     expect(emptied.city ?? null).toBeNull()
+    expect(emptied.organisation ?? null).toBeNull()
+    expect(emptied.jobTitle ?? null).toBeNull()
+    expect(emptied.whatsappLastInboundAt ?? null).toBeNull()
+
+    // M4 and M6 (docs/17 §9): the enquiry and the subscription go; the lead and the version stay
+    // with no link to the person; the suppressed address stays, so nothing is sent to it (D-110).
+    expect(
+      await payload.count({ collection: 'enquiries', where: { id: { equals: enquiryId } } }),
+    ).toEqual({ totalDocs: 0 })
+    expect(
+      await payload.count({ collection: 'subscribers', where: { id: { equals: subscriberId } } }),
+    ).toEqual({ totalDocs: 0 })
+    const lead = await payload.findByID({ collection: 'leads', id: leadId, depth: 0 })
+    expect(lead.person ?? null).toBeNull()
+    const version = await payload.findByID({
+      collection: 'proposal-versions',
+      id: versionId,
+      depth: 0,
+    })
+    expect(version.sending?.sentTo ?? null).toBeNull()
+    const suppression = await payload.findByID({
+      collection: 'suppressions',
+      id: suppressionId,
+      depth: 0,
+    })
+    expect(suppression.address).toBe(person.email)
+
+    // The access export's file is gone, and its request no longer points at it.
+    expect(await folderStore(storeRoot).get(exportKey)).toBeNull()
+    expect(
+      await payload.count({
+        collection: 'data-requests',
+        where: { and: [where, { exportKey: { exists: true } }] },
+      }),
+    ).toEqual({ totalDocs: 0 })
 
     const keptBooking = await payload.findByID({ collection: 'bookings', id: booking.id, depth: 0 })
     expect(keptBooking.person).toBe(person.id)
