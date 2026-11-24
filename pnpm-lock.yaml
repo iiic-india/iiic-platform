@@ -80,6 +80,9 @@ importers:
       jose:
         specifier: 5.10.0
         version: 5.10.0
+      kysely:
+        specifier: 0.29.9
+        version: 0.29.9
       libphonenumber-js:
         specifier: 1.13.15
         version: 1.13.15
