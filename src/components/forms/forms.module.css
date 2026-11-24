@@ -1,0 +1,16 @@
+/* The public forms' layout on top of the kit's form markup (src/brand/gallery.html, "Form"). */
+
+/* The error summary sits above the form, as in the kit's example. */
+.summary:not(:empty) {
+  margin-bottom: 18px;
+}
+
+/* The consent text keeps the line breaks it was written with. */
+.notice {
+  white-space: pre-line;
+}
+
+/* The section's form, kept to a readable measure. */
+.section {
+  max-width: 760px;
+}

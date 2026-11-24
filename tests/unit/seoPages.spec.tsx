@@ -75,6 +75,9 @@ vi.mock('@/lib/content/faqs', () => ({ getFaqs: vi.fn(async () => []) }))
 vi.mock('@/lib/proof/read', () => ({
   getPageVoices: vi.fn(async () => ({ first: null, bySection: {} })),
 }))
+// A page with a form reads its setup from the database (src/lib/enquiryForms/setup.ts); here
+// none is in force, and each form shows its placeholder (tests/unit/enquiryFormsRender.spec.tsx).
+vi.mock('@/lib/enquiryForms/setup', () => ({ formsFor: async () => ({}) }))
 vi.mock('next/headers', () => ({
   headers: async () => new Headers({ 'x-pathname': request.path }),
 }))
@@ -204,6 +207,12 @@ const OWN = [
 /** Proof, which draws itself too: tests/unit/proofPage.spec.tsx. */
 const PROOF = ['(default)/proof/page.tsx']
 
+/**
+ * A proposal's tracked link, never indexed and never canonical, which draws itself too:
+ * tests/unit/pipelineProposalPage.spec.tsx.
+ */
+const PROPOSAL_LINK = ['(default)/p/[token]/page.tsx']
+
 /** The Journal's pages, which draw themselves too: tests/unit/journalPages.spec.tsx. */
 const JOURNAL = [
   '(education)/journal/page.tsx',
@@ -247,7 +256,16 @@ describe('the pages under src/app/(platform)', () => {
       .map((file) => file.replaceAll('\\', '/'))
       .filter((file) => /(?:^|\/)(?:page|not-found)\.tsx$/.test(file))
     expect(found.sort()).toEqual(
-      [...OWN, ...PROOF, ...JOURNAL, ...DOORS, ...SECTIONS, ...NOT_FOUND, ...BOOKING]
+      [
+        ...OWN,
+        ...PROOF,
+        ...PROPOSAL_LINK,
+        ...JOURNAL,
+        ...DOORS,
+        ...SECTIONS,
+        ...NOT_FOUND,
+        ...BOOKING,
+      ]
         .map((entry) => (typeof entry === 'string' ? entry : entry.file))
         .sort(),
     )

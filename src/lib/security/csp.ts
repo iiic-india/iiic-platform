@@ -5,8 +5,9 @@
  * they import. Styles may be inline: Payload's admin injects <style> tags at runtime
  * (react-select through Emotion) and React renders style attributes; inline styles cannot
  * run code. Third-party origins join with the features that need them: Cloudflare's beacon
- * (M2, only where its token is set: src/lib/analytics/beacon.ts), Turnstile (M2), Razorpay on
- * the payment step only (M3).
+ * (M2, only where its token is set: src/lib/analytics/beacon.ts), Turnstile (M4, on public pages
+ * only where both its keys are set: src/lib/enquiryForms/turnstile.ts), Razorpay on the payment
+ * step only (M3).
  */
 export type CspOptions = {
   nonce: string
@@ -33,7 +34,10 @@ export type CspOptions = {
   frameAncestors?: "'self'" | "'none'"
   /** What this page may frame: nothing, except the admin, whose live preview frames the site. */
   frameSources?: "'self'" | "'none'"
-  /** Other origins this page may frame: the gateway's checkout, on the payment step only. */
+  /**
+   * Other origins this page may frame: the gateway's checkout, on the payment step only; and
+   * Turnstile's check, which draws itself in a frame, on public pages where its keys are set.
+   */
   frameOrigins?: readonly string[]
 }
 
@@ -48,10 +52,14 @@ export function buildCsp({
   frameSources = "'none'",
   frameOrigins = [],
 }: CspOptions): string {
-  const frames =
-    frameSources === "'none'" && frameOrigins.length
-      ? [...frameOrigins]
-      : [frameSources, ...frameOrigins]
+  // 'none' stands alone: with an origin to frame, it gives way to that origin.
+  const frames: [string, ...string[]] =
+    frameOrigins.length === 0
+      ? [frameSources]
+      : ([...(frameSources === "'self'" ? ["'self'"] : []), ...frameOrigins] as [
+          string,
+          ...string[],
+        ])
   const directives: [string, ...string[]][] = [
     ['default-src', "'self'"],
     [
@@ -66,7 +74,7 @@ export function buildCsp({
     ['img-src', "'self'", 'data:', 'blob:', ...imageOrigins],
     ['font-src', "'self'"],
     ['connect-src', "'self'", ...connectOrigins],
-    ['frame-src', ...(frames as [string, ...string[]])],
+    ['frame-src', ...frames],
     ['object-src', "'none'"],
     ['base-uri', "'self'"],
     ['form-action', "'self'"],

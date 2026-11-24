@@ -12,6 +12,15 @@ import { HTML_LIMITED_BOTS } from './src/lib/seo/bots'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
+/** What the PDF renderer reads from disk where it runs (src/lib/pdf/templates.ts, render.ts). */
+const PDF_RENDERER_FILES = [
+  './src/brand/templates/print/*.html',
+  './src/brand/css/*.css',
+  './src/brand/fonts/*.woff2',
+  './src/brand/logo/*.svg',
+  './node_modules/@sparticuz/chromium/bin/**',
+]
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -46,15 +55,11 @@ const nextConfig: NextConfig = {
   },
   // The PDF renderer reads the kit's print templates, stylesheet, fonts and logos from disk
   // (src/lib/pdf/templates.ts), and the serverless Chromium unpacks its browser from its package;
-  // the functions that run jobs ship them (D-09; docs/07, PDFs).
+  // the functions that run jobs and the admin's proposal actions ship them, and so does the
+  // tracked link's PDF (/p/[token]/pdf, docs/17 §5) (D-09; docs/07, PDFs).
   outputFileTracingIncludes: {
-    '/api/**': [
-      './src/brand/templates/print/*.html',
-      './src/brand/css/*.css',
-      './src/brand/fonts/*.woff2',
-      './src/brand/logo/*.svg',
-      './node_modules/@sparticuz/chromium/bin/**',
-    ],
+    '/api/**': PDF_RENDERER_FILES,
+    '/p/**': PDF_RENDERER_FILES,
   },
 }
 

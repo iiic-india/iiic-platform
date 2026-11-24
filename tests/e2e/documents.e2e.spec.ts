@@ -6,6 +6,7 @@ import {
   FAKE_INVOICE,
   FAKE_INVOICE_PRINTS,
   FAKE_PROPOSAL,
+  FAKE_PROPOSAL_FEE_PRINTS as FEE_PRINTS,
   FAKE_PROPOSAL_PRINTS,
 } from '../helpers/documents'
 
@@ -61,12 +62,28 @@ test('an invoice that waits for a fact is not printed for a client', async () =>
 test('the proposal PDF prints its cover and every value', async () => {
   const rendered = await renderProposalPdf(FAKE_PROPOSAL, {
     serverless: false,
-    pricesPublic: true,
+    withFees: true,
   })
   if (!rendered.ok) throw new Error(rendered.error.code)
   const pdf = await readPdf(rendered.value.pdf)
   // The cover is a page of its own; the body flows after it.
   expect(pdf.pages).toBeGreaterThanOrEqual(2)
   for (const value of FAKE_PROPOSAL_PRINTS) expect(pdf.text).toContain(squash(value))
+  expect(pdf.text).not.toContain('{{')
+})
+
+test('the proposal PDF without fees prints the rest and no fee, amount or total (D-21)', async () => {
+  const rendered = await renderProposalPdf(FAKE_PROPOSAL, {
+    serverless: false,
+    withFees: false,
+  })
+  if (!rendered.ok) throw new Error(rendered.error.code)
+  const pdf = await readPdf(rendered.value.pdf)
+  for (const value of FAKE_PROPOSAL_PRINTS.filter((value) => !FEE_PRINTS.includes(value))) {
+    expect(pdf.text).toContain(squash(value))
+  }
+  for (const absent of [...FEE_PRINTS, 'Investment', '₹', 'Total, excluding GST']) {
+    expect(pdf.text).not.toContain(squash(absent))
+  }
   expect(pdf.text).not.toContain('{{')
 })

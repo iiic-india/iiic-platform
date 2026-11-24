@@ -18,25 +18,33 @@ import { BusyBlocks } from './collections/BusyBlocks'
 import { CalendarConnections } from './collections/CalendarConnections'
 import { Consents } from './collections/Consents'
 import { ConsentVersions } from './collections/ConsentVersions'
+import { Enquiries } from './collections/Enquiries'
 import { Events } from './collections/Events'
 import { Faqs } from './collections/Faqs'
 import { GatewayEvents } from './collections/GatewayEvents'
 import { Invoices } from './collections/Invoices'
+import { LeadActivities } from './collections/LeadActivities'
+import { Leads } from './collections/Leads'
 import { Media } from './collections/Media'
 import { MissingPages } from './collections/MissingPages'
+import { Organisations } from './collections/Organisations'
 import { Pages } from './collections/Pages'
 import { Payments } from './collections/Payments'
 import { People } from './collections/People'
 import { Posts } from './collections/Posts'
 import { Practitioners } from './collections/Practitioners'
 import { PriceHistory } from './collections/PriceHistory'
+import { Proposals } from './collections/Proposals'
+import { ProposalVersions } from './collections/ProposalVersions'
 import { redirects } from './collections/Redirects'
 import { Refunds } from './collections/Refunds'
 import { Services } from './collections/Services'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
+import { Tasks } from './collections/Tasks'
 import { Testimonials } from './collections/Testimonials'
 import { Topics } from './collections/Topics'
 import { Users } from './collections/Users'
+import { pipelineEndpoints } from './components/admin/pipeline/moveEndpoint'
 import { Settings } from './globals/Settings'
 import { jobs } from './jobs'
 import { TOTP_OPTIONS } from './lib/auth/totp'
@@ -106,6 +114,8 @@ export default buildConfig({
         '/components/admin/PlaceholdersNavLink#PlaceholdersNavLink',
         // Calendar → Working hours, with the preview of bookable times (docs/05; docs/16 §12).
         '/components/admin/office/WorkingHoursNavLink#WorkingHoursNavLink',
+        // The Pipeline board (M4; docs/17 §12 C).
+        '/components/admin/pipeline/PipelineNavLink#PipelineNavLink',
       ],
       // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
       // plugin spreads after its own, so these win. One labelled code field each; the verify
@@ -125,6 +135,12 @@ export default buildConfig({
         workingHours: {
           Component: '/components/admin/office/WorkingHoursView#WorkingHoursView',
           path: '/working-hours',
+          exact: true,
+        },
+        // The Pipeline board (docs/17 §12 C); it checks the user, the role and the code itself.
+        pipeline: {
+          Component: '/components/admin/pipeline/PipelineView#PipelineView',
+          path: '/pipeline',
           exact: true,
         },
       },
@@ -163,6 +179,14 @@ export default buildConfig({
     GatewayEvents,
     Refunds,
     Invoices,
+    // The pipeline (M4; docs/17-pipeline-design.md).
+    Organisations,
+    Leads,
+    LeadActivities,
+    Tasks,
+    Enquiries,
+    Proposals,
+    ProposalVersions,
   ],
   globals: [Settings],
   // Automations (src/jobs/index.ts): never run on their own here.
@@ -202,7 +226,12 @@ export default buildConfig({
   // The server's own faults go to Sentry, scrubbed (src/lib/monitoring/sentry.ts, D-49); an owner
   // can send a test error to check that reports arrive.
   hooks: { afterError: [reportServerError] },
-  endpoints: [{ path: '/report-test-error', method: 'post', handler: reportTestError }],
+  // The board's "Move to stage" checks the user, the role and the code first
+  // (src/components/admin/pipeline/moveEndpoint.ts).
+  endpoints: [
+    { path: '/report-test-error', method: 'post', handler: reportTestError },
+    ...pipelineEndpoints,
+  ],
   plugins: [
     // Media in Cloudflare R2's public bucket (docs/07) once R2 is configured; on the local disk
     // before that (development, CI). Files are served straight from the bucket's public URL.

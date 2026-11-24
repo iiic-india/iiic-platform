@@ -114,3 +114,12 @@ export const FAKE_PROPOSAL_PRINTS = [
   '1,500.50',
   'Fake next step.',
 ] as const
+
+/** What FAKE_PROPOSAL prints only in its fees section: the items, the amounts and the total. */
+export const FAKE_PROPOSAL_FEE_PRINTS: readonly string[] = [
+  'Fake fee one',
+  'Fake fee two',
+  '1,000.00',
+  '500.50',
+  '1,500.50',
+]

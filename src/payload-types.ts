@@ -94,6 +94,13 @@ export interface Config {
     'gateway-events': GatewayEvent;
     refunds: Refund;
     invoices: Invoice;
+    organisations: Organisation;
+    leads: Lead;
+    'lead-activities': LeadActivity;
+    tasks: Task;
+    enquiries: Enquiry;
+    proposals: Proposal;
+    'proposal-versions': ProposalVersion;
     'search-index': SearchIndex;
     redirects: Redirect;
     'totp-attempts': TotpAttempt;
@@ -110,6 +117,19 @@ export interface Config {
     };
     consents: {
       withdrawal: 'consents';
+    };
+    organisations: {
+      people: 'people';
+      leads: 'leads';
+    };
+    leads: {
+      activities: 'lead-activities';
+      tasks: 'tasks';
+      proposals: 'proposals';
+      enquiries: 'enquiries';
+    };
+    proposals: {
+      versions: 'proposal-versions';
     };
   };
   collectionsSelect: {
@@ -140,6 +160,13 @@ export interface Config {
     'gateway-events': GatewayEventsSelect<false> | GatewayEventsSelect<true>;
     refunds: RefundsSelect<false> | RefundsSelect<true>;
     invoices: InvoicesSelect<false> | InvoicesSelect<true>;
+    organisations: OrganisationsSelect<false> | OrganisationsSelect<true>;
+    leads: LeadsSelect<false> | LeadsSelect<true>;
+    'lead-activities': LeadActivitiesSelect<false> | LeadActivitiesSelect<true>;
+    tasks: TasksSelect<false> | TasksSelect<true>;
+    enquiries: EnquiriesSelect<false> | EnquiriesSelect<true>;
+    proposals: ProposalsSelect<false> | ProposalsSelect<true>;
+    'proposal-versions': ProposalVersionsSelect<false> | ProposalVersionsSelect<true>;
     'search-index': SearchIndexSelect<false> | SearchIndexSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
@@ -174,6 +201,9 @@ export interface Config {
       'B14-refresh-busy-times': TaskB14RefreshBusyTimes;
       'B3-issue-invoice': TaskB3IssueInvoice;
       'B7-issue-credit-note': TaskB7IssueCreditNote;
+      'P2-lead-from-call': TaskP2LeadFromCall;
+      'P3-P4-lead-alerts': TaskP3P4LeadAlerts;
+      'P8-expire-proposals': TaskP8ExpireProposals;
       inline: {
         input: unknown;
         output: unknown;
@@ -277,6 +307,8 @@ export interface Page {
     | FounderNoteBlock
     | ContactBlock
     | LegalBlock
+    | TeamMapRequestBlock
+    | PartnershipEnquiryBlock
     | FaqBlock
     | BandBlock
   )[];
@@ -628,6 +660,24 @@ export interface LegalBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'legal';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TeamMapRequestBlock".
+ */
+export interface TeamMapRequestBlock {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'teamMapRequest';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PartnershipEnquiryBlock".
+ */
+export interface PartnershipEnquiryBlock {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'partnershipEnquiry';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1094,6 +1144,8 @@ export interface Person {
    */
   ageBand?: ('under18' | 'adult') | null;
   city?: string | null;
+  organisation?: (number | null) | Organisation;
+  jobTitle?: string | null;
   /**
    * How the person first reached IIIC, such as a booking or a referral.
    */
@@ -1132,82 +1184,43 @@ export interface Person {
   createdAt: string;
 }
 /**
- * Every consent, and every withdrawal as an entry of its own. Entries are never changed or deleted.
- *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "consents".
+ * via the `definition` "organisations".
  */
-export interface Consent {
+export interface Organisation {
   id: number;
+  name: string;
+  type: 'business' | 'institution';
   /**
-   * Named by the platform.
+   * Its address, such as example.com.
    */
-  title?: string | null;
-  /**
-   * To record a withdrawal, choose the consent it ends. Leave empty to record a consent.
-   */
-  withdraws?: (number | null) | Consent;
-  /**
-   * For a withdrawal, taken from the consent it ends.
-   */
-  person?: (number | null) | Person;
-  /**
-   * The consent text the person saw, in the version they saw. For a withdrawal, taken from the consent it ends.
-   */
-  noticeVersion: number | ConsentVersion;
-  /**
-   * Taken from the notice.
-   */
-  purpose:
-    | 'bookingCommunications'
-    | 'marketingEmail'
-    | 'marketingWhatsapp'
-    | 'mapStorage'
-    | 'mapSharing'
-    | 'testimonialPublication'
-    | 'relatedProgrammes';
-  /**
-   * Taken from the notice.
-   */
-  language: 'en-IN' | 'gu-IN' | 'hi-IN';
-  /**
-   * When the person gave it: leave empty for now. For a withdrawal, taken from the consent it ends.
-   */
-  grantedAt: string;
-  grantedAt_tz: 'Asia/Kolkata';
-  /**
-   * Only on a withdrawal: when the person withdrew. Leave empty for now.
-   */
-  withdrawnAt?: string | null;
-  withdrawnAt_tz?: 'Asia/Kolkata' | null;
-  /**
-   * How it reached IIIC.
-   */
-  channel: 'web' | 'email' | 'whatsapp' | 'phone' | 'inPerson' | 'recordDeleted';
-  /**
-   * What shows it was the person: recorded by the server for a form on the site.
-   */
-  evidence?: {
-    /**
-     * Which form, or which message they replied to.
-     */
-    form?: string | null;
-    /**
-     * For a consent by email, WhatsApp, phone or paper: the file name of the saved copy.
-     */
-    reference?: string | null;
-    ip?: string | null;
-    userAgent?: string | null;
+  website?: string | null;
+  sector?: string | null;
+  teamSizeBand?: ('upTo10' | 'from11to50' | 'from51to200' | 'from201to500' | 'over500') | null;
+  city?: string | null;
+  billing?: {
+    gstin?: string | null;
+    line1?: string | null;
+    line2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
   };
   /**
-   * For a counselling booking or the Map: the message id of the email that confirmed the consent in writing.
+   * The website’s host, for matching requests.
    */
-  writtenReceipt?: string | null;
+  domain?: string | null;
   /**
-   * The entry that withdrew this consent, if it has been withdrawn.
+   * The name as matching compares it.
    */
-  withdrawal?: {
-    docs?: (number | Consent)[];
+  nameKey?: string | null;
+  people?: {
+    docs?: (number | Person)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  leads?: {
+    docs?: (number | Lead)[];
     hasNextPage?: boolean;
     totalDocs?: number;
   };
@@ -1215,39 +1228,104 @@ export interface Consent {
   createdAt: string;
 }
 /**
- * The words beside each consent checkbox, one version at a time. A version in force never changes: add a new one.
- *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "consent-versions".
+ * via the `definition` "leads".
  */
-export interface ConsentVersion {
+export interface Lead {
   id: number;
   /**
    * Named by the platform.
    */
   title?: string | null;
-  purpose:
-    | 'bookingCommunications'
-    | 'marketingEmail'
-    | 'marketingWhatsapp'
-    | 'mapStorage'
-    | 'mapSharing'
-    | 'testimonialPublication'
-    | 'relatedProgrammes';
-  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  kind: 'consultancy' | 'partnership';
+  stage:
+    | 'new'
+    | 'contacted'
+    | 'teamMapScheduled'
+    | 'teamMapDone'
+    | 'debriefHeld'
+    | 'proposalSent'
+    | 'won'
+    | 'lost'
+    | 'inConversation'
+    | 'mouDrafted'
+    | 'signed'
+    | 'closed';
+  stageChangedAt?: string | null;
+  stageChangedAt_tz?: 'Asia/Kolkata' | null;
+  organisation?: (number | null) | Organisation;
+  person?: (number | null) | Person;
   /**
-   * Numbered by the platform.
+   * Who on the staff looks after it.
    */
-  version: number;
+  owner?: (number | null) | User;
+  nextAction?: string | null;
   /**
-   * The words exactly as the person sees them.
+   * The day in India, as YYYY-MM-DD.
    */
-  text: string;
+  dueOn?: string | null;
+  source: 'teamMapForm' | 'partnershipForm' | 'proposalCall' | 'office';
   /**
-   * From this time, forms show this version. After it, the text can no longer change.
+   * Who referred them, or where they heard of IIIC. Optional.
    */
-  effectiveFrom: string;
-  effectiveFrom_tz: 'Asia/Kolkata';
+  sourceNote?: string | null;
+  /**
+   * The campaign tags on the link the request came from, if any.
+   */
+  utm?: {
+    source?: string | null;
+    medium?: string | null;
+    campaign?: string | null;
+    term?: string | null;
+    content?: string | null;
+  };
+  /**
+   * What it might be worth, in paise, if the office wants to note it. Optional.
+   */
+  valueEstimatePaise?: number | null;
+  /**
+   * Required when it is lost or closed. Kept for the won-and-lost report.
+   */
+  endReason?: string | null;
+  calls?: (number | Booking)[] | null;
+  previousLead?: (number | null) | Lead;
+  /**
+   * When someone on the staff first acted on it.
+   */
+  touchedAt?: string | null;
+  touchedAt_tz?: 'Asia/Kolkata' | null;
+  lastActivityAt?: string | null;
+  lastActivityAt_tz?: 'Asia/Kolkata' | null;
+  closedAt?: string | null;
+  closedAt_tz?: 'Asia/Kolkata' | null;
+  alerts?: {
+    untouched?: ('amber' | 'red') | null;
+    /**
+     * The last activity a stale alert was raised for.
+     */
+    staleFor?: string | null;
+    staleFor_tz?: 'Asia/Kolkata' | null;
+  };
+  activities?: {
+    docs?: (number | LeadActivity)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  tasks?: {
+    docs?: (number | Task)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  proposals?: {
+    docs?: (number | Proposal)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  enquiries?: {
+    docs?: (number | Enquiry)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -1394,6 +1472,389 @@ export interface Event {
    */
   joinLink?: string | null;
   active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Every consent, and every withdrawal as an entry of its own. Entries are never changed or deleted.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consents".
+ */
+export interface Consent {
+  id: number;
+  /**
+   * Named by the platform.
+   */
+  title?: string | null;
+  /**
+   * To record a withdrawal, choose the consent it ends. Leave empty to record a consent.
+   */
+  withdraws?: (number | null) | Consent;
+  /**
+   * For a withdrawal, taken from the consent it ends.
+   */
+  person?: (number | null) | Person;
+  /**
+   * The consent text the person saw, in the version they saw. For a withdrawal, taken from the consent it ends.
+   */
+  noticeVersion: number | ConsentVersion;
+  /**
+   * Taken from the notice.
+   */
+  purpose:
+    | 'bookingCommunications'
+    | 'marketingEmail'
+    | 'marketingWhatsapp'
+    | 'mapStorage'
+    | 'mapSharing'
+    | 'testimonialPublication'
+    | 'relatedProgrammes'
+    | 'enquiryReplies';
+  /**
+   * Taken from the notice.
+   */
+  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  /**
+   * When the person gave it: leave empty for now. For a withdrawal, taken from the consent it ends.
+   */
+  grantedAt: string;
+  grantedAt_tz: 'Asia/Kolkata';
+  /**
+   * Only on a withdrawal: when the person withdrew. Leave empty for now.
+   */
+  withdrawnAt?: string | null;
+  withdrawnAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * How it reached IIIC.
+   */
+  channel: 'web' | 'email' | 'whatsapp' | 'phone' | 'inPerson' | 'recordDeleted';
+  /**
+   * What shows it was the person: recorded by the server for a form on the site.
+   */
+  evidence?: {
+    /**
+     * Which form, or which message they replied to.
+     */
+    form?: string | null;
+    /**
+     * For a consent by email, WhatsApp, phone or paper: the file name of the saved copy.
+     */
+    reference?: string | null;
+    ip?: string | null;
+    userAgent?: string | null;
+  };
+  /**
+   * For a counselling booking or the Map: the message id of the email that confirmed the consent in writing.
+   */
+  writtenReceipt?: string | null;
+  /**
+   * The entry that withdrew this consent, if it has been withdrawn.
+   */
+  withdrawal?: {
+    docs?: (number | Consent)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The words beside each consent checkbox, one version at a time. A version in force never changes: add a new one.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "consent-versions".
+ */
+export interface ConsentVersion {
+  id: number;
+  /**
+   * Named by the platform.
+   */
+  title?: string | null;
+  purpose:
+    | 'bookingCommunications'
+    | 'marketingEmail'
+    | 'marketingWhatsapp'
+    | 'mapStorage'
+    | 'mapSharing'
+    | 'testimonialPublication'
+    | 'relatedProgrammes'
+    | 'enquiryReplies';
+  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  /**
+   * Numbered by the platform.
+   */
+  version: number;
+  /**
+   * The words exactly as the person sees them.
+   */
+  text: string;
+  /**
+   * From this time, forms show this version. After it, the text can no longer change.
+   */
+  effectiveFrom: string;
+  effectiveFrom_tz: 'Asia/Kolkata';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lead-activities".
+ */
+export interface LeadActivity {
+  id: number;
+  lead: number | Lead;
+  type: 'note' | 'call' | 'email' | 'whatsapp' | 'stageChange' | 'file' | 'enquiry' | 'proposal' | 'booking';
+  /**
+   * When it happened, if not now.
+   */
+  at: string;
+  at_tz: 'Asia/Kolkata';
+  /**
+   * In the office’s own words. No session content.
+   */
+  body?: string | null;
+  fileReference?: string | null;
+  by?: (number | null) | User;
+  fromStage?:
+    | (
+        | 'new'
+        | 'contacted'
+        | 'teamMapScheduled'
+        | 'teamMapDone'
+        | 'debriefHeld'
+        | 'proposalSent'
+        | 'won'
+        | 'lost'
+        | 'inConversation'
+        | 'mouDrafted'
+        | 'signed'
+        | 'closed'
+      )
+    | null;
+  toStage?:
+    | (
+        | 'new'
+        | 'contacted'
+        | 'teamMapScheduled'
+        | 'teamMapDone'
+        | 'debriefHeld'
+        | 'proposalSent'
+        | 'won'
+        | 'lost'
+        | 'inConversation'
+        | 'mouDrafted'
+        | 'signed'
+        | 'closed'
+      )
+    | null;
+  enquiry?: (number | null) | Enquiry;
+  proposalVersion?: (number | null) | ProposalVersion;
+  booking?: (number | null) | Booking;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "enquiries".
+ */
+export interface Enquiry {
+  id: number;
+  kind: 'teamMap' | 'partnership';
+  /**
+   * Mark as spam to keep it off the boards.
+   */
+  status: 'received' | 'spam';
+  outcome?: ('newLead' | 'existingLead') | null;
+  receivedAt: string;
+  receivedAt_tz: 'Asia/Kolkata';
+  submitted: {
+    organisationName: string;
+    website?: string | null;
+    teamSizeBand?: ('upTo10' | 'from11to50' | 'from51to200' | 'from201to500' | 'over500') | null;
+    sector?: string | null;
+    contactName: string;
+    role?: string | null;
+    email: string;
+    mobile?: string | null;
+    message?: string | null;
+  };
+  person?: (number | null) | Person;
+  organisation?: (number | null) | Organisation;
+  lead?: (number | null) | Lead;
+  conflict?: 'emailAndMobileDiffer' | null;
+  consents?: (number | Consent)[] | null;
+  page?: string | null;
+  turnstile?: ('passed' | 'off') | null;
+  utm?: {
+    source?: string | null;
+    medium?: string | null;
+    campaign?: string | null;
+    term?: string | null;
+    content?: string | null;
+  };
+  submitterHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposal-versions".
+ */
+export interface ProposalVersion {
+  id: number;
+  proposal: number | Proposal;
+  number: number;
+  createdBy?: (number | null) | User;
+  document:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  feeTotalPaise?: number | null;
+  pdf?: {
+    key?: string | null;
+    sha256?: string | null;
+    renderedAt?: string | null;
+    renderedAt_tz?: 'Asia/Kolkata' | null;
+  };
+  sending?: {
+    sentAt?: string | null;
+    sentAt_tz?: 'Asia/Kolkata' | null;
+    sentBy?: (number | null) | User;
+    sentTo?: (number | null) | Person;
+    emailedAt?: string | null;
+    emailedAt_tz?: 'Asia/Kolkata' | null;
+    supersededAt?: string | null;
+    supersededAt_tz?: 'Asia/Kolkata' | null;
+    linkRevokedAt?: string | null;
+    linkRevokedAt_tz?: 'Asia/Kolkata' | null;
+  };
+  tracking?: {
+    firstViewedAt?: string | null;
+    firstViewedAt_tz?: 'Asia/Kolkata' | null;
+    lastViewedAt?: string | null;
+    lastViewedAt_tz?: 'Asia/Kolkata' | null;
+    viewCount?: number | null;
+  };
+  linkTokenHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposals".
+ */
+export interface Proposal {
+  id: number;
+  reference?: string | null;
+  lead: number | Lead;
+  status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined' | 'expired';
+  title: string;
+  subtitle?: string | null;
+  /**
+   * The name printed under "Prepared by".
+   */
+  preparedByName?: string | null;
+  preparedByTitle?: string | null;
+  /**
+   * The last day it stands, if IIIC gives one. Empty: it does not expire.
+   */
+  validUntil?: string | null;
+  /**
+   * What the client faces, as IIIC understood it.
+   */
+  situation?: string | null;
+  /**
+   * How IIIC proposes to work on it.
+   */
+  approach?: string | null;
+  phases?:
+    | {
+        name: string;
+        duration: string;
+        what: string;
+        outcome: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * What IIIC and the client will look at.
+   */
+  measures?: string | null;
+  fees?:
+    | {
+        item: string;
+        amountPaise: number;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The sum of the fees, worked out by the platform.
+   */
+  feeTotalPaise?: number | null;
+  /**
+   * What the client does to go ahead.
+   */
+  nextStep?: string | null;
+  /**
+   * The latest version made.
+   */
+  currentVersion?: (number | null) | ProposalVersion;
+  /**
+   * The version the client has.
+   */
+  sentVersion?: (number | null) | ProposalVersion;
+  acceptedAt?: string | null;
+  acceptedAt_tz?: 'Asia/Kolkata' | null;
+  declinedAt?: string | null;
+  declinedAt_tz?: 'Asia/Kolkata' | null;
+  expiredAt?: string | null;
+  expiredAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * When they accept or decline, in the office’s words.
+   */
+  answerNote?: string | null;
+  versions?: {
+    docs?: (number | ProposalVersion)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tasks".
+ */
+export interface Task {
+  id: number;
+  title: string;
+  kind: 'firstReply' | 'proposalFollowUp' | 'reviewFollowUpDraft' | 'other';
+  status: 'open' | 'done' | 'cancelled';
+  /**
+   * The day in India, as YYYY-MM-DD.
+   */
+  dueOn: string;
+  /**
+   * Whose list it waits on.
+   */
+  role: 'operator' | 'owner';
+  /**
+   * Someone in particular, if not whoever holds the role.
+   */
+  assignee?: (number | null) | User;
+  lead?: (number | null) | Lead;
+  note?: string | null;
+  doneAt?: string | null;
+  doneAt_tz?: 'Asia/Kolkata' | null;
+  doneBy?: (number | null) | User;
+  automation?: string | null;
+  key?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1984,7 +2445,10 @@ export interface PayloadJob {
           | 'B2-B7-sync-calendar-event'
           | 'B14-refresh-busy-times'
           | 'B3-issue-invoice'
-          | 'B7-issue-credit-note';
+          | 'B7-issue-credit-note'
+          | 'P2-lead-from-call'
+          | 'P3-P4-lead-alerts'
+          | 'P8-expire-proposals';
         taskID: string;
         input?:
           | {
@@ -2028,6 +2492,9 @@ export interface PayloadJob {
         | 'B14-refresh-busy-times'
         | 'B3-issue-invoice'
         | 'B7-issue-credit-note'
+        | 'P2-lead-from-call'
+        | 'P3-P4-lead-alerts'
+        | 'P8-expire-proposals'
       )
     | null;
   queue?: string | null;
@@ -2136,6 +2603,34 @@ export interface PayloadLockedDocument {
         value: number | Invoice;
       } | null)
     | ({
+        relationTo: 'organisations';
+        value: number | Organisation;
+      } | null)
+    | ({
+        relationTo: 'leads';
+        value: number | Lead;
+      } | null)
+    | ({
+        relationTo: 'lead-activities';
+        value: number | LeadActivity;
+      } | null)
+    | ({
+        relationTo: 'tasks';
+        value: number | Task;
+      } | null)
+    | ({
+        relationTo: 'enquiries';
+        value: number | Enquiry;
+      } | null)
+    | ({
+        relationTo: 'proposals';
+        value: number | Proposal;
+      } | null)
+    | ({
+        relationTo: 'proposal-versions';
+        value: number | ProposalVersion;
+      } | null)
+    | ({
         relationTo: 'search-index';
         value: number | SearchIndex;
       } | null)
@@ -2239,6 +2734,8 @@ export interface PagesSelect<T extends boolean = true> {
         founderNote?: T | FounderNoteBlockSelect<T>;
         contact?: T | ContactBlockSelect<T>;
         legal?: T | LegalBlockSelect<T>;
+        teamMapRequest?: T | TeamMapRequestBlockSelect<T>;
+        partnershipEnquiry?: T | PartnershipEnquiryBlockSelect<T>;
         faq?: T | FaqBlockSelect<T>;
         band?: T | BandBlockSelect<T>;
       };
@@ -2477,6 +2974,22 @@ export interface LegalBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TeamMapRequestBlock_select".
+ */
+export interface TeamMapRequestBlockSelect<T extends boolean = true> {
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PartnershipEnquiryBlock_select".
+ */
+export interface PartnershipEnquiryBlockSelect<T extends boolean = true> {
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "FaqBlock_select".
  */
 export interface FaqBlockSelect<T extends boolean = true> {
@@ -2702,6 +3215,8 @@ export interface PeopleSelect<T extends boolean = true> {
   language?: T;
   ageBand?: T;
   city?: T;
+  organisation?: T;
+  jobTitle?: T;
   source?: T;
   utm?:
     | T
@@ -3162,6 +3677,260 @@ export interface InvoicesSelect<T extends boolean = true> {
   pdfKey?: T;
   failureCode?: T;
   idempotencyKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "organisations_select".
+ */
+export interface OrganisationsSelect<T extends boolean = true> {
+  name?: T;
+  type?: T;
+  website?: T;
+  sector?: T;
+  teamSizeBand?: T;
+  city?: T;
+  billing?:
+    | T
+    | {
+        gstin?: T;
+        line1?: T;
+        line2?: T;
+        city?: T;
+        state?: T;
+        postalCode?: T;
+      };
+  domain?: T;
+  nameKey?: T;
+  people?: T;
+  leads?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "leads_select".
+ */
+export interface LeadsSelect<T extends boolean = true> {
+  title?: T;
+  kind?: T;
+  stage?: T;
+  stageChangedAt?: T;
+  stageChangedAt_tz?: T;
+  organisation?: T;
+  person?: T;
+  owner?: T;
+  nextAction?: T;
+  dueOn?: T;
+  source?: T;
+  sourceNote?: T;
+  utm?:
+    | T
+    | {
+        source?: T;
+        medium?: T;
+        campaign?: T;
+        term?: T;
+        content?: T;
+      };
+  valueEstimatePaise?: T;
+  endReason?: T;
+  calls?: T;
+  previousLead?: T;
+  touchedAt?: T;
+  touchedAt_tz?: T;
+  lastActivityAt?: T;
+  lastActivityAt_tz?: T;
+  closedAt?: T;
+  closedAt_tz?: T;
+  alerts?:
+    | T
+    | {
+        untouched?: T;
+        staleFor?: T;
+        staleFor_tz?: T;
+      };
+  activities?: T;
+  tasks?: T;
+  proposals?: T;
+  enquiries?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lead-activities_select".
+ */
+export interface LeadActivitiesSelect<T extends boolean = true> {
+  lead?: T;
+  type?: T;
+  at?: T;
+  at_tz?: T;
+  body?: T;
+  fileReference?: T;
+  by?: T;
+  fromStage?: T;
+  toStage?: T;
+  enquiry?: T;
+  proposalVersion?: T;
+  booking?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tasks_select".
+ */
+export interface TasksSelect<T extends boolean = true> {
+  title?: T;
+  kind?: T;
+  status?: T;
+  dueOn?: T;
+  role?: T;
+  assignee?: T;
+  lead?: T;
+  note?: T;
+  doneAt?: T;
+  doneAt_tz?: T;
+  doneBy?: T;
+  automation?: T;
+  key?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "enquiries_select".
+ */
+export interface EnquiriesSelect<T extends boolean = true> {
+  kind?: T;
+  status?: T;
+  outcome?: T;
+  receivedAt?: T;
+  receivedAt_tz?: T;
+  submitted?:
+    | T
+    | {
+        organisationName?: T;
+        website?: T;
+        teamSizeBand?: T;
+        sector?: T;
+        contactName?: T;
+        role?: T;
+        email?: T;
+        mobile?: T;
+        message?: T;
+      };
+  person?: T;
+  organisation?: T;
+  lead?: T;
+  conflict?: T;
+  consents?: T;
+  page?: T;
+  turnstile?: T;
+  utm?:
+    | T
+    | {
+        source?: T;
+        medium?: T;
+        campaign?: T;
+        term?: T;
+        content?: T;
+      };
+  submitterHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposals_select".
+ */
+export interface ProposalsSelect<T extends boolean = true> {
+  reference?: T;
+  lead?: T;
+  status?: T;
+  title?: T;
+  subtitle?: T;
+  preparedByName?: T;
+  preparedByTitle?: T;
+  validUntil?: T;
+  situation?: T;
+  approach?: T;
+  phases?:
+    | T
+    | {
+        name?: T;
+        duration?: T;
+        what?: T;
+        outcome?: T;
+        id?: T;
+      };
+  measures?: T;
+  fees?:
+    | T
+    | {
+        item?: T;
+        amountPaise?: T;
+        id?: T;
+      };
+  feeTotalPaise?: T;
+  nextStep?: T;
+  currentVersion?: T;
+  sentVersion?: T;
+  acceptedAt?: T;
+  acceptedAt_tz?: T;
+  declinedAt?: T;
+  declinedAt_tz?: T;
+  expiredAt?: T;
+  expiredAt_tz?: T;
+  answerNote?: T;
+  versions?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposal-versions_select".
+ */
+export interface ProposalVersionsSelect<T extends boolean = true> {
+  proposal?: T;
+  number?: T;
+  createdBy?: T;
+  document?: T;
+  feeTotalPaise?: T;
+  pdf?:
+    | T
+    | {
+        key?: T;
+        sha256?: T;
+        renderedAt?: T;
+        renderedAt_tz?: T;
+      };
+  sending?:
+    | T
+    | {
+        sentAt?: T;
+        sentAt_tz?: T;
+        sentBy?: T;
+        sentTo?: T;
+        emailedAt?: T;
+        emailedAt_tz?: T;
+        supersededAt?: T;
+        supersededAt_tz?: T;
+        linkRevokedAt?: T;
+        linkRevokedAt_tz?: T;
+      };
+  tracking?:
+    | T
+    | {
+        firstViewedAt?: T;
+        firstViewedAt_tz?: T;
+        lastViewedAt?: T;
+        lastViewedAt_tz?: T;
+        viewCount?: T;
+      };
+  linkTokenHash?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3635,6 +4404,41 @@ export interface TaskB7IssueCreditNote {
   output: {
     outcome: string;
     pdf?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP2-lead-from-call".
+ */
+export interface TaskP2LeadFromCall {
+  input: {
+    bookingId: number;
+  };
+  output: {
+    outcome: string;
+    leadId?: number | null;
+    created?: boolean | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP3-P4-lead-alerts".
+ */
+export interface TaskP3P4LeadAlerts {
+  input?: unknown;
+  output: {
+    untouched: number;
+    stale: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP8-expire-proposals".
+ */
+export interface TaskP8ExpireProposals {
+  input?: unknown;
+  output: {
+    expired: number;
   };
 }
 /**

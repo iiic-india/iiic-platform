@@ -1,3 +1,4 @@
+import { FORM_ANCHORS } from '@/blocks/pageBlocks'
 import type { PageContent } from '@/lib/content/types'
 import {
   CONSULTANCY_NAME,
@@ -112,14 +113,14 @@ export const BRAND_POSITIONING = servicePage(brand, {
     'Brand positioning for small and mid-size businesses in Ahmedabad, part of IIIC’s Business & Management Consultancy, built on Subjective Self.',
 })
 
-/** Where the Team Map's request will be made: its form comes with the pipeline (M4). */
-export const TEAM_MAP_REQUEST_ANCHOR = 'request'
+/** Where the Team Map is requested: the request form's own id (docs/17 §6). */
+export const TEAM_MAP_REQUEST_ANCHOR = FORM_ANCHORS.teamMapRequest
 
 /**
- * The Team Map (docs/02): what it is waits on IIIC (I-12), and so does its request form, which
- * docs/09 lists with it and which comes with the pipeline (M4, docs/03 F5). The hero's action
- * leads to where the form will be; the closing band books the proposal call, as on every
- * consultancy page.
+ * The Team Map (docs/02): what it is waits on IIIC (I-12). The request form (docs/03 F5;
+ * docs/17 §6) stands where the hero's action leads, and shows its placeholder until the consent
+ * text for replies to an enquiry is in force (I-22); the closing band books the proposal call,
+ * as on every consultancy page.
  */
 export const TEAM_MAP_PAGE: PageContent = {
   // keyword-map.md's title; its description waits on I-12, so this one says only what docs/09
@@ -141,17 +142,8 @@ export const TEAM_MAP_PAGE: PageContent = {
       },
       copyStatus: 'candidate',
     },
-    {
-      blockType: 'statement',
-      heading: 'Request a Team Map',
-      paragraphs: [
-        {
-          text: '[[TODO: the request form, with its wording for company, team size, sector and consent, I-12]]',
-        },
-      ],
-      anchor: TEAM_MAP_REQUEST_ANCHOR,
-      copyStatus: 'candidate',
-    },
+    { blockType: 'teamMapRequest' },
+
     consultancySection,
     questions,
     CONSULTANCY_BAND,
