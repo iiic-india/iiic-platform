@@ -71,7 +71,7 @@ export const ownPersonIds: OwnPersonIds = async (req: PayloadRequest, account) =
     where: { account: { equals: account.accountId } },
     pagination: false,
     depth: 0,
-    select: { id: true },
+    select: { account: true },
     overrideAccess: true,
     req,
   })
