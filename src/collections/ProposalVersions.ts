@@ -182,11 +182,12 @@ export const ProposalVersions: CollectionConfig = {
     },
     {
       // The SHA-256 of the tracked link's token (`/p/[token]`): the token is sent once and never
-      // stored. Hidden from every read.
+      // stored. Hidden from every read, and written by the server only.
       name: 'linkTokenHash',
       type: 'text',
       unique: true,
       hidden: true,
+      access: { create: serverOnly.create, update: serverOnly.update },
     },
   ],
 }

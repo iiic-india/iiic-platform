@@ -15,10 +15,11 @@ import {
 import { asPlatform, staffWithCode } from './actor'
 
 /**
- * Moving a lead along its board (docs/17 §3; src/lib/pipeline/leads.ts, MoveLead). The leads'
- * hook does what every move does, from the admin's form as from here: holds it to STAGE_MOVES,
- * stamps `stageChangedAt` and `closedAt`, writes the `stageChange` activity and emits
- * `lead.stageChanged`. This module answers the question first, as a typed Result. Free of
+ * Moving a lead along its board (docs/17 §3; src/lib/pipeline/leads.ts, MoveLead). This is the
+ * only way a lead's stage changes: no role writes the field in the admin's form or the API
+ * (src/collections/Leads.ts). The leads' hook does what every move does: holds it to
+ * STAGE_MOVES, stamps `stageChangedAt` and `closedAt`, writes the `stageChange` activity and
+ * emits `lead.stageChanged`. This module answers the question first, as a typed Result. Free of
  * `server-only`: the enquiries' hook closes a spam enquiry's lead through it.
  */
 

@@ -207,6 +207,48 @@ describe('the fields the server keeps (docs/17 §2)', () => {
     expect(hidden(fieldsOf(Enquiries.fields).get('submitterHash'))).toBe(true)
   })
 
+  it('lets no role write a hash, though the office may change the enquiry it is on', async () => {
+    const hashes: [CollectionConfig, string][] = [
+      [ProposalVersions, 'linkTokenHash'],
+      [Enquiries, 'submitterHash'],
+    ]
+    for (const [collection, name] of hashes) {
+      const access = accessOf(fieldsOf(collection.fields).get(name))
+      expect(access, `${collection.slug}.${name}`).toBeDefined()
+      for (const who of STAFF_AND_VISITORS) {
+        expect(await allows(access?.create, who), `${who} sets ${name}`).toBe(false)
+        expect(await allows(access?.update, who), `${who} changes ${name}`).toBe(false)
+      }
+    }
+  })
+
+  it('moves a lead only through MoveLead: no role types its stage, even on a new lead', async () => {
+    const stage = accessOf(fieldsOf(Leads.fields).get('stage'))
+    expect(stage).toBeDefined()
+    for (const who of STAFF_AND_VISITORS) {
+      expect(await allows(stage?.create, who), `${who} sets the stage`).toBe(false)
+      expect(await allows(stage?.update, who), `${who} moves the stage`).toBe(false)
+      // Whoever reads the lead reads its stage.
+      expect(await allows(stage?.read, who), `${who} reads the stage`).toBe(true)
+    }
+    // A lead the office makes starts in New, the field's default.
+    expect(fieldsOf(Leads.fields).get('stage')).toMatchObject({ defaultValue: 'new' })
+  })
+
+  it('keeps every write to a lead, a proposal or an enquiry from the roles outside the office', async () => {
+    for (const collection of [Leads, Proposals, Enquiries, ProposalVersions]) {
+      const access = collection.access as Record<string, Access | undefined>
+      for (const who of ['practitioner', 'editor', 'finance', 'anonymous'] as const) {
+        for (const operation of ['create', 'update', 'delete'] as const) {
+          expect(
+            await outcome(access[operation], requester(who)),
+            `${who}: ${collection.slug}.${operation}`,
+          ).toBe('none')
+        }
+      }
+    }
+  })
+
   it('lets the office change nothing of an enquiry but its spam mark', async () => {
     const fields = fieldsOf(Enquiries.fields)
     const editable: string[] = []
@@ -225,6 +267,7 @@ describe('the fields the server keeps (docs/17 §2)', () => {
         Leads,
         [
           'title',
+          'stage',
           'stageChangedAt',
           'calls',
           'previousLead',
@@ -239,7 +282,38 @@ describe('the fields the server keeps (docs/17 §2)', () => {
       [Tasks, ['doneAt', 'doneBy', 'automation', 'key']],
       [LeadActivities, ['by', 'fromStage', 'toStage', 'enquiry', 'proposalVersion', 'booking']],
       [Organisations, ['domain', 'nameKey']],
-      [Proposals, ['reference', 'status', 'currentVersion', 'sentVersion', 'acceptedAt']],
+      [
+        Proposals,
+        [
+          'reference',
+          'status',
+          'currentVersion',
+          'sentVersion',
+          'acceptedAt',
+          'declinedAt',
+          'expiredAt',
+        ],
+      ],
+      [
+        ProposalVersions,
+        [
+          'proposal',
+          'number',
+          'createdBy',
+          'pdf.key',
+          'pdf.sha256',
+          'sending.sentAt',
+          'sending.sentTo',
+          'sending.linkRevokedAt',
+          'tracking.firstViewedAt',
+          'tracking.viewCount',
+          'linkTokenHash',
+        ],
+      ],
+      [
+        Enquiries,
+        ['kind', 'outcome', 'receivedAt', 'submitted.email', 'lead', 'consents', 'submitterHash'],
+      ],
     ]
     for (const [collection, names] of serverFields) {
       const fields = fieldsOf(collection.fields)
