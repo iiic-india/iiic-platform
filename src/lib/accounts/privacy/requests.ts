@@ -97,13 +97,11 @@ export const listOwnRequests: ListOwnRequests = async (req, account) => {
     overrideAccess: true,
     req,
   })
-  return docs.map(
-    (doc): OwnRequestRow => ({
-      id: doc.id,
-      type: doc.type,
-      receivedAt: new Date(doc.receivedAt),
-      status: doc.status,
-      resolveBy: doc.resolveBy ? new Date(doc.resolveBy) : null,
-    }),
-  )
+  return docs.map((doc): OwnRequestRow => ({
+    id: doc.id,
+    type: doc.type,
+    receivedAt: new Date(doc.receivedAt),
+    status: doc.status,
+    resolveBy: doc.resolveBy ? new Date(doc.resolveBy) : null,
+  }))
 }

@@ -1,5 +1,8 @@
 import type { GivablePurpose, OwnRequestType } from '@/lib/accounts/contract'
+import { purposeLabel } from '@/lib/privacy/purposes'
 import { CONTACT } from '@/lib/site/contact'
+
+import type { DoneCode, ErrorCode, Outcome } from './outcome'
 
 /**
  * Every word My IIIC's privacy page shows (docs/20 §7.5), in one place for the en-IN locale,
@@ -30,8 +33,7 @@ export const PAGE_COPY = {
   title: 'Privacy and settings · My IIIC',
   heading: 'Privacy and settings',
   lead: 'What you have agreed to, the messages you get from IIIC, your requests about your data, and how you sign in.',
-  done: 'Done',
-  problem: 'There is a problem',
+  sections: 'On this page',
 } as const
 
 export const AGREED_COPY = {
@@ -102,7 +104,8 @@ export const REQUEST_COPY = {
   type: 'What you are asking for',
   choose: 'Choose one',
   summary: 'Tell us more',
-  summaryHelp: 'What you would like done. The office reads it and replies to you. Up to 2,000 characters.',
+  summaryHelp:
+    'What you would like done. The office reads it and replies to you. Up to 2,000 characters.',
   button: 'Send the request',
   recent:
     'A copy or an erasure of your data needs a sign-in within the last 10 minutes. Sign in again first, then send the request.',
@@ -143,15 +146,14 @@ export const CONTACT_COPY = {
 } as const
 
 export const DETAIL_COPY = {
+  title: 'Add a contact detail · My IIIC',
   email: {
-    title: 'Add an email address · My IIIC',
     heading: 'Add an email address',
     label: 'Email address',
     help: 'We send a six-digit code to this address.',
     invalid: 'Enter an email address, like name@example.com.',
   },
   whatsapp: {
-    title: 'Add a mobile number · My IIIC',
     heading: 'Add a mobile number',
     label: 'Mobile number',
     help: 'We send a six-digit code to this number on WhatsApp.',
@@ -175,7 +177,8 @@ export const DETAIL_COPY = {
       : `That code doesn’t match. You have ${countWord(left)} tries left.`,
   refusals: {
     'closed-here': `This cannot be done from here just now. Write to ${OFFICE_EMAIL} instead.`,
-    'whatsapp-closed': 'Codes on WhatsApp are not available just now. Add an email address instead.',
+    'whatsapp-closed':
+      'Codes on WhatsApp are not available just now. Add an email address instead.',
     'check-failed': 'The spam check did not go through. Send the form again.',
     'too-many': (at: string) =>
       `We’ve sent several codes to this address. Use the latest, or ask again after ${at}.`,
@@ -243,15 +246,7 @@ export const CLOSED_COPY = {
   home: 'Go to the home page',
 } as const
 
-/** What a finished action says at the top of the page (`?done=`). */
-export const DONE_COPY = {
-  withdrawn: (label: string) => `Withdrawn: ${label}. It takes effect at once.`,
-  'already-given': 'That is already on record for you.',
-  'request-sent': REQUEST_COPY.sent,
-  'detail-added': CONTACT_COPY.added,
-} as const
-
-/** What a refused action says at the top of the page (`?error=`). */
+/** What a refused action says in its section (`?error=`). */
 export const ERROR_COPY = {
   'none-in-force': 'That consent is not in force, so there is nothing to withdraw.',
   'notice-changed':
@@ -259,4 +254,28 @@ export const ERROR_COPY = {
   unticked: 'Tick the box to agree, then send it.',
   'closed-here': `That cannot be done from here just now. Write to ${OFFICE_EMAIL} instead.`,
   failed: 'That did not go through. Try again in a few minutes.',
-} as const
+  'sign-in-again': CLOSE_COPY.recent,
+} as const satisfies Record<ErrorCode, string>
+
+/** What the page says in a section after a form there (`?done=` or `?error=`). */
+export function outcomeText(outcome: Outcome): string {
+  if (outcome.tone === 'error') return ERROR_COPY[outcome.code as ErrorCode]
+  switch (outcome.code as DoneCode) {
+    case 'withdrawn':
+      return outcome.purpose
+        ? `Withdrawn: ${purposeLabel(outcome.purpose)}. It takes effect at once.`
+        : 'Withdrawn. It takes effect at once.'
+    case 'given':
+      return outcome.purpose === 'marketingEmail' || outcome.purpose === 'marketingWhatsapp'
+        ? MESSAGES_COPY.offers[outcome.purpose].given
+        : 'Recorded.'
+    case 'already-given':
+      return 'That is already on record for you.'
+    case 'request-sent':
+      return REQUEST_COPY.sent
+    case 'detail-added':
+      return CONTACT_COPY.added
+    case 'signed-out':
+      return DEVICES_COPY.done(outcome.count ?? 0)
+  }
+}

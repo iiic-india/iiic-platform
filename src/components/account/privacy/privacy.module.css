@@ -1,0 +1,77 @@
+/* My IIIC's privacy page (docs/20 §7.5). The kit's classes do the work: forms, the error summary,
+   alerts, badges, tables. These add spacing only, with no colour of their own beyond the kit's
+   semantic roles (CLAUDE.md, non-negotiable 2). */
+
+.page {
+  padding-top: var(--iiic-space-12);
+  padding-bottom: var(--iiic-space-16);
+}
+
+.page h1 {
+  margin: 0 0 var(--iiic-space-4);
+}
+
+.section {
+  margin-top: var(--iiic-space-12);
+  padding-top: var(--iiic-space-8);
+  border-top: 1px solid var(--iiic-rule);
+}
+
+.section h2 {
+  margin: 0 0 var(--iiic-space-3);
+}
+
+.section h3 {
+  margin: var(--iiic-space-6) 0 var(--iiic-space-2);
+}
+
+.stack > * + * {
+  margin-top: var(--iiic-space-4);
+}
+
+.outcome {
+  margin: 0 0 var(--iiic-space-6);
+}
+
+.notice {
+  white-space: pre-line;
+}
+
+.offer {
+  margin-top: var(--iiic-space-6);
+}
+
+.inline {
+  display: inline;
+}
+
+.details {
+  margin: 0;
+}
+
+.details > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--iiic-space-2) var(--iiic-space-4);
+  padding: var(--iiic-space-3) 0;
+  border-bottom: 1px solid var(--iiic-rule);
+}
+
+.details dt {
+  min-width: 10rem;
+  font-weight: 600;
+}
+
+.details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.list {
+  margin: var(--iiic-space-3) 0 0;
+  padding-left: var(--iiic-space-6);
+}
+
+.list > li + li {
+  margin-top: var(--iiic-space-2);
+}
