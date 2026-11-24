@@ -61,9 +61,10 @@ export const SIGN_IN_REQUEST_KEEP_HOURS = 48
 /**
  * Carries one sign-in from the address step to the code step and, for a new account, to the
  * account step: a JWE (dir, A256GCM) under a key derived from BETTER_AUTH_SECRET for this alone,
- * holding the channel, the address, the `sign-in-requests` id, when the code went, whether the
- * code has been checked, and the code itself only between the code step and the account step.
- * HttpOnly, Secure over HTTPS, SameSite=Lax, path /login, fifteen minutes; cleared on sign-in.
+ * holding the channel, the address, the `sign-in-requests` id, when the code went and, once a
+ * right code has been used for an address with no account, that the address was proven and
+ * when. Never the code. HttpOnly, Secure over HTTPS, SameSite=Lax, path /login, fifteen minutes;
+ * cleared on sign-in and by "Use a different address".
  */
 export const SIGN_IN_COOKIE = {
   name: 'iiic-sign-in',
@@ -278,6 +279,22 @@ export type CloseAccount = (
  * the account of every record being erased, in the erasure's transaction. Returns how many.
  */
 export type CloseAccountsOfPerson = (req: PayloadRequest, personId: number) => Promise<number>
+
+/**
+ * The owner's acts on an account from the admin (`VIEW_POLICY.accountActions`, checked first;
+ * D-127): ending all its sessions, and detaching an earlier record the person says is not
+ * theirs (D-122). The account's own record cannot be detached; closing does that. Audited as
+ * `end-account-sessions` and `detach-record`.
+ */
+export type EndAccountSessions = (
+  req: PayloadRequest,
+  accountId: number,
+) => Promise<Result<{ ended: number }, { code: 'refused' | 'not-found' }>>
+
+export type DetachRecord = (
+  req: PayloadRequest,
+  personId: number,
+) => Promise<Result<{ detached: true }, { code: 'refused' | 'not-found' | 'own-record' }>>
 
 // ---- A second detail (builder A's machinery, builder C's page; docs/20 §4.6) ----
 
@@ -509,6 +526,7 @@ export const ACCOUNT_AUDIT_ACTIONS = [
   'add-contact-detail',
   'close-account',
   'end-account-sessions',
+  'detach-record',
   'download-certificate',
   'download-invoice',
 ] as const
