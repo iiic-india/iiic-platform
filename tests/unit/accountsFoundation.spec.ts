@@ -148,7 +148,7 @@ describe('the collections', () => {
       access?: { create?: FieldAccess; update?: FieldAccess }
     }
     expect(field).toBeDefined()
-    const owner = { req: { user: staff(['owner']) } } as Parameters<FieldAccess>[0]
+    const owner = { req: { user: staff(['owner']) } } as unknown as Parameters<FieldAccess>[0]
     expect(await field.access?.create?.(owner)).toBe(false)
     expect(await field.access?.update?.(owner)).toBe(false)
   })
