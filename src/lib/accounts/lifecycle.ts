@@ -4,6 +4,7 @@ import type { PayloadRequest } from 'payload'
 
 import { viewRefusal } from '@/access/views'
 import { recordAudit } from '@/lib/audit/record'
+import { env } from '@/lib/env'
 import { deliver } from '@/lib/messaging/deliver'
 import { withdrawPurpose } from '@/lib/newsletter/withdrawals'
 import { inTransaction } from '@/lib/payments/store'
@@ -13,8 +14,6 @@ import { DEFAULT_LANGUAGE } from '@/lib/site/languages'
 import { IST } from '@/lib/time/ist'
 import type { Person } from '@/payload-types'
 
-import { env } from '@/lib/env'
-
 import {
   accountActor,
   DETAIL_FIELDS,
@@ -23,7 +22,6 @@ import {
   type ProvenDetails,
 } from './attach'
 import { customerAuthFor } from './auth/instance'
-import { deploymentGate } from './signIn/gate'
 import type {
   CloseAccount,
   CloseAccountsOfPerson,
@@ -32,6 +30,7 @@ import type {
   EndAccountSessions,
   SignInChannel,
 } from './contract'
+import { deploymentGate } from './signIn/gate'
 
 /**
  * The account's life (docs/20 §4.5, §4.7, §6, §7.6; builder A): making an account's records after

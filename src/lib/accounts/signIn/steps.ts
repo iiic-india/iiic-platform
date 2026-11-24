@@ -3,6 +3,7 @@ import 'server-only'
 import type { PayloadRequest } from 'payload'
 
 import { clientAddress } from '@/lib/analytics/session'
+import { recordAudit } from '@/lib/audit/record'
 import { isTokenShaped } from '@/lib/enquiryForms/turnstile'
 import { env } from '@/lib/env'
 import { currentNotice } from '@/lib/privacy/consents'
@@ -30,7 +31,6 @@ import { nextSignInDeps, secretOf, secureCookies, type SignInDeps, type SignInEn
 import { deploymentGate } from './gate'
 import { normaliseIdentifier } from './identifier'
 import { authErrorCode, checkCode, issueCode, triesLeft, whatsappCodesOpen } from './issue'
-import { recordAudit } from '@/lib/audit/record'
 
 /**
  * The sign-in steps (docs/20 §4.1 to §4.5): asking for a code, entering it, and for an address

@@ -10,9 +10,9 @@ import { deliver } from '@/lib/messaging/deliver'
 import type { Deliver } from '@/lib/messaging/operations'
 import { readFlags } from '@/lib/settings/source'
 
-import { customerAuthFor, type CustomerAuth } from '../auth/instance'
 import type { CookieJar } from './cookie'
 import { deploymentGate } from './gate'
+import { customerAuthFor, type CustomerAuth } from '../auth/instance'
 
 /**
  * What the sign-in steps need from the world, passed in so the integration tests can give their

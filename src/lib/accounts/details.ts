@@ -3,6 +3,7 @@ import 'server-only'
 import type { PayloadRequest } from 'payload'
 
 import { recordAudit } from '@/lib/audit/record'
+import { env } from '@/lib/env'
 import { err, ok } from '@/lib/result'
 import { IST } from '@/lib/time/ist'
 
@@ -17,11 +18,10 @@ import {
 } from './contract'
 import { clearAttempt, readAttempt } from './signIn/cookie'
 import { secretOf, secureCookies } from './signIn/deps'
+import { nextSignInDeps } from './signIn/deps'
 import { normaliseIdentifier } from './signIn/identifier'
 import { checkCode, issueCode, triesLeft, whatsappCodesOpen } from './signIn/issue'
 import { openFor, type SignInWiring } from './signIn/steps'
-import { env } from '@/lib/env'
-import { nextSignInDeps } from './signIn/deps'
 
 /**
  * A second detail (docs/20 §4.6; D-120): from My IIIC the person adds the detail they did not

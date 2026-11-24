@@ -1,56 +1,26 @@
 import 'server-only'
 
 import { betterAuth } from 'better-auth'
-import { PostgresDialect, type PostgresPool } from 'kysely'
 import { getPayload, type Payload } from 'payload'
 
 import { env, type ServerEnv } from '@/lib/env'
 import config from '@payload-config'
 
-import { CUSTOMER_AUTH } from '../contract'
-import { customerAuthOptions, type CustomerAuthOptions } from './options'
+import { deploymentOptions, postgresDatabase } from './database'
+import type { CustomerAuthOptions } from './options'
 
 /**
  * Customer sign-in's Better Auth instance (docs/20 §3.4), built once per server after
  * `getPayload()`: it talks to Postgres through Payload's own pool (no second pool per function),
  * keeps its four tables in the `customer_auth` schema, and is reached only from the platform's
  * server actions and server components through `auth.api.*`. Its HTTP handler is never mounted
- * (no `/api/auth/*`), and no client SDK reaches a bundle.
+ * (no `/api/auth/*`), and no client SDK reaches a bundle. On its first call Better Auth checks
+ * that its tables are as its options expect, and refuses to run if they are not.
  *
  * Null while BETTER_AUTH_SECRET is unset: then sign-in is closed here (docs/20 §4.9).
  */
 
 export type CustomerAuth = ReturnType<typeof betterAuth<CustomerAuthOptions>>
-
-/** The options for this deployment, on a database given by the caller. */
-export function deploymentOptions(
-  settings: Pick<
-    ServerEnv,
-    'BETTER_AUTH_SECRET' | 'ACCOUNTS_TEST_CODE' | 'siteUrl' | 'allowedOrigins'
-  >,
-  database: CustomerAuthOptions['database'],
-  log: (message: string) => void,
-): CustomerAuthOptions | null {
-  if (!settings.BETTER_AUTH_SECRET) return null
-  return customerAuthOptions({
-    secret: settings.BETTER_AUTH_SECRET,
-    siteUrl: settings.siteUrl,
-    trustedOrigins: settings.allowedOrigins,
-    database,
-    ...(settings.ACCOUNTS_TEST_CODE ? { testCode: settings.ACCOUNTS_TEST_CODE } : {}),
-    log,
-  })
-}
-
-/** Better Auth's database: Payload's own pool, Better Auth's own schema. */
-export function postgresDatabase(payload: Payload) {
-  const pool = (payload.db as unknown as { pool: PostgresPool }).pool
-  return {
-    dialect: new PostgresDialect({ pool }),
-    type: 'postgres' as const,
-    schemaName: CUSTOMER_AUTH.schema,
-  }
-}
 
 let cached: { secret: string; auth: CustomerAuth } | undefined
 
