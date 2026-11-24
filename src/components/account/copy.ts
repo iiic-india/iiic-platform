@@ -84,7 +84,7 @@ export const BOOKING_COPY = {
   notYours:
     'If this booking is not yours, ask IIIC to correct your records. Nothing is changed until IIIC has looked at it.',
   notYoursLink: 'Ask for a correction',
-  errorSummary: 'Check this',
+  errorSummary: 'Nothing was changed',
   failed: 'Something went wrong on our side. Nothing was changed. Please try again.',
   errors: {
     'choose-time': 'Choose a new time.',
@@ -109,7 +109,7 @@ export const DOCUMENTS_COPY = {
     programme: 'Programme',
     completed: 'Completed',
     status: 'Status',
-    actions: 'Files',
+    actions: 'Links',
   },
   status: { valid: 'Valid', revoked: 'Revoked' } as Record<string, string>,
   download: 'Download the PDF',
@@ -128,7 +128,7 @@ export const INVOICES_COPY = {
     date: 'Date',
     status: 'Status',
     total: 'Total',
-    actions: 'File',
+    actions: 'PDF',
   },
   kind: Object.fromEntries(INVOICE_KINDS.map((kind) => [kind.value, kind.label])) as Record<
     string,
