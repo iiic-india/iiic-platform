@@ -41,6 +41,19 @@ describe('the export’s readable page', () => {
     expect(page).toContain('1 March 2027, 10 AM IST')
   })
 
+  it('holds what M4 and M6 keep about the person: enquiries, the newsletter, suppressions, messages', () => {
+    expect(EXPORT_SECTIONS.map(({ key }) => key)).toEqual(
+      expect.arrayContaining(['enquiries', 'newsletter', 'suppressions', 'messages']),
+    )
+    const page = renderExportPage({
+      ...empty,
+      generatedAt: '2027-03-01T04:30:00.000Z',
+      messages: [{ id: 3, template: 'booking-confirmed', channel: 'email', status: 'delivered' }],
+    })
+    expect(page).toContain('<h2>Messages we sent you (1)</h2>')
+    expect(page).toContain('<h2>Enquiries you sent through the site (0)</h2>')
+  })
+
   it('has no section for session notes (D-11, assumed not disclosed)', () => {
     expect(EXPORT_SECTIONS.map(({ key }) => key)).not.toContain('notes')
     expect(renderExportPage({ ...empty, generatedAt: '2027-03-01T04:30:00.000Z' })).not.toMatch(

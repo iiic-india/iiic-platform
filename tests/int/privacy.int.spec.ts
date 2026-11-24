@@ -592,6 +592,34 @@ describe('an access export', () => {
 
   beforeAll(async () => {
     person = await newPerson('exported')
+    // What M4 and M6 hold about them: an enquiry, a newsletter entry, a suppressed address.
+    await payload.create({
+      collection: 'enquiries',
+      data: {
+        kind: 'partnership',
+        receivedAt: new Date().toISOString(),
+        submitted: {
+          organisationName: `Fake Org ${TAG}`,
+          contactName: person.fullName,
+          email: person.email,
+          message: `Fake enquiry words ${TAG}`,
+        },
+        person: person.id,
+      } as never,
+    })
+    await payload.create({
+      collection: 'subscribers',
+      data: {
+        email: person.email,
+        status: 'pending',
+        confirmTokenHash: 'f'.repeat(64),
+      } as never,
+    })
+    const suppression = await payload.create({
+      collection: 'suppressions',
+      data: { channel: 'email', address: person.email, reason: 'complaint' } as never,
+    })
+    await removeQueuedJobs(payload, { suppressionIds: [suppression.id] })
     const booking = await newBooking(person)
     const written = await notes.writeNote(await reqAs('author'), {
       bookingId: booking.id,
@@ -633,6 +661,15 @@ describe('an access export', () => {
     expect(text).toContain(person.fullName)
     expect(text).not.toContain('Fake session words')
     expect(text).not.toContain('sealed')
+    // M4's and M6's records about them, without the newsletter entry's token hash.
+    const data = JSON.parse(text) as Record<string, Record<string, unknown>[]>
+    expect(text).toContain(`Fake enquiry words ${TAG}`)
+    expect(data.newsletter).toEqual([expect.objectContaining({ email: person.email })])
+    expect(text).not.toContain('f'.repeat(64))
+    expect(data.suppressions).toEqual([
+      expect.objectContaining({ address: person.email, reason: 'complaint' }),
+    ])
+    expect(Array.isArray(data.messages)).toBe(true)
 
     const page = await downloadExportWith(store, await reqAs('owner'), request.id, 'html')
     if (!page.ok) throw new Error(page.error.code)

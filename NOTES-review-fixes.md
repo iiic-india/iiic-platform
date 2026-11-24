@@ -18,7 +18,7 @@ Working notes; deleted in the last commit of this batch. One commit per finding.
 
 ## Fix, second group
 
-- [ ] A3 · access export omits enquiries, subscriber, suppressions, messages
+- [x] A3 · access export omits enquiries, subscriber, suppressions, messages
 - [ ] A6 · newsletter signup has no Turnstile and only an in-memory limit
 - [ ] B3 · price guard scope; a hit fails instead of skipping silently (decision row)
 - [ ] B5 · Today and Reports still say messaging waits on M6
