@@ -55,16 +55,14 @@ export const listOwnCertificates: ListOwnCertificates = async (req, account) => 
     },
     sort: '-completedOn',
   })
-  return docs.map(
-    (doc): AccountCertificate => ({
-      id: doc.id,
-      certificateId: doc.certificateId,
-      programmeName: doc.programmeName,
-      completedOn: doc.completedOn,
-      status: doc.status,
-      downloadable: doc.status === 'valid' && typeof doc.pdfKey === 'string' && isPdfKey(doc.pdfKey),
-    }),
-  )
+  return docs.map((doc): AccountCertificate => ({
+    id: doc.id,
+    certificateId: doc.certificateId,
+    programmeName: doc.programmeName,
+    completedOn: doc.completedOn,
+    status: doc.status,
+    downloadable: doc.status === 'valid' && typeof doc.pdfKey === 'string' && isPdfKey(doc.pdfKey),
+  }))
 }
 
 export const listOwnInvoices: ListOwnInvoices = async (req, account) => {
@@ -82,18 +80,16 @@ export const listOwnInvoices: ListOwnInvoices = async (req, account) => {
     where: { status: { in: [...SHOWN_INVOICE_STATUSES] } },
     sort: '-issuedAt',
   })
-  return docs.map(
-    (doc): AccountInvoice => ({
-      id: doc.id,
-      number: doc.number ?? null,
-      kind: doc.kind,
-      issuedOn: doc.issuedAt ? new Date(doc.issuedAt) : null,
-      status: doc.status,
-      // No amount leaves the server while prices are hidden (D-21).
-      totalPaise: pricesPublic ? (doc.totals?.totalPaise ?? null) : null,
-      downloadable: pricesPublic && doc.status === 'issued' && isInvoicePdfKey(doc.pdfKey),
-    }),
-  )
+  return docs.map((doc): AccountInvoice => ({
+    id: doc.id,
+    number: doc.number ?? null,
+    kind: doc.kind,
+    issuedOn: doc.issuedAt ? new Date(doc.issuedAt) : null,
+    status: doc.status,
+    // No amount leaves the server while prices are hidden (D-21).
+    totalPaise: pricesPublic ? (doc.totals?.totalPaise ?? null) : null,
+    downloadable: pricesPublic && doc.status === 'issued' && isInvoicePdfKey(doc.pdfKey),
+  }))
 }
 
 /** Where the PDFs are read from: the private bucket, a folder locally and in CI, memory in tests. */
@@ -165,6 +161,42 @@ function audit(
   accountId: number,
 ): Promise<void> {
   return recordAudit(req, { action, entity, entityId }, accountActor({ accountId }))
+}
+
+/** What the PDF routes send besides the file: never cached, never indexed, no referrer. */
+export const DOCUMENT_HEADERS = {
+  'Cache-Control': 'private, no-store',
+  'Referrer-Policy': 'no-referrer',
+  'X-Robots-Tag': 'noindex, nofollow',
+  'X-Content-Type-Options': 'nosniff',
+} as const
+
+/**
+ * A download's answer: the PDF as an attachment; a 404 for a document that is not the account's,
+ * not available (revoked, no PDF) or, for an invoice, while prices are hidden, so none of these
+ * says more than "not here"; a 503 where the private store is not set up.
+ */
+export function documentResponse(result: Awaited<ReturnType<DownloadOwnDocument>>): Response {
+  if (result.ok) {
+    return new Response(Buffer.from(result.value.pdf), {
+      status: 200,
+      headers: {
+        ...DOCUMENT_HEADERS,
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${result.value.filename}"`,
+      },
+    })
+  }
+  const status = result.error.code === 'storage-missing' ? 503 : 404
+  return new Response(status === 503 ? 'Not available here' : 'Not found', {
+    status,
+    headers: DOCUMENT_HEADERS,
+  })
+}
+
+/** A document id from the address: a whole positive number, else nothing is looked up. */
+export function documentId(raw: string): number {
+  return /^\d{1,10}$/.test(raw) ? Number(raw) : 0
 }
 
 /** This deployment's stores (src/lib/certificates/store.ts, src/lib/invoicing/store.ts). */

@@ -61,6 +61,15 @@ export async function openMyIiic(next: string): Promise<AccountSession> {
   return requireAccount({ next })
 }
 
+/**
+ * The same door for a route handler, which answers with a response of its own: null while
+ * `accountsEnabled` is off (the route answers 404), else the session or the way to sign in.
+ */
+export async function openMyIiicRoute(next: string): Promise<AccountSession | null> {
+  if (!(await getFlags()).accountsEnabled) return null
+  return requireAccount({ next })
+}
+
 /** The audit log's actor for a customer's own act: the account, never an address (docs/20 §8). */
 export function accountActor(account: Pick<AccountSession, 'accountId'>): AccountActor {
   return { id: `account:${account.accountId}` }
@@ -90,12 +99,11 @@ const idOf = (value: unknown): number | null =>
       ? (value as { id: number }).id
       : null
 
-/**
- * The `people` records this account holds (docs/20 §3.6, §6): its own record, read from the
- * `accounts` row rather than taken from the session, and every record attached to it through
- * `people.account`. Empty when the account is gone, so nothing can be read.
- */
-export const ownPersonIds: OwnPersonIds = async (req, account) => {
+/** The account's own record (docs/20 §3.6), from its `accounts` row; null when the account is gone. */
+async function ownRecordId(
+  req: PayloadRequest,
+  account: Pick<AccountSession, 'accountId'>,
+): Promise<number | null> {
   // scope: the account's own row, by the id of the signed-in session's account.
   const row = await req.payload.findByID({
     collection: 'accounts',
@@ -106,8 +114,37 @@ export const ownPersonIds: OwnPersonIds = async (req, account) => {
     overrideAccess: true,
     req,
   })
-  const own = idOf(row?.person)
-  if (!row || own === null) return []
+  return row ? idOf(row.person) : null
+}
+
+/** The first word of the name on the account's own record, for the overview's heading. */
+export async function ownFirstName(
+  req: PayloadRequest,
+  account: Pick<AccountSession, 'accountId'>,
+): Promise<string | null> {
+  const own = await ownRecordId(req, account)
+  if (own === null) return null
+  // scope: the account's own record, found through its own row just above; the name only.
+  const person = await req.payload.findByID({
+    collection: 'people',
+    id: own,
+    select: { fullName: true },
+    depth: 0,
+    disableErrors: true,
+    overrideAccess: true,
+    req,
+  })
+  return person?.fullName?.trim().split(/\s+/)[0] || null
+}
+
+/**
+ * The `people` records this account holds (docs/20 §3.6, §6): its own record, read from the
+ * `accounts` row rather than taken from the session, and every record attached to it through
+ * `people.account`. Empty when the account is gone, so nothing can be read.
+ */
+export const ownPersonIds: OwnPersonIds = async (req, account) => {
+  const own = await ownRecordId(req, account)
+  if (own === null) return []
   // scope: the records attached to this account and to no other (people.account).
   const attached = await req.payload.find({
     collection: 'people',

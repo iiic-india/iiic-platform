@@ -8,11 +8,7 @@ import { cancelBooking, rescheduleBooking } from '@/lib/booking/changes'
 import { inTransaction, keepOk } from '@/lib/booking/guard'
 import { loadRules, paidPaiseFor } from '@/lib/booking/load'
 import type { BookingError } from '@/lib/booking/operations'
-import {
-  canClientCancel,
-  canClientReschedule,
-  refundForCancellation,
-} from '@/lib/booking/policies'
+import { canClientCancel, canClientReschedule, refundForCancellation } from '@/lib/booking/policies'
 import { refundableOnChain, requestClientRefund } from '@/lib/bookingFlow/clientRefund'
 import { bookingsStoreHere } from '@/lib/bookingFlow/guards'
 import { bookingInvite } from '@/lib/calendar/bookingInvite'
@@ -167,7 +163,12 @@ function isAhead(row: BookingRow, now: Date): boolean {
 /** What the services, practitioners and info sessions of some bookings say, read once. */
 async function factsFor(req: PayloadRequest, rows: readonly BookingRow[]) {
   const ids = (pick: (row: BookingRow) => unknown) => [
-    ...new Set(rows.map(pick).map(idOf).filter((id): id is number => id !== null)),
+    ...new Set(
+      rows
+        .map(pick)
+        .map(idOf)
+        .filter((id): id is number => id !== null),
+    ),
   ]
   const serviceIds = ids((row) => row.service)
   const practitionerIds = ids((row) => row.practitioner)
@@ -251,8 +252,13 @@ async function termsOf(
   )
   const steps = rules.ok ? rules.value.refundSteps : []
   const paid = await paidPaiseFor(req, booking)
-  let canCancel = canClientCancel({ now, startsAt, status: row.status, paidPaise: paid, steps })
-    .allowed
+  let canCancel = canClientCancel({
+    now,
+    startsAt,
+    status: row.status,
+    paidPaise: paid,
+    steps,
+  }).allowed
   let refund: RefundPreview = { kind: 'nothing-paid' }
   if (canCancel && paid > 0) {
     const { refundPaise } = refundForCancellation({
