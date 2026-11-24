@@ -5,6 +5,7 @@ import { VerificationResult } from '@/components/certificates/VerificationResult
 import styles from '@/components/certificates/verify.module.css'
 import type { VerificationView } from '@/lib/certificates/contract'
 import { typedCertificateId } from '@/lib/certificates/ids'
+import { takeLookUpById } from '@/lib/certificates/lookupBudget'
 import { VERIFY_PATH } from '@/lib/certificates/token'
 import { VERIFY_COPY as COPY } from '@/lib/certificates/verifyCopy'
 import { verifyById } from '@/lib/certificates/wiring'
@@ -26,6 +27,7 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 type Outcome =
   | { state: 'empty' }
   | { state: 'invalid'; typed: string }
+  | { state: 'busy'; typed: string }
   | { state: 'done'; typed: string; view: VerificationView }
 
 /** The typed ID, checked before any lookup: its format and its check digit (Zod at the edge). */
@@ -33,6 +35,7 @@ async function outcomeOf(id: string | string[] | undefined): Promise<Outcome> {
   const typed = typeof id === 'string' ? id.slice(0, 40) : ''
   if (!typed.trim()) return { state: 'empty' }
   if (!typedCertificateId.safeParse(typed).success) return { state: 'invalid', typed }
+  if (!takeLookUpById()) return { state: 'busy', typed }
   return { state: 'done', typed, view: await verifyById(typed) }
 }
 
@@ -40,7 +43,9 @@ async function outcomeOf(id: string | string[] | undefined): Promise<Outcome> {
  * /institute/verify (docs/18 §4): a plain GET form for the ID printed on a certificate, which
  * works without JavaScript. An ID in the wrong form or with a wrong check digit is answered with
  * the error summary, which takes focus, and never looked up. A real ID shows what IIIC's record
- * says, the name as initials; an unknown one, one plain "No certificate matches".
+ * says, the name as initials; an unknown one, one plain "No certificate matches". Past the
+ * server's lookups for the minute (src/lib/certificates/lookupBudget.ts) nothing is looked up and
+ * the page asks for a minute's wait.
  */
 export default async function VerifyByIdPage({ searchParams }: Props) {
   const outcome = await outcomeOf((await searchParams).id)
@@ -92,6 +97,11 @@ export default async function VerifyByIdPage({ searchParams }: Props) {
           {COPY.help}
         </p>
       </form>
+      {outcome.state === 'busy' ? (
+        <div className="iiic-alert iiic-alert-yellow" role="status">
+          {COPY.busy}
+        </div>
+      ) : null}
       {outcome.state === 'done' ? <VerificationResult by="id" view={outcome.view} /> : null}
     </section>
   )

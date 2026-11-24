@@ -4,6 +4,9 @@
  */
 export const RESET_EMAIL_SUBJECT = 'Reset your IIIC admin password'
 
+/** At most one reset email per account in this time (src/collections/Users.ts, D-109). */
+export const RESET_REQUEST_INTERVAL_MS = 5 * 60 * 1000
+
 export function resetEmailHtml(siteUrl: string, token: string): string {
   const link = `${siteUrl}/admin/reset/${encodeURIComponent(token)}`
   return [

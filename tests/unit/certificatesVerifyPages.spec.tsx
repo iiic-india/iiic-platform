@@ -15,6 +15,8 @@ const lookups = vi.hoisted(() => ({
   verifyByToken: vi.fn<(token: string) => Promise<VerificationView>>(),
 }))
 vi.mock('@/lib/certificates/wiring', () => lookups)
+const budget = vi.hoisted(() => ({ takeLookUpById: vi.fn(() => true) }))
+vi.mock('@/lib/certificates/lookupBudget', () => budget)
 
 // The verify pages (docs/18 §4): never indexed; an ID in the wrong form or with a wrong check
 // digit answered with the error summary and never looked up; Valid, or Revoked with its day and a
@@ -52,6 +54,7 @@ const byToken = async (token: string) =>
 beforeEach(() => {
   lookups.verifyById.mockReset()
   lookups.verifyByToken.mockReset()
+  budget.takeLookUpById.mockReset().mockReturnValue(true)
 })
 
 afterEach(() => cleanup())
@@ -77,6 +80,18 @@ describe('the verify pages', () => {
     expect(screen.getByRole('alert').textContent).toContain(VERIFY_COPY.idInvalid)
     expect(screen.getByLabelText(VERIFY_COPY.label).getAttribute('aria-invalid')).toBe('true')
     expect(lookups.verifyById).not.toHaveBeenCalled()
+  })
+
+  it('look nothing up by ID once the server’s lookups for the minute are spent', async () => {
+    budget.takeLookUpById.mockReturnValue(false)
+    await byId(id)
+    expect(screen.getByRole('status').textContent).toBe(VERIFY_COPY.busy)
+    expect(lookups.verifyById).not.toHaveBeenCalled()
+    // A malformed ID is refused before the budget is touched.
+    budget.takeLookUpById.mockClear()
+    cleanup()
+    await byId('IIIC-C-not-an-id')
+    expect(budget.takeLookUpById).not.toHaveBeenCalled()
   })
 
   it('show a valid certificate by ID, with initials and the fixed statement', async () => {
