@@ -41,6 +41,7 @@ import { deploymentGate } from './signIn/gate'
  * finished by the next sign-in.
  */
 
+// scope: every use names its record by the account or the proven detail it acts on (see each function); a customer never chooses which
 const SERVER = { overrideAccess: true, depth: 0 } as const
 
 const sameName = (a: string, b: string) =>
@@ -56,6 +57,7 @@ export async function under18Holds(
   const { totalDocs } = await req.payload.count({
     collection: 'people',
     where: { and: [{ [field]: { equals: value } }, { ageBand: { equals: 'under18' } }] },
+    // scope: a count of the records holding the proven detail that say under 18; nothing of them is read
     overrideAccess: true,
     req,
   })
@@ -415,6 +417,7 @@ export const detachRecord: DetachRecord = async (req, personId) => {
   const { totalDocs } = await req.payload.count({
     collection: 'accounts',
     where: { person: { equals: personId } },
+    // scope: a count of the accounts whose own record this is, for an owner's act checked first by viewRefusal
     overrideAccess: true,
     req,
   })

@@ -35,6 +35,7 @@ import { limitVerdict, LOOK_BACK, MOST_ROWS, type RequestTimes } from './limits'
 /** What `sign-in-requests` stores for a request whose network address the server cannot see. */
 export const NO_NETWORK = 'none'
 
+// scope: sign-in-requests by the keyed hash of what was typed, or a count across the site; they hold no one's details
 const SERVER = { overrideAccess: true, depth: 0 } as const
 
 /** When the codes for an address, from a network address and from anyone went lately. */
@@ -66,6 +67,7 @@ export async function readRequestTimes(
   const { totalDocs: site } = await req.payload.count({
     collection: 'sign-in-requests',
     where: { requestedAt: { greater_than: since(LOOK_BACK.site) } },
+    // scope: a count of sign-in requests across the site; it reads no row
     overrideAccess: true,
     req,
   })
@@ -105,6 +107,7 @@ export async function whatsappCodesOpen(
         { providerTemplateName: { exists: true } },
       ],
     },
+    // scope: a count of approved message templates; no person's data
     overrideAccess: true,
     req,
   })

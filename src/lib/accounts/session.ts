@@ -58,6 +58,7 @@ export async function sessionFrom(
     limit: 1,
     depth: 0,
     select: { person: true },
+    // scope: the account of the Better Auth user whose session cookie this request carries
     overrideAccess: true,
   })
   const account = docs[0]
@@ -69,6 +70,7 @@ export async function sessionFrom(
     depth: 0,
     disableErrors: true,
     select: { email: true, mobile: true, emailVerifiedAt: true, mobileVerifiedAt: true },
+    // scope: that account's own record, and only its proven details
     overrideAccess: true,
   })) as Pick<Person, 'email' | 'mobile' | 'emailVerifiedAt' | 'mobileVerifiedAt'> | null
   if (!record) return null

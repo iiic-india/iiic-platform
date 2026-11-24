@@ -17,8 +17,7 @@ import {
   type SignInChannel,
 } from './contract'
 import { clearAttempt, readAttempt } from './signIn/cookie'
-import { secretOf, secureCookies } from './signIn/deps'
-import { nextSignInDeps } from './signIn/deps'
+import { nextSignInDeps, secretOf, secureCookies, signInOpen } from './signIn/deps'
 import { normaliseIdentifier } from './signIn/identifier'
 import { checkCode, issueCode, triesLeft, whatsappCodesOpen } from './signIn/issue'
 import { openFor, type SignInWiring } from './signIn/steps'
@@ -70,6 +69,22 @@ export const requestDetailCodeWith =
 
 export const requestDetailCode = requestDetailCodeWith(NEXT_WIRING)
 
+/**
+ * Whether a WhatsApp code may go here and now (docs/20 §4.3, §4.6; D-126), for the pages that
+ * offer one, such as the privacy page's "Add a mobile number": sign-in open here (production,
+ * local or CI, with Better Auth's secret and `accountsEnabled` on), the WhatsApp channel set up,
+ * Meta's authentication template approved in Messages → Templates, and outside quiet hours
+ * (D-103, D-123). False on a preview, without reading anything.
+ */
+export async function whatsappCodesOpenHere(
+  req: PayloadRequest,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const settings = env()
+  if (!(await signInOpen(req, settings))) return false
+  return whatsappCodesOpen(req, settings, now)
+}
+
 /** Marks the detail proven on the account's own record. */
 async function markProven(
   req: PayloadRequest,
@@ -86,6 +101,7 @@ async function markProven(
       channel === 'email'
         ? { email: value, emailVerifiedAt: at, emailVerifiedAt_tz: IST }
         : { mobile: value, mobileVerifiedAt: at, mobileVerifiedAt_tz: IST },
+    // scope: the signed-in account's own record (account.personId), and only after its code proved the detail
     overrideAccess: true,
     depth: 0,
     req,
@@ -109,6 +125,7 @@ async function provenElsewhere(
         { id: { not_equals: personId } },
       ],
     },
+    // scope: a count of other records holding this proven detail; nothing of them is read
     overrideAccess: true,
     req,
   })

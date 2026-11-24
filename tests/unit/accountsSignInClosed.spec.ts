@@ -96,6 +96,11 @@ describe('on a preview', () => {
     expect(getPayload).not.toHaveBeenCalled()
     expect(readFlags).not.toHaveBeenCalled()
   })
+
+  it('offers no WhatsApp code, without reading anything', async () => {
+    expect(await details.whatsappCodesOpenHere(req, NOW)).toBe(false)
+    expect(readFlags).not.toHaveBeenCalled()
+  })
 })
 
 describe('without Better Auth’s secret', () => {
@@ -119,6 +124,15 @@ describe('with accountsEnabled off', () => {
       error: { code: 'closed-here' },
     })
     expect(readFlags).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers no WhatsApp code while the flag is off, or while WhatsApp is not set up here', async () => {
+    settings.VERCEL_ENV = undefined
+    const quiet = { payload: {} } as never
+    expect(await details.whatsappCodesOpenHere(quiet, NOW)).toBe(false)
+    flags.accountsEnabled = true
+    // On, but no WhatsApp provider here (D-126): still no, before any template is read.
+    expect(await details.whatsappCodesOpenHere(quiet, NOW)).toBe(false)
   })
 
   it('makes /login a 404', async () => {

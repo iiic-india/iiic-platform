@@ -65,6 +65,7 @@ async function link(
         collection: 'people',
         id,
         data: { account: accountId },
+        // scope: the records just found holding this account's proven detail, or the one record the create hook was given
         overrideAccess: true,
         depth: 0,
         req,
@@ -96,6 +97,7 @@ async function unattachedHolding(
     pagination: false,
     depth: 0,
     select: { account: true },
+    // scope: records holding the detail a code has just proven, with no account yet; nobody's records are returned to a person
     overrideAccess: true,
     req,
   })
@@ -130,6 +132,7 @@ export async function accountVerifying(
     limit: 1,
     depth: 0,
     select: { account: true },
+    // scope: the one record holding this detail with its proven marker; only its account id is read
     overrideAccess: true,
     req,
   })

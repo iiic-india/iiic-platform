@@ -167,6 +167,7 @@ async function signInToAccount(
     id: input.accountId,
     depth: 0,
     select: { authUserId: true },
+    // scope: the account whose own record holds the detail this request's code has just proven
     overrideAccess: true,
     req,
   })
@@ -178,6 +179,7 @@ async function signInToAccount(
       collection: 'accounts',
       id: input.accountId,
       data: { authUserId: made.userId },
+      // scope: the same account, given its Better Auth user
       overrideAccess: true,
       depth: 0,
       req,
@@ -201,6 +203,7 @@ async function signInToAccount(
       lastSignInAt_tz: 'Asia/Kolkata',
       lastSignInChannel: input.channel,
     },
+    // scope: the same account, its last sign-in
     overrideAccess: true,
     depth: 0,
     req,
