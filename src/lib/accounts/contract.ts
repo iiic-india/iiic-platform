@@ -275,10 +275,25 @@ export type CloseAccount = (
 ) => Promise<Result<{ closed: true }, { code: 'not-found' }>>
 
 /**
- * For the erasure an owner confirms (src/lib/privacy/erasure.ts, hook H7 in docs/20 §12): closes
- * the account of every record being erased, in the erasure's transaction. Returns how many.
+ * For the erasure an owner confirms (src/lib/privacy/erasure.ts `confirmErasureWith`, hook H7 in
+ * docs/20 §12), in the erasure's transaction: closes the account whose own record is being
+ * erased (as `CloseAccount` with reason `erasure`, no A2), and detaches the record from any other
+ * account it is attached to. Returns how many of each.
  */
-export type CloseAccountsOfPerson = (req: PayloadRequest, personId: number) => Promise<number>
+export type CloseAccountsOfPerson = (
+  req: PayloadRequest,
+  personId: number,
+) => Promise<{ closed: number; detached: number }>
+
+/**
+ * The nightly O5 (src/lib/automations/operations/run.ts `runO5`, hook H9): `sign-in-requests`
+ * older than SIGN_IN_REQUEST_KEEP_HOURS, and Better Auth's expired sessions and codes. Returns
+ * how many of each went.
+ */
+export type PurgeSignIns = (
+  req: PayloadRequest,
+  now: Date,
+) => Promise<{ requests: number; sessions: number; codes: number }>
 
 /**
  * The owner's acts on an account from the admin (`VIEW_POLICY.accountActions`, checked first;

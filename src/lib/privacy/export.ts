@@ -44,6 +44,7 @@ export const EXPORT_SECTIONS = [
   { key: 'newsletter', title: 'Your newsletter subscription' },
   { key: 'suppressions', title: 'Addresses we send nothing to' },
   { key: 'messages', title: 'Messages we sent you' },
+  { key: 'account', title: 'Your My IIIC account' },
   { key: 'requests', title: 'Your privacy requests' },
 ] as const
 
@@ -108,6 +109,16 @@ const MESSAGE_FIELDS = {
   readAt: true,
 } as const
 
+/**
+ * A My IIIC account as the person may read it (Release 2; docs/20 §12 H8): when it was made, when
+ * and how they last signed in. Never Better Auth's id; the sign-in details are the record's own.
+ */
+const ACCOUNT_FIELDS = {
+  createdAt: true,
+  lastSignInAt: true,
+  lastSignInChannel: true,
+} as const
+
 /** The person's own records, gathered past the rules once the owner's checks have passed. */
 export async function gatherPersonData(
   req: PayloadRequest,
@@ -141,6 +152,8 @@ export async function gatherPersonData(
       delete copy.consents
       delete copy.bookings
       delete copy.suppressions
+      // The account has a section of its own.
+      delete copy.account
       return copy
     }),
     consents: await all(req, 'consents', person),
@@ -165,6 +178,18 @@ export async function gatherPersonData(
       MESSAGE_FIELDS,
     ),
     requests: await all(req, 'data-requests', person),
+    // The account whose own record this is, or the one the record is attached to.
+    account: await all(
+      req,
+      'accounts',
+      {
+        or: [
+          person,
+          ...(idOf(record.account) !== undefined ? [{ id: { equals: idOf(record.account) } }] : []),
+        ],
+      },
+      ACCOUNT_FIELDS,
+    ),
   }
 }
 
