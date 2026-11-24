@@ -94,6 +94,27 @@ describe('the beacon', () => {
     }
   })
 
+  it('never counts the messages’ token pages: one-tap withdrawal, newsletter confirm and unsubscribe', async () => {
+    process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN = TOKEN
+    for (const path of [
+      '/w/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      '/W/abcdefgh',
+      '/newsletter/confirm/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      '/newsletter/unsubscribe/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      '/Newsletter/Unsubscribe/abcdefgh',
+    ]) {
+      requestFor(path)
+      expect(await draw(), path).toBe('')
+      expect(countsPath(path), path).toBe(false)
+      expect(beaconSources(path).scriptOrigins, path).toEqual([])
+      expect(beaconSources(path).connectOrigins, path).toEqual([])
+    }
+    // The signup page and pages that only start with the letter are counted as any other.
+    for (const path of ['/newsletter', '/work', '/workshops', '/newsletters']) {
+      expect(countsPath(path), path).toBe(true)
+    }
+  })
+
   it('never counts a certificate’s verify pages: the QR token, a typed ID, the name shown', async () => {
     process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN = TOKEN
     for (const path of [

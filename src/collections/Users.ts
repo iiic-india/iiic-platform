@@ -10,7 +10,11 @@ import {
 import { allow, POLICY } from '@/access/policy'
 import { hasRole, isOwnerField, ROLE_LABELS, ROLES } from '@/access/roles'
 import { createRecoveryCodes, recoverTwoFactor } from '@/lib/auth/recoveryEndpoints'
-import { RESET_EMAIL_SUBJECT, resetEmailHtml } from '@/lib/auth/resetEmail'
+import {
+  RESET_EMAIL_SUBJECT,
+  RESET_REQUEST_INTERVAL_MS,
+  resetEmailHtml,
+} from '@/lib/auth/resetEmail'
 import { resetTwoFactor } from '@/lib/auth/resetTwoFactor'
 import { env } from '@/lib/env'
 import { mayCreateFirstOwner } from '@/lib/ownerSetup'
@@ -155,6 +159,10 @@ export const Users: CollectionConfig = {
     lockTime: 15 * 60 * 1000,
     // The reset email in IIIC's words (src/lib/auth/resetEmail.ts), linking to this site.
     forgotPassword: {
+      // One reset email per account in five minutes (Payload's default is 15 seconds): a request
+      // in between is answered as any other and sends nothing, so it neither floods a staff
+      // mailbox nor tells anyone whether the account exists (docs/security-review.md, D-109).
+      minRequestInterval: RESET_REQUEST_INTERVAL_MS,
       generateEmailSubject: () => RESET_EMAIL_SUBJECT,
       generateEmailHTML: (args) => resetEmailHtml(env().siteUrl, args?.token ?? ''),
     },

@@ -4,6 +4,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Booking, Person, Practitioner, Service, User } from '@/payload-types'
 import config from '@/payload.config'
 
+import { removeQueuedJobs } from '../helpers/queuedJobs'
+
 // The owner's rule of 22 November 2026 against the real database: a practitioner reads the name,
 // mobile and email of the people who have a booking with them, through those bookings, and
 // nobody else's, and nothing else on the record (src/access/policy.ts: POLICY.people,
@@ -41,6 +43,14 @@ const NOT_SHARED = [
 ] as const
 
 async function removeTestData() {
+  // Marking a session a no-show queues M6's B9 (src/lib/automations/booking/attendance.ts).
+  const bookings = await payload.find({
+    collection: 'bookings',
+    where: { reference: { like: REF } },
+    pagination: false,
+    depth: 0,
+  })
+  await removeQueuedJobs(payload, { bookingIds: bookings.docs.map((doc) => doc.id) })
   await payload.delete({ collection: 'bookings', where: { reference: { like: REF } } })
   await payload.delete({ collection: 'practitioners', where: { publicName: { like: TAG } } })
   await payload.delete({

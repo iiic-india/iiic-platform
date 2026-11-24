@@ -11,6 +11,7 @@ import sharp from 'sharp'
 
 import { AnalyticsEvents } from './collections/AnalyticsEvents'
 import { AuditLog } from './collections/AuditLog'
+import { Automations } from './collections/Automations'
 import { AvailabilityExceptions } from './collections/AvailabilityExceptions'
 import { AvailabilityRules } from './collections/AvailabilityRules'
 import { Bookings } from './collections/Bookings'
@@ -31,7 +32,10 @@ import { Invoices } from './collections/Invoices'
 import { LeadActivities } from './collections/LeadActivities'
 import { Leads } from './collections/Leads'
 import { Media } from './collections/Media'
+import { Messages } from './collections/Messages'
+import { MessageTemplates } from './collections/MessageTemplates'
 import { MissingPages } from './collections/MissingPages'
+import { NewsletterIssues } from './collections/NewsletterIssues'
 import { Organisations } from './collections/Organisations'
 import { Pages } from './collections/Pages'
 import { Payments } from './collections/Payments'
@@ -46,6 +50,8 @@ import { Refunds } from './collections/Refunds'
 import { Services } from './collections/Services'
 import { SessionNotes } from './collections/SessionNotes'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
+import { Subscribers } from './collections/Subscribers'
+import { Suppressions } from './collections/Suppressions'
 import { Tasks } from './collections/Tasks'
 import { Testimonials } from './collections/Testimonials'
 import { Topics } from './collections/Topics'
@@ -56,6 +62,7 @@ import { jobs } from './jobs'
 import { adminViewEndpoints } from './lib/adminViews/endpoints'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
+import { LOGGER_OPTIONS } from './lib/monitoring/logSafety'
 import { reportServerError, reportTestError } from './lib/monitoring/sentry'
 import { auditLog } from './plugins/auditLog'
 // M5 A: session notes and privacy (docs/18 §3, §5).
@@ -269,6 +276,13 @@ export default buildConfig({
     Incidents,
     Feedback,
     CaseStudies,
+    // Automations and messaging (M6; docs/19-automations-and-messaging-design.md).
+    Messages,
+    MessageTemplates,
+    Automations,
+    Suppressions,
+    Subscribers,
+    NewsletterIssues,
   ],
   globals: [Settings],
   // Automations (src/jobs/index.ts): never run on their own here.
@@ -287,7 +301,10 @@ export default buildConfig({
     // ignores session settings.
     // A request that cannot get a connection within 5 s fails instead of waiting forever:
     // a sign-in holds one connection while it reads the committed deactivation flag on another.
-    pool: { connectionString, max: 3, connectionTimeoutMillis: 5_000 },
+    // The adapter keeps one client checked out for good, to hear a dropped connection
+    // (connectWithReconnect in @payloadcms/db-postgres), so four leave three for requests: two
+    // bookings at once on one instance, each in its transaction, still leave one for the rest.
+    pool: { connectionString, max: 4, connectionTimeoutMillis: 5_000 },
     migrationDir: path.resolve(dirname, 'migrations'),
     // Schema changes go through migrations in every environment, never push (docs/07).
     push: false,
@@ -298,6 +315,9 @@ export default buildConfig({
   // The admin uses REST and server functions; GraphQL stays off to keep the surface small.
   graphQL: { disable: true },
   telemetry: false,
+  // Structured JSON logs in which an error keeps its name, code, scrubbed message and frames, and
+  // nothing a failed query put on it (src/lib/monitoring/logSafety.ts; docs/12 §6; M7).
+  logger: { options: { ...LOGGER_OPTIONS } },
   // Uploads pass through the server, so the request must stay under Vercel's 4.5 MB body limit
   // (D-46); images are re-encoded there before they are stored.
   upload: {

@@ -243,6 +243,14 @@ const BOOKING = [
   { file: '(booking)/b/[token]/page.tsx', path: `/b/${'a'.repeat(43)}` },
 ]
 
+/** The newsletter's pages and the withdraw page (M6): tests/unit/newsletterPages.spec.tsx. */
+const NEWSLETTER = [
+  'newsletter/page.tsx',
+  'newsletter/confirm/[token]/page.tsx',
+  'newsletter/unsubscribe/[token]/page.tsx',
+  'w/[token]/page.tsx',
+]
+
 beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_SITE_URL', ORIGIN)
   request.path = ''
@@ -268,6 +276,7 @@ describe('the pages under src/app/(platform)', () => {
         ...VERIFY,
         ...PROPOSAL_LINK,
         ...JOURNAL,
+        ...NEWSLETTER,
         ...DOORS,
         ...SECTIONS,
         ...NOT_FOUND,

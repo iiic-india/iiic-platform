@@ -107,6 +107,12 @@ export interface Config {
     incidents: Incident;
     feedback: Feedback;
     'case-studies': CaseStudy;
+    messages: Message;
+    'message-templates': MessageTemplate;
+    automations: Automation;
+    suppressions: Suppression;
+    subscribers: Subscriber;
+    'newsletter-issues': NewsletterIssue;
     'search-index': SearchIndex;
     redirects: Redirect;
     'totp-attempts': TotpAttempt;
@@ -120,6 +126,7 @@ export interface Config {
     people: {
       consents: 'consents';
       bookings: 'bookings';
+      suppressions: 'suppressions';
     };
     consents: {
       withdrawal: 'consents';
@@ -179,6 +186,12 @@ export interface Config {
     incidents: IncidentsSelect<false> | IncidentsSelect<true>;
     feedback: FeedbackSelect<false> | FeedbackSelect<true>;
     'case-studies': CaseStudiesSelect<false> | CaseStudiesSelect<true>;
+    messages: MessagesSelect<false> | MessagesSelect<true>;
+    'message-templates': MessageTemplatesSelect<false> | MessageTemplatesSelect<true>;
+    automations: AutomationsSelect<false> | AutomationsSelect<true>;
+    suppressions: SuppressionsSelect<false> | SuppressionsSelect<true>;
+    subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
+    'newsletter-issues': NewsletterIssuesSelect<false> | NewsletterIssuesSelect<true>;
     'search-index': SearchIndexSelect<false> | SearchIndexSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
@@ -194,9 +207,11 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     settings: PlatformSettings;
+    'payload-jobs-stats': PayloadJobsStat;
   };
   globalsSelect: {
     settings: SettingsSelect<false> | SettingsSelect<true>;
+    'payload-jobs-stats': PayloadJobsStatsSelect<false> | PayloadJobsStatsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -216,6 +231,37 @@ export interface Config {
       'P2-lead-from-call': TaskP2LeadFromCall;
       'P3-P4-lead-alerts': TaskP3P4LeadAlerts;
       'P8-expire-proposals': TaskP8ExpireProposals;
+      'messages-dispatch': TaskMessagesDispatch;
+      'O3-failure-alert': TaskO3FailureAlert;
+      'B2-confirmation': TaskB2Confirmation;
+      'B3-receipt': TaskB3Receipt;
+      'B3a-consent-receipt': TaskB3AConsentReceipt;
+      'B5-reminder-24h': TaskB5Reminder24H;
+      'B6-reminder-2h': TaskB6Reminder2H;
+      'B7-change-notice': TaskB7ChangeNotice;
+      'B8-feedback-request': TaskB8FeedbackRequest;
+      'B9-no-show': TaskB9NoShow;
+      'B10-slot-lost': TaskB10SlotLost;
+      'B12-time-request-ack': TaskB12TimeRequestAck;
+      'B13-payment-link': TaskB13PaymentLink;
+      'O1-daily-digest': TaskO1DailyDigest;
+      'O2-weekly-report': TaskO2WeeklyReport;
+      'O5-retention': TaskO5Retention;
+      'O6-backup-check': TaskO6BackupCheck;
+      'O9-bounce-complaint': TaskO9BounceComplaint;
+      'V1-review-consent-request': TaskV1ReviewConsentRequest;
+      'V2-withdrawal-confirmation': TaskV2WithdrawalConfirmation;
+      'P1-team-map-ack': TaskP1TeamMapAck;
+      'P6-proposal-follow-up': TaskP6ProposalFollowUp;
+      'P7-partnership-ack': TaskP7PartnershipAck;
+      'O4-data-request': TaskO4DataRequest;
+      'O7-complaint': TaskO7Complaint;
+      'O8-incident-timers': TaskO8IncidentTimers;
+      'C5-certificate-email': TaskC5CertificateEmail;
+      'N1-confirm-signup': TaskN1ConfirmSignup;
+      'N2-welcome': TaskN2Welcome;
+      'N3-unsubscribe': TaskN3Unsubscribe;
+      'N4-send-issue': TaskN4SendIssue;
       inline: {
         input: unknown;
         output: unknown;
@@ -1192,6 +1238,16 @@ export interface Person {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  /**
+   * Nothing is sent to these addresses. Ask the person for one that works.
+   */
+  suppressions?: {
+    docs?: (number | Suppression)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  whatsappLastInboundAt?: string | null;
+  whatsappLastInboundAt_tz?: 'Asia/Kolkata' | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1251,7 +1307,7 @@ export interface Lead {
   title?: string | null;
   kind: 'consultancy' | 'partnership';
   /**
-   * Moved on the pipeline board.
+   * Moved with "Move to stage", above or on the pipeline board.
    */
   stage:
     | 'new'
@@ -1874,6 +1930,31 @@ export interface Task {
   createdAt: string;
 }
 /**
+ * Addresses that bounced, complained or asked to stop. Nothing is sent to them.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "suppressions".
+ */
+export interface Suppression {
+  id: number;
+  channel: 'email' | 'whatsapp';
+  /**
+   * An email address in small letters, or a mobile with +91.
+   */
+  address: string;
+  reason: 'hardBounce' | 'complaint' | 'whatsappStop' | 'manual';
+  at: string;
+  at_tz: 'Asia/Kolkata';
+  source: 'resend' | 'whatsapp' | 'staff';
+  person?: (number | null) | Person;
+  /**
+   * For an entry made by hand: how the request reached IIIC.
+   */
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * The funnel, one event at a time, with no link to any person. Written by the platform only.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2210,6 +2291,7 @@ export interface Payment {
   gatewayOrderId?: string | null;
   gatewayPaymentLinkId?: string | null;
   gatewayPaymentId?: string | null;
+  linkUrl?: string | null;
   method?: string | null;
   failureCode?: string | null;
   capturedAt?: string | null;
@@ -2535,6 +2617,387 @@ export interface CaseStudy {
   createdAt: string;
 }
 /**
+ * Every automated message: when it is due, its channel and what happened to it.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages".
+ */
+export interface Message {
+  id: number;
+  /**
+   * One message per key: it is never sent twice.
+   */
+  dedupeKey: string;
+  automation:
+    | 'B1'
+    | 'B2'
+    | 'B3'
+    | 'B3a'
+    | 'B4'
+    | 'B5'
+    | 'B6'
+    | 'B7'
+    | 'B8'
+    | 'B9'
+    | 'B10'
+    | 'B11'
+    | 'B12'
+    | 'B13'
+    | 'B14'
+    | 'P1'
+    | 'P2'
+    | 'P3'
+    | 'P4'
+    | 'P5'
+    | 'P6'
+    | 'P7'
+    | 'N1'
+    | 'N2'
+    | 'N3'
+    | 'N4'
+    | 'O1'
+    | 'O2'
+    | 'O3'
+    | 'O4'
+    | 'O5'
+    | 'O6'
+    | 'O7'
+    | 'O8'
+    | 'O9'
+    | 'O10'
+    | 'V1'
+    | 'V2'
+    | 'C5';
+  template:
+    | 'booking-confirmed'
+    | 'booking-receipt'
+    | 'consent-receipt'
+    | 'reminder-24h'
+    | 'reminder-short'
+    | 'booking-rescheduled'
+    | 'booking-cancelled'
+    | 'refund-processed'
+    | 'booking-change-staff'
+    | 'feedback-request'
+    | 'no-show'
+    | 'slot-lost'
+    | 'time-request-received'
+    | 'payment-link'
+    | 'payment-link-reminder'
+    | 'team-map-ack'
+    | 'partnership-ack'
+    | 'proposal-sent'
+    | 'newsletter-confirm'
+    | 'newsletter-welcome'
+    | 'newsletter-issue'
+    | 'data-request-ack'
+    | 'complaint-ack'
+    | 'privacy-deadline'
+    | 'review-consent-request'
+    | 'review-consent-reminder'
+    | 'review-withdrawal-confirmed'
+    | 'certificate-issued'
+    | 'daily-digest'
+    | 'weekly-report'
+    | 'incident-alert'
+    | 'backup-alert'
+    | 'failure-alert';
+  variant?: string | null;
+  channel: 'email' | 'whatsapp';
+  fallback?: ('email' | 'whatsapp') | null;
+  kind: 'transactional' | 'promotional' | 'operator' | 'internal';
+  /**
+   * Email only: the sending identity (docs/13 §1).
+   */
+  sender?: ('bookings' | 'hello' | 'platform' | 'journal') | null;
+  status:
+    | 'queued'
+    | 'sending'
+    | 'sent'
+    | 'delivered'
+    | 'read'
+    | 'failed'
+    | 'bounced'
+    | 'complained'
+    | 'skipped'
+    | 'cancelled'
+    | 'unknown';
+  skipReason?:
+    | (
+        | 'paused'
+        | 'no-address'
+        | 'suppressed'
+        | 'no-consent'
+        | 'under-18'
+        | 'not-configured'
+        | 'template-not-approved'
+        | 'window-closed'
+        | 'too-late'
+        | 'quiet-hours-late'
+        | 'stale'
+        | 'price-hidden'
+      )
+    | null;
+  /**
+   * A code from the provider, never its message.
+   */
+  lastError?: string | null;
+  recipientKind: 'person' | 'subscriber' | 'staff';
+  person?: (number | null) | Person;
+  subscriber?: (number | null) | Subscriber;
+  staff?: (number | null) | User;
+  subjectCollection:
+    | 'bookings'
+    | 'payments'
+    | 'refunds'
+    | 'invoices'
+    | 'testimonials'
+    | 'consents'
+    | 'people'
+    | 'subscribers'
+    | 'newsletter-issues'
+    | 'messages'
+    | 'suppressions'
+    | 'users'
+    | 'enquiries'
+    | 'leads'
+    | 'proposals'
+    | 'certificates'
+    | 'data-requests'
+    | 'incidents';
+  subjectId: number;
+  /**
+   * About a counselling session: no offer, ever (docs/06).
+   */
+  counselling?: boolean | null;
+  fallbackOf?: (number | null) | Message;
+  sendAt?: string | null;
+  sendAt_tz?: 'Asia/Kolkata' | null;
+  sendBefore?: string | null;
+  sendBefore_tz?: 'Asia/Kolkata' | null;
+  requiresOpenWindow?: boolean | null;
+  attempts?: number | null;
+  claimedAt?: string | null;
+  claimedAt_tz?: 'Asia/Kolkata' | null;
+  sentAt?: string | null;
+  sentAt_tz?: 'Asia/Kolkata' | null;
+  deliveredAt?: string | null;
+  deliveredAt_tz?: 'Asia/Kolkata' | null;
+  readAt?: string | null;
+  readAt_tz?: 'Asia/Kolkata' | null;
+  provider?: ('resend' | 'aisensy' | 'fake') | null;
+  providerMessageId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The newsletter list. Each address confirmed its signup by email.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers".
+ */
+export interface Subscriber {
+  id: number;
+  email: string;
+  status: 'pending' | 'confirmed' | 'unsubscribed';
+  /**
+   * The page the signup came from.
+   */
+  source?: string | null;
+  notice?: (number | null) | ConsentVersion;
+  person?: (number | null) | Person;
+  consent?: (number | null) | Consent;
+  confirmExpiresAt?: string | null;
+  confirmExpiresAt_tz?: 'Asia/Kolkata' | null;
+  confirmedAt?: string | null;
+  confirmedAt_tz?: 'Asia/Kolkata' | null;
+  unsubscribedAt?: string | null;
+  unsubscribedAt_tz?: 'Asia/Kolkata' | null;
+  lastEngagedAt?: string | null;
+  lastEngagedAt_tz?: 'Asia/Kolkata' | null;
+  confirmTokenHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The words of each automated message, and the approved WhatsApp templates.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "message-templates".
+ */
+export interface MessageTemplate {
+  id: number;
+  key:
+    | 'booking-confirmed'
+    | 'booking-receipt'
+    | 'consent-receipt'
+    | 'reminder-24h'
+    | 'reminder-short'
+    | 'booking-rescheduled'
+    | 'booking-cancelled'
+    | 'refund-processed'
+    | 'booking-change-staff'
+    | 'feedback-request'
+    | 'no-show'
+    | 'slot-lost'
+    | 'time-request-received'
+    | 'payment-link'
+    | 'payment-link-reminder'
+    | 'team-map-ack'
+    | 'partnership-ack'
+    | 'proposal-sent'
+    | 'newsletter-confirm'
+    | 'newsletter-welcome'
+    | 'newsletter-issue'
+    | 'data-request-ack'
+    | 'complaint-ack'
+    | 'privacy-deadline'
+    | 'review-consent-request'
+    | 'review-consent-reminder'
+    | 'review-withdrawal-confirmed'
+    | 'certificate-issued'
+    | 'daily-digest'
+    | 'weekly-report'
+    | 'incident-alert'
+    | 'backup-alert'
+    | 'failure-alert';
+  channel: 'email' | 'whatsapp';
+  language: 'en-IN' | 'gu-IN' | 'hi-IN';
+  /**
+   * Email only. States the fact, with no urgency words (docs/13 §5).
+   */
+  subject?: string | null;
+  /**
+   * Email only: the next step, shown in the inbox after the subject.
+   */
+  preheader?: string | null;
+  /**
+   * The lines of the message, with {{variables}} the template names. For WhatsApp, exactly the text Meta approved.
+   */
+  body?: string | null;
+  providerTemplateName?: string | null;
+  category?: ('utility' | 'marketing' | 'authentication') | null;
+  /**
+   * Only approved wording is used. An owner approves.
+   */
+  status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'paused';
+  owner?: (number | null) | User;
+  lastReviewedAt?: string | null;
+  lastReviewedAt_tz?: 'Asia/Kolkata' | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Pause or resume an automation; see when it last ran and how often it failed.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "automations".
+ */
+export interface Automation {
+  id: number;
+  key:
+    | 'B1'
+    | 'B2'
+    | 'B3'
+    | 'B3a'
+    | 'B4'
+    | 'B5'
+    | 'B6'
+    | 'B7'
+    | 'B8'
+    | 'B9'
+    | 'B10'
+    | 'B11'
+    | 'B12'
+    | 'B13'
+    | 'B14'
+    | 'P1'
+    | 'P2'
+    | 'P3'
+    | 'P4'
+    | 'P5'
+    | 'P6'
+    | 'P7'
+    | 'N1'
+    | 'N2'
+    | 'N3'
+    | 'N4'
+    | 'O1'
+    | 'O2'
+    | 'O3'
+    | 'O4'
+    | 'O5'
+    | 'O6'
+    | 'O7'
+    | 'O8'
+    | 'O9'
+    | 'O10'
+    | 'V1'
+    | 'V2'
+    | 'C5';
+  /**
+   * Untick to pause it. Nothing it would send goes out while paused.
+   */
+  enabled?: boolean | null;
+  /**
+   * Why it was paused, for whoever turns it back on.
+   */
+  note?: string | null;
+  lastRunAt?: string | null;
+  lastRunAt_tz?: 'Asia/Kolkata' | null;
+  successCount?: number | null;
+  failureCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The monthly Journal email: written here, sent to confirmed subscribers.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-issues".
+ */
+export interface NewsletterIssue {
+  id: number;
+  number: number;
+  title: string;
+  /**
+   * Shown in the inbox after the subject.
+   */
+  preheader: string;
+  lead: {
+    post: number | Post;
+    /**
+     * Optional: a line of your own above the excerpt.
+     */
+    note?: string | null;
+  };
+  items?:
+    | {
+        post: number | Post;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  cta?: {
+    label?: string | null;
+    /**
+     * A page on this site, starting with /.
+     */
+    path?: string | null;
+  };
+  /**
+   * Schedule it with a time below; it can be cancelled until it sends.
+   */
+  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'cancelled';
+  scheduledFor?: string | null;
+  scheduledFor_tz?: 'Asia/Kolkata' | null;
+  sentAt?: string | null;
+  sentAt_tz?: 'Asia/Kolkata' | null;
+  recipientCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * What /search finds: an entry for each published page, offered service, published article and published question, kept up to date as they are published, changed and unpublished. "Reindex" builds a kind again from what is published.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2669,7 +3132,38 @@ export interface PayloadJob {
           | 'B7-issue-credit-note'
           | 'P2-lead-from-call'
           | 'P3-P4-lead-alerts'
-          | 'P8-expire-proposals';
+          | 'P8-expire-proposals'
+          | 'messages-dispatch'
+          | 'O3-failure-alert'
+          | 'B2-confirmation'
+          | 'B3-receipt'
+          | 'B3a-consent-receipt'
+          | 'B5-reminder-24h'
+          | 'B6-reminder-2h'
+          | 'B7-change-notice'
+          | 'B8-feedback-request'
+          | 'B9-no-show'
+          | 'B10-slot-lost'
+          | 'B12-time-request-ack'
+          | 'B13-payment-link'
+          | 'O1-daily-digest'
+          | 'O2-weekly-report'
+          | 'O5-retention'
+          | 'O6-backup-check'
+          | 'O9-bounce-complaint'
+          | 'V1-review-consent-request'
+          | 'V2-withdrawal-confirmation'
+          | 'P1-team-map-ack'
+          | 'P6-proposal-follow-up'
+          | 'P7-partnership-ack'
+          | 'O4-data-request'
+          | 'O7-complaint'
+          | 'O8-incident-timers'
+          | 'C5-certificate-email'
+          | 'N1-confirm-signup'
+          | 'N2-welcome'
+          | 'N3-unsubscribe'
+          | 'N4-send-issue';
         taskID: string;
         input?:
           | {
@@ -2716,11 +3210,55 @@ export interface PayloadJob {
         | 'P2-lead-from-call'
         | 'P3-P4-lead-alerts'
         | 'P8-expire-proposals'
+        | 'messages-dispatch'
+        | 'O3-failure-alert'
+        | 'B2-confirmation'
+        | 'B3-receipt'
+        | 'B3a-consent-receipt'
+        | 'B5-reminder-24h'
+        | 'B6-reminder-2h'
+        | 'B7-change-notice'
+        | 'B8-feedback-request'
+        | 'B9-no-show'
+        | 'B10-slot-lost'
+        | 'B12-time-request-ack'
+        | 'B13-payment-link'
+        | 'O1-daily-digest'
+        | 'O2-weekly-report'
+        | 'O5-retention'
+        | 'O6-backup-check'
+        | 'O9-bounce-complaint'
+        | 'V1-review-consent-request'
+        | 'V2-withdrawal-confirmation'
+        | 'P1-team-map-ack'
+        | 'P6-proposal-follow-up'
+        | 'P7-partnership-ack'
+        | 'O4-data-request'
+        | 'O7-complaint'
+        | 'O8-incident-timers'
+        | 'C5-certificate-email'
+        | 'N1-confirm-signup'
+        | 'N2-welcome'
+        | 'N3-unsubscribe'
+        | 'N4-send-issue'
       )
     | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
+  /**
+   * Used for concurrency control. Jobs with the same key are subject to exclusive/supersedes rules.
+   */
+  concurrencyKey?: string | null;
+  meta?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2870,6 +3408,26 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'case-studies';
         value: number | CaseStudy;
+      } | null)
+    | ({
+        relationTo: 'message-templates';
+        value: number | MessageTemplate;
+      } | null)
+    | ({
+        relationTo: 'automations';
+        value: number | Automation;
+      } | null)
+    | ({
+        relationTo: 'suppressions';
+        value: number | Suppression;
+      } | null)
+    | ({
+        relationTo: 'subscribers';
+        value: number | Subscriber;
+      } | null)
+    | ({
+        relationTo: 'newsletter-issues';
+        value: number | NewsletterIssue;
       } | null)
     | ({
         relationTo: 'search-index';
@@ -3471,6 +4029,9 @@ export interface PeopleSelect<T extends boolean = true> {
   tags?: T;
   consents?: T;
   bookings?: T;
+  suppressions?: T;
+  whatsappLastInboundAt?: T;
+  whatsappLastInboundAt_tz?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3813,6 +4374,7 @@ export interface PaymentsSelect<T extends boolean = true> {
   gatewayOrderId?: T;
   gatewayPaymentLinkId?: T;
   gatewayPaymentId?: T;
+  linkUrl?: T;
   method?: T;
   failureCode?: T;
   capturedAt?: T;
@@ -4362,6 +4924,159 @@ export interface CaseStudiesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages_select".
+ */
+export interface MessagesSelect<T extends boolean = true> {
+  dedupeKey?: T;
+  automation?: T;
+  template?: T;
+  variant?: T;
+  channel?: T;
+  fallback?: T;
+  kind?: T;
+  sender?: T;
+  status?: T;
+  skipReason?: T;
+  lastError?: T;
+  recipientKind?: T;
+  person?: T;
+  subscriber?: T;
+  staff?: T;
+  subjectCollection?: T;
+  subjectId?: T;
+  counselling?: T;
+  fallbackOf?: T;
+  sendAt?: T;
+  sendAt_tz?: T;
+  sendBefore?: T;
+  sendBefore_tz?: T;
+  requiresOpenWindow?: T;
+  attempts?: T;
+  claimedAt?: T;
+  claimedAt_tz?: T;
+  sentAt?: T;
+  sentAt_tz?: T;
+  deliveredAt?: T;
+  deliveredAt_tz?: T;
+  readAt?: T;
+  readAt_tz?: T;
+  provider?: T;
+  providerMessageId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "message-templates_select".
+ */
+export interface MessageTemplatesSelect<T extends boolean = true> {
+  key?: T;
+  channel?: T;
+  language?: T;
+  subject?: T;
+  preheader?: T;
+  body?: T;
+  providerTemplateName?: T;
+  category?: T;
+  status?: T;
+  owner?: T;
+  lastReviewedAt?: T;
+  lastReviewedAt_tz?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "automations_select".
+ */
+export interface AutomationsSelect<T extends boolean = true> {
+  key?: T;
+  enabled?: T;
+  note?: T;
+  lastRunAt?: T;
+  lastRunAt_tz?: T;
+  successCount?: T;
+  failureCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "suppressions_select".
+ */
+export interface SuppressionsSelect<T extends boolean = true> {
+  channel?: T;
+  address?: T;
+  reason?: T;
+  at?: T;
+  at_tz?: T;
+  source?: T;
+  person?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers_select".
+ */
+export interface SubscribersSelect<T extends boolean = true> {
+  email?: T;
+  status?: T;
+  source?: T;
+  notice?: T;
+  person?: T;
+  consent?: T;
+  confirmExpiresAt?: T;
+  confirmExpiresAt_tz?: T;
+  confirmedAt?: T;
+  confirmedAt_tz?: T;
+  unsubscribedAt?: T;
+  unsubscribedAt_tz?: T;
+  lastEngagedAt?: T;
+  lastEngagedAt_tz?: T;
+  confirmTokenHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-issues_select".
+ */
+export interface NewsletterIssuesSelect<T extends boolean = true> {
+  number?: T;
+  title?: T;
+  preheader?: T;
+  lead?:
+    | T
+    | {
+        post?: T;
+        note?: T;
+      };
+  items?:
+    | T
+    | {
+        post?: T;
+        note?: T;
+        id?: T;
+      };
+  cta?:
+    | T
+    | {
+        label?: T;
+        path?: T;
+      };
+  status?: T;
+  scheduledFor?: T;
+  scheduledFor_tz?: T;
+  sentAt?: T;
+  sentAt_tz?: T;
+  recipientCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "search-index_select".
  */
 export interface SearchIndexSelect<T extends boolean = true> {
@@ -4436,6 +5151,8 @@ export interface PayloadJobsSelect<T extends boolean = true> {
   queue?: T;
   waitUntil?: T;
   processing?: T;
+  concurrencyKey?: T;
+  meta?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -4631,6 +5348,24 @@ export interface PlatformSettings {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs-stats".
+ */
+export interface PayloadJobsStat {
+  id: number;
+  stats?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "settings_select".
  */
 export interface SettingsSelect<T extends boolean = true> {
@@ -4729,6 +5464,16 @@ export interface SettingsSelect<T extends boolean = true> {
         certificate?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs-stats_select".
+ */
+export interface PayloadJobsStatsSelect<T extends boolean = true> {
+  stats?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -4875,6 +5620,389 @@ export interface TaskP8ExpireProposals {
   input?: unknown;
   output: {
     expired: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskMessages-dispatch".
+ */
+export interface TaskMessagesDispatch {
+  input?: unknown;
+  output: {
+    sent: number;
+    deferred: number;
+    skipped: number;
+    failed: number;
+    retried: number;
+    unknown: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO3-failure-alert".
+ */
+export interface TaskO3FailureAlert {
+  input: {
+    name?: string | null;
+    key?: string | null;
+    messageId?: number | null;
+    jobId?: number | null;
+  };
+  output: {
+    failures: number;
+    alerted: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB2-confirmation".
+ */
+export interface TaskB2Confirmation {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB3-receipt".
+ */
+export interface TaskB3Receipt {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB3a-consent-receipt".
+ */
+export interface TaskB3AConsentReceipt {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB5-reminder-24h".
+ */
+export interface TaskB5Reminder24H {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB6-reminder-2h".
+ */
+export interface TaskB6Reminder2H {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB7-change-notice".
+ */
+export interface TaskB7ChangeNotice {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB8-feedback-request".
+ */
+export interface TaskB8FeedbackRequest {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB9-no-show".
+ */
+export interface TaskB9NoShow {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB10-slot-lost".
+ */
+export interface TaskB10SlotLost {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB12-time-request-ack".
+ */
+export interface TaskB12TimeRequestAck {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB13-payment-link".
+ */
+export interface TaskB13PaymentLink {
+  input?: unknown;
+  output: {
+    outcome: string;
+    cancelled: number;
+    planned: number;
+    created: number;
+    refused: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO1-daily-digest".
+ */
+export interface TaskO1DailyDigest {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO2-weekly-report".
+ */
+export interface TaskO2WeeklyReport {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO5-retention".
+ */
+export interface TaskO5Retention {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO6-backup-check".
+ */
+export interface TaskO6BackupCheck {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO9-bounce-complaint".
+ */
+export interface TaskO9BounceComplaint {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskV1-review-consent-request".
+ */
+export interface TaskV1ReviewConsentRequest {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskV2-withdrawal-confirmation".
+ */
+export interface TaskV2WithdrawalConfirmation {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP1-team-map-ack".
+ */
+export interface TaskP1TeamMapAck {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP6-proposal-follow-up".
+ */
+export interface TaskP6ProposalFollowUp {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskP7-partnership-ack".
+ */
+export interface TaskP7PartnershipAck {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO4-data-request".
+ */
+export interface TaskO4DataRequest {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO7-complaint".
+ */
+export interface TaskO7Complaint {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskO8-incident-timers".
+ */
+export interface TaskO8IncidentTimers {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskC5-certificate-email".
+ */
+export interface TaskC5CertificateEmail {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskN1-confirm-signup".
+ */
+export interface TaskN1ConfirmSignup {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskN2-welcome".
+ */
+export interface TaskN2Welcome {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskN3-unsubscribe".
+ */
+export interface TaskN3Unsubscribe {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskN4-send-issue".
+ */
+export interface TaskN4SendIssue {
+  input?: unknown;
+  output: {
+    planned: number;
+    reason?: string | null;
   };
 }
 /**

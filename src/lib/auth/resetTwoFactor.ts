@@ -23,7 +23,8 @@ export const resetTwoFactor: PayloadHandler = async (req) => {
     return json({ message: 'Only an owner can reset two-factor.' }, 403)
   }
   const id = req.routeParams?.id
-  if (typeof id !== 'string' && typeof id !== 'number') {
+  // A whole number, before any lookup (Zod's rule for ids, written out: docs/12 §6).
+  if ((typeof id !== 'string' && typeof id !== 'number') || !/^[1-9]\d{0,9}$/.test(String(id))) {
     return json({ message: 'That staff account was not found.' }, 404)
   }
   if (String(id) === String(actor.id)) {

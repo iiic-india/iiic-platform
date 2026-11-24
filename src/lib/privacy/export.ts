@@ -17,7 +17,10 @@ import { isSafeKey, privateStore, type PrivateStore } from './store'
  * the person"; docs/18 §5): the person's own records as JSON and as a readable page, written to
  * the private store for an owner to send. Session notes are left out: D-11 is open and the design
  * assumes they are not disclosed until IIIC decides. The audit log, the analytics events and other
- * people's records are not the person's own and are left out too.
+ * people's records are not the person's own and are left out too. M4's and M6's records about the
+ * person are in: the enquiries they sent, their newsletter entry (never its token's hash), their
+ * suppressed addresses, and the log of messages sent to them, as ids, kinds and states only: the
+ * log holds no body, and nothing in it is anything said in a session.
  *
  * Only an owner makes one (VIEW_POLICY.privacyDecision), after entering the code again, for a
  * verified access request still open; the request records where the export is (`exportKey`),
@@ -37,6 +40,10 @@ export const EXPORT_SECTIONS = [
   { key: 'certificates', title: 'Certificates' },
   { key: 'feedback', title: 'Feedback you gave' },
   { key: 'reviews', title: 'Reviews you gave' },
+  { key: 'enquiries', title: 'Enquiries you sent through the site' },
+  { key: 'newsletter', title: 'Your newsletter subscription' },
+  { key: 'suppressions', title: 'Addresses we send nothing to' },
+  { key: 'messages', title: 'Messages we sent you' },
   { key: 'requests', title: 'Your privacy requests' },
 ] as const
 
@@ -53,18 +60,53 @@ const idOf = (value: unknown): number | undefined => {
   return undefined
 }
 
-/** Every record of one kind matching `where`, without hidden fields (hashes, keys, tokens). */
-async function all(req: PayloadRequest, collection: CollectionSlug, where: Where) {
+/**
+ * Every record of one kind matching `where`, without hidden fields (hashes, keys, tokens), or
+ * with only the fields `select` names.
+ */
+async function all(
+  req: PayloadRequest,
+  collection: CollectionSlug,
+  where: Where,
+  select?: Record<string, true>,
+) {
   const { docs } = await req.payload.find({
     collection,
     where,
     depth: 0,
     pagination: false,
+    ...(select ? { select } : {}),
     overrideAccess: true,
     req,
   })
   return docs as unknown as Record<string, unknown>[]
 }
+
+/** What a newsletter entry shows the person: never its confirmation token's hash. */
+const SUBSCRIBER_FIELDS = {
+  email: true,
+  status: true,
+  source: true,
+  notice: true,
+  consent: true,
+  confirmedAt: true,
+  unsubscribedAt: true,
+  lastEngagedAt: true,
+  createdAt: true,
+} as const
+
+/** A message as the log keeps it: what it was, by which channel, and what became of it. */
+const MESSAGE_FIELDS = {
+  template: true,
+  channel: true,
+  kind: true,
+  status: true,
+  skipReason: true,
+  sendAt: true,
+  sentAt: true,
+  deliveredAt: true,
+  readAt: true,
+} as const
 
 /** The person's own records, gathered past the rules once the owner's checks have passed. */
 export async function gatherPersonData(
@@ -78,12 +120,27 @@ export async function gatherPersonData(
   const onBookings: Where = {
     booking: { in: bookings.length ? bookings.map((booking) => booking.id as number) : [0] },
   }
+  // A newsletter entry is the person's once confirmed, or still pending under their email; a
+  // suppressed address is theirs when linked to them or when it is their email or mobile.
+  const record = people[0] ?? {}
+  const email = typeof record.email === 'string' ? record.email.trim().toLowerCase() : ''
+  const mobile = typeof record.mobile === 'string' ? record.mobile.trim() : ''
+  const addresses = [email, mobile].filter(Boolean)
+  const newsletter = await all(
+    req,
+    'subscribers',
+    { or: [person, ...(email ? [{ email: { equals: email } }] : [])] },
+    SUBSCRIBER_FIELDS,
+  )
+  const subscriberIds = newsletter.map((entry) => entry.id as number)
   return {
     generatedAt: now.toISOString(),
-    // The join lists the consents again; they have their own section.
+    // The joins list the consents, bookings and suppressed addresses again; each has its section.
     person: people.map((record) => {
       const copy = { ...record }
       delete copy.consents
+      delete copy.bookings
+      delete copy.suppressions
       return copy
     }),
     consents: await all(req, 'consents', person),
@@ -94,6 +151,19 @@ export async function gatherPersonData(
     certificates: await all(req, 'certificates', person),
     feedback: await all(req, 'feedback', person),
     reviews: await all(req, 'testimonials', person),
+    enquiries: await all(req, 'enquiries', person),
+    newsletter,
+    suppressions: await all(req, 'suppressions', {
+      or: [person, ...(addresses.length ? [{ address: { in: addresses } }] : [])],
+    }),
+    messages: await all(
+      req,
+      'messages',
+      {
+        or: [person, ...(subscriberIds.length ? [{ subscriber: { in: subscriberIds } }] : [])],
+      },
+      MESSAGE_FIELDS,
+    ),
     requests: await all(req, 'data-requests', person),
   }
 }

@@ -6,6 +6,8 @@ import { Scope } from '@/components/blocks/Scope'
 import { loadCatalogue } from '@/lib/bookingFlow/catalogue'
 import type { FlowType } from '@/lib/bookingFlow/details'
 import { countStep, flowRequest } from '@/lib/bookingFlow/server'
+import { turnstileKeys } from '@/lib/enquiryForms/turnstile'
+import { env } from '@/lib/env'
 import { istDay } from '@/lib/time/ist'
 
 import { BookingFlow } from './BookingFlow'
@@ -41,6 +43,7 @@ export async function BookingPage({ type }: { type: FlowType }) {
         catalogue={catalogue}
         checkoutKey={checkoutKey}
         today={istDay(new Date())}
+        turnstileSiteKey={turnstileKeys(env())?.siteKey ?? null}
       />
       {type === 'session' ? <Scope /> : null}
     </>

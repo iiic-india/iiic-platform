@@ -5,6 +5,7 @@ import {
   type CollectionBeforeChangeHook,
   type CollectionBeforeDeleteHook,
   type CollectionSlug,
+  type PayloadRequest,
 } from 'payload'
 
 import { IST } from '@/lib/time/ist'
@@ -327,27 +328,33 @@ export const closeSpamLead: CollectionAfterChangeHook = async ({
 // People ----------------------------------------------------------------------------------------
 
 /**
- * Erasing a person (docs/17 §9): their enquiries, the copies of what they typed, are deleted, and
- * their leads keep no link to them. A proposal version's `sentTo` is emptied by the database's own
- * rule when the person goes (its foreign key is set to null). Their consents are withdrawn by the
- * consent hook as before; the office reviews the leads' notes as part of the request (M5).
+ * Erasing a person from the pipeline (docs/17 §9): their enquiries, the copies of what they typed,
+ * are deleted, and their leads and the proposal versions sent to them keep no link to them. Run in
+ * the caller's transaction by both ways a person goes: the owner's Confirm erasure, which empties
+ * the record in place (src/lib/privacy/erasure.ts, D-97), and a deletion of the record. Their
+ * consents are withdrawn by the consent hook or the erasure; the office reviews the leads' notes as
+ * part of the request (M5). Returns how many enquiries went and how many links were emptied.
  */
-export const eraseFromPipeline: CollectionBeforeDeleteHook = async ({ id, req }) => {
-  await req.payload.delete({
+export async function erasePersonFromPipeline(
+  req: PayloadRequest,
+  personId: number | string,
+): Promise<{ enquiries: number; links: number }> {
+  const enquiries = await req.payload.delete({
     collection: 'enquiries',
-    where: { person: { equals: id } },
+    where: { person: { equals: personId } },
     overrideAccess: true,
     req,
   })
-  const { docs } = await req.payload.find({
+  const leads = await req.payload.find({
     collection: 'leads',
-    where: { person: { equals: id } },
+    where: { person: { equals: personId } },
     pagination: false,
     depth: 0,
+    select: { person: true },
     overrideAccess: true,
     req,
   })
-  for (const lead of docs) {
+  for (const lead of leads.docs) {
     await req.payload.update({
       collection: 'leads',
       id: lead.id,
@@ -357,4 +364,32 @@ export const eraseFromPipeline: CollectionBeforeDeleteHook = async ({ id, req })
       req,
     })
   }
+  const versions = await req.payload.find({
+    collection: 'proposal-versions',
+    where: { 'sending.sentTo': { equals: personId } },
+    pagination: false,
+    depth: 0,
+    select: { sending: true },
+    overrideAccess: true,
+    req,
+  })
+  for (const version of versions.docs) {
+    await req.payload.update({
+      collection: 'proposal-versions',
+      id: version.id,
+      data: { sending: { ...version.sending, sentTo: null } },
+      depth: 0,
+      overrideAccess: true,
+      req,
+    })
+  }
+  return {
+    enquiries: enquiries.docs.length,
+    links: leads.docs.length + versions.docs.length,
+  }
+}
+
+/** A deletion of the person's record takes them out of the pipeline first. */
+export const eraseFromPipeline: CollectionBeforeDeleteHook = async ({ id, req }) => {
+  await erasePersonFromPipeline(req, id)
 }

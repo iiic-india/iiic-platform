@@ -1,5 +1,7 @@
 import type { Endpoint, PayloadHandler } from 'payload'
 
+import { viewRefusal } from '@/access/views'
+
 /**
  * The views' one route of their own (M5 C; docs/18 §6): the audit log as a CSV, for an owner who
  * enters their two-factor code again. It checks the user, the role and the code first
@@ -27,6 +29,11 @@ const MESSAGES: Record<string, string> = {
 }
 
 export const auditCsvHandler: PayloadHandler = async (req) => {
+  // An owner with the code, before the body is read (CLAUDE.md #6); exportAuditCsv asks again.
+  const refusal = viewRefusal(req.user, 'settings')
+  if (refusal) {
+    return json({ code: refusal.code, message: MESSAGES[refusal.code] }, refusal.status)
+  }
   const { exportAuditCsv } = await import('./settings')
   const body = await req.json?.().catch(() => null)
   const result = await exportAuditCsv(req, body)

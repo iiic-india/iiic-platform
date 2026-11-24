@@ -101,11 +101,13 @@ export type SendVersion = (
  * The tracked link (`/p/[token]`): the version's PDF to whoever holds the token, while the
  * version is the one sent and the proposal is sent, viewed or accepted. Each opening of the PDF
  * counts; the first sets `firstViewedAt`, moves a sent proposal to viewed and emits
- * `proposal.viewed`. Anything else answers `link-closed`, which the page shows without saying why.
+ * `proposal.viewed`. An opening that is not the client's (`countView: false`: signed-in staff, or a
+ * preview deployment) gets the PDF and counts nothing. Anything else answers `link-closed`, which
+ * the page shows without saying why.
  */
 export type OpenTrackedLink = (
   req: PayloadRequest,
-  input: { token: string; now: Date },
+  input: { token: string; now: Date; countView?: boolean },
 ) => Promise<Result<{ versionId: number; pdf: Uint8Array; filename: string }, ProposalError>>
 
 /** What the client answered, recorded by the office: accepted or declined, with a note. */
@@ -118,14 +120,21 @@ export type RecordAnswer = (
 export type ExpireProposals = (req: PayloadRequest, now: Date) => Promise<number>
 
 /**
- * The proposal email (P5) through the platform's mail adapter (Payload's `sendEmail`, Resend once
- * configured): to one address, the reference in the subject, the tracked link in the body, and no
- * amount (D-21 holds for email too, whatever MayPrintFees answers). M6 replaces its words with
- * the React Email template and logs it in `message_log`; the port stays.
+ * The proposal email (P5): to one person, the reference in the subject, the tracked link as its
+ * one button, and no amount (D-21 holds for email too, whatever MayPrintFees answers). Since M6
+ * joined, the app's mailer sends it through the messaging core with the React Email template
+ * `proposal-sent` and logs it in `messages` (src/lib/automations/pipeline/proposalMailer.ts);
+ * the ids and the send's moment are what the log keys it by, one row per send. The port stays.
  */
 export type ProposalMailer = (message: {
   to: string
   reference: string
   clientName: string
   linkUrl: string
+  /** The lead's contact the version was sent to (`sending.sentTo`). */
+  personId: number
+  proposalId: number
+  versionId: number
+  /** When this send happened (`sending.sentAt`): a send again is a new message. */
+  sentAt: string
 }) => Promise<Result<{ messageId: string | null }, { code: 'mail-failed' }>>

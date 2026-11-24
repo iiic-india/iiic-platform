@@ -1,5 +1,6 @@
 import { PRIVATE_HEADERS, refusalResponse, staffRequest } from '@/lib/certificates/http'
 import { certificateActions } from '@/lib/certificates/wiring'
+import { answeringFaults } from '@/lib/monitoring/routeFaults'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -10,7 +11,7 @@ export const maxDuration = 15
  * the office (owner, operator, signed in with the code). The file is checked against the SHA-256
  * kept at issue and the download is recorded as `download-certificate` before it is sent.
  */
-export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+async function get(request: Request, context: { params: Promise<{ id: string }> }) {
   const staff = await staffRequest(request, 'certificatesIssue')
   if (!staff.ok) return staff.response
   const { id } = await context.params
@@ -26,3 +27,5 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     },
   })
 }
+
+export const GET = answeringFaults('Downloading a certificate', get)

@@ -11,11 +11,14 @@ import { err, ok } from '@/lib/result'
 // to the page. The proposal actions are faked; the token below is obviously fake.
 
 const actions = vi.hoisted(() => ({ read: vi.fn(), open: vi.fn() }))
+const signedIn = vi.hoisted(() => ({ auth: vi.fn() }))
+const deployment = vi.hoisted(() => ({ VERCEL_ENV: undefined as string | undefined }))
 vi.mock('@/lib/pipeline/proposal/wiring', () => ({ proposals: () => actions }))
+vi.mock('@/lib/env', () => ({ env: () => deployment }))
 vi.mock('@payload-config', () => ({ default: {} }))
 vi.mock('payload', async (importOriginal) => ({
   ...(await importOriginal<typeof import('payload')>()),
-  getPayload: async () => ({ logger: { error: vi.fn() } }),
+  getPayload: async () => ({ logger: { error: vi.fn() }, auth: signedIn.auth }),
   createLocalReq: async () => ({}),
 }))
 
@@ -31,6 +34,8 @@ const draw = async (token: string) =>
 beforeEach(() => {
   actions.read.mockReset()
   actions.open.mockReset()
+  signedIn.auth.mockReset().mockResolvedValue({ user: null })
+  deployment.VERCEL_ENV = undefined
 })
 
 describe('the tracked link’s page', () => {
@@ -50,6 +55,17 @@ describe('the tracked link’s page', () => {
     expect(html).toContain('Reference IIIC-P-00001 v1')
     expect(html).toContain(`href="/p/${TOKEN}/pdf"`)
     expect(actions.open).not.toHaveBeenCalled()
+  })
+
+  it('looks nothing up on a preview, which shares production’s database, and reads as closed (D-102)', async () => {
+    actions.read.mockResolvedValue(
+      ok({ title: 'Fake proposal', clientName: 'Fake Org', reference: 'IIIC-P-00001 v1' }),
+    )
+    deployment.VERCEL_ENV = 'preview'
+    const html = await draw(TOKEN)
+    expect(html).toContain('This link no longer opens a proposal')
+    expect(html).not.toContain('Fake proposal')
+    expect(actions.read).not.toHaveBeenCalled()
   })
 
   it('reads alike for every closed or unknown link', async () => {
@@ -77,7 +93,44 @@ describe('the tracked link’s PDF', () => {
     expect(actions.open).toHaveBeenCalledWith(expect.anything(), {
       token: TOKEN,
       now: expect.any(Date),
+      countView: true,
     })
+  })
+
+  it('serves the PDF to signed-in staff without counting a client view, and nothing on a preview', async () => {
+    const pdf = new TextEncoder().encode('%PDF-1.4 fake')
+    actions.open.mockResolvedValue(ok({ versionId: 1, pdf, filename: 'IIIC-P-00001-v1.pdf' }))
+    signedIn.auth.mockResolvedValueOnce({ user: { id: 1, collection: 'users' } })
+    expect((await get(TOKEN)).status).toBe(200)
+    expect(actions.open).toHaveBeenLastCalledWith(expect.anything(), {
+      token: TOKEN,
+      now: expect.any(Date),
+      countView: false,
+    })
+    // A preview shares production's database: it opens nothing and sends the link to its page,
+    // which reads as closed there (D-102).
+    deployment.VERCEL_ENV = 'preview'
+    const preview = await get(TOKEN)
+    expect(preview.status).toBe(303)
+    expect(preview.headers.get('Location')).toBe(`/p/${TOKEN}`)
+    expect(actions.open).toHaveBeenCalledTimes(1)
+    deployment.VERCEL_ENV = 'production'
+    expect((await get(TOKEN)).status).toBe(200)
+    expect(actions.open).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ countView: true }),
+    )
+  })
+
+  it('counts the view when the sign-in check itself fails', async () => {
+    const pdf = new TextEncoder().encode('%PDF-1.4 fake')
+    actions.open.mockResolvedValueOnce(ok({ versionId: 1, pdf, filename: 'IIIC-P-00001-v1.pdf' }))
+    signedIn.auth.mockRejectedValueOnce(new Error('bad token'))
+    expect((await get(TOKEN)).status).toBe(200)
+    expect(actions.open).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ countView: true }),
+    )
   })
 
   it('sends a closed link back to its page, and a malformed one home without a lookup', async () => {

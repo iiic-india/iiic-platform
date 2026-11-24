@@ -14,6 +14,7 @@ import {
 
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { raiseReviewConsentRequested } from '@/lib/automations/reviews/hooks'
 import { revalidateReviews } from '@/lib/content/revalidate'
 import { idOf } from '@/lib/privacy/consentLedger'
 import { consentProblem, PUBLICATION, slotProblems } from '@/lib/proof/ledger'
@@ -256,7 +257,8 @@ export const Testimonials: CollectionConfig = {
   hooks: {
     beforeValidate: [prepareReview],
     beforeChange: [checkReview],
-    afterChange: [afterReviewChange],
+    // A move to "Consent requested" raises `review.consentRequested` for V1 (docs/19 §5).
+    afterChange: [afterReviewChange, raiseReviewConsentRequested],
     afterDelete: [afterReviewDelete],
   },
   fields: [

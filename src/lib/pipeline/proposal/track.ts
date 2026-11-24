@@ -17,9 +17,10 @@ import { hashLinkToken, isLinkToken } from './tokens'
  * The tracked link (`/p/[token]`; docs/17 §5). The page shows the proposal's title and client and
  * a button to the PDF; only the PDF counts an opening, so a link scanner that fetches the page
  * counts nothing. The first opening moves a sent proposal to viewed and emits `proposal.viewed`
- * once. A token is looked up by its hash; an unknown, replaced, withdrawn, declined or expired
- * link answers `link-closed` alike, and the page says only that it no longer opens a proposal.
- * No sign-in: the token is the key.
+ * once; an opening by signed-in staff or on a preview deployment counts nothing (`countView`,
+ * src/lib/pipeline/proposal/viewCounts.ts). A token is looked up by its hash; an unknown,
+ * replaced, withdrawn, declined or expired link answers `link-closed` alike, and the page says
+ * only that it no longer opens a proposal. No sign-in: the token is the key.
  */
 
 type Opened = { proposal: Proposal; version: ProposalVersion }
@@ -69,13 +70,21 @@ export async function readTrackedLink(
 }
 
 export function makeOpenTrackedLink(deps: ProposalDeps): OpenTrackedLink {
-  return async (req, { token, now }) => {
+  return async (req, { token, now, countView = true }) => {
     const opened = await inTransaction(req, async () => {
       const result = await openVersion(req, token, now, deps)
       if (!result.ok) return result
       const { proposal, version } = result.value
       const printed = await printSnapshot(req, version.id, deps)
       if (!printed.ok) return printed
+      // Staff checking what they sent, or anyone on a preview, is not the client reading it.
+      if (!countView) {
+        return ok({
+          versionId: version.id,
+          pdf: printed.value.pdf,
+          filename: printed.value.filename,
+        })
+      }
       const first = !version.tracking?.firstViewedAt
       await patchVersion(req, version.id, {
         tracking: {

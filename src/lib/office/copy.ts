@@ -90,8 +90,11 @@ export const OFFICE_COPY = {
     `Booking moved${startsAt ? ` to ${formatWhen(startsAt)}` : ''}. The new booking is ${reference}; the calendar entry moves with it.`,
   timeConfirmed: (startsAt: string | null) =>
     `Time confirmed${startsAt ? `: ${formatWhen(startsAt)}` : ''}. The calendar entry is written next.`,
-  linkCreated: (amountPaise: number) =>
-    `Payment link created for ${formatPaise(amountPaise)}. Until messages are set up, send it to the client yourself.`,
+  /** Whether IIIC's own message carries the link (B13), or the office sends it by hand. */
+  linkCreated: (amountPaise: number, messaged: boolean) =>
+    messaged
+      ? `Payment link created for ${formatPaise(amountPaise)}. IIIC’s message sends it to the client; the Messages log shows when it goes.`
+      : `Payment link created for ${formatPaise(amountPaise)}. Until messages are set up, send it to the client yourself.`,
   /** After an owner's decision, by where the refund now stands. */
   decided: (status: string) =>
     ({

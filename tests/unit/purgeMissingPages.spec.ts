@@ -70,8 +70,14 @@ describe('the retention job for the 404 log', () => {
     expect(purgeCutoff(now).toISOString()).toBe('2026-05-26T00:00:00.000Z')
   })
 
-  it('is registered with Payload, which never runs jobs on its own, for owners alone', () => {
-    expect(jobs.tasks).toContain(purgeMissingPagesTask)
+  it('is registered with Payload, nightly through the cron route, never autoRun, for owners alone', () => {
+    // M6 gives it its schedule in the jobs config (docs/19 §2): 02:00 IST is 20:30 UTC; and the
+    // shared failure path, so a run that spends its retries reaches O3 (docs/19 §13).
+    expect(jobs.tasks?.find((task) => task.slug === purgeMissingPagesTask.slug)).toEqual({
+      ...purgeMissingPagesTask,
+      schedule: [{ cron: '0 30 20 * * *', queue: 'default' }],
+      onFail: expect.any(Function),
+    })
     expect(jobs).not.toHaveProperty('autoRun')
     expect(jobs.access).toEqual({ run: ownerWithCode, queue: ownerWithCode, cancel: ownerWithCode })
   })

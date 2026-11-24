@@ -5,6 +5,7 @@ import { hasRole } from '@/access/roles'
 import { AGE_BANDS } from '@/collections/People'
 import { istDayField } from '@/fields/istDay'
 import { basisPointsField, paiseField, wholeNumber } from '@/fields/numbers'
+import { raiseAttendance } from '@/lib/automations/booking/attendance'
 import {
   assignReference,
   fillEnd,
@@ -102,7 +103,8 @@ export const Bookings: CollectionConfig = {
   },
   // The reference, the end from the length, and the moves a staff edit may make
   // (src/lib/booking/bookingHooks.ts); the booking module's operations do the rest.
-  hooks: { beforeChange: [assignReference, fillEnd, keepMoves] },
+  // Marking a session attended or a no-show raises B8's or B9's event (M6, docs/19 §5).
+  hooks: { beforeChange: [assignReference, fillEnd, keepMoves], afterChange: [raiseAttendance] },
   // The office's actions on a booking (docs/16 §12, E; src/lib/office/handlers.ts): each checks
   // the user, the role and the two-factor code first.
   endpoints: [

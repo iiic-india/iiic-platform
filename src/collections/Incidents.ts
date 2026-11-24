@@ -2,6 +2,7 @@ import type { CollectionConfig, Field, FieldAccess } from 'payload'
 
 import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { raiseIncidentOpened } from '@/lib/automations/privacy/hooks'
 import { INCIDENT_STATUSES } from '@/lib/privacy/breaches'
 import { IST_FIELD } from '@/lib/time/ist'
 
@@ -49,6 +50,9 @@ export const Incidents: CollectionConfig = {
     update: allow(POLICY.incidents.update),
     delete: allow(POLICY.incidents.delete),
   },
+  // An incident recorded raises O8's timers (M6, docs/19 §5); the clocks are set by
+  // src/plugins/notesAndPrivacy.ts.
+  hooks: { afterChange: [raiseIncidentOpened] },
   defaultSort: '-detectedAt',
   disableBulkEdit: true,
   fields: [

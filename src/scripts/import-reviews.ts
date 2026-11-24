@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import { readSheet } from 'read-excel-file/node'
 
+import { scrubText } from '../lib/monitoring/scrub'
 import { importIntake } from '../lib/proof/importIntake'
 import { INTAKE_SHEET, parseIntakeRows } from '../lib/proof/intake'
 import config from '../payload.config'
@@ -36,7 +37,8 @@ payload.logger.info(
 )
 for (const problem of [...parsed.problems, ...report.refused]) {
   payload.logger.warn(
-    `Row ${problem.row} (${problem.ref ?? 'no Ref'}): ${problem.messages.join(' ')}`,
+    // A database fault's message can carry the row's values: scrubbed (src/lib/monitoring/scrub.ts).
+    `Row ${problem.row} (${problem.ref ?? 'no Ref'}): ${scrubText(problem.messages.join(' '))}`,
   )
 }
 process.exit(parsed.problems.length + report.refused.length > 0 ? 2 : 0)

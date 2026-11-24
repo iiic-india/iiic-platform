@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { PayloadRequest } from 'payload'
+import { ValidationError, type PayloadRequest } from 'payload'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -192,6 +192,38 @@ describe('the clocks set on save', () => {
     expect(() =>
       run(requestRules, { operation: 'update', originalDoc, data: { summary: 'Fake.' } }),
     ).not.toThrow()
+  })
+
+  it('never points a recorded request at another person, before or after the identity check', () => {
+    const originalDoc = {
+      type: 'erasure',
+      status: 'awaitingOwner',
+      person: 7,
+      receivedAt: '2027-01-10T04:30:00.000Z',
+      verifiedAt: '2027-01-11T04:30:00.000Z',
+    }
+    for (const person of [8, '8', { id: 8 }, null]) {
+      expect(
+        () => run(requestRules, { operation: 'update', originalDoc, data: { person } }),
+        String(person),
+      ).toThrow(ValidationError)
+    }
+    try {
+      run(requestRules, { operation: 'update', originalDoc, data: { person: 8 } })
+    } catch (error) {
+      expect((error as ValidationError).data.errors).toEqual([
+        { path: 'person', message: MOVE_MESSAGES.personFixed },
+      ])
+    }
+    // The same person, however it is written, or a save that leaves it out, is no change.
+    for (const data of [
+      { person: 7 },
+      { person: '7' },
+      { person: { id: 7 } },
+      { summary: 'Fake.' },
+    ]) {
+      expect(() => run(requestRules, { operation: 'update', originalDoc, data })).not.toThrow()
+    }
   })
 
   it('refuses a move the table does not allow, with the reason on the status field', () => {

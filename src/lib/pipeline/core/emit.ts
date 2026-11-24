@@ -1,5 +1,7 @@
 import type { PayloadRequest } from 'payload'
 
+import { AUTOMATION_LISTENERS } from '@/lib/automations/listeners'
+
 import type {
   EmitPipelineEvent,
   PipelineEvent,
@@ -12,14 +14,46 @@ import type {
  * (src/lib/booking/emit.ts): an event queues one Payload job per task subscribed to it, inside
  * the request's transaction, with the key `<event>:<subject>` in the job's input; a job still
  * waiting with the same key is not queued twice. The input is the event itself: ids and codes
- * only. M4 subscribes nothing to its own events; M6 adds the messages and the digest, M5 reads
- * Today from the records. Free of `server-only`: the collections' hooks emit too.
+ * only. M4 subscribes nothing to its own events; M6's subscriptions are read from its automation
+ * catalogue (src/lib/automations/listeners.ts: P1 and P7's acknowledgements on
+ * `enquiry.received`), M5 reads Today from the records. Free of `server-only`: the collections'
+ * hooks emit too.
  */
 
-/** The tasks each pipeline event starts, by their automation IDs (docs/06). M6 adds its own. */
+/** The tasks each pipeline event starts, by their automation IDs (docs/06). */
 export type PipelineListeners = { readonly [Name in PipelineEventName]?: readonly string[] }
 
-export const PIPELINE_LISTENERS: PipelineListeners = {}
+/** M6's listeners on the pipeline's events (docs/19 §5), from the automation catalogue. */
+export function pipelineListenersFrom(listeners: {
+  readonly [name: string]: readonly string[] | undefined
+}): PipelineListeners {
+  const pipeline: { [Name in PipelineEventName]?: readonly string[] } = {}
+  for (const name of PIPELINE_EVENT_NAMES) {
+    const tasks = listeners[name]
+    if (tasks?.length) pipeline[name] = [...tasks]
+  }
+  return pipeline
+}
+
+/** Every name a pipeline event can have (the type holds the list to the union). */
+const PIPELINE_EVENTS = {
+  'enquiry.received': true,
+  'lead.created': true,
+  'lead.stageChanged': true,
+  'lead.untouched': true,
+  'lead.stale': true,
+  'task.created': true,
+  'proposal.versionCreated': true,
+  'proposal.sent': true,
+  'proposal.viewed': true,
+  'proposal.accepted': true,
+  'proposal.declined': true,
+  'proposal.expired': true,
+} as const satisfies { readonly [Name in PipelineEventName]: true }
+
+export const PIPELINE_EVENT_NAMES = Object.keys(PIPELINE_EVENTS) as PipelineEventName[]
+
+export const PIPELINE_LISTENERS: PipelineListeners = pipelineListenersFrom(AUTOMATION_LISTENERS)
 
 /** The idempotency key: the event and its subject, and for a repeatable event what sets it apart. */
 export const pipelineEventKey: PipelineEventKey = (event) => {

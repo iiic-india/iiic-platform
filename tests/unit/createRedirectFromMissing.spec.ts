@@ -74,6 +74,14 @@ describe('Create redirect', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
+  it('refuses an entry id that is not a whole number, without a lookup (M7)', async () => {
+    for (const id of ['abc', '0', '-11', '11.5', '11; drop']) {
+      const response = await call(editor, { to: '/about' }, id)
+      expect(response.status, id).toBe(400)
+    }
+    expect(findByID).not.toHaveBeenCalled()
+  })
+
   it('refuses a body that names no address, or an unknown kind', async () => {
     for (const body of [null, {}, { to: '' }, { to: '/about', statusCode: '301' }, 'about']) {
       const response = await call(editor, body)

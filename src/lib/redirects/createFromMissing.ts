@@ -55,7 +55,11 @@ export const createRedirectFromMissingPage: PayloadHandler = async (req) => {
   }
   const id = req.routeParams?.id
   const body = CreateRedirect.safeParse(await req.json?.().catch(() => null))
-  if ((typeof id !== 'string' && typeof id !== 'number') || !body.success) {
+  if (
+    (typeof id !== 'string' && typeof id !== 'number') ||
+    !/^[1-9]\d{0,9}$/.test(String(id)) ||
+    !body.success
+  ) {
     return json({ message: CREATE_REDIRECT_MESSAGES.invalid }, 400)
   }
 

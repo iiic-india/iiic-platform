@@ -1,10 +1,11 @@
 import type { PayloadRequest } from 'payload'
 
+import { AUTOMATION_LISTENERS } from '@/lib/automations/listeners'
+
 /**
  * The certificates module's event (docs/18 §4; docs/06, C5): `certificate.issued`, raised once
  * per certificate inside the issuing transaction, so a batch that rolls back raises nothing. M6's
- * C5 task listens and emails the holder their PDF; until then the event has no listener and
- * queues nothing. Like M3's events (src/lib/booking/events.ts), it carries the row's id only:
+ * C5 task listens (from its automation catalogue) and emails the holder. Like M3's events (src/lib/booking/events.ts), it carries the row's id only:
  * never a name, an address or the token, so no job's input or log holds anything personal.
  */
 
@@ -14,10 +15,10 @@ export type CertificateEvent = { name: typeof CERTIFICATE_ISSUED; certificateId:
 
 export type EmitCertificateEvent = (req: PayloadRequest, event: CertificateEvent) => Promise<void>
 
-/** The tasks the event starts, by automation ID: M6 adds C5's task here. */
+/** The tasks the event starts, by automation ID: M6's C5 (src/lib/automations/catalogue.ts). */
 export const CERTIFICATE_LISTENERS: Readonly<Record<CertificateEvent['name'], readonly string[]>> =
   {
-    [CERTIFICATE_ISSUED]: [],
+    [CERTIFICATE_ISSUED]: AUTOMATION_LISTENERS[CERTIFICATE_ISSUED] ?? [],
   }
 
 /** The idempotency key of an event's jobs: `certificate.issued:<id>`. */

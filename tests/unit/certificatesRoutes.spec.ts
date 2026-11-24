@@ -215,8 +215,8 @@ describe('the words (CLAUDE.md #9; VOICE.md)', () => {
 })
 
 describe('the certificate.issued event (C5)', () => {
-  it('queues nothing until M6 adds C5’s task', async () => {
-    expect(CERTIFICATE_LISTENERS['certificate.issued']).toEqual([])
+  it('queues M6’s C5 task, and nothing else', async () => {
+    expect(CERTIFICATE_LISTENERS['certificate.issued']).toEqual(['C5-certificate-email'])
   })
 
   it('queues each listener once with the id and its key, never a name or token', async () => {

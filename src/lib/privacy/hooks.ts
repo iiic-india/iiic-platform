@@ -26,6 +26,13 @@ const instant = (value: unknown): Date | null => {
 
 const sameInstant = (a: unknown, b: unknown) => instant(a)?.getTime() === instant(b)?.getTime()
 
+/** A relationship's id, however Payload hands it over (an id, its string, or the document). */
+const idOf = (value: unknown): string | null => {
+  if (typeof value === 'number' || typeof value === 'string') return String(value)
+  if (value && typeof value === 'object' && 'id' in value) return idOf((value as Data).id)
+  return null
+}
+
 const group = (value: unknown): Data =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Data) : {}
 
@@ -82,6 +89,11 @@ export const requestRules: CollectionBeforeChangeHook = ({
 
   if (operation !== 'update') return draft
   if (merged.type !== before.type) refuse('type', MOVE_MESSAGES.fixed)
+  // The identity check, an export and an erasure are about this person: a request is never
+  // pointed at someone else afterwards.
+  if ('person' in draft && idOf(draft.person) !== idOf(before.person)) {
+    refuse('person', MOVE_MESSAGES.personFixed)
+  }
   if (!sameInstant(merged.receivedAt, before.receivedAt)) refuse('receivedAt', MOVE_MESSAGES.fixed)
   const to = merged.status
   if (to === before.status) return draft

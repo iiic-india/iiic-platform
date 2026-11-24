@@ -42,6 +42,12 @@ export const Invoices: CollectionConfig = {
   disableBulkEdit: true,
   fields: [
     {
+      // The link to the client's PDF, for owners and finance; each download is audited (not stored).
+      name: 'pdfDownload',
+      type: 'ui',
+      admin: { components: { Field: '/components/admin/office/InvoicePdf#InvoicePdf' } },
+    },
+    {
       type: 'row',
       fields: [
         { name: 'kind', type: 'select', required: true, options: [...INVOICE_KINDS] },
@@ -130,7 +136,8 @@ export const Invoices: CollectionConfig = {
           admin: { date: { pickerAppearance: 'dayAndTime' } },
         },
         {
-          // The PDF's key in the private documents bucket; served through a signed link.
+          // The PDF's key in the private documents bucket (src/lib/invoicing/store.ts); served
+          // only through the checked, audited route /api/invoices/<id>/pdf.
           name: 'pdfKey',
           type: 'text',
           label: 'PDF',

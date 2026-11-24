@@ -1,6 +1,7 @@
 import { CERTIFICATES_COPY as COPY } from '@/components/admin/certificates/certificatesCopy'
 import { json, readJson, refusalResponse, staffRequest } from '@/lib/certificates/http'
 import { certificateActions } from '@/lib/certificates/wiring'
+import { answeringFaults } from '@/lib/monitoring/routeFaults'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -12,7 +13,7 @@ export const maxDuration = 300
  * transaction, each audited as `issue-certificate`. Owner and operator, signed in with the code;
  * checked before the body is read. A failure anywhere issues nothing.
  */
-export async function POST(request: Request) {
+async function post(request: Request) {
   const staff = await staffRequest(request, 'certificatesIssue')
   if (!staff.ok) return staff.response
   const body = await readJson(request)
@@ -24,3 +25,5 @@ export async function POST(request: Request) {
     message: COPY.issued(issued.value.map(({ certificateId }) => certificateId)),
   })
 }
+
+export const POST = answeringFaults('Issuing certificates', post)
