@@ -51,6 +51,7 @@
     "@react-email/render": "2.2.0",
     "@sentry/nextjs": "11.15.0",
     "@sparticuz/chromium": "153.0.0",
+    "better-auth": "1.7.27",
     "cross-env": "7.0.3",
     "date-fns": "4.4.0",
     "dotenv": "16.4.7",
