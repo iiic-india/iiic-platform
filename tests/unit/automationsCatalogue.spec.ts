@@ -4,7 +4,13 @@ import path from 'node:path'
 
 import { describe, expect, it, vi } from 'vitest'
 
-import { priceAllowed, TEMPLATES, templateSpec, WHATSAPP_TEMPLATE_KEYS } from '@/emails/registry'
+import {
+  priceAllowed,
+  TEMPLATES,
+  templateSpec,
+  WHATSAPP_AUTHENTICATION_KEYS,
+  WHATSAPP_TEMPLATE_KEYS,
+} from '@/emails/registry'
 import { jobs } from '@/jobs'
 import { AUTOMATION_IDS, AUTOMATIONS, CORE_TASKS } from '@/lib/automations/catalogue'
 import { AUTOMATION_EVENT_NAMES, automationEventKey } from '@/lib/automations/events'
@@ -24,13 +30,30 @@ function releaseOneIds(): string[] {
   return [...r1.matchAll(/^\| (B\d+a?|P\d+|N\d+|O\d+|V\d+|C\d+) \|/gm)].map((match) => match[1]!)
 }
 
+/** Release 2's account automations in docs/06's Engine (R2) table (docs/20 §9). */
+function accountIds(): string[] {
+  const r2 = docs06.split('### Engine (R2)')[1] ?? ''
+  return [...r2.matchAll(/^\| (A\d+) \|/gm)].map((match) => match[1]!)
+}
+
 describe('the automation catalogue', () => {
-  it('holds every Release 1 automation of docs/06 once', () => {
+  it('holds every Release 1 automation of docs/06 once, and Release 2’s account messages', () => {
     const ids = releaseOneIds()
     // B1 to B14 with B3a, P1 to P7, N1 to N4, O1 to O10, V1, V2 and C5.
     expect(ids).toHaveLength(39)
-    expect([...AUTOMATION_IDS].sort()).toEqual([...ids].sort())
+    // A1 to A3: the sign-in code, the account closed, a contact detail added.
+    expect(accountIds()).toEqual(['A1', 'A2', 'A3'])
+    expect([...AUTOMATION_IDS].sort()).toEqual([...ids, ...accountIds()].sort())
     expect(new Set(AUTOMATION_IDS).size).toBe(AUTOMATION_IDS.length)
+  })
+
+  it('plans the account messages from their own actions: no event and no task (docs/20 §9)', () => {
+    for (const entry of AUTOMATIONS.filter(({ id }) => id.startsWith('A'))) {
+      expect(entry.owner, entry.id).toBe('R2a')
+      expect('on' in entry, entry.id).toBe(false)
+      expect('task' in entry, entry.id).toBe(false)
+      expect(entry.basis, entry.id).toBe('transactional')
+    }
   })
 
   it('names every task by its automation ID', () => {
@@ -167,6 +190,19 @@ describe('the template registry (docs/19 §7)', () => {
       if (spec.kind === 'internal') expect(spec.footer, spec.key).toBe('none')
       if (spec.kind === 'internal') expect(spec.sender, spec.key).toBe('platform')
     }
+  })
+
+  it('keeps the account messages plain: no price, no counselling content, a code with no withdraw link (D-123)', () => {
+    for (const key of ['account-sign-in-code', 'account-closed', 'account-detail-added'] as const) {
+      const spec = templateSpec(key)
+      expect(spec.price, key).toBe('never')
+      expect(spec.counsellingScope, key).toBe(false)
+      expect(spec.kind, key).toBe('transactional')
+      expect(spec.builder, key).toBe('R2a')
+    }
+    expect(templateSpec('account-sign-in-code').footer).toBe('none')
+    expect(templateSpec('account-closed').footer).toBe('withdraw')
+    expect(WHATSAPP_AUTHENTICATION_KEYS).toEqual(['account-sign-in-code'])
   })
 
   it('submits to Meta only templates that name the person’s own booking', () => {
