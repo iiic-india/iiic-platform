@@ -34,7 +34,8 @@ const instant = (name: string, label: string, description?: string): Field => ({
  * partnership, on its own board, from New to an end. Made by a public form after the person's
  * consent is recorded (P1, P7), by a proposal call booked (P2) or by the office. Its stage moves
  * along STAGE_MOVES (src/lib/pipeline/stages.ts), only through the operations: the staff's move
- * is MoveLead, from the board (src/lib/pipeline/core/moves.ts); no role types the stage or any
+ * is MoveLead, from the board or the lead's own page (src/lib/pipeline/core/moves.ts,
+ * src/components/admin/pipeline/LeadStage.tsx); no role types the stage or any
  * other field the platform keeps, in the admin's form or the API. Every move, call, note and
  * proposal is an entry in its timeline (`lead-activities`), which keeps `lastActivityAt` and
  * `touchedAt` for the first-reply clock (P3) and staleness (P4). The moves, the timeline's keys
@@ -63,6 +64,14 @@ export const Leads: CollectionConfig = {
   // entry and the events (src/lib/pipeline/core/hooks.ts).
   hooks: { beforeChange: [prepareLead], afterChange: [recordLeadChange] },
   fields: [
+    {
+      // "Move to stage" on the lead's own page, for the office (not stored).
+      name: 'leadStage',
+      type: 'ui',
+      admin: {
+        components: { Field: '/components/admin/pipeline/LeadStage#LeadStage' },
+      },
+    },
     {
       // "<organisation> · Consultancy": named by the platform, never by a person's name alone.
       name: 'title',
@@ -93,7 +102,7 @@ export const Leads: CollectionConfig = {
           options: [...LEAD_STAGES],
           validate: validateStage,
           access: { create: serverOnly.create, update: serverOnly.update },
-          admin: { description: 'Moved on the pipeline board.' },
+          admin: { description: 'Moved with "Move to stage", above or on the pipeline board.' },
         },
         instant('stageChangedAt', 'In this stage since'),
       ],

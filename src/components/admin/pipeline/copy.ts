@@ -45,6 +45,12 @@ export const BOARD_COPY = {
   },
 } as const
 
+/** The stage panel on a lead's own page (LeadStage). */
+export const LEAD_STAGE_COPY = {
+  heading: 'Stage',
+  moved: (stage: string) => (stage ? `Moved to ${stage}.` : 'Moved.'),
+} as const
+
 export const MOVE_MESSAGES = {
   signIn: 'Sign in with your code to do this.',
   role: 'Only an owner or an operator can move a lead.',

@@ -21,6 +21,7 @@ import { PersonNotes as PersonNotes_fe2bb9c0d372947b7b803828ac4b1661 } from '../
 import { BookingNotes as BookingNotes_5817eec7eaa7e14ad9aa723d713c7b63 } from '../../../components/admin/notes/BookingNotes'
 import { BookingOfficeView as BookingOfficeView_3deb01125f0d081ad583743b66041d67 } from '../../../components/admin/office/BookingOfficeView'
 import { RefundDecisionView as RefundDecisionView_d0a198cea4db7a1e79c878110db8655c } from '../../../components/admin/office/RefundDecisionView'
+import { LeadStage as LeadStage_a283bbb4041122bd0ad2a6cd5559ec37 } from '../../../components/admin/pipeline/LeadStage'
 import { ProposalActions as ProposalActions_6ab3e218fa6e82b5847237499c6d5a91 } from '../../../components/admin/pipeline/ProposalActions'
 import { VersionActions as VersionActions_0db85738e858f6a81302838320dd4b14 } from '../../../components/admin/pipeline/VersionActions'
 import { RequestActions as RequestActions_c07c731adae0a399fade417892a08074 } from '../../../components/admin/privacy/RequestActions'
@@ -77,6 +78,7 @@ export const importMap = {
   "/components/admin/notes/BookingNotes#BookingNotes": BookingNotes_5817eec7eaa7e14ad9aa723d713c7b63,
   "/components/admin/office/BookingOfficeView#BookingOfficeView": BookingOfficeView_3deb01125f0d081ad583743b66041d67,
   "/components/admin/office/RefundDecisionView#RefundDecisionView": RefundDecisionView_d0a198cea4db7a1e79c878110db8655c,
+  "/components/admin/pipeline/LeadStage#LeadStage": LeadStage_a283bbb4041122bd0ad2a6cd5559ec37,
   "/components/admin/pipeline/ProposalActions#ProposalActions": ProposalActions_6ab3e218fa6e82b5847237499c6d5a91,
   "/components/admin/pipeline/VersionActions#VersionActions": VersionActions_0db85738e858f6a81302838320dd4b14,
   "/components/admin/privacy/RequestActions#RequestActions": RequestActions_c07c731adae0a399fade417892a08074,

@@ -1251,7 +1251,7 @@ export interface Lead {
   title?: string | null;
   kind: 'consultancy' | 'partnership';
   /**
-   * Moved on the pipeline board.
+   * Moved with "Move to stage", above or on the pipeline board.
    */
   stage:
     | 'new'
