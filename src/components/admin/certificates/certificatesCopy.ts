@@ -12,7 +12,7 @@ export const CERTIFICATES_COPY = {
 
   waitsTitle: 'Before the first issue',
   waitsSignatory:
-    'The signatory’s name and title are not in Settings → Certificates yet (I-51). The preview shows a placeholder, and issuing waits until both are there.',
+    'The signatory’s name and title are not in Settings → Certificates yet (I-54). The preview shows a placeholder, and issuing waits until both are there.',
   waitsStatement: 'The certificate’s fixed statement is a draft until the lawyer’s review (I-22).',
   waitsStorage:
     'This deployment has no private bucket for the PDFs (R2_BUCKET_PRIVATE), so issuing is switched off here.',
@@ -115,7 +115,7 @@ export const CERTIFICATE_ANSWERS = {
   'not-allowed': 'Your role cannot do this.',
   invalid: 'Check the form:',
   'signatory-missing':
-    'Add the signatory’s name and title in Settings → Certificates first (I-51). Nothing was issued.',
+    'Add the signatory’s name and title in Settings → Certificates first (I-54). Nothing was issued.',
   'storage-missing':
     'This deployment has no private bucket for certificates (R2_BUCKET_PRIVATE). Nothing was issued.',
   'person-not-found': (ids: number[]) =>

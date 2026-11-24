@@ -439,7 +439,7 @@ describe('issuing', () => {
     expect(shown).toHaveLength(2)
     expect(shown[0]?.html).toContain('Preview: the ID is given on issue')
     expect(shown[0]?.html).toContain('[[TODO: signatory')
-    expect(shown[0]?.waitingFor).toEqual(['I-51', 'I-22'])
+    expect(shown[0]?.waitingFor).toEqual(['I-54', 'I-22'])
     expect(fake.rows('certificates')).toEqual([])
     expect(store.keys()).toEqual([])
     expect(tokens).toEqual([])

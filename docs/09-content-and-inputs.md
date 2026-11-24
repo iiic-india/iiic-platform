@@ -82,6 +82,8 @@ Owners: Yash and Aum own what they can supply themselves; everything that comes 
 | I-51 | The Team Map request's team-size bands, in IIIC's words (built as up to 10, 11–50, 51–200, 201–500, more than 500), and what "small and mid-size" means when the office judges a request's fit (`03` F5 step 2; `17` §10) | R1 the Team Map request form (M4) | Team | The proposed bands; the office judges the fit, nothing is qualified automatically |
 | I-52 | The office's holidays, for counting working days (the first reply due in two, the proposal follow-up in three; `17` §4, §5) | R1 tasks and their due days (M4) | Aum / Yash | Monday to Friday, no holidays |
 | I-53 | Who prepares proposals (the names and titles printed on them) and IIIC's standard proposal terms, if any (`17` §5) | R1 proposals (M4) | Team | Typed by the office on each proposal; no template text |
+| I-54 | The certificate's signatory: the name and title printed under the signature on every certificate of completion, entered in Settings → Certificates (`18` §4; with I-14 and I-22 for the wording) | R1 certificates (M5) | Team | The preview shows `[[TODO: signatory’s name as printed, I-54]]`; nothing is issued |
+| I-55 | IIIC's confirmation of how Reports counts each figure the plan names: the cross-path rate, the counselling return rate, revenue by application, the no-show rate, Team Map request to proposal and lead response time (`05`, Reports; `18` §7) | R1 Reports (M5) | Aum / Yash | Each figure counted as its definition on the page says, with its working shown |
 
 ## Page content inventory (Release 1)
 

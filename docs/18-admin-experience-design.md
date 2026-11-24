@@ -2,7 +2,7 @@
 
 The design M5 is built to: the new collections, session notes, certificates, privacy, the custom views, global search and Reports, open items with what is assumed, the test plan and who builds what. Written 23 November 2026 on branch `m5/foundation`, cut from `m3/core` (M3's first half), which holds the schema, the contracts in `src/lib/notes`, `src/lib/certificates`, `src/lib/privacy` and `src/lib/adminViews`, the access table and their unit tests. Sources: `05` (screens, roles), `04` (entities), `08` (privacy, certificates, security), `10` (M5), `15` (the operator's day), D-11, D-39, D-78.
 
-**No migration on this branch.** The builders commit none either: the lead generates M5's migration with `pnpm migrate:create` when the branches are joined, in milestone order, after M3's and M4's.
+**The migration.** The builders committed none: M5's migration, `m5_admin`, was generated at the join (24 November 2026) on top of M4's `m4_pipeline`, and holds only M5's tables and fields (M5 adds no job).
 
 **Interface.** The interface pass is parked (`15`; the experience-pass memory): every view is built plain, accessible and correct with Payload's own components (its template, `Gutter`, lists, forms, buttons, `toast`, the confirm modal), with real `<table>`s, labelled fields and keyboard paths. Drag-and-drop and the D-78 stack (Tailwind, shadcn on Base UI, FullCalendar, cmdk, Recharts) come with that pass; the loaders below are written so the pass swaps only the components.
 
@@ -28,7 +28,7 @@ Access lives in `POLICY` (`src/access/policy.ts`) and is tested per role in `tes
 | `feedback` (S2, private) | `rating` 1–5, `comment`, `submittedAt` (the person's words: server-written), `status` (new · read) | `booking` (unique), `person` | Owner, operator read and mark read; created by the server from B8's form (M6); owner deletes |
 | `case-studies` (S1 → S0 when published) | `title`, `slug`, `clientName`, `sector`, `status` (draft · awaiting approval · approved · published · withdrawn), `problem`, `approach`, `outcomes[]` (statement, `evidence`), `clientApproval` (approver, role, day, where the signed file is kept), `publishedBy`, `publishedAt` | `organisation` joins with M4 | Owner, operator, editor write; anyone reads a published one without evidence or approval (`FIELD_POLICY.caseStudyApproval`); owner publishes and deletes |
 
-`settings` gains a **Certificates** tab: the signatory's name and title as printed (I-51 below). `src/lib/env.ts` gains `NOTES_ENCRYPTION_KEY`, `NOTES_ENCRYPTION_KEY_PREVIOUS` and `R2_BUCKET_PRIVATE`, all optional.
+`settings` gains a **Certificates** tab: the signatory's name and title as printed (I-54 below). `src/lib/env.ts` gains `NOTES_ENCRYPTION_KEY`, `NOTES_ENCRYPTION_KEY_PREVIOUS` and `R2_BUCKET_PRIVATE`, all optional.
 
 ## 3. Session notes (D-11)
 
@@ -62,7 +62,7 @@ Access lives in `POLICY` (`src/access/policy.ts`) and is tested per role in `tes
 
 **The consent log.** Built in M2 (`consents`, append-only). M5 adds the Privacy view's filtered list (person, purpose, given or withdrawn, period in IST days; the latest 100 entries), each entry with its notice text and evidence (an address and browser are said to be recorded, not shown); the person record's history, newest first, is M2's `consents` join on People. No new write path.
 
-**The breach register.** `incidents`: `certIn.dueAt` = detected + 6 h, `board.dueAt` = detected + 72 h, set on create (`src/lib/privacy/breaches.ts`); each notification's time typed as it happens. Today and the Privacy view show each open clock as time left or overdue (`ClockState`), never colour alone.
+**The breach register.** `incidents`: `certIn.dueAt` = detected + 6 h, `board.dueAt` = detected + 72 h, set on create (`src/lib/privacy/breaches.ts`); each notification's time typed as it happens. Today and the Privacy view show each open clock as time left or overdue (`ClockState`), never colour alone. **As joined:** a request received, or an incident detected, later than now (five minutes' leeway for a slow clock) is refused, since the deadlines it sets are the server's and a time ahead would push them back; an incident's detection may be corrected to an earlier time, which makes its clocks stricter.
 
 ## 6. The views
 
@@ -80,11 +80,13 @@ All live under `/admin/<path>`, registered in `payload.config.ts` as `Placeholde
 | Settings · `/settings` | Links to Platform settings, services and prices, booking rules, users, the audit log; integrations' state (configured or not: names only, never a value); flags | Owner | `env()` presence checks; the audit log with filters and an owner's CSV export (re-entering the code) |
 | Certificates · `/certificates/issue` | §4 | Owner, operator (revoke: owner) | `people`, `events` (bulk), `certificates` |
 
+**As built (slice C, on M3 and M4).** The loaders are `src/lib/adminViews/` (`today.ts`, `calendar.ts`, `reports.ts`, `search.ts`, `timeline.ts`, `proof.ts`, `settings.ts`), each asking `viewRefusal` before it reads anything and reading with the user's access; the views are `src/components/admin/views/`, each redirecting a visitor to the sign-in and a codeless session to the code before the loader runs, registered in the `// M5 C` blocks of `payload.config.ts` with one nav component (`ViewsNavLinks`, which also carries the `/` and Ctrl K shortcut) and the dashboard's link to Today. A practitioner's Today shows their schedule only (the other panels are `not-shown`, a fourth `Panel` state), and their Calendar is their own whatever the address asks for. The Calendar moves a confirmed booking with M3's `POST /api/bookings/:id/reschedule` (M3's `OfficeActionForm`); there is no drag. Today names what waits on M6 (messages, sending failures, the daily digest), and Reports the health strip's email, WhatsApp and uptime lines. The person record is `/admin/people/<id>`; a person a practitioner may not read answers `not-found`, as a missing one does. Proof marks feedback read through Payload's own API (status only); reviews and case studies move on their records, and a case study is approved or published only with the client's approval recorded in full and published only by an owner, who is stamped as its publisher (`src/lib/proof/caseStudies.ts`). Settings' audit CSV is `POST /api/admin-views/audit-log-csv` with the code typed again (`src/lib/privacy/stepUp.ts`), written to the log as `export-audit-log`, without IP addresses. Tests: `tests/unit/adminViewsAccess.spec.ts` (every view refuses anonymous, codeless, deactivated and wrong-role requests before a read), `tests/unit/adminViewsRules.spec.ts`, `tests/int/adminViews.int.spec.ts`, `tests/e2e/adminViews.e2e.spec.ts`.
+
 ## 7. Global search and Reports
 
 **Search** (`SearchAdmin`): a query of 2–100 characters; a phone-like query is normalised to E.164 (libphonenumber-js) and an email to small letters before matching. Kinds, each with the user's own access: people (name contains, mobile or email equals; office only), bookings (reference; practitioners their own), invoices (number; owner, finance), certificates (ID; office), organisations and leads (M4, office). Never session notes, Map answers, message bodies, review texts or feedback comments. No query is logged or stored.
 
-**Reports** (`LoadReports`): every figure in `REPORT_FIGURES` as a `ReportFigure` with its definition, period, the numerator and denominator or count, the working in words ("12 of 40 people with a confirmed session had one before") and a link to the records. Computable now: cross-path rate (people with confirmed bookings of two or more registers), proposal calls a month (confirmed `call` bookings), counselling sessions a month and return rate, revenue by application (captured payments less processed refunds, by the booking's service register, integer paise), no-show rate, the funnel from `analytics_events`. Waiting: Team Map to proposal and lead response time (M4), course and Map figures (R2), the health strip's email, WhatsApp and uptime lines (M6, M7); each says so. A figure is text first and has its table; charts come with the interface pass.
+**Reports** (`LoadReports`): every figure in `REPORT_FIGURES` as a `ReportFigure` with its definition, period, the numerator and denominator or count, the working in words ("12 of 40 people with a confirmed session had one before") and a link to the records. Computable now: cross-path rate (people with confirmed bookings of two or more registers), proposal calls a month (confirmed `call` bookings), counselling sessions a month and return rate, revenue by application (captured payments less processed refunds, by the booking's service register, integer paise), no-show rate, the funnel from `analytics_events`. Team Map request to proposal (requests from the Team Map form in the period that have a proposal past draft) and lead response time (the median hours from a lead's arrival to `touchedAt`) are computed now M4 is joined. Waiting: course and Map figures (R2), the health strip's email, WhatsApp and uptime lines (M6, M7); each says so. A figure is text first and has its table; charts come with the interface pass.
 
 ## 8. Open decisions and missing inputs, and what the build assumes
 
@@ -100,9 +102,10 @@ All live under `/admin/<path>`, registered in `payload.config.ts` as `Placeholde
 | Proposed: Reports are owners' only; finance and the operator get none | Built so |
 | Proposed: re-entering the two-factor code within five minutes for an erasure, an export and a CSV of personal data (`08` §9) | Built so |
 | Proposed: Today replaces Payload's dashboard as the first screen after sign-in | A link block on the dashboard until the interface pass |
-| I-51 (new, numbered at join): the certificate's signatory name and title as printed | Issue refused; preview shows `[[TODO: signatory, I-51]]` |
+| I-54 (numbered at the join): the certificate's signatory name and title as printed | Issue refused; preview shows `[[TODO: signatory’s name as printed, I-54]]` |
 | I-14: certificate wording per course; I-22: the statement's legal review | The fixed statement as drafted, marked as awaiting I-22 |
-| Proposed: `case-studies.organisation` added by the join with M4 beside `clientName` | Text name until then |
+| Proposed: `case-studies.organisation` added by the join with M4 beside `clientName` | Built at the join: an optional link, read by the staff who keep case studies, never on the public card |
+| I-55: IIIC's confirmation of how Reports counts each figure | Each figure counted as its definition says, with its working shown |
 
 ## 9. Fakes, environment and the test plan
 

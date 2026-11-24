@@ -13,7 +13,7 @@ import {
 } from '@/lib/certificates/template'
 
 // The certificate's page from the kit's template (docs/18 §4): every field filled and escaped,
-// the fixed statement, the signatory or its placeholder (I-51), and no word that would make the
+// the fixed statement, the signatory or its placeholder (I-54), and no word that would make the
 // certificate a degree, a diploma or a mark of recognition (CLAUDE.md #9). Every name is fake.
 
 const fields = (over: Partial<CertificateFields> = {}): CertificateFields => ({
@@ -80,8 +80,8 @@ describe('the certificate page', () => {
   it('shows the signatory’s placeholder with its input ID while Settings lacks it', async () => {
     const template = await readCertificateTemplate()
     const { html, waitingFor } = fillCertificate(template, fields({ signatory: null }))
-    expect(waitingFor).toEqual(['I-51'])
-    expect(html).toContain('<span class="iiic-todo">[[TODO: signatory’s name as printed, I-51]]')
+    expect(waitingFor).toEqual(['I-54'])
+    expect(html).toContain('<span class="iiic-todo">[[TODO: signatory’s name as printed, I-54]]')
   })
 
   it('needs both the name and the title of the signatory', () => {

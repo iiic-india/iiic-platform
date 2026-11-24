@@ -14,8 +14,8 @@ import { CERTIFICATE_AWAITS, CERTIFICATE_STATEMENT } from './statement'
  * yet is a placeholder with its input ID, and a page with one is never issued (CLAUDE.md #1).
  */
 
-/** The signatory's name and title as printed (Settings → Certificates), I-51. */
-export const SIGNATORY_INPUT = 'I-51'
+/** The signatory's name and title as printed (Settings → Certificates), I-54. */
+export const SIGNATORY_INPUT = 'I-54'
 
 export type Signatory = { name: string; title: string }
 
