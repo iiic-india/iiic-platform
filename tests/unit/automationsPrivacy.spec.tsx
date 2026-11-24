@@ -17,7 +17,11 @@ import type { EmailContext } from '@/emails/types'
 import { raiseAttendance } from '@/lib/automations/booking/attendance'
 import { runBookingTask } from '@/lib/automations/booking/tasks'
 import { AUTOMATION_LISTENERS } from '@/lib/automations/listeners'
-import { useMessagingCore, type MessagingCore } from '@/lib/automations/operations/core'
+import {
+  type MessagingCore,
+  // Not a React hook, whatever its name says: the core's port takes a stand-in for the tests.
+  useMessagingCore as registerCore,
+} from '@/lib/automations/operations/core'
 import { raiseIncidentOpened, raiseRequestReceived } from '@/lib/automations/privacy/hooks'
 import { runC5, runO4, runO7, runO8 } from '@/lib/automations/privacy/run'
 import { CERTIFICATE_LISTENERS } from '@/lib/certificates/events'
@@ -127,7 +131,7 @@ function fakeCore() {
     cancelQueued: async () => 0,
     verifyLink: async () => ok({ subjectId: 1 }),
   }
-  useMessagingCore(core)
+  registerCore(core)
   return planned
 }
 
@@ -164,7 +168,7 @@ const STAFF: Row[] = [
 const PEOPLE: Row[] = [{ id: 21, fullName: 'Testname Fake' }]
 
 afterEach(() => {
-  useMessagingCore(null)
+  registerCore(null)
 })
 
 describe('M6 listens to M5’s events', () => {
