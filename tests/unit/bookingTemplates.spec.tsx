@@ -27,6 +27,7 @@ import { renderEmail } from '@/emails/render'
 import type { EmailContext, TemplateImplementation } from '@/emails/types'
 import { PLACEHOLDER } from '@/lib/content/placeholders'
 import { CRISIS_LINES, SCOPE_STATEMENT } from '@/lib/counselling/scope'
+import { showsPrice } from '@/lib/messaging/guards'
 
 // The booking templates (docs/19 §7, §11), rendered with obviously fake data: every key of the
 // B-series has its email and WhatsApp parts, the counselling ones carry the scope and the crisis
@@ -222,13 +223,30 @@ describe('the booking templates', () => {
     }
   })
 
-  it('show no price while prices are hidden, except the person’s own money', async () => {
+  it('show no price while prices are hidden, except on a payment link staff sent (D-21, D-24)', async () => {
     for (const key of BOOKING_KEYS) {
       if (!implementation(key)?.email) continue
       const rendered = await render(key, FAKE[key], false)
-      const all = `${rendered.subject} ${rendered.preheader} ${rendered.text}`
-      if (templateSpec(key).price === 'ownPayment') expect(all, key).toContain('₹')
-      else expect(all, key).not.toContain('₹')
+      const all = `${rendered.subject} ${rendered.preheader} ${rendered.text} ${rendered.html}`
+      if (templateSpec(key).price === 'paymentLink') expect(all, key).toContain('₹')
+      else expect(showsPrice(all), key).toBe(false)
+    }
+  })
+
+  it('send the receipt, the refund and the slot-lost notice without their amount while prices are hidden', async () => {
+    // What each still says without its amount, so it is sent rather than skipped for its price.
+    const said = {
+      'booking-receipt': 'It is for your payment for booking IIIC-S-00000.',
+      'refund-processed': 'We have refunded your payment to the account you paid from.',
+      'slot-lost': 'We are refunding your payment in full, to the account you paid from.',
+    } as const
+    for (const key of ['booking-receipt', 'refund-processed', 'slot-lost'] as const) {
+      const hidden = await render(key, FAKE[key], false)
+      const shown = await render(key, FAKE[key], true)
+      const hiddenWords = `${hidden.subject} ${hidden.preheader} ${hidden.text} ${hidden.html}`
+      expect(showsPrice(hiddenWords), key).toBe(false)
+      expect(hidden.text, key).toContain(said[key])
+      expect(`${shown.subject} ${shown.preheader} ${shown.text}`, key).toContain('₹')
     }
   })
 
@@ -242,7 +260,7 @@ describe('the booking templates', () => {
   it('write the time in India, and the receipt’s total with its paise', async () => {
     const reminder = await render('reminder-24h', FAKE['reminder-24h'])
     expect(reminder.subject).toBe('Your Fake session on Friday, 4 January at 3 PM')
-    const receipt = await render('booking-receipt', FAKE['booking-receipt'])
+    const receipt = await render('booking-receipt', FAKE['booking-receipt'], true)
     expect(receipt.text).toContain('₹1,500.50')
   })
 

@@ -1,5 +1,7 @@
 import { createLocalReq, getPayload } from 'payload'
 
+import { env } from '@/lib/env'
+import { actsHere } from '@/lib/messaging/deployment'
 import { reportError } from '@/lib/monitoring/sentry'
 import { clientKey, json, readFields, seeOther, wantsJson } from '@/lib/newsletter/http'
 import { WindowLimit } from '@/lib/newsletter/limit'
@@ -35,6 +37,10 @@ export async function POST(request: Request) {
   const input = SignupInput.safeParse(fields ?? {})
   if (!input.success) return answer(400, 'invalid')
   if (input.data.website) return answer(202, 'sent')
+  // A preview shares production's database: a signup there would store an address and queue a
+  // real confirmation email from production's runner. It stores nothing (src/lib/messaging/
+  // deployment.ts), and the page says signing up is closed.
+  if (!actsHere(env().VERCEL_ENV)) return answer(503, 'closed')
 
   try {
     const payload = await getPayload({ config })

@@ -16,6 +16,8 @@ const { planFor } = await import('@/lib/messaging/report')
 // a signed event is applied once per report, the WhatsApp secret is compared in constant time and
 // a STOP is honoured. Obviously fake secrets, ids and numbers.
 const SECRET = `whsec_${Buffer.from('fake-resend-webhook-secret-for-tests').toString('base64')}`
+/** Locally and in CI there is no VERCEL_ENV. */
+const LOCAL = undefined
 const OTHER = `whsec_${Buffer.from('another-fake-secret-not-the-one').toString('base64')}`
 
 function signed(body: unknown, secret = SECRET, at = new Date()) {
@@ -40,30 +42,43 @@ describe('the Resend webhook', () => {
     const apply = vi.fn(async () => ok({ messageId: 1, moved: true }))
     const good = signed(bounce)
     const forged = { ...good, svixSignature: 'v1,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' }
-    expect((await handleResendWebhook(forged, { secret: SECRET, apply })).status).toBe(401)
+    expect(
+      (await handleResendWebhook(forged, { secret: SECRET, vercelEnv: LOCAL, apply })).status,
+    ).toBe(401)
     const missing = { ...good, svixSignature: null }
-    expect((await handleResendWebhook(missing, { secret: SECRET, apply })).status).toBe(401)
+    expect(
+      (await handleResendWebhook(missing, { secret: SECRET, vercelEnv: LOCAL, apply })).status,
+    ).toBe(401)
     const wrongKey = signed(bounce, OTHER)
-    expect((await handleResendWebhook(wrongKey, { secret: SECRET, apply })).status).toBe(401)
+    expect(
+      (await handleResendWebhook(wrongKey, { secret: SECRET, vercelEnv: LOCAL, apply })).status,
+    ).toBe(401)
     const tampered = { ...good, rawBody: good.rawBody.replace('Permanent', 'Transient') }
-    expect((await handleResendWebhook(tampered, { secret: SECRET, apply })).status).toBe(401)
+    expect(
+      (await handleResendWebhook(tampered, { secret: SECRET, vercelEnv: LOCAL, apply })).status,
+    ).toBe(401)
     expect(apply).not.toHaveBeenCalled()
   })
 
   it('refuses an old signature (a replay outside five minutes)', async () => {
     const apply = vi.fn(async () => ok({ messageId: 1, moved: true }))
     const old = signed(bounce, SECRET, new Date(Date.now() - 10 * 60_000))
-    expect((await handleResendWebhook(old, { secret: SECRET, apply })).status).toBe(401)
+    expect(
+      (await handleResendWebhook(old, { secret: SECRET, vercelEnv: LOCAL, apply })).status,
+    ).toBe(401)
     expect(apply).not.toHaveBeenCalled()
   })
 
   it('answers 503 without a secret and 413 for a body too large', async () => {
     const apply = vi.fn()
-    expect((await handleResendWebhook(signed(bounce), { secret: undefined, apply })).status).toBe(
-      503,
-    )
+    expect(
+      (await handleResendWebhook(signed(bounce), { secret: undefined, vercelEnv: LOCAL, apply }))
+        .status,
+    ).toBe(503)
     const large = { ...signed(bounce), rawBody: null }
-    expect((await handleResendWebhook(large, { secret: SECRET, apply })).status).toBe(413)
+    expect(
+      (await handleResendWebhook(large, { secret: SECRET, vercelEnv: LOCAL, apply })).status,
+    ).toBe(413)
     expect(apply).not.toHaveBeenCalled()
   })
 
@@ -73,7 +88,11 @@ describe('the Resend webhook', () => {
       reports.push(report)
       return ok({ messageId: 7, moved: true })
     })
-    const answer = await handleResendWebhook(signed(bounce), { secret: SECRET, apply })
+    const answer = await handleResendWebhook(signed(bounce), {
+      secret: SECRET,
+      vercelEnv: LOCAL,
+      apply,
+    })
     expect(answer).toEqual({ status: 200, body: { received: true, taken: true, matched: true } })
     expect(reports[0]).toMatchObject({
       provider: 'resend',
@@ -87,20 +106,42 @@ describe('the Resend webhook', () => {
   it('takes nothing from types it does not act on, and 400s what it cannot read', async () => {
     const apply = vi.fn()
     const opened = signed({ type: 'email.opened', data: { email_id: 'x' } })
-    expect(await handleResendWebhook(opened, { secret: SECRET, apply })).toEqual({
+    expect(await handleResendWebhook(opened, { secret: SECRET, vercelEnv: LOCAL, apply })).toEqual({
       status: 200,
       body: { received: true, taken: false },
     })
     const unreadable = signed({ type: 'email.delivered', data: {} })
-    expect((await handleResendWebhook(unreadable, { secret: SECRET, apply })).status).toBe(400)
+    expect(
+      (await handleResendWebhook(unreadable, { secret: SECRET, vercelEnv: LOCAL, apply })).status,
+    ).toBe(400)
     expect(apply).not.toHaveBeenCalled()
+  })
+
+  it('refuses a preview with 404 before anything is read, even when signed (shared database)', async () => {
+    const apply = vi.fn(async () => ok({ messageId: 1, moved: true }))
+    for (const vercelEnv of ['preview', 'development']) {
+      const answer = await handleResendWebhook(signed(bounce), { secret: SECRET, vercelEnv, apply })
+      expect(answer).toEqual({ status: 404, body: { received: false, error: 'not-production' } })
+    }
+    expect(apply).not.toHaveBeenCalled()
+    const live = await handleResendWebhook(signed(bounce), {
+      secret: SECRET,
+      vercelEnv: 'production',
+      apply,
+    })
+    expect(live.status).toBe(200)
+    expect(apply).toHaveBeenCalledTimes(1)
   })
 
   it('answers 500 on a fault so Resend tries again, echoing nothing', async () => {
     const apply = vi.fn(async () => {
       throw new Error('database down: someone@fake.example.invalid')
     })
-    const answer = await handleResendWebhook(signed(bounce), { secret: SECRET, apply })
+    const answer = await handleResendWebhook(signed(bounce), {
+      secret: SECRET,
+      vercelEnv: LOCAL,
+      apply,
+    })
     expect(answer.status).toBe(500)
     expect(JSON.stringify(answer.body)).not.toContain('fake.example')
   })
@@ -131,6 +172,7 @@ function cloud(value: Record<string, unknown>) {
 describe('the WhatsApp webhook', () => {
   const deps = () => ({
     secret: WA_SECRET,
+    vercelEnv: LOCAL as string | undefined,
     now: () => new Date('2099-01-01T05:00:00.000Z'),
     apply: vi.fn(async () => ok({ messageId: 3, moved: true })),
     inbound: vi.fn(
@@ -191,6 +233,22 @@ describe('the WhatsApp webhook', () => {
       { kind: 'inbound', from: '+919800000000', at: new Date(0), stop: false },
     ])
     expect(JSON.stringify(parsed)).not.toContain('Stop by')
+  })
+
+  it('refuses a preview with 404, applying no status and recording no STOP', async () => {
+    const d = { ...deps(), vercelEnv: 'preview' }
+    const body = cloud({
+      statuses: [{ id: 'wamid.fake1', status: 'read' }],
+      messages: [{ id: 'wamid.fake2', from: '919800000000', text: { body: 'STOP' } }],
+    })
+    const answer = await handleWhatsAppWebhook({ rawBody: body, secretHeader: WA_SECRET }, d)
+    expect(answer).toEqual({ status: 404, body: { received: false, error: 'not-production' } })
+    expect(d.apply).not.toHaveBeenCalled()
+    expect(d.inbound).not.toHaveBeenCalled()
+    const live = { ...deps(), vercelEnv: 'production' }
+    expect(
+      (await handleWhatsAppWebhook({ rawBody: body, secretHeader: WA_SECRET }, live)).status,
+    ).toBe(200)
   })
 
   it('400s a body it cannot read', async () => {

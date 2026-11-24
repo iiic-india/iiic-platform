@@ -12,11 +12,13 @@ import type { Flags } from '@/lib/settings/flags'
  */
 
 /**
- * Price (D-21, D-24): `never`; `whenPublic`, only while `prices_public` is on; `ownPayment`, the
- * amount the person paid, is asked to pay by a link staff sent, or gets back (a receipt, a payment
- * link, a refund), which they see whatever the flag says (proposed, docs/19 §10).
+ * Price (D-21, D-24): `never`; `whenPublic`, only while `prices_public` is on; `paymentLink`, the
+ * amount on a payment link staff send, which the client sees before paying: D-24's one exception
+ * to D-21 (docs/16 §1). Everything else about the person's own money (a receipt, a refund, the
+ * slot-lost notice) shows its amount only while prices are public, and says the same thing
+ * without it while they are hidden (D-21; D-94: "dont list any pricing for now").
  */
-export type PriceRule = 'never' | 'whenPublic' | 'ownPayment'
+export type PriceRule = 'never' | 'whenPublic' | 'paymentLink'
 
 /**
  * The footer link (docs/08 §3: a withdraw link in every message; docs/13 §5: one-click unsubscribe
@@ -47,7 +49,7 @@ export const TEMPLATES = [
     counsellingScope: true,
     price: 'whenPublic',
   }),
-  t('booking-receipt', ['B3'], ['email'], 'bookings', 'transactional', { price: 'ownPayment' }),
+  t('booking-receipt', ['B3'], ['email'], 'bookings', 'transactional', { price: 'whenPublic' }),
   t('consent-receipt', ['B3a'], ['email'], 'bookings', 'transactional', {}),
   t('reminder-24h', ['B5'], ['whatsapp', 'email'], 'bookings', 'transactional', {
     counsellingScope: true,
@@ -59,21 +61,21 @@ export const TEMPLATES = [
     counsellingScope: true,
   }),
   t('booking-cancelled', ['B7'], ['email', 'whatsapp'], 'bookings', 'transactional', {}),
-  t('refund-processed', ['B7'], ['email'], 'bookings', 'transactional', { price: 'ownPayment' }),
+  t('refund-processed', ['B7'], ['email'], 'bookings', 'transactional', { price: 'whenPublic' }),
   t('booking-change-staff', ['B7', 'B10'], ['email'], 'platform', 'internal', { footer: 'none' }),
   t('feedback-request', ['B8'], ['email', 'whatsapp'], 'bookings', 'transactional', {}),
   t('no-show', ['B9'], ['email'], 'bookings', 'transactional', {}),
   t('slot-lost', ['B10'], ['email'], 'bookings', 'transactional', {
-    price: 'ownPayment',
+    price: 'whenPublic',
   }),
   t('time-request-received', ['B12'], ['email', 'whatsapp'], 'bookings', 'transactional', {}),
   t('payment-link', ['B13'], ['email', 'whatsapp'], 'bookings', 'operator', {
-    price: 'ownPayment',
+    price: 'paymentLink',
   }),
   t('payment-link-reminder', ['B13'], ['email'], 'bookings', 'operator', {
-    price: 'ownPayment',
+    price: 'paymentLink',
   }),
-  // ---- Pipeline (builder C, waits on M4) ----
+  // ---- Pipeline (builder C, on M4's records) ----
   t('team-map-ack', ['P1'], ['email'], 'hello', 'transactional', {}, 'C'),
   t('partnership-ack', ['P7'], ['email'], 'hello', 'transactional', {}, 'C'),
   t('proposal-sent', ['P5'], ['email'], 'hello', 'transactional', {}, 'C'),
@@ -124,7 +126,7 @@ export function templateSpec(key: TemplateKey): TemplateSpec {
 /** Whether a template may show a price now (D-21, D-24). */
 export function priceAllowed(key: TemplateKey, flags: Pick<Flags, 'pricesPublic'>): boolean {
   const rule = templateSpec(key).price
-  return rule === 'ownPayment' || (rule === 'whenPublic' && flags.pricesPublic)
+  return rule === 'paymentLink' || (rule === 'whenPublic' && flags.pricesPublic)
 }
 
 /**

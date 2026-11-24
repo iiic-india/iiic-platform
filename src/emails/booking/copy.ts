@@ -1,4 +1,5 @@
 import type { TemplateKey } from '@/emails/registry'
+import type { PriceShown } from '@/emails/types'
 import { CRISIS_HEADING, CRISIS_LINES, SCOPE_STATEMENT } from '@/lib/counselling/scope'
 import { CONTACT } from '@/lib/site/contact'
 
@@ -156,7 +157,11 @@ export const COPY = {
   },
   'booking-receipt': {
     subject: (d: ReceiptData) => `Your ${DOCUMENT[d.document].toLowerCase()} ${d.number}`,
-    preheader: (d: ReceiptData) => `For booking ${d.reference}: ${rupeesExact(d.totalPaise)}.`,
+    // The amount only while prices are public (D-21): the receipt says the same without it.
+    preheader: (d: ReceiptData, shown: PriceShown) =>
+      shown.priceAllowed
+        ? `For booking ${d.reference}: ${rupeesExact(d.totalPaise)}.`
+        : `For booking ${d.reference}.`,
     eyebrow: (d: ReceiptData) => DOCUMENT[d.document],
     heading: (d: ReceiptData) =>
       `${d.firstName}, here is your ${DOCUMENT[d.document].toLowerCase()}.`,
@@ -165,18 +170,25 @@ export const COPY = {
     questions: `Need the PDF, or have a question about it? Reply to this email or call ${CONTACT.phone}.`,
   },
   'refund-processed': {
-    subject: (d: RefundData) =>
-      `Refund of ${rupees(d.amountPaise)} made for booking ${d.reference}`,
+    subject: (d: RefundData, shown: PriceShown) =>
+      shown.priceAllowed
+        ? `Refund of ${rupees(d.amountPaise)} made for booking ${d.reference}`
+        : `Refund made for booking ${d.reference}`,
     preheader: () => 'It goes back to the account you paid from.',
     eyebrow: 'Refund made',
     heading: (d: RefundData) => `${d.firstName}, your refund has been made.`,
-    lead: (d: RefundData) =>
-      `We have refunded ${rupees(d.amountPaise)} to the account you paid from.`,
+    lead: (d: RefundData, shown: PriceShown) =>
+      shown.priceAllowed
+        ? `We have refunded ${rupees(d.amountPaise)} to the account you paid from.`
+        : 'We have refunded your payment to the account you paid from.',
     questions: `Questions about the refund? Reply to this email or call ${CONTACT.phone}.`,
   },
   'slot-lost': {
     subject: () => 'Your payment is being refunded: the time was taken',
-    preheader: (d: SlotLostData) => `${rupees(d.amountPaise)}, back to the account you paid from.`,
+    preheader: (d: SlotLostData, shown: PriceShown) =>
+      shown.priceAllowed
+        ? `${rupees(d.amountPaise)}, back to the account you paid from.`
+        : 'Your payment goes back to the account you paid from.',
     eyebrow: 'Not booked',
     heading: (d: SlotLostData) =>
       `${d.firstName}, that time was taken before your payment arrived.`,
@@ -184,8 +196,10 @@ export const COPY = {
       d.startsAt
         ? `Someone else confirmed ${at(d.startsAt)} before your payment reached us, so your ${d.serviceName} could not be booked.`
         : `Someone else confirmed the time you chose before your payment reached us, so your ${d.serviceName} could not be booked.`,
-    refund: (d: SlotLostData) =>
-      `We are refunding your payment of ${rupees(d.amountPaise)} in full, to the account you paid from.`,
+    refund: (d: SlotLostData, shown: PriceShown) =>
+      shown.priceAllowed
+        ? `We are refunding your payment of ${rupees(d.amountPaise)} in full, to the account you paid from.`
+        : 'We are refunding your payment in full, to the account you paid from.',
     button: 'Choose another time',
   },
   'no-show': {

@@ -37,8 +37,8 @@ export async function renderEmail<Data>(
     }),
   ])
   return {
-    subject: template.subject(data),
-    preheader: template.preheader(data),
+    subject: template.subject(data, context),
+    preheader: template.preheader(data, context),
     html: withOutlookGhost(html),
     text,
   }

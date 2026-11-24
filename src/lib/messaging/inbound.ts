@@ -7,6 +7,7 @@ import { z } from 'zod'
 
 import type { Result } from '@/lib/result'
 
+import { actsHere } from './deployment'
 import type { ProviderReport } from './operations'
 import { isStopRequest, parseResendEvent, type WhatsAppNotice } from './webhooks'
 
@@ -15,8 +16,11 @@ import { isStopRequest, parseResendEvent, type WhatsAppNotice } from './webhooks
  * fakes: the signature first, then the body, then the work. Nothing of a body is logged or
  * echoed, and an inbound WhatsApp message's text is read for a stop request and dropped.
  *
- * Answers: 503 while the secret is unset (the platform builds and runs without it), 413 for a
- * body larger than a webhook's, 401 for a bad or missing signature, 400 for a body that cannot be
+ * Answers: 503 while the secret is unset (the platform builds and runs without it), 404 on any
+ * Vercel deployment but production (previews share production's database, so a preview never
+ * moves a message, suppresses an address or records a withdrawal: `actsHere`, as M3's
+ * `gatewayFor` keeps payments to production), 413 for a body larger than a webhook's, 401 for a
+ * bad or missing signature, 400 for a body that cannot be
  * read, 200 for what was taken or is not taken (unknown ids, other event types), 500 on a fault,
  * so the provider tries again.
  */
@@ -38,6 +42,8 @@ export type ResendWebhookInput = {
 
 export type ResendWebhookDeps = {
   secret: string | undefined
+  /** VERCEL_ENV: unset locally and in CI, `production` on production. */
+  vercelEnv: string | undefined
   apply: (report: ProviderReport) => Promise<Applied>
 }
 
@@ -50,6 +56,7 @@ export async function handleResendWebhook(
   deps: ResendWebhookDeps,
 ): Promise<WebhookAnswer> {
   if (!deps.secret) return answer(503, { received: false, error: 'not-configured' })
+  if (!actsHere(deps.vercelEnv)) return answer(404, { received: false, error: 'not-production' })
   if (input.rawBody === null) return answer(413, { received: false, error: 'too-large' })
   if (!input.svixId || !input.svixTimestamp || !input.svixSignature) {
     return answer(401, { received: false, error: 'bad-signature' })
@@ -192,6 +199,8 @@ export function parseWhatsAppBody(
 
 export type WhatsAppWebhookDeps = {
   secret: string | undefined
+  /** VERCEL_ENV: unset locally and in CI, `production` on production. */
+  vercelEnv: string | undefined
   now: () => Date
   apply: (report: ProviderReport) => Promise<Applied>
   /** A message from the person: the 24-hour window opens; a stop is honoured the same day. */
@@ -206,6 +215,7 @@ export async function handleWhatsAppWebhook(
   deps: WhatsAppWebhookDeps,
 ): Promise<WebhookAnswer> {
   if (!deps.secret) return answer(503, { received: false, error: 'not-configured' })
+  if (!actsHere(deps.vercelEnv)) return answer(404, { received: false, error: 'not-production' })
   if (input.rawBody === null) return answer(413, { received: false, error: 'too-large' })
   if (!sameSecret(input.secretHeader, deps.secret)) {
     return answer(401, { received: false, error: 'bad-signature' })

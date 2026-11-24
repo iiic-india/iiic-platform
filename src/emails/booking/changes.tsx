@@ -99,10 +99,13 @@ export const refundProcessed: TemplateImplementation<RefundData> = {
         heading={refund.heading(data)}
         counselling={false}
       >
-        <Paragraph>{refund.lead(data)}</Paragraph>
+        <Paragraph>{refund.lead(data, context)}</Paragraph>
         <Details
           rows={[
-            { label: LABELS.refunded, value: rupees(data.amountPaise) },
+            // The amount only while prices are public (D-21).
+            ...(context.priceAllowed
+              ? [{ label: LABELS.refunded, value: rupees(data.amountPaise) }]
+              : []),
             { label: LABELS.when, value: longDay(data.processedAt) },
             { label: LABELS.reference, value: data.reference, mono: true },
           ]}

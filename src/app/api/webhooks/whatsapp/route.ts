@@ -18,7 +18,7 @@ const HEADERS = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' }
  * POST /api/webhooks/whatsapp (docs/19 §4): the WhatsApp provider's statuses and the messages
  * people send. No sign-in: the caller proves itself with `WHATSAPP_WEBHOOK_SECRET` in a header,
  * compared in constant time before the database is touched (proposed until AiSensy's plan signs,
- * docs/19 §10). A status moves the message forward; a message from a person opens the 24-hour
+ * docs/19 §10); a preview, which shares production's database, refuses with 404. A status moves the message forward; a message from a person opens the 24-hour
  * window, and a plain STOP suppresses WhatsApp for the number and withdraws `marketingWhatsapp`.
  * The text of a message is never stored or logged.
  */
@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     { rawBody, secretHeader: request.headers.get(WHATSAPP_SECRET_HEADER) },
     {
       secret: env().WHATSAPP_WEBHOOK_SECRET,
+      vercelEnv: env().VERCEL_ENV,
       now: () => new Date(),
       apply: async (report) => {
         const payload = await getPayload({ config })

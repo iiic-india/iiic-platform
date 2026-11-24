@@ -16,7 +16,8 @@ const HEADERS = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' }
 /**
  * POST /api/webhooks/resend (docs/19 §4): Resend's delivery, bounce, complaint and failure
  * events. No sign-in: the caller is Resend, proved by the Svix signature over the raw body, which
- * is checked before the database is touched. A permanent bounce or a complaint suppresses the
+ * is checked before the database is touched; a preview, which shares production's database,
+ * refuses with 404 before anything is read. A permanent bounce or a complaint suppresses the
  * address; a replayed event changes nothing. See src/lib/messaging/inbound.ts for every answer.
  * Nothing from the body is logged or echoed.
  */
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
     },
     {
       secret: env().RESEND_WEBHOOK_SECRET,
+      vercelEnv: env().VERCEL_ENV,
       apply: async (report) => {
         const payload = await getPayload({ config })
         return applyReport(await createLocalReq({}, payload), report)

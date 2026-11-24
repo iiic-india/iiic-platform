@@ -25,11 +25,14 @@ export type EmailContext = {
   priceAllowed: boolean
 }
 
+/** What the subject and the preheader may know of the context: whether a price may show. */
+export type PriceShown = Pick<EmailContext, 'priceAllowed'>
+
 export type EmailTemplate<Data> = {
   key: TemplateKey
   schema: z.ZodType<Data>
-  subject: (data: Data) => string
-  preheader: (data: Data) => string
+  subject: (data: Data, shown: PriceShown) => string
+  preheader: (data: Data, shown: PriceShown) => string
   /** The email as React Email elements inside the Frame (src/emails/components/Frame.tsx). */
   element: (data: Data, context: EmailContext) => ReactElement
 }

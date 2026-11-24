@@ -26,7 +26,7 @@ export const bookingReceipt: TemplateImplementation<ReceiptData> = {
     element: (data, context) => (
       <BookingFrame
         context={context}
-        preheader={receipt.preheader(data)}
+        preheader={receipt.preheader(data, context)}
         eyebrow={receipt.eyebrow(data)}
         heading={receipt.heading(data)}
         counselling={false}
@@ -36,7 +36,7 @@ export const bookingReceipt: TemplateImplementation<ReceiptData> = {
           rows={[
             { label: LABELS.number, value: data.number, mono: true },
             { label: LABELS.issued, value: longDay(data.issuedAt) },
-            // The person's own payment (`ownPayment`, D-24); never shown if the rule says no.
+            // The amount only while prices are public (D-21); the rest of the receipt stands.
             ...(context.priceAllowed
               ? [{ label: LABELS.amount, value: receipt.amount(data.totalPaise) }]
               : []),

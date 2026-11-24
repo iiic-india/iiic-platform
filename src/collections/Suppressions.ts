@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { allow, POLICY } from '@/access/policy'
+import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { CHANNELS, SUPPRESSION_REASONS } from '@/lib/messaging/types'
 import { IST_FIELD } from '@/lib/time/ist'
@@ -77,6 +77,8 @@ export const Suppressions: CollectionConfig = {
           admin: { date: { pickerAppearance: 'dayAndTime' } },
         },
         {
+          // Who recorded it: the server's word. An entry the office makes is the office's, whatever
+          // the form sends; only the providers' webhooks (which write as the server) name a provider.
           name: 'source',
           type: 'select',
           required: true,
@@ -86,6 +88,11 @@ export const Suppressions: CollectionConfig = {
             { label: 'WhatsApp provider', value: 'whatsapp' },
             { label: 'Staff', value: 'staff' },
           ],
+          access: {
+            create: allowField(FIELD_POLICY.serverOnly.write),
+            update: allowField(FIELD_POLICY.serverOnly.write),
+          },
+          admin: { readOnly: true },
         },
       ],
     },

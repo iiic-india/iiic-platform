@@ -10,8 +10,9 @@ import { BookingFrame } from './parts'
 /**
  * B13 · a payment link staff sent for a booking, with its one reminder 24 hours before the
  * session while it is unpaid, and B10 · the payment that arrived after its time was taken,
- * refunded in full (docs/06 B10, B13). Each shows the person's own amount (`ownPayment`, D-24),
- * and nothing else about money.
+ * refunded in full (docs/06 B10, B13). The payment link shows its amount, which the client sees
+ * before paying anyway (`paymentLink`, D-24); the slot-lost notice shows the amount only while
+ * prices are public (D-21). Nothing else about money.
  */
 
 /** The booking page of the service's kind, where another time is chosen (docs/02 `/book/[type]`). */
@@ -103,13 +104,13 @@ export const slotLost: TemplateImplementation<SlotLostData> = {
     element: (data, context) => (
       <BookingFrame
         context={context}
-        preheader={lost.preheader(data)}
+        preheader={lost.preheader(data, context)}
         eyebrow={lost.eyebrow}
         heading={lost.heading(data)}
         counselling={false}
       >
         <Paragraph>{lost.lead(data)}</Paragraph>
-        <Paragraph>{lost.refund(data)}</Paragraph>
+        <Paragraph>{lost.refund(data, context)}</Paragraph>
         <Button href={bookingPage(context, data.serviceType)}>{lost.button}</Button>
       </BookingFrame>
     ),
