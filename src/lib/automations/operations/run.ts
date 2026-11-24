@@ -7,6 +7,7 @@ import type { Role } from '@/access/roles'
 import { DIGEST_ROLES, REPORT_ROLES } from '@/emails/other/internal'
 import type { TemplateKey } from '@/emails/registry'
 import { recordAudit } from '@/lib/audit/record'
+import { purgeSignIns } from '@/lib/accounts/purge'
 import type { AutomationId } from '@/lib/automations/catalogue'
 
 import { plan } from './core'
@@ -69,8 +70,9 @@ export const runO2 = (req: PayloadRequest, now: Date) =>
 /**
  * O5 · nightly retention, for M6's records (docs/04; docs/19 §8, §3): pending newsletter signups
  * whose link has lapsed (the address was kept only to send it) and message log entries past a
- * year. M2's 404 log has its own purge (`O5-purge-missing-pages`); M5 adds its records' periods.
- * One audit entry for a run that removed something, not one per entry.
+ * year. M2's 404 log has its own purge (`O5-purge-missing-pages`); M5 adds its records' periods;
+ * Release 2's accounts add what sign-in leaves behind (`purgeSignIns`, docs/20 §4.8). One audit
+ * entry for a run that removed something, not one per entry.
  */
 export async function runO5(req: PayloadRequest, now: Date): Promise<Outcome> {
   const cutoffs = retentionCutoffs(now)
@@ -92,6 +94,9 @@ export async function runO5(req: PayloadRequest, now: Date): Promise<Outcome> {
     overrideAccess: true,
     req,
   })
+  // What sign-in leaves behind: old sign-in requests, Better Auth's expired sessions and codes
+  // (Release 2; docs/20 §4.8, §12 H9). It writes its own audit entry when it removes anything.
+  await purgeSignIns(req, now)
   const removed = pending.docs.length + messages.docs.length
   if (removed > 0) {
     await recordAudit(req, { action: 'purge-expired', entity: 'subscribers' }, null)

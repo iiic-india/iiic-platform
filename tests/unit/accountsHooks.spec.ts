@@ -5,8 +5,13 @@ import { CONSENT_PURPOSES, ENDED_IN_MY_IIIC } from '@/lib/privacy/purposes'
 import { RECIPIENT_KINDS, SUBJECT_COLLECTIONS } from '@/lib/messaging/types'
 
 vi.mock('server-only', () => ({}))
+vi.mock('@/lib/accounts/purge', () => ({
+  purgeSignIns: vi.fn(async () => ({ requests: 2, sessions: 1, codes: 3 })),
+}))
 
 const { recipientFacts, signInFacts, NO_RECIPIENT } = await import('@/lib/messaging/recipients')
+const { runO5 } = await import('@/lib/automations/operations/run')
+const { purgeSignIns } = await import('@/lib/accounts/purge')
 const { recipientOf } = await import('@/lib/messaging/try')
 const { IMPLEMENTATIONS } = await import('@/emails')
 
@@ -81,6 +86,15 @@ describe('H2, H3 · a sign-in code’s recipient', () => {
     expect(facts.personId).toBeNull()
     expect(facts.subscriberId).toBeNull()
     expect(facts.lastInboundAt).toBeNull()
+  })
+})
+
+describe('H9 · the nightly O5', () => {
+  it('removes what sign-in leaves behind, with the run’s own time', async () => {
+    const now = new Date('2099-03-04T20:45:00.000Z')
+    const req = { payload: { delete: async () => ({ docs: [] }) } } as never
+    await runO5(req, now)
+    expect(purgeSignIns).toHaveBeenCalledWith(req, now)
   })
 })
 
