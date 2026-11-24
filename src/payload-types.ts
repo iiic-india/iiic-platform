@@ -3031,6 +3031,9 @@ export interface NewsletterIssue {
   scheduledFor_tz?: 'Asia/Kolkata' | null;
   sentAt?: string | null;
   sentAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * Subscribers this issue has reached so far, from the Messages log.
+   */
   recipientCount?: number | null;
   updatedAt: string;
   createdAt: string;
