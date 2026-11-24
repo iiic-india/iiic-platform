@@ -198,13 +198,15 @@ describe('the collection', () => {
     })
     expect(read.certificateId).toBe(made!.certificateId)
     expect(read).not.toHaveProperty('verifyTokenHash')
-    const { docs } = await payload.find({
-      collection: 'certificates',
-      where: { id: { equals: made!.id } },
-      overrideAccess: false,
-      user: { ...staff.editor, collection: 'users', _strategy: 'totp' } as User,
-    })
-    expect(docs).toEqual([])
+    // An editor's read is refused outright, as the policy answers no for the role.
+    await expect(
+      payload.find({
+        collection: 'certificates',
+        where: { id: { equals: made!.id } },
+        overrideAccess: false,
+        user: { ...staff.editor, collection: 'users', _strategy: 'totp' } as User,
+      }),
+    ).rejects.toMatchObject({ status: 403 })
   })
 })
 

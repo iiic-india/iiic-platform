@@ -1,5 +1,5 @@
 import { createLocalReq, getPayload, type Payload } from 'payload'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { loadCalendar } from '@/lib/adminViews/calendar'
 import { REPORT_FIGURES, type ScheduleItem } from '@/lib/adminViews/contract'
@@ -20,6 +20,8 @@ import type {
   User,
 } from '@/payload-types'
 import config from '@/payload.config'
+
+vi.mock('server-only', () => ({}))
 
 // The views of M5 C against the real database (docs/18 §6, §9): what each role sees once it is let
 // in. A practitioner's Today, Calendar, person record and search hold their own bookings and
