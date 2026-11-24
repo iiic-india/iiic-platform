@@ -16,7 +16,7 @@ Branch `r2a/records`, cut from `r2a/foundation` (8c33dcc). Slice B of `docs/20-a
 - [x] Integration tests (`tests/int/accountsRecords.int.spec.ts`; CI only, needs `r2a_accounts`)
 - [x] E2E (`tests/e2e/myIiic.e2e.spec.ts`, skipped until A's sign-in and `ACCOUNTS_TEST_CODE`), the headers test's `/account` rows
 - [x] typecheck, lint, unit tests (all green but the known D-112 case in `decisions.spec.ts`)
-- [ ] build, format:check (running)
+- [x] build, format:check
 
 ## For the lead (the join)
 

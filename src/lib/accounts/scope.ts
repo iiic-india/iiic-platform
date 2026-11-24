@@ -65,7 +65,7 @@ export async function openMyIiic(next: string): Promise<AccountSession> {
 export const PRIVATE_FILE_HEADERS = {
   'Cache-Control': 'private, no-store',
   'Referrer-Policy': 'no-referrer',
-  'X-Robots-Tag': 'noindex, nofollow',
+  'X-Robots-Tag': 'noindex',
   'X-Content-Type-Options': 'nosniff',
 } as const
 

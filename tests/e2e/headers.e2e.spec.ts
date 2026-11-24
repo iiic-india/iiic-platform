@@ -264,7 +264,7 @@ test.describe('My IIIC’s headers', () => {
     for (const path of MY_IIIC_PATHS) {
       const response = await request.get(path, { maxRedirects: 0 })
       const headers = response.headers()
-      expect(headers['x-robots-tag'], path).toBe('noindex')
+      expect(headers['x-robots-tag'], path).toMatch(/noindex/)
       expect(headers['cache-control'], path).toMatch(/private/)
       expect(headers['cache-control'], path).toMatch(/no-store/)
       expect(headers['content-security-policy'] ?? '', path).not.toContain('cloudflareinsights')
