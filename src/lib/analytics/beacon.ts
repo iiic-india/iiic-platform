@@ -30,11 +30,12 @@ export function beaconToken(
 }
 
 /**
- * The pages never counted: the admin, and the booking pages whose address carries a manage
- * link's token or a booking's reference (`/b/<token>`, `/book/pay/<ref>`, `/book/confirmed/<ref>`),
- * since the beacon reports the path and the token must never leave the page (docs/16 §6).
+ * The pages never counted: the admin, the booking pages whose address carries a manage link's
+ * token or a booking's reference (`/b/<token>`, `/book/pay/<ref>`, `/book/confirmed/<ref>`,
+ * docs/16 §6), and a proposal's tracked link (`/p/<token>`, docs/17 §5), since the beacon reports
+ * the path and an address that is a key must never reach a third party.
  */
-const UNCOUNTED = /^\/(?:admin(?:\/|$)|b\/|book\/(?:pay|confirmed)\/)/i
+const UNCOUNTED = /^\/(?:admin(?:\/|$)|b\/|book\/(?:pay|confirmed)\/|p(?:\/|$))/i
 
 /** Whether a path is one of the public pages the beacon may count. */
 export function countsPath(pathname: string): boolean {

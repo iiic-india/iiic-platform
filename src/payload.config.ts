@@ -21,28 +21,36 @@ import { Certificates } from './collections/Certificates'
 import { Consents } from './collections/Consents'
 import { ConsentVersions } from './collections/ConsentVersions'
 import { DataRequests } from './collections/DataRequests'
+import { Enquiries } from './collections/Enquiries'
 import { Events } from './collections/Events'
 import { Faqs } from './collections/Faqs'
 import { Feedback } from './collections/Feedback'
 import { GatewayEvents } from './collections/GatewayEvents'
 import { Incidents } from './collections/Incidents'
 import { Invoices } from './collections/Invoices'
+import { LeadActivities } from './collections/LeadActivities'
+import { Leads } from './collections/Leads'
 import { Media } from './collections/Media'
 import { MissingPages } from './collections/MissingPages'
+import { Organisations } from './collections/Organisations'
 import { Pages } from './collections/Pages'
 import { Payments } from './collections/Payments'
 import { People } from './collections/People'
 import { Posts } from './collections/Posts'
 import { Practitioners } from './collections/Practitioners'
 import { PriceHistory } from './collections/PriceHistory'
+import { Proposals } from './collections/Proposals'
+import { ProposalVersions } from './collections/ProposalVersions'
 import { redirects } from './collections/Redirects'
 import { Refunds } from './collections/Refunds'
 import { Services } from './collections/Services'
 import { SessionNotes } from './collections/SessionNotes'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
+import { Tasks } from './collections/Tasks'
 import { Testimonials } from './collections/Testimonials'
 import { Topics } from './collections/Topics'
 import { Users } from './collections/Users'
+import { pipelineEndpoints } from './components/admin/pipeline/moveEndpoint'
 import { Settings } from './globals/Settings'
 import { jobs } from './jobs'
 import { TOTP_OPTIONS } from './lib/auth/totp'
@@ -114,6 +122,8 @@ export default buildConfig({
         '/components/admin/PlaceholdersNavLink#PlaceholdersNavLink',
         // Calendar → Working hours, with the preview of bookable times (docs/05; docs/16 §12).
         '/components/admin/office/WorkingHoursNavLink#WorkingHoursNavLink',
+        // The Pipeline board (M4; docs/17 §12 C).
+        '/components/admin/pipeline/PipelineNavLink#PipelineNavLink',
         // M5 A: Privacy (docs/18 §6).
         '/components/admin/privacy/PrivacyNavLink#PrivacyNavLink',
         // M5 B: certificates (D-39; docs/18 §4).
@@ -138,6 +148,12 @@ export default buildConfig({
         workingHours: {
           Component: '/components/admin/office/WorkingHoursView#WorkingHoursView',
           path: '/working-hours',
+          exact: true,
+        },
+        // The Pipeline board (docs/17 §12 C); it checks the user, the role and the code itself.
+        pipeline: {
+          Component: '/components/admin/pipeline/PipelineView#PipelineView',
+          path: '/pipeline',
           exact: true,
         },
         // M5 A: Privacy, which checks the user, the code and the role itself (docs/18 §6).
@@ -190,6 +206,14 @@ export default buildConfig({
     GatewayEvents,
     Refunds,
     Invoices,
+    // The pipeline (M4; docs/17-pipeline-design.md).
+    Organisations,
+    Leads,
+    LeadActivities,
+    Tasks,
+    Enquiries,
+    Proposals,
+    ProposalVersions,
     // The admin experience (M5; docs/18-admin-experience-design.md): session notes (S3, author
     // only), certificates (D-39), privacy requests and the breach register, feedback and case
     // studies.
@@ -238,7 +262,12 @@ export default buildConfig({
   // The server's own faults go to Sentry, scrubbed (src/lib/monitoring/sentry.ts, D-49); an owner
   // can send a test error to check that reports arrive.
   hooks: { afterError: [reportServerError] },
-  endpoints: [{ path: '/report-test-error', method: 'post', handler: reportTestError }],
+  // The board's "Move to stage" checks the user, the role and the code first
+  // (src/components/admin/pipeline/moveEndpoint.ts).
+  endpoints: [
+    { path: '/report-test-error', method: 'post', handler: reportTestError },
+    ...pipelineEndpoints,
+  ],
   plugins: [
     // Media in Cloudflare R2's public bucket (docs/07) once R2 is configured; on the local disk
     // before that (development, CI). Files are served straight from the bucket's public URL.

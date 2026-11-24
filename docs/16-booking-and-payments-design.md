@@ -141,7 +141,7 @@ Nothing waits on these: IIIC's values live in the admin, empty or behind the fla
 | Proposed: B11 only flags what does not match; it confirms, refunds and corrects nothing | Built so |
 | Proposed: B3 issues a tax invoice for every captured payment (not a receipt voucher), dated the day it is issued; which document an advance gets is the CA's (I-29) | Built so |
 | Proposed: each person is one Zoho contact named `<name> · P-<id>` (Zoho's names are unique); the client's own PDF prints the name alone | Built so |
-| Proposed: a proposal's fees are a template's prices, so a proposal PDF is refused while `prices_public` is off, unless IIIC rules a quote to one organisation outside D-21 as D-24 did for payment links | Built so (M4 decides) |
+| Decided by the owner (D-94, 23 November 2026): a proposal's fees are a template's prices, so no fee prints while `prices_public` is off; the proposal is printed without its fees section rather than refused (`17` §5) | Built so in M4 |
 | Proposed: the invoice-PDF proof reads the PDF's text; no screenshot baseline (D-80, no tests for looks) | Built so |
 | Proposed: `R2_BUCKET_PRIVATE` joins `src/lib/env.ts` with an S3 `DocumentStore` for the client's PDF; a credit note's refund is recorded in Zoho once its paying account is named | Not built: no PDF is stored; the credit note is issued, not yet marked refunded in Zoho |
 | Proposed: the counselling booking's SPDI written consent is recorded under the `bookingCommunications` purpose with the booking notice until the lawyer words it (I-22) | Built so; a purpose of its own needs a change to `consents` |

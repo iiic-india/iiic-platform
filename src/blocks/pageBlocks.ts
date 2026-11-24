@@ -78,8 +78,27 @@ const intro: Field = {
   admin: { description: 'A sentence or two beside the heading. Optional.' },
 }
 
-/** The ids the fixed blocks carry (scope, certificate, contact, legal): no section may take one. */
-export const FIXED_ANCHORS = ['scope', 'certificate', 'contact', 'legal'] as const
+/**
+ * The ids the public forms' blocks carry (docs/17 §6): a link to /organisations/team-map#team-map-request
+ * opens the Team Map request, one to /institute#partnership-enquiry the partnership enquiry.
+ */
+export const FORM_ANCHORS = {
+  teamMapRequest: 'team-map-request',
+  partnershipEnquiry: 'partnership-enquiry',
+} as const
+
+/** The fixed blocks, by their type, and the id each carries on its page. */
+export const FIXED_BLOCK_IDS = {
+  scope: 'scope',
+  certificate: 'certificate',
+  contact: 'contact',
+  legal: 'legal',
+  ...FORM_ANCHORS,
+} as const
+
+/** The ids the fixed blocks carry (scope, certificate, contact, legal, the forms): no section may take one. */
+export const FIXED_ANCHORS: readonly (typeof FIXED_BLOCK_IDS)[keyof typeof FIXED_BLOCK_IDS][] =
+  Object.values(FIXED_BLOCK_IDS)
 
 /** A short name a link opens a section by: small letters, numbers and hyphens. */
 export function isAnchor(value: unknown): true | string {
@@ -445,6 +464,27 @@ const Legal: Block = {
   fields: [],
 }
 
+/**
+ * The Team Map request (docs/03 F5; docs/17 §6). Like the contact block it has no fields: its
+ * questions, its consent box and its acknowledgement are fixed in src/lib/enquiryForms/strings.ts,
+ * and the consent's wording is the notice in force (Content → Consent texts). While no notice is
+ * in force the section shows its placeholder instead of the form.
+ */
+const TeamMapRequest: Block = {
+  slug: 'teamMapRequest',
+  interfaceName: 'TeamMapRequestBlock',
+  labels: { singular: 'Team Map request form', plural: 'Team Map request forms' },
+  fields: [],
+}
+
+/** The partnership enquiry (docs/03 F12; docs/17 §6), fixed as the Team Map request is. */
+const PartnershipEnquiry: Block = {
+  slug: 'partnershipEnquiry',
+  interfaceName: 'PartnershipEnquiryBlock',
+  labels: { singular: 'Partnership enquiry form', plural: 'Partnership enquiry forms' },
+  fields: [],
+}
+
 const FounderNote: Block = {
   slug: 'founderNote',
   interfaceName: 'FounderNoteBlock',
@@ -538,6 +578,8 @@ export const PAGE_BLOCKS: Block[] = [
   FounderNote,
   Contact,
   Legal,
+  TeamMapRequest,
+  PartnershipEnquiry,
   Faq,
   Band,
 ]
@@ -588,7 +630,7 @@ function fixedLabel(type: string): string {
  * The sections a page carries once at most: the fixed blocks, whose ids are their own, and the
  * questions section, which shows the page's one list of questions.
  */
-const ONCE_A_PAGE: readonly string[] = [...FIXED_ANCHORS, 'faq']
+const ONCE_A_PAGE: readonly string[] = [...Object.keys(FIXED_BLOCK_IDS), 'faq']
 
 /**
  * No two sections answer to the same link name, none takes the shell's or a fixed block's,

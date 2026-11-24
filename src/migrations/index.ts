@@ -25,6 +25,7 @@ import * as migration_20261122_150424_m3_foundation from './20261122_150424_m3_f
 import * as migration_20261122_150505_bookings_no_overlap from './20261122_150505_bookings_no_overlap';
 import * as migration_20261122_161212_m3_job_tasks from './20261122_161212_m3_job_tasks';
 import * as migration_20261123_083835_m3_flows from './20261123_083835_m3_flows';
+import * as migration_20261123_162918_m4_pipeline from './20261123_162918_m4_pipeline';
 
 export const migrations = [
   {
@@ -160,6 +161,11 @@ export const migrations = [
   {
     up: migration_20261123_083835_m3_flows.up,
     down: migration_20261123_083835_m3_flows.down,
-    name: '20261123_083835_m3_flows'
+    name: '20261123_083835_m3_flows',
+  },
+  {
+    up: migration_20261123_162918_m4_pipeline.up,
+    down: migration_20261123_162918_m4_pipeline.down,
+    name: '20261123_162918_m4_pipeline'
   },
 ];

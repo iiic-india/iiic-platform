@@ -21,11 +21,14 @@ import { PersonNotes as PersonNotes_fe2bb9c0d372947b7b803828ac4b1661 } from '../
 import { BookingNotes as BookingNotes_5817eec7eaa7e14ad9aa723d713c7b63 } from '../../../components/admin/notes/BookingNotes'
 import { BookingOfficeView as BookingOfficeView_3deb01125f0d081ad583743b66041d67 } from '../../../components/admin/office/BookingOfficeView'
 import { RefundDecisionView as RefundDecisionView_d0a198cea4db7a1e79c878110db8655c } from '../../../components/admin/office/RefundDecisionView'
+import { ProposalActions as ProposalActions_6ab3e218fa6e82b5847237499c6d5a91 } from '../../../components/admin/pipeline/ProposalActions'
+import { VersionActions as VersionActions_0db85738e858f6a81302838320dd4b14 } from '../../../components/admin/pipeline/VersionActions'
 import { RequestActions as RequestActions_c07c731adae0a399fade417892a08074 } from '../../../components/admin/privacy/RequestActions'
 import { LinkToDoc as LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { ReindexButton as ReindexButton_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { PlaceholdersNavLink as PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2 } from '../../../components/admin/PlaceholdersNavLink'
 import { WorkingHoursNavLink as WorkingHoursNavLink_9cf74cba72ee96a8bb164d2260a88795 } from '../../../components/admin/office/WorkingHoursNavLink'
+import { PipelineNavLink as PipelineNavLink_2ec16a57a3300ce1e4252a19494cba11 } from '../../../components/admin/pipeline/PipelineNavLink'
 import { PrivacyNavLink as PrivacyNavLink_0fc8c0d711b6efe48645d514cea5f87b } from '../../../components/admin/privacy/PrivacyNavLink'
 import { CertificatesNavLink as CertificatesNavLink_5bf52cdd78ad81a40b386d5f6fcec962 } from '../../../components/admin/certificates/CertificatesNavLink'
 import { RecoveryCodes as RecoveryCodes_43c30919611f069a63a0aff35f9170f5 } from '../../../components/admin/RecoveryCodes'
@@ -34,6 +37,7 @@ import { SetupTwoFactor as SetupTwoFactor_2abdb0aaa2f84dde7ee21588072499e4 } fro
 import { VerifyTwoFactor as VerifyTwoFactor_546c8ab8e10ca06b3c0d6d60bcd95510 } from '../../../components/admin/VerifyTwoFactor'
 import { PlaceholdersView as PlaceholdersView_829678b75b003a8c21687eeed8eac416 } from '../../../components/admin/PlaceholdersView'
 import { WorkingHoursView as WorkingHoursView_36230b3270cb346e74fa6bdbdfb72811 } from '../../../components/admin/office/WorkingHoursView'
+import { PipelineView as PipelineView_97b8252568236b2ca3957bb65e609e06 } from '../../../components/admin/pipeline/PipelineView'
 import { PrivacyView as PrivacyView_f0035b0d10bdccf1067c64983a944228 } from '../../../components/admin/privacy/PrivacyView'
 import { CertificatesIssueView as CertificatesIssueView_19f75a3cf6b23ea1b8731cdc7426c966 } from '../../../components/admin/certificates/CertificatesIssueView'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
@@ -64,11 +68,14 @@ export const importMap = {
   "/components/admin/notes/BookingNotes#BookingNotes": BookingNotes_5817eec7eaa7e14ad9aa723d713c7b63,
   "/components/admin/office/BookingOfficeView#BookingOfficeView": BookingOfficeView_3deb01125f0d081ad583743b66041d67,
   "/components/admin/office/RefundDecisionView#RefundDecisionView": RefundDecisionView_d0a198cea4db7a1e79c878110db8655c,
+  "/components/admin/pipeline/ProposalActions#ProposalActions": ProposalActions_6ab3e218fa6e82b5847237499c6d5a91,
+  "/components/admin/pipeline/VersionActions#VersionActions": VersionActions_0db85738e858f6a81302838320dd4b14,
   "/components/admin/privacy/RequestActions#RequestActions": RequestActions_c07c731adae0a399fade417892a08074,
   "@payloadcms/plugin-search/client#LinkToDoc": LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634,
   "@payloadcms/plugin-search/client#ReindexButton": ReindexButton_aead06e4cbf6b2620c5c51c9ab283634,
   "/components/admin/PlaceholdersNavLink#PlaceholdersNavLink": PlaceholdersNavLink_f0a28a2350fc0c980a39af6e21c422a2,
   "/components/admin/office/WorkingHoursNavLink#WorkingHoursNavLink": WorkingHoursNavLink_9cf74cba72ee96a8bb164d2260a88795,
+  "/components/admin/pipeline/PipelineNavLink#PipelineNavLink": PipelineNavLink_2ec16a57a3300ce1e4252a19494cba11,
   "/components/admin/privacy/PrivacyNavLink#PrivacyNavLink": PrivacyNavLink_0fc8c0d711b6efe48645d514cea5f87b,
   "/components/admin/certificates/CertificatesNavLink#CertificatesNavLink": CertificatesNavLink_5bf52cdd78ad81a40b386d5f6fcec962,
   "/components/admin/RecoveryCodes#RecoveryCodes": RecoveryCodes_43c30919611f069a63a0aff35f9170f5,
@@ -77,6 +84,7 @@ export const importMap = {
   "/components/admin/VerifyTwoFactor#VerifyTwoFactor": VerifyTwoFactor_546c8ab8e10ca06b3c0d6d60bcd95510,
   "/components/admin/PlaceholdersView#PlaceholdersView": PlaceholdersView_829678b75b003a8c21687eeed8eac416,
   "/components/admin/office/WorkingHoursView#WorkingHoursView": WorkingHoursView_36230b3270cb346e74fa6bdbdfb72811,
+  "/components/admin/pipeline/PipelineView#PipelineView": PipelineView_97b8252568236b2ca3957bb65e609e06,
   "/components/admin/privacy/PrivacyView#PrivacyView": PrivacyView_f0035b0d10bdccf1067c64983a944228,
   "/components/admin/certificates/CertificatesIssueView#CertificatesIssueView": CertificatesIssueView_19f75a3cf6b23ea1b8731cdc7426c966,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
