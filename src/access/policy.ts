@@ -16,6 +16,13 @@ import { hasRole, isActive, ROLES, type MaybeStaff, type Role } from './roles'
  * - `statusPublished`: no sign-in needed for a document whose own status says published (a
  *   review, which has its own life rather than drafts); the rest stay with `roles`, after the
  *   two-factor code.
+ * - `ownPractitioner`: a practitioner reaches only the documents whose `practitioner` is their
+ *   own profile (the profile's `staff` is their account): their bookings, working hours,
+ *   calendar connection and busy times (docs/05: "own calendar and availability, own clients'
+ *   bookings").
+ * - `ownClients`: a practitioner reaches only the people who have a booking with them, through
+ *   the person's bookings (the owner's rule of 22 November 2026); FIELD_POLICY.personRecord keeps
+ *   every field but the name, mobile and email from them.
  * A deactivated account is refused everything (src/access/roles.ts).
  */
 export type Rule = {
@@ -25,7 +32,15 @@ export type Rule = {
   published?: true
   active?: true
   statusPublished?: true
+  ownPractitioner?: true
+  ownClients?: true
 }
+
+/** The query a practitioner's own documents answer: their profile's staff account is theirs. */
+export const OWN_PRACTITIONER_PATH = 'practitioner.staff'
+
+/** The query a practitioner's own clients answer: a booking of theirs names the person. */
+export const OWN_CLIENTS_PATH = `bookings.${OWN_PRACTITIONER_PATH}`
 
 export const POLICY = {
   users: {
@@ -94,11 +109,12 @@ export const POLICY = {
     update: {},
     delete: {},
   },
-  // The one record of a person (docs/04, S2): the office and the owners. Practitioners see their
-  // own clients once bookings link the two (M3). Deleting a person is the erasure an owner
-  // confirms (docs/05, Privacy), so only owners delete.
+  // The one record of a person (docs/04, S2): the office and the owners. A practitioner reads the
+  // people who have a booking with them, and of those only the name, mobile and email
+  // (FIELD_POLICY.personRecord; the owner's rule of 22 November 2026). Deleting a person is the
+  // erasure an owner confirms (docs/05, Privacy), so only owners delete.
   people: {
-    read: { roles: ['owner', 'operator'] },
+    read: { roles: ['owner', 'operator'], ownClients: true },
     create: { roles: ['owner', 'operator'] },
     update: { roles: ['owner', 'operator'] },
     delete: { roles: ['owner'] },
@@ -186,6 +202,98 @@ export const POLICY = {
     update: { roles: ['owner', 'operator'] },
     delete: { roles: ['owner'] },
   },
+
+  // ---- Booking and payments (M3; docs/16-booking-and-payments-design.md) ----
+
+  // Bookings (docs/04, S2): the office and the owners; a practitioner reads their own and marks
+  // attendance on them (docs/05). Created by the booking flow on the server, or by the office
+  // for a client. Never deleted: a booking is cancelled, and retention removes it (O5).
+  bookings: {
+    read: { roles: ['owner', 'operator'], ownPractitioner: true },
+    create: { roles: ['owner', 'operator'] },
+    update: { roles: ['owner', 'operator'], ownPractitioner: true },
+    delete: {},
+  },
+  // The prices a service's options had, and when (docs/04 `price_history`): written by the server
+  // when an owner changes a price; read by the staff who see prices (FIELD_POLICY.servicePrices).
+  priceHistory: {
+    read: { roles: ['owner', 'operator', 'finance'] },
+    create: {},
+    update: {},
+    delete: {},
+  },
+  // Working hours and their exceptions (docs/05, Calendar): the office keeps everyone's, a
+  // practitioner adds and changes their own. A practitioner's new entry is held to their own
+  // profile by the collection's hook (src/lib/booking/availabilityHooks.ts, docs/16 §12).
+  availabilityRules: {
+    read: { roles: ['owner', 'operator'], ownPractitioner: true },
+    create: { roles: ['owner', 'operator', 'practitioner'] },
+    update: { roles: ['owner', 'operator'], ownPractitioner: true },
+    delete: { roles: ['owner', 'operator'], ownPractitioner: true },
+  },
+  availabilityExceptions: {
+    read: { roles: ['owner', 'operator'], ownPractitioner: true },
+    create: { roles: ['owner', 'operator', 'practitioner'] },
+    update: { roles: ['owner', 'operator'], ownPractitioner: true },
+    delete: { roles: ['owner', 'operator'], ownPractitioner: true },
+  },
+  // A practitioner's Google Calendar link (D-22): an owner connects and disconnects it (docs/05,
+  // Settings → integrations); the office and the practitioner see its state.
+  calendarConnections: {
+    read: { roles: ['owner', 'operator'], ownPractitioner: true },
+    create: { roles: ['owner'] },
+    update: { roles: ['owner'] },
+    delete: { roles: ['owner'] },
+  },
+  // Busy times copied from a practitioner's calendar, start and end only (D-22): written by the
+  // server alone, read by whoever sees that practitioner's calendar.
+  busyBlocks: {
+    read: { roles: ['owner', 'operator'], ownPractitioner: true },
+    create: {},
+    update: {},
+    delete: {},
+  },
+  // Fixed-time sessions (docs/04 `events`: the course info sessions): anyone reads an active one's
+  // public fields, as the booking flow shows its times; the office keeps them; owners delete.
+  events: {
+    read: { roles: ['owner', 'operator', 'practitioner'], active: true },
+    create: { roles: ['owner', 'operator'] },
+    update: { roles: ['owner', 'operator'] },
+    delete: { roles: ['owner'] },
+  },
+  // Payments (docs/04, S2): the gateway's truth, written by the server alone from verified
+  // webhooks, server-side verification and reconciliation (CLAUDE.md #5). The office and finance
+  // read them; a practitioner sees only paid or unpaid, on the booking (docs/05).
+  payments: {
+    read: { roles: ['owner', 'operator', 'finance'] },
+    create: {},
+    update: {},
+    delete: {},
+  },
+  // Each gateway event once (docs/04: "stored by provider event id and processed once"): written
+  // by the webhook and the polling job only; owners and finance read them to trace a payment.
+  gatewayEvents: {
+    read: { roles: ['owner', 'finance'] },
+    create: {},
+    update: {},
+    delete: {},
+  },
+  // Refunds (docs/05, Money): the office requests one, an owner approves one above the threshold
+  // (the collection checks who approves, docs/16 §5), finance reads them. Never deleted.
+  refunds: {
+    read: { roles: ['owner', 'operator', 'finance'] },
+    create: { roles: ['owner', 'operator'] },
+    update: { roles: ['owner', 'operator'] },
+    delete: {},
+  },
+  // The mirror of the documents in Zoho Books (D-13; docs/04 `invoices`, S2 · finance, owner):
+  // written by the server alone, after Zoho Books has issued each one.
+  invoices: {
+    read: { roles: ['owner', 'finance'] },
+    create: {},
+    update: {},
+    delete: {},
+  },
 } as const satisfies Record<string, Record<string, Rule>>
 
 /**
@@ -245,6 +353,40 @@ export const FIELD_POLICY = {
     read: { roles: ['owner', 'operator'] },
     write: { roles: ['owner', 'operator'] },
   },
+  // What a booking costs, its tax and its payment state in money (CLAUDE.md #5): read by the staff
+  // who see prices; written by the server alone, which computes them (no role may type them).
+  // A practitioner sees the booking's paid or unpaid state only (docs/05).
+  bookingMoney: {
+    read: { roles: ['owner', 'operator', 'finance'] },
+    write: { roles: [] },
+  },
+  // Everything on a booking but its state: the office changes it (docs/05). A practitioner reads
+  // their own bookings and marks them attended or a no-show, which the collection's hook holds
+  // (src/lib/booking/bookingHooks.ts), and changes nothing else: not the client, the time, who it
+  // is with, or the manage link (D-89).
+  bookingEdits: {
+    read: { roles: ['owner', 'operator', 'practitioner'] },
+    write: { roles: ['owner', 'operator'] },
+  },
+  // Server bookkeeping on a booking (its calendar event, when it was confirmed): every staff role
+  // that reads the booking reads it; only the server writes it.
+  serverOnly: {
+    read: { roles: ROLES },
+    write: { roles: [] },
+  },
+  // Everything on a person's record but the name, mobile and email: the office and the owners. A
+  // practitioner, who reads their own clients (POLICY.people), reads those three and nothing more
+  // (the owner's rule of 22 November 2026). Only the office writes a person at all.
+  personRecord: {
+    read: { roles: ['owner', 'operator'] },
+    write: { roles: ['owner', 'operator'] },
+  },
+  // The join link of a fixed-time session goes to the people booked on it, never to the page that
+  // lists the times; the office keeps it, the practitioner who runs it reads it.
+  eventJoinLink: {
+    read: { roles: ['owner', 'operator', 'practitioner'] },
+    write: { roles: ['owner', 'operator'] },
+  },
 } as const satisfies Record<string, { read: FieldRule; write: FieldRule }>
 
 /** Whether a session has entered its two-factor code (payload-totp's strategy). */
@@ -268,6 +410,12 @@ export function allow(rule: Rule): Access {
       return true
     }
     if (rule.self && user && isActive(user)) return { id: { equals: user.id } }
+    if (rule.ownPractitioner && user?.id !== undefined && hasRole(user, 'practitioner')) {
+      return { [OWN_PRACTITIONER_PATH]: { equals: user.id } }
+    }
+    if (rule.ownClients && user?.id !== undefined && hasRole(user, 'practitioner')) {
+      return { [OWN_CLIENTS_PATH]: { equals: user.id } }
+    }
     if (rule.published) return { _status: { equals: 'published' } }
     if (rule.active) return { active: { equals: true } }
     if (rule.statusPublished) return { status: { equals: 'published' } }

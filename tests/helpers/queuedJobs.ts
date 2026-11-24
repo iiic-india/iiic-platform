@@ -1,0 +1,22 @@
+import { sql } from '@payloadcms/db-postgres'
+import type { Payload } from 'payload'
+
+/**
+ * Removes the jobs a test's writes queued for its own bookings and practitioners (the calendar's
+ * B2, B7 and B14 take only ids as input, src/lib/calendar/queue.ts). Left behind, they would be
+ * picked up by the next file that runs the job queue, outside this file's module mocks.
+ */
+export async function removeQueuedJobs(
+  payload: Payload,
+  ids: { bookingIds?: readonly number[]; practitionerIds?: readonly number[] },
+): Promise<void> {
+  const keys = [
+    ...(ids.bookingIds ?? []).map((id) => ['bookingId', id] as const),
+    ...(ids.practitionerIds ?? []).map((id) => ['practitionerId', id] as const),
+  ]
+  for (const [key, id] of keys) {
+    await payload.db.drizzle.execute(
+      sql`DELETE FROM "payload_jobs" WHERE "input"->>${key} = ${String(id)}`,
+    )
+  }
+}

@@ -58,6 +58,8 @@ afterAll(async () => {
 
 describe('who may see and change a person (docs/04, docs/05)', () => {
   it('lets owners and the operator read people, and no other role', async () => {
+    // Nobody has booked with this person, so a practitioner, who reads only the people with a
+    // booking of theirs (tests/int/practitionerClients.int.spec.ts), is refused too.
     const someone = await person('read')
     for (const role of ROLES) {
       const read = payload.findByID({

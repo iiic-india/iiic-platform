@@ -12,6 +12,9 @@ beforeAll(async () => {
   process.env.PAYLOAD_SECRET = 'test-only-payload-secret-00000000000000'
   process.env.DATABASE_URL = 'postgres://postgres:postgres@localhost:5432/iiic_test'
   process.env.VERCEL_ENV = 'production'
+  // A production deployment never runs the fake gateway that CI's end-to-end tests pay through
+  // (src/lib/env.ts refuses it on Vercel), so this deployment's environment does not carry it.
+  delete process.env.PAYMENT_GATEWAY
   process.env.OWNER_SETUP_TOKEN = TOKEN
   ;({ firstAccountIsOwner: hook } = await import('@/collections/Users'))
 })

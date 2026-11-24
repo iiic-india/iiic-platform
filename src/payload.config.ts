@@ -11,16 +11,27 @@ import sharp from 'sharp'
 
 import { AnalyticsEvents } from './collections/AnalyticsEvents'
 import { AuditLog } from './collections/AuditLog'
+import { AvailabilityExceptions } from './collections/AvailabilityExceptions'
+import { AvailabilityRules } from './collections/AvailabilityRules'
+import { Bookings } from './collections/Bookings'
+import { BusyBlocks } from './collections/BusyBlocks'
+import { CalendarConnections } from './collections/CalendarConnections'
 import { Consents } from './collections/Consents'
 import { ConsentVersions } from './collections/ConsentVersions'
+import { Events } from './collections/Events'
 import { Faqs } from './collections/Faqs'
+import { GatewayEvents } from './collections/GatewayEvents'
+import { Invoices } from './collections/Invoices'
 import { Media } from './collections/Media'
 import { MissingPages } from './collections/MissingPages'
 import { Pages } from './collections/Pages'
+import { Payments } from './collections/Payments'
 import { People } from './collections/People'
 import { Posts } from './collections/Posts'
 import { Practitioners } from './collections/Practitioners'
+import { PriceHistory } from './collections/PriceHistory'
 import { redirects } from './collections/Redirects'
+import { Refunds } from './collections/Refunds'
 import { Services } from './collections/Services'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Testimonials } from './collections/Testimonials'
@@ -91,7 +102,11 @@ export default buildConfig({
       // Recovery codes for staff two-factor (src/lib/auth/recoveryEndpoints.ts).
       beforeDashboard: ['/components/admin/RecoveryCodes#RecoveryCodes'],
       // Content → Placeholders: what the pages still wait for (D-56).
-      afterNavLinks: ['/components/admin/PlaceholdersNavLink#PlaceholdersNavLink'],
+      afterNavLinks: [
+        '/components/admin/PlaceholdersNavLink#PlaceholdersNavLink',
+        // Calendar → Working hours, with the preview of bookable times (docs/05; docs/16 §12).
+        '/components/admin/office/WorkingHoursNavLink#WorkingHoursNavLink',
+      ],
       // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
       // plugin spreads after its own, so these win. One labelled code field each; the verify
       // view also takes a recovery code.
@@ -104,6 +119,12 @@ export default buildConfig({
         placeholders: {
           Component: '/components/admin/PlaceholdersView#PlaceholdersView',
           path: '/placeholders',
+          exact: true,
+        },
+        // The view checks the user, the code and the role itself (CLAUDE.md #6).
+        workingHours: {
+          Component: '/components/admin/office/WorkingHoursView#WorkingHoursView',
+          path: '/working-hours',
           exact: true,
         },
       },
@@ -130,6 +151,18 @@ export default buildConfig({
     AnalyticsEvents,
     // Proof (docs/04 `testimonials`; D-37): reviews, published only with consent.
     Testimonials,
+    // Booking and payments (M3; docs/16-booking-and-payments-design.md).
+    Bookings,
+    Events,
+    AvailabilityRules,
+    AvailabilityExceptions,
+    CalendarConnections,
+    BusyBlocks,
+    PriceHistory,
+    Payments,
+    GatewayEvents,
+    Refunds,
+    Invoices,
   ],
   globals: [Settings],
   // Automations (src/jobs/index.ts): never run on their own here.

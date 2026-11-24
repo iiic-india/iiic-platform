@@ -17,7 +17,7 @@ The back office where IIIC runs the platform. It is built for a small team with 
 | --- | --- | --- | --- |
 | Owner | Founder; Aum | Everything, including settings, roles, approvals, exports | Read another practitioner's session notes |
 | Operator | Falak (or whoever runs the office) | Bookings, calendar, clients (contact and booking data), leads, messages, content edits, testimonial moderation (draft decisions), refunds within the threshold, privacy requests (prepare) | Change prices, policies or roles; publish testimonials; approve erasure; see notes or Map answers |
-| Practitioner | Each counsellor | Own calendar and availability, own clients' bookings, Map results the client chose to share, own private notes, mark attendance and no-shows | See other practitioners' clients or notes; see payments beyond paid/unpaid |
+| Practitioner | Gaurang and the business head, Falak, for now (D-89) | Own calendar and availability, own clients' bookings, the name, mobile and email of the people who have a booking with them (D-89), Map results the client chose to share, own private notes, mark attendance and no-shows | See other practitioners' clients or notes; see anything else on a client's record; change a client's record; see payments beyond paid/unpaid |
 | Editor | Anyone writing the Journal or pages | Pages, posts, FAQs, media | Any client, lead, booking or payment data |
 | Finance | The accountant (optional) | Payments, refunds (view), invoices, exports | Client notes, Map results, messages |
 
@@ -73,7 +73,7 @@ A filterable list (date range, type, status, practitioner, paid). The booking re
 
 ### People
 
-The client record: contact details and preferred channel; consents (current state and history, read-only); every booking, payment, invoice, enrolment, certificate, message and lead in one timeline; Map results (summary only, and only if shared, for practitioners); tags; private staff notes (S2, operational); and for the practitioner, their own session notes (S3, author-only, every read logged). Organisations show their people, leads, proposals and invoices.
+The client record: contact details and preferred channel; consents (current state and history, read-only); every booking, payment, invoice, enrolment, certificate, message and lead in one timeline; Map results (summary only, and only if shared, for practitioners); tags; private staff notes (S2, operational); and for the practitioner, their own session notes (S3, author-only, every read logged). Organisations show their people, leads, proposals and invoices. A practitioner opens the record of a person who has a booking with them and sees the name, mobile and email only, nothing more, and changes nothing (D-89).
 
 Merge duplicates: the system suggests matches on verified mobile or email; a merge keeps both histories and is logged.
 

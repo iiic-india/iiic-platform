@@ -21,6 +21,10 @@ import * as migration_20261122_083110_services_practitioners_faqs from './202611
 import * as migration_20261122_083335_journal from './20261122_083335_journal';
 import * as migration_20261122_095120_search_index from './20261122_095120_search_index';
 import * as migration_20261122_095224_testimonials from './20261122_095224_testimonials';
+import * as migration_20261122_150424_m3_foundation from './20261122_150424_m3_foundation';
+import * as migration_20261122_150505_bookings_no_overlap from './20261122_150505_bookings_no_overlap';
+import * as migration_20261122_161212_m3_job_tasks from './20261122_161212_m3_job_tasks';
+import * as migration_20261123_083835_m3_flows from './20261123_083835_m3_flows';
 
 export const migrations = [
   {
@@ -136,6 +140,26 @@ export const migrations = [
   {
     up: migration_20261122_095224_testimonials.up,
     down: migration_20261122_095224_testimonials.down,
-    name: '20261122_095224_testimonials'
+    name: '20261122_095224_testimonials',
+  },
+  {
+    up: migration_20261122_150424_m3_foundation.up,
+    down: migration_20261122_150424_m3_foundation.down,
+    name: '20261122_150424_m3_foundation',
+  },
+  {
+    up: migration_20261122_150505_bookings_no_overlap.up,
+    down: migration_20261122_150505_bookings_no_overlap.down,
+    name: '20261122_150505_bookings_no_overlap',
+  },
+  {
+    up: migration_20261122_161212_m3_job_tasks.up,
+    down: migration_20261122_161212_m3_job_tasks.down,
+    name: '20261122_161212_m3_job_tasks',
+  },
+  {
+    up: migration_20261123_083835_m3_flows.up,
+    down: migration_20261123_083835_m3_flows.down,
+    name: '20261123_083835_m3_flows'
   },
 ];

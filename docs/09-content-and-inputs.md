@@ -78,6 +78,7 @@ Owners: Yash and Aum own what they can supply themselves; everything that comes 
 | I-47 | Permission to ask Pandit Deendayal Energy University (SLS) to keep or publish a page on the April 2023 workshop that links to the platform, and who asks | After launch (third-party mentions, `content/keyword-map.md`) | Team | Nothing asked |
 | I-48 | IIIC's approval of the alternate names it uses ("IIIC India", "Image Catalysts"; D-63) and of one disambiguating line, for example "Ahmedabad institute behind the Subjective Self framework, founded by Gaurang Mistry" (a candidate, not approved) | R1 structured data (D-62, D-63), the Business Profile, social profiles | Team | `alternateName` "IIIC" only; no `disambiguatingDescription` |
 | I-49 | Where IIIC serves: the cities or regions for consultancy, courses and workshops (Ahmedabad only, Gujarat, India), and which services also run online (with I-08) | R1 structured data (`areaServed`), the Business Profile's service area, the "in Gujarat", "in India" and "online" searches (`content/keyword-map.md`) | Team | No `areaServed`; no service area; titles name Ahmedabad only |
+| I-50 | For the client's copy of each tax invoice and credit note: the authorised signatory's name and the note printed under the signature (with I-05, I-06 and I-33 for the rest of `src/brand/templates/print/invoice.html`) | R1 invoices (M3) | Team (with the accountant) | Invoices issued in Zoho Books; the platform's PDF of them is not made |
 
 ## Page content inventory (Release 1)
 

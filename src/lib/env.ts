@@ -9,6 +9,11 @@ import { z } from 'zod'
  * runs outside Next.js, so it cannot import `server-only`. Never import it from a
  * client component: it would throw, because the secrets are not there.
  */
+
+/** An optional variable, where the empty line copied from .env.example counts as unset. */
+const optional = <T extends z.ZodType>(type: T) =>
+  z.preprocess((value) => (value === '' ? undefined : value), type.optional())
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
@@ -62,6 +67,28 @@ const schema = z.object({
     (value) => (value === '' ? undefined : value),
     z.url().optional(),
   ),
+  // Razorpay (docs/07, D-12): all three together, or none, and payments answer "not configured".
+  // A live key (rzp_live_) only on Vercel's production deployment; test keys everywhere else.
+  RAZORPAY_KEY_ID: optional(
+    z.string().regex(/^rzp_(test|live)_[A-Za-z0-9]+$/, 'RAZORPAY_KEY_ID must be a Razorpay key id'),
+  ),
+  RAZORPAY_KEY_SECRET: optional(z.string().min(1)),
+  RAZORPAY_WEBHOOK_SECRET: optional(z.string().min(16, 'RAZORPAY_WEBHOOK_SECRET is too short')),
+  // `fake` swaps the gateway for the in-memory one (src/lib/payments/fakeGateway.ts): local
+  // development and CI only, never on a Vercel deployment (docs/16 §11).
+  PAYMENT_GATEWAY: z.enum(['razorpay', 'fake']).default('razorpay'),
+  // Google Calendar through a Workspace service account with domain-wide delegation, Calendar
+  // scope only (D-22, D-23; docs/16 §7). Without them no calendar is read or written.
+  GOOGLE_WORKSPACE_DOMAIN: optional(z.string()),
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: optional(z.email()),
+  GOOGLE_SERVICE_ACCOUNT_KEY: optional(z.string()),
+  GOOGLE_CALENDAR_WEBHOOK_TOKEN: optional(z.string().min(32)),
+  // Zoho Books, India data centre (D-13). Without them invoices wait in `pending`.
+  ZOHO_BOOKS_ORGANIZATION_ID: optional(z.string()),
+  ZOHO_CLIENT_ID: optional(z.string()),
+  ZOHO_CLIENT_SECRET: optional(z.string()),
+  ZOHO_REFRESH_TOKEN: optional(z.string()),
+  ZOHO_API_BASE: z.url().default('https://www.zohoapis.in/books/v3'),
   PLATFORM_HOSTS: z.string().default('localhost:3000'),
   INSTITUTE_HOSTS: z.string().default(''),
   // Set by Vercel on every deployment (hostnames, without the scheme).
@@ -117,6 +144,22 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
   if (r2.some(Boolean) && !r2.every(Boolean)) {
     throw new Error(
       'Invalid environment:\n- R2: set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_PUBLIC_BASE_URL together, or none of them',
+    )
+  }
+  const razorpay = [data.RAZORPAY_KEY_ID, data.RAZORPAY_KEY_SECRET, data.RAZORPAY_WEBHOOK_SECRET]
+  if (razorpay.some(Boolean) && !razorpay.every(Boolean)) {
+    throw new Error(
+      'Invalid environment:\n- Razorpay: set RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET and RAZORPAY_WEBHOOK_SECRET together, or none of them',
+    )
+  }
+  if (data.RAZORPAY_KEY_ID?.startsWith('rzp_live_') && data.VERCEL_ENV !== 'production') {
+    throw new Error(
+      'Invalid environment:\n- RAZORPAY_KEY_ID: a live key belongs to the production deployment only; use a test key (rzp_test_) here',
+    )
+  }
+  if (data.PAYMENT_GATEWAY === 'fake' && data.VERCEL_ENV) {
+    throw new Error(
+      'Invalid environment:\n- PAYMENT_GATEWAY: the fake gateway runs only locally and in CI, never on a Vercel deployment',
     )
   }
   const mediaOrigin = data.R2_PUBLIC_BASE_URL ? new URL(data.R2_PUBLIC_BASE_URL).origin : undefined

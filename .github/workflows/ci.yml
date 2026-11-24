@@ -21,7 +21,9 @@ permissions:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # A green run takes about 27 minutes, Lighthouse a third of it; a slower runner passed every
+    # test and was then cut off in Lighthouse at 30 (PR #35), so the job has room to finish.
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:17-alpine
@@ -42,6 +44,9 @@ jobs:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/iiic
       # Lets the cookie-inventory test check the owner setup link's cookie (D-41); CI only.
       OWNER_SETUP_TOKEN: ci-only-owner-setup-token-not-used-anywhere-else-0000
+      # The in-memory payment gateway, so the booking flow's end-to-end tests pay through signed
+      # webhooks without Razorpay (docs/16 §11); src/lib/env.ts refuses it on any Vercel deployment.
+      PAYMENT_GATEWAY: fake
     steps:
       - uses: actions/checkout@v4
         with:

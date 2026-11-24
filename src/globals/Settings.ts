@@ -14,6 +14,7 @@ import { text, textarea } from 'payload/shared'
 
 import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { paiseField } from '@/fields/numbers'
 import { phoneField } from '@/lib/phone'
 import { CLOCK_TIME, DEFAULT_QUIET_HOURS } from '@/lib/settings/quietHours'
 import { revalidateSettings } from '@/lib/settings/revalidate'
@@ -267,6 +268,23 @@ const bookingDefaults: Field = {
   ],
 }
 
+/**
+ * Money rules that are IIIC's to set (docs/05, Money; D-16). No default: while the threshold is
+ * empty, every refund waits for an owner's approval, the safe reading of "approval above a
+ * threshold" until IIIC names one (docs/16 §10).
+ */
+const moneyRules: Field = {
+  name: 'money',
+  type: 'group',
+  label: 'Refunds',
+  fields: [
+    paiseField('refundApprovalThresholdPaise', 'Refunds above this need an owner (paise)', {
+      description:
+        'In paise: ₹1,500 is 150000. A refund above it waits for an owner’s approval. Empty: every refund does.',
+    }),
+  ],
+}
+
 const quietHours: Field = {
   name: 'quietHours',
   type: 'group',
@@ -403,6 +421,11 @@ export const Settings: GlobalConfig = {
           fields: [bankDetails],
         },
         { label: 'Bookings and messages', fields: [bookingDefaults, quietHours] },
+        {
+          label: 'Money',
+          description: 'Rules for refunds. Prices, GST rates and SAC codes are set per service.',
+          fields: [moneyRules],
+        },
         { label: 'Feature flags', fields: [featureFlags] },
         {
           label: 'Processors',

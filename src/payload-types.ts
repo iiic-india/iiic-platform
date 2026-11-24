@@ -83,6 +83,17 @@ export interface Config {
     'consent-versions': ConsentVersion;
     'analytics-events': AnalyticsEvent;
     testimonials: Testimonial;
+    bookings: Booking;
+    events: Event;
+    'availability-rules': AvailabilityRule;
+    'availability-exceptions': AvailabilityException;
+    'calendar-connections': CalendarConnection;
+    'busy-blocks': BusyBlock;
+    'price-history': PriceHistory;
+    payments: Payment;
+    'gateway-events': GatewayEvent;
+    refunds: Refund;
+    invoices: Invoice;
     'search-index': SearchIndex;
     redirects: Redirect;
     'totp-attempts': TotpAttempt;
@@ -95,6 +106,7 @@ export interface Config {
   collectionsJoins: {
     people: {
       consents: 'consents';
+      bookings: 'bookings';
     };
     consents: {
       withdrawal: 'consents';
@@ -117,6 +129,17 @@ export interface Config {
     'consent-versions': ConsentVersionsSelect<false> | ConsentVersionsSelect<true>;
     'analytics-events': AnalyticsEventsSelect<false> | AnalyticsEventsSelect<true>;
     testimonials: TestimonialsSelect<false> | TestimonialsSelect<true>;
+    bookings: BookingsSelect<false> | BookingsSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
+    'availability-rules': AvailabilityRulesSelect<false> | AvailabilityRulesSelect<true>;
+    'availability-exceptions': AvailabilityExceptionsSelect<false> | AvailabilityExceptionsSelect<true>;
+    'calendar-connections': CalendarConnectionsSelect<false> | CalendarConnectionsSelect<true>;
+    'busy-blocks': BusyBlocksSelect<false> | BusyBlocksSelect<true>;
+    'price-history': PriceHistorySelect<false> | PriceHistorySelect<true>;
+    payments: PaymentsSelect<false> | PaymentsSelect<true>;
+    'gateway-events': GatewayEventsSelect<false> | GatewayEventsSelect<true>;
+    refunds: RefundsSelect<false> | RefundsSelect<true>;
+    invoices: InvoicesSelect<false> | InvoicesSelect<true>;
     'search-index': SearchIndexSelect<false> | SearchIndexSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
@@ -144,6 +167,13 @@ export interface Config {
   jobs: {
     tasks: {
       'O5-purge-missing-pages': TaskO5PurgeMissingPages;
+      'B4-expire-holds': TaskB4ExpireHolds;
+      'B2-poll-pending-orders': TaskB2PollPendingOrders;
+      'B11-reconcile': TaskB11Reconcile;
+      'B2-B7-sync-calendar-event': TaskB2B7SyncCalendarEvent;
+      'B14-refresh-busy-times': TaskB14RefreshBusyTimes;
+      'B3-issue-invoice': TaskB3IssueInvoice;
+      'B7-issue-credit-note': TaskB7IssueCreditNote;
       inline: {
         input: unknown;
         output: unknown;
@@ -954,6 +984,10 @@ export interface Service {
    */
   sacCode?: string | null;
   /**
+   * The rate the CA sets for this SAC code, in hundredths of a percent: 18% is 1800, exempt is 0 (I-29).
+   */
+  gstRateBasisPoints?: number | null;
+  /**
    * Leave a rule empty to use the default in Settings. The cancellation and refund rule waits on IIIC’s policy (D-16, I-07).
    */
   bookingRules?: {
@@ -1086,6 +1120,14 @@ export interface Person {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  /**
+   * The bookings this person is the client on, latest first.
+   */
+  bookings?: {
+    docs?: (number | Booking)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -1206,6 +1248,152 @@ export interface ConsentVersion {
    */
   effectiveFrom: string;
   effectiveFrom_tz: 'Asia/Kolkata';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookings".
+ */
+export interface Booking {
+  id: number;
+  /**
+   * Such as IIIC-S-24117.
+   */
+  reference: string;
+  type: 'session' | 'call' | 'info';
+  status:
+    | 'requested'
+    | 'held'
+    | 'pendingPayment'
+    | 'confirmed'
+    | 'completed'
+    | 'noShow'
+    | 'cancelledByClient'
+    | 'cancelledByIiic'
+    | 'rescheduled'
+    | 'expired';
+  paymentStatus: 'notRequired' | 'unpaid' | 'linkSent' | 'paid' | 'partRefunded' | 'refunded';
+  service: number | Service;
+  serviceOption?: string | null;
+  optionLabel?: string | null;
+  durationMinutes?: number | null;
+  /**
+   * Whose time it takes. Empty for a fixed-time session.
+   */
+  practitioner?: (number | null) | Practitioner;
+  /**
+   * The fixed-time session booked, for an info session.
+   */
+  event?: (number | null) | Event;
+  /**
+   * The client.
+   */
+  person: number | Person;
+  /**
+   * The parent or guardian who booked, when not the client.
+   */
+  bookedBy?: (number | null) | Person;
+  whoFor?: ('yourself' | 'family' | 'organisation') | null;
+  ageBand?: ('under18' | 'adult') | null;
+  format?: ('online' | 'office') | null;
+  startsAt?: string | null;
+  startsAt_tz?: 'Asia/Kolkata' | null;
+  endsAt?: string | null;
+  endsAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * While held or waiting for payment.
+   */
+  holdExpiresAt?: string | null;
+  holdExpiresAt_tz?: 'Asia/Kolkata' | null;
+  timeRequest?: {
+    preferredDays?:
+      | {
+          /**
+           * The day in India, as YYYY-MM-DD.
+           */
+          day: string;
+          id?: string | null;
+        }[]
+      | null;
+    preferredTimes?: string | null;
+    note?: string | null;
+  };
+  meetingUrl?: string | null;
+  calendarEventId?: string | null;
+  /**
+   * Set by the platform at booking, in paise.
+   */
+  price?: {
+    totalPaise?: number | null;
+    taxPaise?: number | null;
+    /**
+     * 18% is 1800.
+     */
+    gstRateBasisPoints?: number | null;
+    sacCode?: string | null;
+  };
+  /**
+   * The booking this one replaced.
+   */
+  rescheduledFrom?: (number | null) | Booking;
+  confirmedAt?: string | null;
+  confirmedAt_tz?: 'Asia/Kolkata' | null;
+  cancellation?: {
+    at?: string | null;
+    at_tz?: 'Asia/Kolkata' | null;
+    reason?: string | null;
+  };
+  company?: {
+    name?: string | null;
+    role?: string | null;
+    teamSize?: string | null;
+    sector?: string | null;
+  };
+  consents?: (number | Consent)[] | null;
+  source?: string | null;
+  utm?: {
+    source?: string | null;
+    medium?: string | null;
+    campaign?: string | null;
+    term?: string | null;
+    content?: string | null;
+  };
+  manageTokenHash?: string | null;
+  checkoutKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  title: string;
+  kind: 'infoSession' | 'cohortSession' | 'workshop';
+  /**
+   * The service it is booked as, such as the info session.
+   */
+  service?: (number | null) | Service;
+  /**
+   * Who runs it, if one person does.
+   */
+  practitioner?: (number | null) | Practitioner;
+  startsAt: string;
+  startsAt_tz: 'Asia/Kolkata';
+  endsAt: string;
+  endsAt_tz: 'Asia/Kolkata';
+  format: 'online' | 'office';
+  /**
+   * Places, if limited.
+   */
+  capacity?: number | null;
+  /**
+   * Sent to the people booked on it, never shown on the site.
+   */
+  joinLink?: string | null;
+  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1407,6 +1595,264 @@ export interface Testimonial {
   createdAt: string;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "availability-rules".
+ */
+export interface AvailabilityRule {
+  id: number;
+  practitioner: number | Practitioner;
+  weekday: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+  /**
+   * India time. Add a second span for a break, such as 10:00–13:00 and 14:00–18:00.
+   */
+  spans?:
+    | {
+        start: string;
+        end: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The first day these hours hold, as YYYY-MM-DD.
+   */
+  validFrom: string;
+  /**
+   * The last day these hours hold, as YYYY-MM-DD. Empty: until changed.
+   */
+  validTo?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "availability-exceptions".
+ */
+export interface AvailabilityException {
+  id: number;
+  practitioner: number | Practitioner;
+  /**
+   * The day in India, as YYYY-MM-DD.
+   */
+  day: string;
+  kind: 'closed' | 'customHours';
+  /**
+   * India time. These replace the usual hours on this day.
+   */
+  spans?:
+    | {
+        start: string;
+        end: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * For the office.
+   */
+  reason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "calendar-connections".
+ */
+export interface CalendarConnection {
+  id: number;
+  practitioner: number | Practitioner;
+  provider: 'google';
+  calendarId: string;
+  /**
+   * Paused until an owner has checked the calendar is the right one.
+   */
+  status: 'paused' | 'connected' | 'failing';
+  lastSyncedAt?: string | null;
+  lastSyncedAt_tz?: 'Asia/Kolkata' | null;
+  lastError?: string | null;
+  watch?: {
+    channelId?: string | null;
+    resourceId?: string | null;
+    expiresAt?: string | null;
+    expiresAt_tz?: 'Asia/Kolkata' | null;
+  };
+  channelTokenHash?: string | null;
+  feedTokenHash?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Read from each practitioner’s calendar. Never bookable.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "busy-blocks".
+ */
+export interface BusyBlock {
+  id: number;
+  practitioner: number | Practitioner;
+  startsAt: string;
+  startsAt_tz: 'Asia/Kolkata';
+  endsAt: string;
+  endsAt_tz: 'Asia/Kolkata';
+  source: 'google';
+}
+/**
+ * Each price a service has had. Written by the platform when a price changes.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "price-history".
+ */
+export interface PriceHistory {
+  id: number;
+  service: number | Service;
+  serviceOption: string;
+  optionLabel?: string | null;
+  durationMinutes?: number | null;
+  pricePaise: number;
+  gstInclusive?: boolean | null;
+  /**
+   * 18% is 1800.
+   */
+  gstRateBasisPoints?: number | null;
+  validFrom: string;
+  validFrom_tz: 'Asia/Kolkata';
+  validTo?: string | null;
+  validTo_tz?: 'Asia/Kolkata' | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments".
+ */
+export interface Payment {
+  id: number;
+  booking: number | Booking;
+  kind: 'checkout' | 'paymentLink';
+  gateway: 'razorpay';
+  status: 'created' | 'authorized' | 'captured' | 'failed' | 'expired' | 'cancelled' | 'partRefunded' | 'refunded';
+  amountPaise: number;
+  currency: 'INR';
+  refundedPaise?: number | null;
+  receipt: string;
+  gatewayOrderId?: string | null;
+  gatewayPaymentLinkId?: string | null;
+  gatewayPaymentId?: string | null;
+  method?: string | null;
+  failureCode?: string | null;
+  capturedAt?: string | null;
+  capturedAt_tz?: 'Asia/Kolkata' | null;
+  linkSentAt?: string | null;
+  linkSentAt_tz?: 'Asia/Kolkata' | null;
+  expiresAt?: string | null;
+  expiresAt_tz?: 'Asia/Kolkata' | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Every event from the payment gateway, each processed once.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gateway-events".
+ */
+export interface GatewayEvent {
+  id: number;
+  gateway: 'razorpay';
+  eventId: string;
+  type: string;
+  source: 'webhook' | 'poll' | 'reconciliation';
+  gatewayOrderId?: string | null;
+  gatewayPaymentLinkId?: string | null;
+  gatewayPaymentId?: string | null;
+  gatewayRefundId?: string | null;
+  amountPaise?: number | null;
+  payment?: (number | null) | Payment;
+  refund?: (number | null) | Refund;
+  receivedAt: string;
+  receivedAt_tz: 'Asia/Kolkata';
+  outcome: 'processed' | 'ignored' | 'flagged';
+  note?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "refunds".
+ */
+export interface Refund {
+  id: number;
+  payment: number | Payment;
+  booking?: (number | null) | Booking;
+  status: 'requested' | 'awaitingApproval' | 'approved' | 'declined' | 'processing' | 'processed' | 'failed';
+  amountPaise: number;
+  reason: 'cancelledByClient' | 'cancelledByIiic' | 'slotTaken' | 'other';
+  /**
+   * For the office and the client’s confirmation. No session content.
+   */
+  reasonNote?: string | null;
+  payerInstruction?: string | null;
+  /**
+   * Empty when the platform asked for it (B10).
+   */
+  requestedBy?: (number | null) | User;
+  approvedBy?: (number | null) | User;
+  decidedAt?: string | null;
+  decidedAt_tz?: 'Asia/Kolkata' | null;
+  gatewayRefundId?: string | null;
+  processedAt?: string | null;
+  processedAt_tz?: 'Asia/Kolkata' | null;
+  failureCode?: string | null;
+  idempotencyKey: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invoices".
+ */
+export interface Invoice {
+  id: number;
+  kind: 'taxInvoice' | 'receiptVoucher' | 'refundVoucher' | 'creditNote';
+  status: 'pending' | 'issued' | 'failed' | 'void';
+  number?: string | null;
+  zohoId?: string | null;
+  booking?: (number | null) | Booking;
+  payment?: (number | null) | Payment;
+  refund?: (number | null) | Refund;
+  against?: (number | null) | Invoice;
+  buyer?: {
+    name?: string | null;
+    gstin?: string | null;
+    stateCode?: string | null;
+    address?: string | null;
+  };
+  lines?:
+    | {
+        description: string;
+        sacCode?: string | null;
+        quantity: number;
+        /**
+         * 18% is 1800.
+         */
+        gstRateBasisPoints?: number | null;
+        taxablePaise?: number | null;
+        cgstPaise?: number | null;
+        sgstPaise?: number | null;
+        igstPaise?: number | null;
+        totalPaise?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  totals?: {
+    taxablePaise?: number | null;
+    cgstPaise?: number | null;
+    sgstPaise?: number | null;
+    igstPaise?: number | null;
+    totalPaise?: number | null;
+  };
+  issuedAt?: string | null;
+  issuedAt_tz?: 'Asia/Kolkata' | null;
+  pdfKey?: string | null;
+  failureCode?: string | null;
+  idempotencyKey: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * What /search finds: an entry for each published page, offered service, published article and published question, kept up to date as they are published, changed and unpublished. "Reindex" builds a kind again from what is published.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1529,7 +1975,16 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'O5-purge-missing-pages';
+        taskSlug:
+          | 'inline'
+          | 'O5-purge-missing-pages'
+          | 'B4-expire-holds'
+          | 'B2-poll-pending-orders'
+          | 'B11-reconcile'
+          | 'B2-B7-sync-calendar-event'
+          | 'B14-refresh-busy-times'
+          | 'B3-issue-invoice'
+          | 'B7-issue-credit-note';
         taskID: string;
         input?:
           | {
@@ -1562,7 +2017,19 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'O5-purge-missing-pages') | null;
+  taskSlug?:
+    | (
+        | 'inline'
+        | 'O5-purge-missing-pages'
+        | 'B4-expire-holds'
+        | 'B2-poll-pending-orders'
+        | 'B11-reconcile'
+        | 'B2-B7-sync-calendar-event'
+        | 'B14-refresh-busy-times'
+        | 'B3-issue-invoice'
+        | 'B7-issue-credit-note'
+      )
+    | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -1631,6 +2098,42 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'testimonials';
         value: number | Testimonial;
+      } | null)
+    | ({
+        relationTo: 'bookings';
+        value: number | Booking;
+      } | null)
+    | ({
+        relationTo: 'events';
+        value: number | Event;
+      } | null)
+    | ({
+        relationTo: 'availability-rules';
+        value: number | AvailabilityRule;
+      } | null)
+    | ({
+        relationTo: 'availability-exceptions';
+        value: number | AvailabilityException;
+      } | null)
+    | ({
+        relationTo: 'calendar-connections';
+        value: number | CalendarConnection;
+      } | null)
+    | ({
+        relationTo: 'price-history';
+        value: number | PriceHistory;
+      } | null)
+    | ({
+        relationTo: 'payments';
+        value: number | Payment;
+      } | null)
+    | ({
+        relationTo: 'refunds';
+        value: number | Refund;
+      } | null)
+    | ({
+        relationTo: 'invoices';
+        value: number | Invoice;
       } | null)
     | ({
         relationTo: 'search-index';
@@ -2128,6 +2631,7 @@ export interface ServicesSelect<T extends boolean = true> {
         id?: T;
       };
   sacCode?: T;
+  gstRateBasisPoints?: T;
   bookingRules?:
     | T
     | {
@@ -2210,6 +2714,7 @@ export interface PeopleSelect<T extends boolean = true> {
       };
   tags?: T;
   consents?: T;
+  bookings?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2339,6 +2844,324 @@ export interface TestimonialsSelect<T extends boolean = true> {
         section?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookings_select".
+ */
+export interface BookingsSelect<T extends boolean = true> {
+  reference?: T;
+  type?: T;
+  status?: T;
+  paymentStatus?: T;
+  service?: T;
+  serviceOption?: T;
+  optionLabel?: T;
+  durationMinutes?: T;
+  practitioner?: T;
+  event?: T;
+  person?: T;
+  bookedBy?: T;
+  whoFor?: T;
+  ageBand?: T;
+  format?: T;
+  startsAt?: T;
+  startsAt_tz?: T;
+  endsAt?: T;
+  endsAt_tz?: T;
+  holdExpiresAt?: T;
+  holdExpiresAt_tz?: T;
+  timeRequest?:
+    | T
+    | {
+        preferredDays?:
+          | T
+          | {
+              day?: T;
+              id?: T;
+            };
+        preferredTimes?: T;
+        note?: T;
+      };
+  meetingUrl?: T;
+  calendarEventId?: T;
+  price?:
+    | T
+    | {
+        totalPaise?: T;
+        taxPaise?: T;
+        gstRateBasisPoints?: T;
+        sacCode?: T;
+      };
+  rescheduledFrom?: T;
+  confirmedAt?: T;
+  confirmedAt_tz?: T;
+  cancellation?:
+    | T
+    | {
+        at?: T;
+        at_tz?: T;
+        reason?: T;
+      };
+  company?:
+    | T
+    | {
+        name?: T;
+        role?: T;
+        teamSize?: T;
+        sector?: T;
+      };
+  consents?: T;
+  source?: T;
+  utm?:
+    | T
+    | {
+        source?: T;
+        medium?: T;
+        campaign?: T;
+        term?: T;
+        content?: T;
+      };
+  manageTokenHash?: T;
+  checkoutKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  title?: T;
+  kind?: T;
+  service?: T;
+  practitioner?: T;
+  startsAt?: T;
+  startsAt_tz?: T;
+  endsAt?: T;
+  endsAt_tz?: T;
+  format?: T;
+  capacity?: T;
+  joinLink?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "availability-rules_select".
+ */
+export interface AvailabilityRulesSelect<T extends boolean = true> {
+  practitioner?: T;
+  weekday?: T;
+  spans?:
+    | T
+    | {
+        start?: T;
+        end?: T;
+        id?: T;
+      };
+  validFrom?: T;
+  validTo?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "availability-exceptions_select".
+ */
+export interface AvailabilityExceptionsSelect<T extends boolean = true> {
+  practitioner?: T;
+  day?: T;
+  kind?: T;
+  spans?:
+    | T
+    | {
+        start?: T;
+        end?: T;
+        id?: T;
+      };
+  reason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "calendar-connections_select".
+ */
+export interface CalendarConnectionsSelect<T extends boolean = true> {
+  practitioner?: T;
+  provider?: T;
+  calendarId?: T;
+  status?: T;
+  lastSyncedAt?: T;
+  lastSyncedAt_tz?: T;
+  lastError?: T;
+  watch?:
+    | T
+    | {
+        channelId?: T;
+        resourceId?: T;
+        expiresAt?: T;
+        expiresAt_tz?: T;
+      };
+  channelTokenHash?: T;
+  feedTokenHash?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "busy-blocks_select".
+ */
+export interface BusyBlocksSelect<T extends boolean = true> {
+  practitioner?: T;
+  startsAt?: T;
+  startsAt_tz?: T;
+  endsAt?: T;
+  endsAt_tz?: T;
+  source?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "price-history_select".
+ */
+export interface PriceHistorySelect<T extends boolean = true> {
+  service?: T;
+  serviceOption?: T;
+  optionLabel?: T;
+  durationMinutes?: T;
+  pricePaise?: T;
+  gstInclusive?: T;
+  gstRateBasisPoints?: T;
+  validFrom?: T;
+  validFrom_tz?: T;
+  validTo?: T;
+  validTo_tz?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments_select".
+ */
+export interface PaymentsSelect<T extends boolean = true> {
+  booking?: T;
+  kind?: T;
+  gateway?: T;
+  status?: T;
+  amountPaise?: T;
+  currency?: T;
+  refundedPaise?: T;
+  receipt?: T;
+  gatewayOrderId?: T;
+  gatewayPaymentLinkId?: T;
+  gatewayPaymentId?: T;
+  method?: T;
+  failureCode?: T;
+  capturedAt?: T;
+  capturedAt_tz?: T;
+  linkSentAt?: T;
+  linkSentAt_tz?: T;
+  expiresAt?: T;
+  expiresAt_tz?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gateway-events_select".
+ */
+export interface GatewayEventsSelect<T extends boolean = true> {
+  gateway?: T;
+  eventId?: T;
+  type?: T;
+  source?: T;
+  gatewayOrderId?: T;
+  gatewayPaymentLinkId?: T;
+  gatewayPaymentId?: T;
+  gatewayRefundId?: T;
+  amountPaise?: T;
+  payment?: T;
+  refund?: T;
+  receivedAt?: T;
+  receivedAt_tz?: T;
+  outcome?: T;
+  note?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "refunds_select".
+ */
+export interface RefundsSelect<T extends boolean = true> {
+  payment?: T;
+  booking?: T;
+  status?: T;
+  amountPaise?: T;
+  reason?: T;
+  reasonNote?: T;
+  payerInstruction?: T;
+  requestedBy?: T;
+  approvedBy?: T;
+  decidedAt?: T;
+  decidedAt_tz?: T;
+  gatewayRefundId?: T;
+  processedAt?: T;
+  processedAt_tz?: T;
+  failureCode?: T;
+  idempotencyKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invoices_select".
+ */
+export interface InvoicesSelect<T extends boolean = true> {
+  kind?: T;
+  status?: T;
+  number?: T;
+  zohoId?: T;
+  booking?: T;
+  payment?: T;
+  refund?: T;
+  against?: T;
+  buyer?:
+    | T
+    | {
+        name?: T;
+        gstin?: T;
+        stateCode?: T;
+        address?: T;
+      };
+  lines?:
+    | T
+    | {
+        description?: T;
+        sacCode?: T;
+        quantity?: T;
+        gstRateBasisPoints?: T;
+        taxablePaise?: T;
+        cgstPaise?: T;
+        sgstPaise?: T;
+        igstPaise?: T;
+        totalPaise?: T;
+        id?: T;
+      };
+  totals?:
+    | T
+    | {
+        taxablePaise?: T;
+        cgstPaise?: T;
+        sgstPaise?: T;
+        igstPaise?: T;
+        totalPaise?: T;
+      };
+  issuedAt?: T;
+  issuedAt_tz?: T;
+  pdfKey?: T;
+  failureCode?: T;
+  idempotencyKey?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2554,6 +3377,12 @@ export interface PlatformSettings {
     start: string;
     end: string;
   };
+  money?: {
+    /**
+     * In paise: ₹1,500 is 150000. A refund above it waits for an owner’s approval. Empty: every refund does.
+     */
+    refundApprovalThresholdPaise?: number | null;
+  };
   flags?: {
     /**
      * Shows prices on the site, in emails and in templates. Leave it off until IIIC publishes prices (D-21).
@@ -2662,6 +3491,11 @@ export interface SettingsSelect<T extends boolean = true> {
         start?: T;
         end?: T;
       };
+  money?:
+    | T
+    | {
+        refundApprovalThresholdPaise?: T;
+      };
   flags?:
     | T
     | {
@@ -2712,6 +3546,95 @@ export interface TaskO5PurgeMissingPages {
   input?: unknown;
   output: {
     removed: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB4-expire-holds".
+ */
+export interface TaskB4ExpireHolds {
+  input?: unknown;
+  output: {
+    expired: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB2-poll-pending-orders".
+ */
+export interface TaskB2PollPendingOrders {
+  input?: unknown;
+  output: {
+    checked: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB11-reconcile".
+ */
+export interface TaskB11Reconcile {
+  input: {
+    /**
+     * A day in India as YYYY-MM-DD; empty for the last 26 hours.
+     */
+    day?: string | null;
+  };
+  output: {
+    checked: number;
+    flagged: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB2-B7-sync-calendar-event".
+ */
+export interface TaskB2B7SyncCalendarEvent {
+  input: {
+    bookingId: number;
+  };
+  output: {
+    outcome: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB14-refresh-busy-times".
+ */
+export interface TaskB14RefreshBusyTimes {
+  input: {
+    practitionerId?: number | null;
+  };
+  output: {
+    outcome: string;
+    refreshed: number;
+    failed: number;
+    renewed: number;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB3-issue-invoice".
+ */
+export interface TaskB3IssueInvoice {
+  input: {
+    paymentId: number;
+  };
+  output: {
+    outcome: string;
+    pdf?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskB7-issue-credit-note".
+ */
+export interface TaskB7IssueCreditNote {
+  input: {
+    refundId: number;
+  };
+  output: {
+    outcome: string;
+    pdf?: string | null;
   };
 }
 /**
