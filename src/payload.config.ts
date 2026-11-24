@@ -56,6 +56,7 @@ import { jobs } from './jobs'
 import { adminViewEndpoints } from './lib/adminViews/endpoints'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
+import { LOGGER_OPTIONS } from './lib/monitoring/logSafety'
 import { reportServerError, reportTestError } from './lib/monitoring/sentry'
 import { auditLog } from './plugins/auditLog'
 // M5 A: session notes and privacy (docs/18 §3, §5).
@@ -298,6 +299,9 @@ export default buildConfig({
   // The admin uses REST and server functions; GraphQL stays off to keep the surface small.
   graphQL: { disable: true },
   telemetry: false,
+  // Structured JSON logs in which an error keeps its name, code, scrubbed message and frames, and
+  // nothing a failed query put on it (src/lib/monitoring/logSafety.ts; docs/12 §6; M7).
+  logger: { options: { ...LOGGER_OPTIONS } },
   // Uploads pass through the server, so the request must stay under Vercel's 4.5 MB body limit
   // (D-46); images are re-encoded there before they are stored.
   upload: {

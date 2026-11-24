@@ -1,5 +1,6 @@
 import { json, readJson, refusalResponse, staffRequest } from '@/lib/certificates/http'
 import { certificateActions } from '@/lib/certificates/wiring'
+import { answeringFaults } from '@/lib/monitoring/routeFaults'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -10,7 +11,7 @@ export const maxDuration = 30
  * template, with a sample ID and QR code marked as a preview. Nothing is stored. Owner and
  * operator, signed in with the code; checked before the body is read.
  */
-export async function POST(request: Request) {
+async function post(request: Request) {
   const staff = await staffRequest(request, 'certificatesIssue')
   if (!staff.ok) return staff.response
   const body = await readJson(request)
@@ -19,3 +20,5 @@ export async function POST(request: Request) {
   if (!pages.ok) return refusalResponse(pages.error)
   return json({ pages: pages.value })
 }
+
+export const POST = answeringFaults('Previewing certificates', post)

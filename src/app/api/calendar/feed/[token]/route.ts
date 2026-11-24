@@ -31,8 +31,8 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
   const { token } = await context.params
   if (!FeedToken.safeParse(token).success) return notFound()
   const payload = await getPayload({ config })
-  const req = await createLocalReq({}, payload)
   try {
+    const req = await createLocalReq({}, payload)
     const feed = await practitionerFeed(req, { token, siteUrl: env().siteUrl, now: new Date() })
     if (!feed.ok) {
       if (feed.error.code === 'not-found') return notFound()

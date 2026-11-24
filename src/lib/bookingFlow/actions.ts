@@ -16,6 +16,7 @@ import { extendHold } from '@/lib/booking/holds'
 import { loadBooking, loadService } from '@/lib/booking/load'
 import { siteverify, turnstileKeys } from '@/lib/enquiryForms/turnstile'
 import { env } from '@/lib/env'
+import { reportError } from '@/lib/monitoring/sentry'
 import { FakeGateway } from '@/lib/payments/fakeGateway'
 import { gatewayFor } from '@/lib/payments/gatewayFor'
 import { quotePrice } from '@/lib/payments/prices'
@@ -70,6 +71,24 @@ export type ActionError =
 type Answer<T> = { ok: true; value: T } | { ok: false; error: ActionError }
 
 const fail = <T>(error: ActionError): Answer<T> => ({ ok: false, error })
+
+/**
+ * An action that writes a person's details or their words: a fault inside it is logged and
+ * reported by its name only, and the person reads that nothing was done. Left to Next.js, the
+ * fault would be logged whole, and a failed query's error carries the values it was given
+ * (docs/12 §6, Logs; M7 security review).
+ */
+async function safely<T>(task: string, run: () => Promise<Answer<T>>): Promise<Answer<T>> {
+  try {
+    return await run()
+  } catch (error) {
+    console.error(
+      `The booking flow's ${task} failed (${error instanceof Error ? error.name : 'unknown error'}).`,
+    )
+    void reportError(error, { task: `booking-${task}` })
+    return fail({ code: 'failed' })
+  }
+}
 
 /** A booking module error, as the flow explains it. */
 function fromBooking(error: { code: string; reason?: string }): ActionError {
@@ -165,6 +184,10 @@ export type Submitted = {
 }
 
 export async function submitBookingAction(raw: unknown): Promise<Answer<Submitted>> {
+  return safely('submission', () => submitBooking(raw))
+}
+
+async function submitBooking(raw: unknown): Promise<Answer<Submitted>> {
   const input = SubmitInput.safeParse(raw)
   if (!input.success || !isFlowType(input.data.type)) {
     return fail({ code: 'invalid-input', fields: [] })
@@ -496,6 +519,12 @@ const RescheduleInput = z.strictObject({
 export async function rescheduleAction(
   raw: unknown,
 ): Promise<Answer<{ ref: string; startsAt: string | null; manageToken: string | null }>> {
+  return safely('reschedule', () => rescheduleBooking(raw))
+}
+
+async function rescheduleBooking(
+  raw: unknown,
+): Promise<Answer<{ ref: string; startsAt: string | null; manageToken: string | null }>> {
   const input = RescheduleInput.safeParse(raw)
   if (!input.success) return fail({ code: 'invalid-input', fields: [] })
   if (!bookingsStoreHere(env())) return fail({ code: 'preview' })
@@ -541,6 +570,10 @@ export type Cancelled = {
  * approved at once is sent to the gateway once that transaction has committed.
  */
 export async function cancelAction(raw: unknown): Promise<Answer<Cancelled>> {
+  return safely('cancellation', () => cancelBooking(raw))
+}
+
+async function cancelBooking(raw: unknown): Promise<Answer<Cancelled>> {
   const input = CancelInput.safeParse(raw)
   if (!input.success) return fail({ code: 'invalid-input', fields: [] })
   if (!bookingsStoreHere(env())) return fail({ code: 'preview' })

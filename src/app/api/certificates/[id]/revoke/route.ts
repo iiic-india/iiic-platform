@@ -1,6 +1,7 @@
 import { CERTIFICATES_COPY as COPY } from '@/components/admin/certificates/certificatesCopy'
 import { json, readJson, refusalResponse, staffRequest } from '@/lib/certificates/http'
 import { certificateActions } from '@/lib/certificates/wiring'
+import { answeringFaults } from '@/lib/monitoring/routeFaults'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -11,7 +12,7 @@ export const maxDuration = 15
  * as `revoke-certificate`; the verify page shows Revoked at once. Owners only, signed in with the
  * code; checked before the body is read.
  */
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+async function post(request: Request, context: { params: Promise<{ id: string }> }) {
   const staff = await staffRequest(request, 'certificatesRevoke')
   if (!staff.ok) return staff.response
   const body = await readJson(request)
@@ -33,3 +34,5 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   })
   return json({ id: revoked.value.id, message: COPY.revoked(certificateId) })
 }
+
+export const POST = answeringFaults('Revoking a certificate', post)

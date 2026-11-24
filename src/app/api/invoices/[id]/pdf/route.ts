@@ -1,8 +1,15 @@
 import { createPayloadRequest } from 'payload'
 
+import { viewRefusal } from '@/access/views'
 import { env } from '@/lib/env'
-import { downloadInvoicePdf, messageOf, statusOf } from '@/lib/invoicing/download'
+import {
+  downloadInvoicePdf,
+  messageOf,
+  statusOf,
+  type InvoiceDownloadError,
+} from '@/lib/invoicing/download'
 import { invoiceFilesFor } from '@/lib/invoicing/store'
+import { answeringFaults } from '@/lib/monitoring/routeFaults'
 import config from '@payload-config'
 
 export const dynamic = 'force-dynamic'
@@ -15,6 +22,12 @@ const PRIVATE_HEADERS = {
   'X-Robots-Tag': 'noindex, nofollow',
 } as const
 
+const refusal = (error: InvoiceDownloadError) =>
+  Response.json(
+    { code: error.code === 'refused' ? error.refusal.code : error.code, message: messageOf(error) },
+    { status: statusOf(error), headers: PRIVATE_HEADERS },
+  )
+
 /**
  * GET /api/invoices/<id>/pdf (D-88; M7): a client's invoice or credit-note PDF from the private
  * bucket, for owners and finance signed in with the code. The request is made into a Payload
@@ -22,16 +35,14 @@ const PRIVATE_HEADERS = {
  * invoice is read; the download is written to the audit log before it is sent
  * (src/lib/invoicing/download.ts).
  */
-export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+async function get(request: Request, context: { params: Promise<{ id: string }> }) {
   const req = await createPayloadRequest({ config, request })
+  // The user, the code and the role before the address's id is read (CLAUDE.md #6).
+  const refused = viewRefusal(req.user, 'invoicePdf')
+  if (refused) return refusal({ code: 'refused', refusal: refused })
   const { id } = await context.params
   const file = await downloadInvoicePdf(req, id, invoiceFilesFor(env()))
-  if (!file.ok) {
-    return Response.json(
-      { code: file.error.code, message: messageOf(file.error) },
-      { status: statusOf(file.error), headers: PRIVATE_HEADERS },
-    )
-  }
+  if (!file.ok) return refusal(file.error)
   return new Response(Buffer.from(file.value.pdf), {
     status: 200,
     headers: {
@@ -42,3 +53,5 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     },
   })
 }
+
+export const GET = answeringFaults('Downloading an invoice', get)
