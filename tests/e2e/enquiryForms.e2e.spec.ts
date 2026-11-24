@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, type Page, test } from '@playwright/test'
 import { getPayload, type Payload, type Where } from 'payload'
 
-import { FORM_COPY, REFUSALS } from '../../src/lib/enquiryForms/strings'
+import { FORM_COPY, PROPOSAL_CALL, REFUSALS } from '../../src/lib/enquiryForms/strings'
 import { FORM_MESSAGES } from '../../src/lib/pipeline/forms'
 import config from '../../src/payload.config'
 import { assertLocalDatabase } from '../helpers/localDatabase'
@@ -247,7 +247,10 @@ test.describe('The Team Map request', () => {
     await fill(page, email)
     await send(page, drawnAt)
     await expect(page.getByRole('status')).toBeFocused()
-    await expect(page.getByRole('link', { name: 'Book a proposal call' })).toBeVisible()
+    // The acknowledgement's own link to the call; the page's closing band has one of its own.
+    const call = page.locator(`#${copy.anchor}`).getByRole('link', { name: PROPOSAL_CALL.label })
+    await expect(call).toBeVisible()
+    await expect(call).toHaveAttribute('href', PROPOSAL_CALL.href)
     expect(await enquiriesFrom(email)).toBe(1)
   })
 

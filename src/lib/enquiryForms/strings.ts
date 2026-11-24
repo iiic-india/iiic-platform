@@ -210,6 +210,8 @@ export const REFUSALS = {
   'notice-changed':
     'The consent wording changed after this page opened. Read it again below and tick the box to send the form.',
   'no-notice': `This form cannot be sent just now. Write to ${OFFICE_EMAIL} instead.`,
+  // On a preview of the site, whose visitors are IIIC's team (src/lib/enquiryForms/deployment.ts).
+  preview: `This preview of the site sends no forms. Write to ${OFFICE_EMAIL} instead.`,
   failed: `The form was not sent because of a fault on IIIC’s side. Send it again, or write to ${OFFICE_EMAIL}.`,
 } as const
 

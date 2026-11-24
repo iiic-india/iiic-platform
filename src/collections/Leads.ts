@@ -33,11 +33,13 @@ const instant = (name: string, label: string, description?: string): Field => ({
  * A lead (docs/04 `leads`, S1; docs/05 Pipeline; docs/17 §2–§3): a consultancy conversation or a
  * partnership, on its own board, from New to an end. Made by a public form after the person's
  * consent is recorded (P1, P7), by a proposal call booked (P2) or by the office. Its stage moves
- * along STAGE_MOVES (src/lib/pipeline/stages.ts); every move, call, note and proposal is an entry
- * in its timeline (`lead-activities`), which keeps `lastActivityAt` and `touchedAt` for the
- * first-reply clock (P3) and staleness (P4). The moves, the timeline's keys and the title are the
- * CRM builder's hooks (docs/17 §11); this file holds the fields and their checks only. The Team
- * Map's own record (`team_map_id`, docs/04) arrives with Release 2.
+ * along STAGE_MOVES (src/lib/pipeline/stages.ts), only through the operations: the staff's move
+ * is MoveLead, from the board (src/lib/pipeline/core/moves.ts); no role types the stage or any
+ * other field the platform keeps, in the admin's form or the API. Every move, call, note and
+ * proposal is an entry in its timeline (`lead-activities`), which keeps `lastActivityAt` and
+ * `touchedAt` for the first-reply clock (P3) and staleness (P4). The moves, the timeline's keys
+ * and the title are the CRM builder's hooks (docs/17 §11); this file holds the fields and their
+ * checks only. The Team Map's own record (`team_map_id`, docs/04) arrives with Release 2.
  */
 export const Leads: CollectionConfig = {
   slug: 'leads',
@@ -81,6 +83,8 @@ export const Leads: CollectionConfig = {
           options: [...LEAD_KINDS],
         },
         {
+          // Moved only through MoveLead (the board's "Move to stage") and the platform's own
+          // moves, never by typing it here or through the API: a new lead starts in New.
           name: 'stage',
           type: 'select',
           required: true,
@@ -88,6 +92,8 @@ export const Leads: CollectionConfig = {
           index: true,
           options: [...LEAD_STAGES],
           validate: validateStage,
+          access: { create: serverOnly.create, update: serverOnly.update },
+          admin: { description: 'Moved on the pipeline board.' },
         },
         instant('stageChangedAt', 'In this stage since'),
       ],

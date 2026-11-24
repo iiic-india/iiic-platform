@@ -165,6 +165,14 @@ export const Enquiries: CollectionConfig = {
         },
       ],
     },
-    { name: 'submitterHash', type: 'text', index: true, maxLength: 64, hidden: true },
+    {
+      // Hidden from every read, and written by the server only.
+      name: 'submitterHash',
+      type: 'text',
+      index: true,
+      maxLength: 64,
+      hidden: true,
+      access: { create: serverOnly.create, update: serverOnly.update },
+    },
   ],
 }

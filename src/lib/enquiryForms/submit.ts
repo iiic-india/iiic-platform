@@ -24,8 +24,10 @@ import { isTokenShaped, type TurnstileCheck } from './turnstile'
  *    showed, and the form asks again with the new text, the box unticked;
  * 3. the fields, through the boundary's schemas (src/lib/pipeline/forms.ts): any error goes back
  *    to the form with what was typed;
- * 4. Turnstile, where its keys are set; then the rate limits;
- * 5. `ReceiveEnquiry` (docs/17 §4), which stores everything or nothing; then the
+ * 4. the deployment: a preview, which shares production's database, stores nothing and says so
+ *    (src/lib/enquiryForms/deployment.ts);
+ * 5. Turnstile, where its keys are set; then the rate limits;
+ * 6. `ReceiveEnquiry` (docs/17 §4), which stores everything or nothing; then the
  *    `request_submitted` event, with the page and its register only.
  *
  * Nothing here logs a field, an address or a hash: a fault is reported by its name alone.
@@ -42,6 +44,8 @@ export type SubmitWorld = {
   referer: string | null
   /** Whether an origin is this site's own, so that only its own pages' addresses are read. */
   ownOrigin: (origin: string) => boolean
+  /** Whether this deployment may store a request: never a preview (./deployment.ts). */
+  storesHere: boolean
   /** The check, where Turnstile's keys are set; null where they are not. */
   turnstile: TurnstileCheck | null
   recent: RecentEnquiries
@@ -171,7 +175,10 @@ export async function submitEnquiry(
     })
     if (!parsed.success) return answer('invalid', { errors: fieldErrors(parsed.error) })
 
-    // 4. Turnstile, where it is on; then the rate limits.
+    // 4. Nothing from a preview reaches production's database, nor Turnstile.
+    if (!world.storesHere) return refuse('preview')
+
+    // 5. Turnstile, where it is on; then the rate limits.
     let turnstile: EnquiryContext['turnstile'] = 'off'
     if (world.turnstile) {
       const token = text(form, HIDDEN.turnstile)
@@ -197,7 +204,7 @@ export async function submitEnquiry(
       return refuse('limit')
     }
 
-    // 5. Stored, all or nothing.
+    // 6. Stored, all or nothing.
     const context: EnquiryContext = {
       page,
       utm,

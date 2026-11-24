@@ -249,11 +249,13 @@ test.describe('Public shell', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Research, programmes and partnerships',
     )
+    // The partnership enquiry follows the Partnerships section (docs/17 §6).
     await expect(page.locator('main h2')).toHaveText([
       'Framework and research',
       'Programmes',
       'The certificate',
       'Partnerships',
+      'Partner with IIIC',
       'Faculty',
       'Verify a certificate',
     ])

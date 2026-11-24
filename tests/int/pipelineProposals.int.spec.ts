@@ -270,6 +270,86 @@ describe('a proposal’s working copy', () => {
   })
 })
 
+describe('what only the operations change (the API and the admin’s form alike)', () => {
+  it('drops a stage, a status or a hash typed by the office, and starts a new lead in New', async () => {
+    const asOffice = async (role: 'owner' | 'operator') => ({
+      overrideAccess: false as const,
+      req: await as(staff[role]),
+    })
+    const moved = await makeLead('contacted')
+    for (const role of ['owner', 'operator'] as const) {
+      await payload.update({
+        collection: 'leads',
+        id: moved.id,
+        data: { stage: 'won', nextAction: `Fake next action ${TAG} ${role}` },
+        ...(await asOffice(role)),
+      })
+      const now = await payload.findByID({ collection: 'leads', id: moved.id, depth: 0 })
+      // The rest of the form is saved; the stage stays where the operations left it.
+      expect(now.nextAction, role).toBe(`Fake next action ${TAG} ${role}`)
+      expect(now.stage, role).toBe('contacted')
+      await payload.update({
+        collection: 'proposals',
+        id: proposal.id,
+        data: { status: 'accepted', reference: 'IIIC-P-00000' } as never,
+        ...(await asOffice(role)),
+      })
+      expect(await reread(proposal.id), role).toMatchObject({
+        status: 'draft',
+        reference: proposal.reference,
+      })
+    }
+
+    const made = await payload.create({
+      collection: 'leads',
+      data: {
+        kind: 'consultancy',
+        stage: 'won',
+        source: 'office',
+        organisation: organisation.id,
+        nextAction: `Fake next action ${TAG} made`,
+      } as Lead,
+      ...(await asOffice('operator')),
+    })
+    expect(made.stage).toBe('new')
+
+    const enquiry = await payload.create({
+      collection: 'enquiries',
+      data: {
+        kind: 'teamMap',
+        receivedAt: clock.now.toISOString(),
+        receivedAt_tz: 'Asia/Kolkata',
+        submitted: {
+          organisationName: `Fake Org ${TAG}`,
+          contactName: `Fake Client ${TAG}`,
+          email: `${TAG}.enquiry@example.invalid`,
+        },
+        submitterHash: 'fake-submitter-hash-int-proposals',
+      } as never,
+    })
+    try {
+      await payload.update({
+        collection: 'enquiries',
+        id: enquiry.id,
+        data: { submitterHash: 'forged', receivedAt: new Date(0).toISOString() } as never,
+        ...(await asOffice('operator')),
+      })
+      const kept = await payload.findByID({
+        collection: 'enquiries',
+        id: enquiry.id,
+        depth: 0,
+        showHiddenFields: true,
+      })
+      expect(kept).toMatchObject({
+        submitterHash: 'fake-submitter-hash-int-proposals',
+        receivedAt: clock.now.toISOString(),
+      })
+    } finally {
+      await payload.delete({ collection: 'enquiries', id: enquiry.id })
+    }
+  })
+})
+
 describe('generated, previewed, sent and tracked', () => {
   let first: number
   let firstLink: string

@@ -3,10 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
+import { formsStoreHere } from '@/lib/enquiryForms/deployment'
 import { signDrawn, submitterHash } from '@/lib/enquiryForms/guards'
 import { fakeRecentEnquiries } from '@/lib/enquiryForms/limits'
 import { HIDDEN, INITIAL_FORM_STATE, type NoticeShown } from '@/lib/enquiryForms/state'
-import type { EnquiryFormKind } from '@/lib/enquiryForms/strings'
+import { type EnquiryFormKind, REFUSALS } from '@/lib/enquiryForms/strings'
 import { submitEnquiry, type SubmitWorld } from '@/lib/enquiryForms/submit'
 import { fakeTurnstile } from '@/lib/enquiryForms/turnstile'
 import { FORM_MESSAGES } from '@/lib/pipeline/forms'
@@ -85,6 +86,7 @@ function fakeWorld(
     userAgent: 'Fake browser 1.0',
     referer: `${SITE}/organisations/team-map?utm_source=fake-source&utm_campaign=fake-campaign`,
     ownOrigin: (origin) => origin === SITE,
+    storesHere: true,
     turnstile: null,
     recent: fakeRecentEnquiries([]),
     noticeInForce: async () => NOTICE,
@@ -324,6 +326,54 @@ describe('the rate limits', () => {
       refusal: 'limit',
     })
     expect(received).toEqual([])
+  })
+})
+
+describe('a preview of the site, which shares production’s database (docs/16 §10)', () => {
+  it('stores nothing, asks nothing of Turnstile, records no event and says so', async () => {
+    const checked: string[] = []
+    const { world, received, recorded } = fakeWorld({
+      storesHere: false,
+      turnstile: async (token) => {
+        checked.push(token)
+        return true
+      },
+    })
+    for (const [kind, fields] of [
+      ['teamMap', TEAM_MAP],
+      ['partnership', PARTNERSHIP],
+    ] as const) {
+      const state = await send(
+        kind,
+        formOf(kind, fields, { [HIDDEN.turnstile]: 'x'.repeat(40) }),
+        world,
+      )
+      expect(state, kind).toMatchObject({ status: 'refused', refusal: 'preview' })
+      // What was typed stays in the form.
+      expect(state.values.name, kind).toBe('Fake Person')
+    }
+    expect(received).toEqual([])
+    expect(recorded).toEqual([])
+    expect(checked).toEqual([])
+    expect(REFUSALS.preview).toContain('preview')
+  })
+
+  it('still checks the answers, so the team can try the form there', async () => {
+    const { world, received } = fakeWorld({ storesHere: false })
+    const state = await send(
+      'teamMap',
+      formOf('teamMap', { ...TEAM_MAP, email: 'not-an-email' }),
+      world,
+    )
+    expect(state.status).toBe('invalid')
+    expect(received).toEqual([])
+  })
+
+  it('is any Vercel deployment but production; locally and in CI the forms store', () => {
+    expect(formsStoreHere({ VERCEL_ENV: undefined })).toBe(true)
+    expect(formsStoreHere({ VERCEL_ENV: 'production' })).toBe(true)
+    expect(formsStoreHere({ VERCEL_ENV: 'preview' })).toBe(false)
+    expect(formsStoreHere({ VERCEL_ENV: 'development' })).toBe(false)
   })
 })
 
