@@ -295,6 +295,68 @@ export const POLICY = {
     delete: {},
   },
 
+  // ---- The pipeline (M4; docs/17-pipeline-design.md §2) ----
+
+  // Organisations (docs/04, S1 · operator, owner, finance): the office keeps them, finance reads
+  // the billing details for invoices; only an owner deletes one. Editors and practitioners hold
+  // no client or lead data (docs/05).
+  organisations: {
+    read: { roles: ['owner', 'operator', 'finance'] },
+    create: { roles: ['owner', 'operator'] },
+    update: { roles: ['owner', 'operator'] },
+    delete: { roles: ['owner'] },
+  },
+  // Leads (docs/04, S1; docs/05: the operator runs leads): the office and the owners. A public
+  // form's lead is made by the server, after the person's consent is recorded.
+  leads: {
+    read: { roles: ['owner', 'operator'] },
+    create: { roles: ['owner', 'operator'] },
+    update: { roles: ['owner', 'operator'] },
+    delete: { roles: ['owner'] },
+  },
+  // A lead's timeline (docs/04 `lead_activities`): written once, never changed, so the record of
+  // who did what stays as it was; a slip is put right with a new note. Owners remove an entry
+  // (an erasure, or something entered on the wrong lead).
+  leadActivities: {
+    read: { roles: ['owner', 'operator'] },
+    create: { roles: ['owner', 'operator'] },
+    update: {},
+    delete: { roles: ['owner'] },
+  },
+  // Work for a person (docs/06, Engine rules: Ownership; Today in M5): the office and the owners.
+  tasks: {
+    read: { roles: ['owner', 'operator'] },
+    create: { roles: ['owner', 'operator'] },
+    update: { roles: ['owner', 'operator'] },
+    delete: { roles: ['owner'] },
+  },
+  // What a public form received (S2: it holds the contact details as typed): made by the server
+  // alone, after the consent is recorded; the office reads it and may mark it as spam, nothing
+  // else (the collection's fields are the server's). Only an owner deletes one.
+  enquiries: {
+    read: { roles: ['owner', 'operator'] },
+    create: {},
+    update: { roles: ['owner', 'operator'] },
+    delete: { roles: ['owner'] },
+  },
+  // Proposals (docs/04; docs/05 "Send a proposal"): the office drafts and sends them; their fees
+  // are an owner's (FIELD_POLICY.proposalFees: operators change no price, docs/05); finance reads
+  // them, as engagements are invoiced from them. Only an owner deletes one.
+  proposals: {
+    read: { roles: ['owner', 'operator', 'finance'] },
+    create: { roles: ['owner', 'operator'] },
+    update: { roles: ['owner', 'operator'] },
+    delete: { roles: ['owner'] },
+  },
+  // A proposal as it was frozen, printed and sent: written by the server alone (the proposal
+  // builder's actions check the user and role first), never changed by hand, never deleted.
+  proposalVersions: {
+    read: { roles: ['owner', 'operator', 'finance'] },
+    create: {},
+    update: {},
+    delete: {},
+  },
+
   // ---- Automations and messaging (M6; docs/19-automations-and-messaging-design.md) ----
 
   // The outbox and log of every message (docs/04 `message_log`, S2; docs/05 Messages → Log): the
@@ -414,6 +476,14 @@ export const FIELD_POLICY = {
     read: { roles: ['owner', 'operator', 'finance'] },
     write: { roles: [] },
   },
+  // Everything on a booking but its state: the office changes it (docs/05). A practitioner reads
+  // their own bookings and marks them attended or a no-show, which the collection's hook holds
+  // (src/lib/booking/bookingHooks.ts), and changes nothing else: not the client, the time, who it
+  // is with, or the manage link (D-89).
+  bookingEdits: {
+    read: { roles: ['owner', 'operator', 'practitioner'] },
+    write: { roles: ['owner', 'operator'] },
+  },
   // Server bookkeeping on a booking (its calendar event, when it was confirmed): every staff role
   // that reads the booking reads it; only the server writes it.
   serverOnly: {
@@ -432,6 +502,13 @@ export const FIELD_POLICY = {
   eventJoinLink: {
     read: { roles: ['owner', 'operator', 'practitioner'] },
     write: { roles: ['owner', 'operator'] },
+  },
+  // A proposal's fees and their total (docs/17 §5): quoted prices, so an owner sets them
+  // (docs/05: the operator cannot change prices); the staff who read proposals read them. The
+  // total is the server's sum, written by no role.
+  proposalFees: {
+    read: { roles: ['owner', 'operator', 'finance'] },
+    write: { roles: ['owner'] },
   },
   // A message template's approval (docs/13 §4: every template has an owner and a review date):
   // the staff who keep templates read it; only an owner approves wording or records Meta's

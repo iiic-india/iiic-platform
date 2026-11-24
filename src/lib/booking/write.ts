@@ -1,6 +1,6 @@
 import 'server-only'
 
-import type { PayloadRequest } from 'payload'
+import type { PayloadRequest, RequestContext } from 'payload'
 
 import type { Result } from '@/lib/result'
 import type { Booking } from '@/payload-types'
@@ -69,6 +69,7 @@ export async function updateBooking(
   req: PayloadRequest,
   id: number,
   data: Partial<NewBooking>,
+  context?: RequestContext,
 ): Promise<Result<Booking, { code: 'slot-taken' }>> {
   return guarded(req, () =>
     req.payload.update({
@@ -78,6 +79,7 @@ export async function updateBooking(
       depth: 0,
       overrideAccess: true,
       req,
+      ...(context ? { context } : {}),
     }),
   )
 }

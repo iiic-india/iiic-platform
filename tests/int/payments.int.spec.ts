@@ -684,3 +684,66 @@ describe('the order-status poll and B11', () => {
     expect(await eventRows('reconcile:pay_fakeorphan:unknown-capture')).toHaveLength(1)
   })
 })
+
+describe('a refund whose send got no answer (docs/16 §5)', () => {
+  /** A captured payment and an approved refund of part of it, as the platform asks for one. */
+  async function approvedRefund(from: number, key: string) {
+    const { booking, orderId } = await checkoutFor(from)
+    await process(paid(orderId))
+    const payment = await paymentOf(booking.id)
+    const asked = await payments.requestRefund(await fresh(), {
+      paymentId: payment.id,
+      amountPaise: 10_000,
+      reason: 'other',
+      idempotencyKey: key,
+      by: 'platform',
+    })
+    if (!asked.ok) throw new Error(asked.error.code)
+    return { payment, refund: asked.value }
+  }
+  const age = (refundId: number) =>
+    payload.db.drizzle.execute(
+      sql`UPDATE "refunds" SET "updated_at" = now() - interval '20 minutes' WHERE "id" = ${refundId}`,
+    )
+
+  it('is failed by the poll when the gateway never made it, and can be sent again', async () => {
+    const { refund } = await approvedRefund(1000, 'int:fake:stuck-unsent')
+    gateway.down = true
+    try {
+      const sent = await payments.sendRefund(payload, refund.id)
+      expect(sent.ok && sent.value).toMatchObject({
+        status: 'processing',
+        failureCode: 'unavailable',
+      })
+    } finally {
+      gateway.down = false
+    }
+    await age(refund.id)
+    await payments.pollPendingOrders(await fresh(), new Date())
+    expect(await reread('refunds', refund.id)).toMatchObject({
+      status: 'failed',
+      failureCode: 'not-sent',
+    })
+    const again = await payments.sendRefund(payload, refund.id)
+    expect(again.ok && again.value.status).toBe('processed')
+  })
+
+  it('is recorded by the poll when the gateway made it but the answer was lost', async () => {
+    const { payment, refund } = await approvedRefund(1100, 'int:fake:stuck-made')
+    // The gateway made the refund; the function stopped before recording it.
+    const made = await gateway.refund({
+      paymentId: payment.gatewayPaymentId as string,
+      amountPaise: refund.amountPaise,
+      receipt: refund.idempotencyKey,
+    })
+    if (!made.ok) throw new Error(made.error.code)
+    await payload.update({ collection: 'refunds', id: refund.id, data: { status: 'processing' } })
+    await age(refund.id)
+    await payments.pollPendingOrders(await fresh(), new Date())
+    expect(await reread('refunds', refund.id)).toMatchObject({
+      status: 'processed',
+      gatewayRefundId: made.value.refundId,
+    })
+    expect((await reread('payments', payment.id)).refundedPaise).toBe(10_000)
+  })
+})

@@ -2,7 +2,12 @@ import { err, ok, type Result } from '@/lib/result'
 
 import { invoiceHtml, type InvoiceDocument, type InvoiceError } from './invoice'
 import { placeholdersIn } from './merge'
-import { proposalHtml, type ProposalDocument, type ProposalError } from './proposal'
+import {
+  proposalHtml,
+  type ProposalDocument,
+  type ProposalError,
+  type ProposalPrint,
+} from './proposal'
 import { renderPdf, type RenderOptions } from './render'
 import { printTemplateDir, readPrintTemplate, selfContained } from './templates'
 
@@ -25,12 +30,12 @@ export async function invoicePage(doc: InvoiceDocument): Promise<Result<string, 
   return ok(await selfContained(filled.value, printTemplateDir()))
 }
 
-/** The filled, self-contained page of a proposal. */
+/** The filled, self-contained page of a proposal, with or without its fees section. */
 export async function proposalPage(
   doc: ProposalDocument,
-  flags: { pricesPublic: boolean },
+  print: ProposalPrint,
 ): Promise<Result<string, ProposalError>> {
-  const filled = proposalHtml(await readPrintTemplate('proposal'), doc, flags)
+  const filled = proposalHtml(await readPrintTemplate('proposal'), doc, print)
   if (!filled.ok) return filled
   return ok(await selfContained(filled.value, printTemplateDir()))
 }
@@ -58,7 +63,7 @@ export async function renderInvoicePdf(
 /** A proposal as a PDF (M4 calls this from its proposal versions). */
 export async function renderProposalPdf(
   doc: ProposalDocument,
-  options: RenderOptions & { pricesPublic: boolean; allowPlaceholders?: boolean },
+  options: RenderOptions & ProposalPrint & { allowPlaceholders?: boolean },
 ): Promise<Result<Rendered, DocumentError>> {
-  return toPdf(await proposalPage(doc, { pricesPublic: options.pricesPublic }), options)
+  return toPdf(await proposalPage(doc, { withFees: options.withFees }), options)
 }

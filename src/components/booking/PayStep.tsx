@@ -47,16 +47,20 @@ export function PayStep({
   holdExpiresAt: initialHoldEnd,
   amount,
   startAgainHref,
+  paymentOpened = false,
 }: {
   reference: string
   holdExpiresAt: string | null
   amount: string | null
   startAgainHref: string
+  /** Whether a checkout was opened already: a payment may then arrive after the hold. */
+  paymentOpened?: boolean
 }) {
   const router = useRouter()
   const [phase, setPhase] = useState<Phase>('ready')
   const [holdEnd, setHoldEnd] = useState(initialHoldEnd)
   const [left, setLeft] = useState(() => holdSecondsLeft(initialHoldEnd, new Date()))
+  const [checkoutOpened, setCheckoutOpened] = useState(paymentOpened)
   const polling = useRef(false)
   const message = useRef<HTMLDivElement>(null)
 
@@ -74,6 +78,7 @@ export function PayStep({
 
   const settle = useCallback(
     (state: BookingState): boolean => {
+      if (state.paymentOpened) setCheckoutOpened(true)
       if (state.status === 'confirmed') {
         router.replace(`/book/confirmed/${reference}`)
         return true
@@ -128,6 +133,7 @@ export function PayStep({
       else setPhase('failed')
       return
     }
+    setCheckoutOpened(true)
     if (opened.value.fake) {
       setPhase('fake')
       return
@@ -201,7 +207,12 @@ export function PayStep({
             {PAY_COPY.gatewayDown}
           </div>
         ) : null}
-        {shown === 'expired' ? (
+        {shown === 'expired' && checkoutOpened ? (
+          <div className="iiic-alert iiic-alert-yellow" role="alert">
+            <p>{PAY_COPY.expiredMayPay}</p>
+          </div>
+        ) : null}
+        {shown === 'expired' && !checkoutOpened ? (
           <div className="iiic-alert iiic-alert-yellow" role="alert">
             <p>{PAY_COPY.expired}</p>
             <a className="iiic-btn iiic-btn-primary" href={startAgainHref}>

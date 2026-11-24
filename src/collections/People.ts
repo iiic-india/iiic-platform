@@ -8,6 +8,7 @@ import {
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { phoneField } from '@/lib/phone'
+import { eraseFromPipeline } from '@/lib/pipeline/core/hooks'
 import { withdrawOnDeletion } from '@/lib/privacy/consents'
 import { deleteReviewsOnDeletion } from '@/lib/proof/ledger'
 import { DEFAULT_LANGUAGE, LANGUAGES } from '@/lib/site/languages'
@@ -121,8 +122,9 @@ export const People: CollectionConfig = {
   hooks: {
     beforeChange: [oneVerifiedPerson],
     // First the consents, whose withdrawal takes the person's reviews down; then the reviews
-    // themselves, which go with the person (docs/04).
-    beforeDelete: [withdrawConsentsOnDeletion, deleteReviewsOnDeletion],
+    // themselves, which go with the person (docs/04); then their enquiries, and their leads'
+    // link to them (docs/17 §9).
+    beforeDelete: [withdrawConsentsOnDeletion, deleteReviewsOnDeletion, eraseFromPipeline],
   },
   fields: [
     { name: 'fullName', type: 'text', label: 'Full name', required: true, maxLength: 200 },
@@ -180,6 +182,28 @@ export const People: CollectionConfig = {
       ],
     },
     { name: 'city', type: 'text', maxLength: 100, access: OFFICE_ONLY },
+    {
+      // Where the person works, for a lead (docs/04 `organisation_id?`; M4, docs/17 §2). A public
+      // form sets these only on a person it creates; it never changes an existing record. The
+      // office's alone: a practitioner reads only a client's name, mobile and email (D-89).
+      type: 'row',
+      fields: [
+        {
+          name: 'organisation',
+          type: 'relationship',
+          relationTo: 'organisations',
+          index: true,
+          access: OFFICE_ONLY,
+        },
+        {
+          name: 'jobTitle',
+          type: 'text',
+          label: 'Role there',
+          maxLength: 100,
+          access: OFFICE_ONLY,
+        },
+      ],
+    },
     {
       name: 'source',
       type: 'text',

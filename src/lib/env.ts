@@ -112,6 +112,10 @@ const schema = z.object({
   ZOHO_CLIENT_SECRET: optional(z.string()),
   ZOHO_REFRESH_TOKEN: optional(z.string()),
   ZOHO_API_BASE: z.url().default('https://www.zohoapis.in/books/v3'),
+  // Cloudflare Turnstile on the public forms (docs/08 §9; docs/17 §6): both keys, or neither, and
+  // the forms rely on their honeypot, timing and rate limits alone.
+  TURNSTILE_SITE_KEY: optional(z.string().min(1)),
+  TURNSTILE_SECRET_KEY: optional(z.string().min(1)),
   PLATFORM_HOSTS: z.string().default('localhost:3000'),
   INSTITUTE_HOSTS: z.string().default(''),
   // Set by Vercel on every deployment (hostnames, without the scheme).
@@ -178,6 +182,11 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
   if (data.RAZORPAY_KEY_ID?.startsWith('rzp_live_') && data.VERCEL_ENV !== 'production') {
     throw new Error(
       'Invalid environment:\n- RAZORPAY_KEY_ID: a live key belongs to the production deployment only; use a test key (rzp_test_) here',
+    )
+  }
+  if (Boolean(data.TURNSTILE_SITE_KEY) !== Boolean(data.TURNSTILE_SECRET_KEY)) {
+    throw new Error(
+      'Invalid environment:\n- Turnstile: set TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY together, or neither',
     )
   }
   if (data.PAYMENT_GATEWAY === 'fake' && data.VERCEL_ENV) {

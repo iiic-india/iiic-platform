@@ -18,6 +18,7 @@ import { INSTITUTE, INSTITUTE_IIIC_LINES } from '@/content/starter/institute'
 import { LEARN, LEARN_IIIC_LINES, PDEU_WORKSHOP } from '@/content/starter/learn'
 import { ORGANISATIONS, ORGANISATIONS_IIIC_LINES } from '@/content/starter/organisations'
 import { CERTIFICATE_STATEMENT } from '@/lib/certificates/statement'
+import { candidateSections } from '@/lib/content/placeholders'
 import type { PageContent } from '@/lib/content/types'
 import { CRISIS_LINES, SCOPE_STATEMENT } from '@/lib/counselling/scope'
 import { CONTACT } from '@/lib/site/contact'
@@ -25,8 +26,8 @@ import { CONTACT } from '@/lib/site/contact'
 afterEach(cleanup)
 
 /** How many blocks of a page carry copy IIIC has not approved yet. */
-const candidates = (layout: PageContent['layout']) =>
-  layout.filter((block) => 'copyStatus' in block && block.copyStatus === 'candidate').length
+// The sections the report lists as candidates, the public forms' included (I-41).
+const candidates = (layout: PageContent['layout']) => candidateSections({ layout }).length
 
 describe('renderText', () => {
   it('shows text exactly as written', () => {
@@ -437,7 +438,10 @@ describe('the learn starter page, drawn', () => {
     for (const link of sessions) expect(link.getAttribute('href')).toBe('/book/info')
     const partner = screen.getAllByRole('link', { name: 'Partner with IIIC' })
     expect(partner).toHaveLength(2)
-    for (const link of partner) expect(link.getAttribute('href')).toBe('/institute')
+    // The partnership enquiry, on the institute page (docs/17 §6).
+    for (const link of partner) {
+      expect(link.getAttribute('href')).toBe('/institute#partnership-enquiry')
+    }
   })
 
   it('leaves the course, the info session and the programmes for institutes to IIIC', () => {
@@ -503,7 +507,7 @@ describe('the about starter page, drawn', () => {
     expect(text).toContain(PDEU_WORKSHOP)
     expect(text).toContain(PUBLIC_WORKSHOP)
     expect(screen.getByRole('link', { name: 'Partner with IIIC' }).getAttribute('href')).toBe(
-      '/institute',
+      '/institute#partnership-enquiry',
     )
   })
 
@@ -570,6 +574,8 @@ describe('the institute starter page, drawn', () => {
       'Programmes',
       'The certificate',
       'Partnerships',
+      // The partnership enquiry follows the section (docs/17 §6).
+      'Partner with IIIC',
       'Faculty',
       'Verify a certificate',
     ])
@@ -593,17 +599,19 @@ describe('the institute starter page, drawn', () => {
     expect(text).not.toMatch(/₹|\bRs\b/)
   })
 
-  it('leads to pages that exist, and to the contact details for an enquiry', () => {
-    draw()
+  it('leads to pages that exist and to the contact details, and holds the partnership enquiry', () => {
+    const { container } = draw()
     expect(screen.getByRole('link', { name: 'Read the framework' }).getAttribute('href')).toBe(
       '/framework',
     )
     expect(
       screen.getByRole('link', { name: 'See the certification course' }).getAttribute('href'),
     ).toBe('/learn')
-    const contact = screen.getAllByRole('link', { name: 'Contact' })
-    expect(contact).toHaveLength(2)
-    for (const link of contact) expect(link.getAttribute('href')).toBe('/about#contact')
+    expect(screen.getByRole('link', { name: 'Contact' }).getAttribute('href')).toBe(
+      '/about#contact',
+    )
+    // Where About's and the course page's Partner with IIIC lead.
+    expect(container.querySelector('section#partnership-enquiry')).not.toBeNull()
   })
 
   it('leaves the research, the programmes, the credentials and verification as placeholders', () => {
@@ -611,7 +619,8 @@ describe('the institute starter page, drawn', () => {
     const waiting = [...container.querySelectorAll('.iiic-todo')].map((chip) =>
       chip.getAttribute('data-todo'),
     )
-    expect(waiting.sort()).toEqual(['D-39', 'I-14', 'I-43', 'I-43'])
+    // The partnership enquiry waits on its consent text (I-22) in this drawing, which has none.
+    expect(waiting.sort()).toEqual(['D-39', 'I-14', 'I-22', 'I-43', 'I-43'])
     expect(container.querySelectorAll('[data-candidate="I-41"]')).toHaveLength(
       candidates(INSTITUTE.layout),
     )

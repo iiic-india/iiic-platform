@@ -12,6 +12,8 @@ import { messagingTasks } from './messaging'
 import { newsletterTasks } from './newsletter'
 import { operationsTasks } from './operations'
 import { paymentTasks } from './payments'
+import { pipelineTasks } from './pipeline'
+import { proposalTasks } from './proposals'
 import { purgeMissingPagesTask } from './purgeMissingPages'
 
 /**
@@ -25,13 +27,16 @@ import { purgeMissingPagesTask } from './purgeMissingPages'
  * local API after checking its own secret.
  */
 export const jobs: JobsConfig = {
-  // M3's builders each add tasks to a file of their own (docs/16 §12); M6's too (docs/19 §9).
+  // M3's, M4's and M6's builders each add tasks to a file of their own (docs/16 §12, docs/17 §11,
+  // docs/19 §9).
   tasks: [
     purgeMissingPagesTask,
     ...bookingTasks,
     ...paymentTasks,
     ...calendarTasks,
     ...documentTasks,
+    ...pipelineTasks,
+    ...proposalTasks,
     ...messagingTasks,
     ...bookingMessageTasks,
     ...operationsTasks,

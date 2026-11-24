@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { beaconSources } from '@/lib/analytics/beacon'
+import { turnstileKeys, turnstileSources } from '@/lib/enquiryForms/turnstile'
 import { env } from '@/lib/env'
 import { instituteRewrite, parseHosts } from '@/lib/hosts'
 import { framedByAdmin } from '@/lib/preview/frame'
@@ -17,7 +18,8 @@ import { buildCsp, createNonce } from '@/lib/security/csp'
  *   OS-4). The admin itself may frame this origin and nothing else. The header is set here,
  *   not in next.config.ts, which sends it only where the proxy does not run;
  * - Cloudflare's beacon origins, on public pages only and only where its token is set
- *   (src/lib/analytics/beacon.ts);
+ *   (src/lib/analytics/beacon.ts); and Turnstile's, which draws the public forms' spam check, on
+ *   public pages only and only where both its keys are set (src/lib/enquiryForms/turnstile.ts);
  * - `x-pathname` on the request, set here so that no client can supply its own; the TOTP
  *   views in the admin read it (M1, staff two-factor);
  * - host routing: a request on an institute host is served from /institute (src/lib/hosts.ts);
@@ -64,6 +66,7 @@ export async function proxy(request: NextRequest) {
   const beacon = beaconSources(nextUrl.pathname)
   // Razorpay's checkout, on the payment step only (src/lib/security/checkout.ts).
   const checkout = checkoutSources(nextUrl.pathname, env().PAYMENT_GATEWAY)
+  const turnstile = turnstileSources(nextUrl.pathname, turnstileKeys(env()) !== null)
   const csp = buildCsp({
     nonce: createNonce(),
     development: process.env.NODE_ENV === 'development',
@@ -72,11 +75,11 @@ export async function proxy(request: NextRequest) {
       ...(env().mediaOrigin ? [env().mediaOrigin as string] : []),
       ...checkout.imageOrigins,
     ],
-    scriptOrigins: [...beacon.scriptOrigins, ...checkout.scriptOrigins],
+    scriptOrigins: [...beacon.scriptOrigins, ...checkout.scriptOrigins, ...turnstile.scriptOrigins],
     connectOrigins: [...beacon.connectOrigins, ...checkout.connectOrigins],
     frameAncestors: framed ? "'self'" : "'none'",
     frameSources: admin ? "'self'" : "'none'",
-    frameOrigins: checkout.frameOrigins,
+    frameOrigins: [...checkout.frameOrigins, ...turnstile.frameOrigins],
   })
   const headers = new Headers(request.headers)
   headers.set('Content-Security-Policy', csp)

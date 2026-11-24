@@ -60,7 +60,12 @@ export type OfficeError =
 export type OfficeDeps = {
   payments: Pick<
     Payments,
-    'requestRefund' | 'decideRefund' | 'sendRefund' | 'sendRefunds' | 'sendPaymentLink'
+    | 'requestRefund'
+    | 'decideRefund'
+    | 'sendRefund'
+    | 'sendRefunds'
+    | 'sendPaymentLink'
+    | 'closeOpenLinks'
   >
   now: () => Date
   /**
@@ -218,6 +223,9 @@ export function makeOfficeActions(deps: OfficeDeps) {
           const { booking, refundPaise } = cancelled.value
           // Worked out again under the booking's lock: a payment or a step may have moved since.
           if (refundPaise !== shown) return changed
+          // No link is left to pay for a booking that has ended (docs/16 §5).
+          const closed = await deps.payments.closeOpenLinks(req, booking.id)
+          if (!closed.ok) return closed
           if (refundPaise === 0) return ok({ booking, refunds: [] })
 
           // One query at a time: they share the transaction's one connection.
@@ -273,12 +281,24 @@ export function makeOfficeActions(deps: OfficeDeps) {
       const input = parseInput(RescheduleBody, raw)
       if (!input.ok) return input
       name(req, AUDIT_ACTIONS.reschedule)
-      return rescheduleBooking(req, {
-        bookingId,
-        startsAt: input.value.startsAt,
-        by: 'staff',
-        now: deps.now(),
-      })
+      return inTransaction(
+        req,
+        async (): Promise<Result<Booking, OfficeError>> => {
+          const moved = await rescheduleBooking(req, {
+            bookingId,
+            startsAt: input.value.startsAt,
+            by: 'staff',
+            now: deps.now(),
+          })
+          if (!moved.ok) return moved
+          // The old booking's link would pay for a booking that moved (docs/16 §5).
+          const closed = await deps.payments.closeOpenLinks(req, moved.value.id)
+          if (!closed.ok) return closed
+          const booking = await loadBooking(req, moved.value.id)
+          return booking ? ok(booking) : err({ code: 'not-found' })
+        },
+        keepOk,
+      )
     },
 
     /** Confirms a time request at the time agreed with the client (docs/03 F3; B2). */

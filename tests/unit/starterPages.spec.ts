@@ -16,6 +16,7 @@ import {
   appliesPageRules,
   carriesFixedStatements,
   FIXED_ANCHORS,
+  FIXED_BLOCK_IDS,
   hasWords,
   isAnchor,
   isCounsellingPath,
@@ -252,9 +253,9 @@ describe.each(Object.entries(STARTER_PAGES))('starter page "%s"', (slug, page) =
       if (!target) continue
       const names = target.layout.flatMap((block) => {
         if ('anchor' in block && block.anchor) return [block.anchor]
-        return (FIXED_ANCHORS as readonly string[]).includes(block.blockType)
-          ? [block.blockType]
-          : []
+        // A fixed block carries its own id, such as the Team Map request's team-map-request.
+        const fixed = FIXED_BLOCK_IDS[block.blockType as keyof typeof FIXED_BLOCK_IDS]
+        return fixed ? [fixed] : []
       })
       expect(names, href).toContain(name)
     }
@@ -348,10 +349,11 @@ describe('page rules', () => {
     // Nor the shell's: a link to /page#main would open the page shell, not the section.
     for (const id of SHELL_IDS) expect(uniqueAnchors([section(id)]), id).toMatch(/already taken/)
     // And each fixed block comes once a page.
-    for (const type of FIXED_ANCHORS) {
+    const fixedTypes = Object.keys(FIXED_BLOCK_IDS)
+    for (const type of fixedTypes) {
       expect(uniqueAnchors([{ blockType: type }, { blockType: type }]), type).toMatch(/at most/)
     }
-    const fixedOnce = FIXED_ANCHORS.map((type) => ({ blockType: type }))
+    const fixedOnce = fixedTypes.map((type) => ({ blockType: type }))
     expect(uniqueAnchors(fixedOnce)).toBe(true)
     expect(uniqueAnchors(undefined)).toBe(true)
   })

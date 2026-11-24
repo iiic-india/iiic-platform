@@ -261,7 +261,26 @@ describe('the calendar connection hooks', () => {
       channelTokenHash: null,
       lastSyncedAt: null,
       lastError: null,
+      feedTokenHash: null,
     })
+  })
+
+  it('stops the feed address when the connection is given to another practitioner', () => {
+    const owned = { ...connection, feedTokenHash: 'fake-feed-hash' }
+    const moved = normaliseConnection({
+      data: { ...owned, practitioner: 10 },
+      originalDoc: owned,
+      operation: 'update',
+      context: {},
+    } as unknown as Parameters<typeof normaliseConnection>[0])
+    expect(moved.feedTokenHash).toBeNull()
+    const kept = normaliseConnection({
+      data: { ...owned, status: 'paused' },
+      originalDoc: owned,
+      operation: 'update',
+      context: {},
+    } as unknown as Parameters<typeof normaliseConnection>[0])
+    expect(kept.feedTokenHash).toBe('fake-feed-hash')
   })
 
   it('queues a refresh when a calendar starts being read, and not when it is paused', async () => {

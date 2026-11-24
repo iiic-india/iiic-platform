@@ -30,6 +30,17 @@ export default async function PayPage({ params }: { params: Promise<{ ref: strin
   const flags = await readFlags(req.payload)
   const total = booking?.price?.totalPaise ?? 0
   const amount = flags.pricesPublic && total > 0 ? formatRupees(total) : null
+  // A checkout opened earlier may still be paid after the hold ran out (docs/16 §3).
+  const paymentOpened = booking
+    ? (
+        await req.payload.count({
+          collection: 'payments',
+          where: { booking: { equals: booking.id } },
+          overrideAccess: true,
+          req,
+        })
+      ).totalDocs > 0
+    : false
   return (
     <>
       <section className="iiic-section">
@@ -44,6 +55,7 @@ export default async function PayPage({ params }: { params: Promise<{ ref: strin
             holdExpiresAt={booking.holdExpiresAt ?? null}
             amount={amount}
             startAgainHref={`/book/${booking.type}`}
+            paymentOpened={paymentOpened}
           />
         ) : (
           <p>{PAY_COPY.notYours}</p>

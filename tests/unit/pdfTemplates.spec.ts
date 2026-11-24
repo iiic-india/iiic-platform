@@ -20,13 +20,14 @@ import {
   replaceOnce,
   todo,
 } from '@/lib/pdf/merge'
-import { proposalHtml } from '@/lib/pdf/proposal'
+import { proposalHtml, withoutFeesSection } from '@/lib/pdf/proposal'
 import { readPrintTemplate, selfContained, printTemplateDir } from '@/lib/pdf/templates'
 
 import {
   FAKE_INVOICE,
   FAKE_INVOICE_PRINTS,
   FAKE_PROPOSAL,
+  FAKE_PROPOSAL_FEE_PRINTS as FEE_PRINTS,
   FAKE_PROPOSAL_PRINTS,
 } from '../helpers/documents'
 
@@ -216,23 +217,55 @@ describe('invoice.html', () => {
 describe('proposal.html', () => {
   it('prints every value of a proposal and leaves no merge field', async () => {
     const page = proposalHtml(await readPrintTemplate('proposal'), FAKE_PROPOSAL, {
-      pricesPublic: true,
+      withFees: true,
     })
     if (!page.ok) throw new Error(page.error.code)
     const printed = text(page.value)
     for (const value of FAKE_PROPOSAL_PRINTS) expect(printed).toContain(value)
+    expect(printed).toContain('4. Investment')
+    expect(printed).toContain('5. Next step')
     expect(page.value).not.toContain('{{')
   })
 
-  it('prints no fee while prices are hidden (D-21)', async () => {
+  it('refuses a proposal with fees to print and none typed', async () => {
     const template = await readPrintTemplate('proposal')
-    expect(proposalHtml(template, FAKE_PROPOSAL, { pricesPublic: false })).toEqual({
-      ok: false,
-      error: { code: 'prices-hidden' },
-    })
-    expect(proposalHtml(template, { ...FAKE_PROPOSAL, fees: [] }, { pricesPublic: true })).toEqual({
+    expect(proposalHtml(template, { ...FAKE_PROPOSAL, fees: [] }, { withFees: true })).toEqual({
       ok: false,
       error: { code: 'no-fees' },
+    })
+  })
+
+  it('leaves the fees section out entirely while prices are hidden (D-21), and prints the rest', async () => {
+    const template = await readPrintTemplate('proposal')
+    for (const doc of [FAKE_PROPOSAL, { ...FAKE_PROPOSAL, fees: [] }]) {
+      const page = proposalHtml(template, doc, { withFees: false })
+      if (!page.ok) throw new Error(page.error.code)
+      const printed = text(page.value)
+      for (const value of FAKE_PROPOSAL_PRINTS.filter((value) => !FEE_PRINTS.includes(value))) {
+        expect(printed).toContain(value)
+      }
+      // No heading, no table, no amount, no total, and nothing put in their place.
+      for (const absent of [...FEE_PRINTS, 'Investment', 'Fee (₹)', '₹', 'Total, excluding GST']) {
+        expect(printed).not.toContain(absent)
+      }
+      expect(page.value).not.toContain('iiic-doc-total')
+      expect(printed).toContain('3. How we measure it')
+      expect(printed).toContain('4. Next step')
+      expect(printed).not.toContain('5. Next step')
+      expect(page.value).not.toContain('{{')
+    }
+  })
+
+  it('refuses to print without fees once the kit’s fees section is not where it was', () => {
+    const moved =
+      '<h2>4. Investment</h2><p>{{fee_rows}}</p><h2>5. Next step</h2><p>{{fee_total}}</p>'
+    expect(withoutFeesSection(moved)).toMatchObject({
+      ok: false,
+      error: { code: 'template-changed' },
+    })
+    expect(withoutFeesSection('<h2>5. Next step</h2>')).toMatchObject({
+      ok: false,
+      error: { code: 'template-changed', piece: '<h2>4. Investment</h2>' },
     })
   })
 })
@@ -245,7 +278,7 @@ describe('self-contained pages', () => {
     expect(page.value).toContain('data:font/woff2;base64,')
     expect(page.value).toContain('src="data:image/svg+xml;base64,')
     expect(page.value).not.toMatch(/@import|<link\b|\.\.\/|https?:\/\/(?!www\.w3\.org)/)
-    const proposal = await proposalPage(FAKE_PROPOSAL, { pricesPublic: true })
+    const proposal = await proposalPage(FAKE_PROPOSAL, { withFees: true })
     expect(proposal.ok && proposal.value.includes('iiic-cover')).toBe(true)
   })
 
