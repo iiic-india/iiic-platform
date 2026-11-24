@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test'
 // is covered in admin.e2e.spec.ts, which owns the test account; the draft-mode cookie a staff
 // preview sets, and its removal, in journal.e2e.spec.ts.
 
-test('a page in every route group, Find your path, the 404, the feed, a visitor’s preview link and the admin sign-in page set no cookie', async ({
+test('a page in every route group, Find your path, the 404, the feed, a visitor’s preview link, the admin sign-in page, sign-in’s pages and My IIIC signed out set no cookie', async ({
   page,
   context,
 }) => {
@@ -25,6 +25,12 @@ test('a page in every route group, Find your path, the 404, the feed, a visitor�
     '/journal/feed.xml',
     '/api/preview?collection=pages&slug=framework',
     '/admin/login',
+    // Sign-in's pages before anything is asked, and My IIIC signed out (docs/20 §10): the
+    // sign-in cookie is set only when a code is asked for, the session's only at sign-in
+    // (tests/e2e/accountsSignIn.e2e.spec.ts lists them through a sign-in and after signing out).
+    '/login',
+    '/login/verify',
+    '/account',
   ]) {
     await page.goto(path)
     await page.waitForLoadState('networkidle')
