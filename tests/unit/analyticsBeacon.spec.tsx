@@ -94,6 +94,26 @@ describe('the beacon', () => {
     }
   })
 
+  it('never counts a certificate’s verify pages: the QR token, a typed ID, the name shown', async () => {
+    process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN = TOKEN
+    for (const path of [
+      '/institute/verify',
+      '/institute/verify/AAAAAAAAAAAAAAAAAAAAAA',
+      // The institute host serves them from its root (src/lib/hosts.ts).
+      '/verify',
+      '/verify/AAAAAAAAAAAAAAAAAAAAAA',
+      '/Institute/Verify/AAAAAAAAAAAAAAAAAAAAAA',
+    ]) {
+      requestFor(path)
+      expect(await draw(), path).toBe('')
+      expect(countsPath(path), path).toBe(false)
+      expect(beaconSources(path).connectOrigins, path).toEqual([])
+    }
+    expect(countsPath('/institute')).toBe(true)
+    expect(countsPath('/institute/course')).toBe(true)
+    expect(countsPath('/verifying')).toBe(true)
+  })
+
   it('takes only a token of a token’s shape, so nothing can leave its attribute', () => {
     for (const value of ['', '   ', 'short', `${TOKEN}"><script>`, `${TOKEN} x`, undefined]) {
       expect(beaconToken(value), String(value)).toBeNull()

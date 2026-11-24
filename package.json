@@ -14,10 +14,11 @@
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
-    "vercel-build": "pnpm migrate && pnpm db:settings && pnpm totp:rekey && pnpm build",
+    "vercel-build": "pnpm migrate && pnpm db:settings && pnpm totp:rekey && pnpm notes:rekey && pnpm build",
     "migrate": "cross-env NODE_OPTIONS=--no-deprecation PAYLOAD_MIGRATING=true payload migrate",
     "icons": "node scripts/make-favicon.mjs",
     "totp:rekey": "cross-env NODE_OPTIONS=--no-deprecation payload run src/scripts/rekey-totp.ts",
+    "notes:rekey": "cross-env NODE_OPTIONS=--no-deprecation payload run src/scripts/rekey-notes.ts",
     "db:settings": "cross-env NODE_OPTIONS=--no-deprecation PAYLOAD_MIGRATING=true payload run src/scripts/db-settings.ts",
     "reviews:import": "cross-env NODE_OPTIONS=--no-deprecation payload run src/scripts/import-reviews.ts",
     "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation PAYLOAD_MIGRATING=true payload migrate:create",
@@ -35,6 +36,7 @@
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1173.0",
     "@date-fns/tz": "1.5.0",
     "@googleapis/calendar": "20.1.0",
     "@payloadcms/db-postgres": "3.94.0",
@@ -76,6 +78,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@lhci/cli": "0.16.1",
+    "@napi-rs/canvas": "1.1.0",
     "@playwright/test": "1.63.0",
     "@testing-library/react": "16.3.0",
     "@testing-library/user-event": "14.6.1",
@@ -88,6 +91,7 @@
     "eslint-config-next": "16.4.6",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "jsdom": "28.0.0",
+    "jsqr": "1.4.0",
     "prettier": "3.10.1",
     "read-excel-file": "9.3.13",
     "tsx": "4.23.15",

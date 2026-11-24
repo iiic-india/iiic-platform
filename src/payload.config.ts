@@ -17,12 +17,17 @@ import { AvailabilityRules } from './collections/AvailabilityRules'
 import { Bookings } from './collections/Bookings'
 import { BusyBlocks } from './collections/BusyBlocks'
 import { CalendarConnections } from './collections/CalendarConnections'
+import { CaseStudies } from './collections/CaseStudies'
+import { Certificates } from './collections/Certificates'
 import { Consents } from './collections/Consents'
 import { ConsentVersions } from './collections/ConsentVersions'
+import { DataRequests } from './collections/DataRequests'
 import { Enquiries } from './collections/Enquiries'
 import { Events } from './collections/Events'
 import { Faqs } from './collections/Faqs'
+import { Feedback } from './collections/Feedback'
 import { GatewayEvents } from './collections/GatewayEvents'
+import { Incidents } from './collections/Incidents'
 import { Invoices } from './collections/Invoices'
 import { LeadActivities } from './collections/LeadActivities'
 import { Leads } from './collections/Leads'
@@ -43,6 +48,7 @@ import { ProposalVersions } from './collections/ProposalVersions'
 import { redirects } from './collections/Redirects'
 import { Refunds } from './collections/Refunds'
 import { Services } from './collections/Services'
+import { SessionNotes } from './collections/SessionNotes'
 import { StaffRecoveryCodes } from './collections/StaffRecoveryCodes'
 import { Subscribers } from './collections/Subscribers'
 import { Suppressions } from './collections/Suppressions'
@@ -53,10 +59,13 @@ import { Users } from './collections/Users'
 import { pipelineEndpoints } from './components/admin/pipeline/moveEndpoint'
 import { Settings } from './globals/Settings'
 import { jobs } from './jobs'
+import { adminViewEndpoints } from './lib/adminViews/endpoints'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
 import { reportServerError, reportTestError } from './lib/monitoring/sentry'
 import { auditLog } from './plugins/auditLog'
+// M5 A: session notes and privacy (docs/18 §3, §5).
+import { notesAndPrivacy } from './plugins/notesAndPrivacy'
 import { searchIndex } from './plugins/searchIndex'
 import { totpCopy } from './plugins/totpCopy'
 import { totpSecretAtRest } from './plugins/totpSecretAtRest'
@@ -114,7 +123,11 @@ export default buildConfig({
     avatar: 'default',
     components: {
       // Recovery codes for staff two-factor (src/lib/auth/recoveryEndpoints.ts).
-      beforeDashboard: ['/components/admin/RecoveryCodes#RecoveryCodes'],
+      beforeDashboard: [
+        '/components/admin/RecoveryCodes#RecoveryCodes',
+        // M5 C: the way to Today, until Today replaces the dashboard (docs/18 §8).
+        '/components/admin/views/ViewsNavLinks#TodayLink',
+      ],
       // Content → Placeholders: what the pages still wait for (D-56).
       afterNavLinks: [
         '/components/admin/PlaceholdersNavLink#PlaceholdersNavLink',
@@ -122,6 +135,14 @@ export default buildConfig({
         '/components/admin/office/WorkingHoursNavLink#WorkingHoursNavLink',
         // The Pipeline board (M4; docs/17 §12 C).
         '/components/admin/pipeline/PipelineNavLink#PipelineNavLink',
+        // M5 A: Privacy (docs/18 §6).
+        '/components/admin/privacy/PrivacyNavLink#PrivacyNavLink',
+        // M5 B: certificates (D-39; docs/18 §4).
+        '/components/admin/certificates/CertificatesNavLink#CertificatesNavLink',
+        // M5 B end.
+        // M5 C: Today, Calendar, Search, Proof, Reports, Settings (docs/18 §6).
+        '/components/admin/views/ViewsNavLinks#ViewsNavLinks',
+        // M5 C end.
       ],
       // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
       // plugin spreads after its own, so these win. One labelled code field each; the verify
@@ -149,6 +170,58 @@ export default buildConfig({
           path: '/pipeline',
           exact: true,
         },
+        // M5 A: Privacy, which checks the user, the code and the role itself (docs/18 §6).
+        privacy: {
+          Component: '/components/admin/privacy/PrivacyView#PrivacyView',
+          path: '/privacy',
+          exact: true,
+        },
+        // M5 B: Learning → Certificates → Issue (D-39; docs/18 §4). The view checks the user,
+        // the code and the role itself, and every route it calls does again (CLAUDE.md #6).
+        certificatesIssue: {
+          Component: '/components/admin/certificates/CertificatesIssueView#CertificatesIssueView',
+          path: '/certificates/issue',
+          exact: true,
+        },
+        // M5 B end.
+        // M5 C: the views (docs/18 §6). Each checks the user, the code and the role itself, and
+        // its loader asks again before it reads anything (CLAUDE.md #6).
+        today: {
+          Component: '/components/admin/views/TodayView#TodayView',
+          path: '/today',
+          exact: true,
+        },
+        calendar: {
+          Component: '/components/admin/views/CalendarView#CalendarView',
+          path: '/calendar',
+          exact: true,
+        },
+        reports: {
+          Component: '/components/admin/views/ReportsView#ReportsView',
+          path: '/reports',
+          exact: true,
+        },
+        search: {
+          Component: '/components/admin/views/SearchView#SearchView',
+          path: '/search',
+          exact: true,
+        },
+        person: {
+          Component: '/components/admin/views/PersonView#PersonView',
+          path: '/people/:id',
+          exact: true,
+        },
+        proof: {
+          Component: '/components/admin/views/ProofView#ProofView',
+          path: '/proof',
+          exact: true,
+        },
+        adminSettings: {
+          Component: '/components/admin/views/SettingsView#SettingsView',
+          path: '/settings',
+          exact: true,
+        },
+        // M5 C end.
       },
     },
   },
@@ -193,6 +266,15 @@ export default buildConfig({
     Enquiries,
     Proposals,
     ProposalVersions,
+    // The admin experience (M5; docs/18-admin-experience-design.md): session notes (S3, author
+    // only), certificates (D-39), privacy requests and the breach register, feedback and case
+    // studies.
+    SessionNotes,
+    Certificates,
+    DataRequests,
+    Incidents,
+    Feedback,
+    CaseStudies,
     // Automations and messaging (M6; docs/19-automations-and-messaging-design.md).
     Messages,
     MessageTemplates,
@@ -244,6 +326,8 @@ export default buildConfig({
   endpoints: [
     { path: '/report-test-error', method: 'post', handler: reportTestError },
     ...pipelineEndpoints,
+    // M5 C: the audit log's CSV, for an owner with the code (src/lib/adminViews/endpoints.ts).
+    ...adminViewEndpoints,
   ],
   plugins: [
     // Media in Cloudflare R2's public bucket (docs/07) once R2 is configured; on the local disk
@@ -281,6 +365,9 @@ export default buildConfig({
     payloadTotp(TOTP_OPTIONS),
     totpSecretAtRest({ collection: 'users', previousSecret: config.PAYLOAD_SECRET_PREVIOUS }),
     totpCopy(),
+    // M5 A: the privacy collections' rules, the notes and request panels, and their routes
+    // (src/plugins/notesAndPrivacy.ts). It adds no collection.
+    notesAndPrivacy(),
     // Last, so it sees every collection (src/plugins/auditLog.ts).
     auditLog(),
   ],

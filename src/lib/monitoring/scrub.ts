@@ -41,10 +41,15 @@ const PHONE = new RegExp(
 )
 // Long random strings: session tokens, reset links, keys.
 const TOKEN = /\b[A-Za-z0-9_-]{32,}\b/g
+// The addresses whose last part is a key or a booking's reference, however short: a certificate's
+// verify link (a 22-character token, docs/18 §4; `/verify` on the institute host), a booking's
+// manage link and payment pages (docs/16 §6), a proposal's tracked link (docs/17 §5).
+const KEY_PATH = /(\/(?:institute\/)?verify|\/b|\/p|\/book\/(?:pay|confirmed))\/[A-Za-z0-9_-]{8,}/gi
 
 /** An error message without the personal data and secrets a library may have put in it. */
 export function scrubText(text: string): string {
   return text
+    .replace(KEY_PATH, (_match, prefix: string) => `${prefix}/[token]`)
     .replace(QUERY_VALUES, 'params: [removed]')
     .replace(EMAIL, '[email]')
     .replace(PHONE, '[phone]')

@@ -14,6 +14,22 @@ import { z } from 'zod'
 const optional = <T extends z.ZodType>(type: T) =>
   z.preprocess((value) => (value === '' ? undefined : value), type.optional())
 
+/**
+ * A 32-byte key written in base64 or base64url (`openssl rand -base64 32`): 43 characters, with
+ * the one padding `=` base64 adds, or without it.
+ */
+const KEY_32 = /^[A-Za-z0-9+/_-]{43}=?$/
+const key32 = (name: string) =>
+  optional(
+    z
+      .string()
+      .regex(KEY_32, `${name} must be 32 random bytes in base64 (openssl rand -base64 32)`)
+      .refine(
+        (value) => Buffer.from(value, 'base64').length === 32,
+        `${name} must decode to exactly 32 bytes`,
+      ),
+  )
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
@@ -48,6 +64,14 @@ const schema = z.object({
   R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET_PUBLIC: z.string().default('iiic-media'),
+  // The private bucket (docs/07): certificates' PDFs (M5) and, later, invoices and original
+  // review files. Unset, a certificate is not issued on a deployment (docs/18 §4).
+  R2_BUCKET_PRIVATE: optional(z.string().min(3)),
+  // Session notes (D-11; docs/18 §3): the key that encrypts a note's body, per environment, and
+  // while it is being rotated the key it replaces (docs/08 §9, the runbook). Unset, the app still
+  // builds and runs, and refuses to store or open a note.
+  NOTES_ENCRYPTION_KEY: key32('NOTES_ENCRYPTION_KEY'),
+  NOTES_ENCRYPTION_KEY_PREVIOUS: key32('NOTES_ENCRYPTION_KEY_PREVIOUS'),
   R2_PUBLIC_BASE_URL: z.preprocess(
     (value) => (value === '' ? undefined : value),
     z.url().optional(),
@@ -207,6 +231,21 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
   if (data.MESSAGING_TRANSPORT === 'fake' && data.VERCEL_ENV) {
     throw new Error(
       'Invalid environment:\n- MESSAGING_TRANSPORT: the fake senders run only locally and in CI, never on a Vercel deployment',
+    )
+  }
+  if (data.NOTES_ENCRYPTION_KEY_PREVIOUS && !data.NOTES_ENCRYPTION_KEY) {
+    throw new Error(
+      'Invalid environment:\n- NOTES_ENCRYPTION_KEY_PREVIOUS: set it only beside a new NOTES_ENCRYPTION_KEY, while rotating',
+    )
+  }
+  if (
+    data.NOTES_ENCRYPTION_KEY_PREVIOUS &&
+    Buffer.from(data.NOTES_ENCRYPTION_KEY_PREVIOUS, 'base64').equals(
+      Buffer.from(data.NOTES_ENCRYPTION_KEY ?? '', 'base64'),
+    )
+  ) {
+    throw new Error(
+      'Invalid environment:\n- NOTES_ENCRYPTION_KEY_PREVIOUS: it must differ from NOTES_ENCRYPTION_KEY',
     )
   }
   const mediaOrigin = data.R2_PUBLIC_BASE_URL ? new URL(data.R2_PUBLIC_BASE_URL).origin : undefined
