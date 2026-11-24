@@ -2707,7 +2707,10 @@ export interface Message {
     | 'O10'
     | 'V1'
     | 'V2'
-    | 'C5';
+    | 'C5'
+    | 'A1'
+    | 'A2'
+    | 'A3';
   template:
     | 'booking-confirmed'
     | 'booking-receipt'
@@ -2741,7 +2744,10 @@ export interface Message {
     | 'weekly-report'
     | 'incident-alert'
     | 'backup-alert'
-    | 'failure-alert';
+    | 'failure-alert'
+    | 'account-sign-in-code'
+    | 'account-closed'
+    | 'account-detail-added';
   variant?: string | null;
   channel: 'email' | 'whatsapp';
   fallback?: ('email' | 'whatsapp') | null;
@@ -2782,7 +2788,7 @@ export interface Message {
    * A code from the provider, never its message.
    */
   lastError?: string | null;
-  recipientKind: 'person' | 'subscriber' | 'staff';
+  recipientKind: 'person' | 'subscriber' | 'staff' | 'signIn';
   person?: (number | null) | Person;
   subscriber?: (number | null) | Subscriber;
   staff?: (number | null) | User;
@@ -2804,7 +2810,9 @@ export interface Message {
     | 'proposals'
     | 'certificates'
     | 'data-requests'
-    | 'incidents';
+    | 'incidents'
+    | 'sign-in-requests'
+    | 'accounts';
   subjectId: number;
   /**
    * About a counselling session: no offer, ever (docs/06).
@@ -2900,7 +2908,10 @@ export interface MessageTemplate {
     | 'weekly-report'
     | 'incident-alert'
     | 'backup-alert'
-    | 'failure-alert';
+    | 'failure-alert'
+    | 'account-sign-in-code'
+    | 'account-closed'
+    | 'account-detail-added';
   channel: 'email' | 'whatsapp';
   language: 'en-IN' | 'gu-IN' | 'hi-IN';
   /**
@@ -2974,7 +2985,10 @@ export interface Automation {
     | 'O10'
     | 'V1'
     | 'V2'
-    | 'C5';
+    | 'C5'
+    | 'A1'
+    | 'A2'
+    | 'A3';
   /**
    * Untick to pause it. Nothing it would send goes out while paused.
    */

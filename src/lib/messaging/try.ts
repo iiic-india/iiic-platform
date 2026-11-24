@@ -45,7 +45,16 @@ const PURPOSE_OF: Readonly<Record<Channel, 'marketingEmail' | 'marketingWhatsapp
   whatsapp: 'marketingWhatsapp',
 }
 
-function recipientOf(message: Message): Recipient | null {
+/**
+ * Who the row is to. A sign-in code's row names no one: its recipient is its own subject, the
+ * `sign-in-requests` row, and the address comes from the first try alone (docs/20 §4.3).
+ */
+export function recipientOf(
+  message: Pick<
+    Message,
+    'recipientKind' | 'person' | 'subscriber' | 'staff' | 'subjectCollection' | 'subjectId'
+  >,
+): Recipient | null {
   const id = (value: unknown) =>
     typeof value === 'number'
       ? value
@@ -57,7 +66,11 @@ function recipientOf(message: Message): Recipient | null {
       ? id(message.person)
       : message.recipientKind === 'subscriber'
         ? id(message.subscriber)
-        : id(message.staff)
+        : message.recipientKind === 'signIn'
+          ? message.subjectCollection === 'sign-in-requests'
+            ? id(message.subjectId)
+            : null
+          : id(message.staff)
   return target === null || Number.isNaN(target)
     ? null
     : { kind: message.recipientKind, id: target }
@@ -351,7 +364,9 @@ export async function tryMessage(
     const message = await messageById(req, id)
     if (!message) return 'not-claimed'
     const recipient = recipientOf(message)
-    const facts = recipient ? await recipientFacts(req, recipient, message.channel) : NO_RECIPIENT
+    const facts = recipient
+      ? await recipientFacts(req, recipient, message.channel, transient)
+      : NO_RECIPIENT
     const key = message.template as TemplateKey
     const channels = deps.channels()
     const promotional = message.kind === 'promotional'
