@@ -76,6 +76,14 @@ describe('resetTwoFactor', () => {
     expect(update).not.toHaveBeenCalled()
   })
 
+  it('answers 404 for an id that is not a whole number, without a lookup (M7)', async () => {
+    for (const id of ['abc', '0', '-2', '1.5', '2 OR 1=1', '']) {
+      const { response, update } = call({ ...owner, _strategy: 'totp' }, id)
+      expect((await response).status, id).toBe(404)
+      expect(update).not.toHaveBeenCalled()
+    }
+  })
+
   it('answers 404 for an account that does not exist', async () => {
     const missing = vi.fn(async () => {
       throw Object.assign(new Error('Not Found'), { status: 404 })
