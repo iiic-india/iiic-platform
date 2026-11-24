@@ -24,8 +24,8 @@ Branch `m6/join`, pushed to `origin m6/core`. No PR, no merge to main.
 4. [x] Migration src/migrations/20261124_100324_m6_messaging.ts (a130904)
 5. [x] D-100 to D-107 in docs/decisions.md (template row to D-108); I-56 onward in docs/09;
        docs/README.md; docs/19 true to the build
-6. [ ] typecheck, lint, format:check, unit, build green
-7. [ ] Push and report
+6. [x] typecheck, lint, format:check, unit (191 files, 3082 tests), build, e2e import check: green
+7. [x] Pushed to origin m6/core; int tests clear the jobs their records queue
 
 ## Decisions to record (D-100 to D-107)
 
