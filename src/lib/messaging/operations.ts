@@ -43,6 +43,12 @@ export type PlanError =
   { code: 'unknown-template' } | { code: 'channel-not-allowed' } | { code: 'recipient-missing' }
 
 /**
+ * What only the caller holds for the first try (src/emails/types.ts, `transient`): never written
+ * to the row, the job queue or a log; a later try goes without it.
+ */
+export type DeliverOptions = { transient?: Readonly<Record<string, string>> }
+
+/**
  * Records the message (one row in `messages`, key from `messageKey`) and, when it is due now,
  * tries it at once; a key already recorded returns that row and sends nothing (fires once).
  * The attempt happens after the row's claim has committed (docs/19 §3: claim, commit, send).
@@ -50,6 +56,7 @@ export type PlanError =
 export type Deliver = (
   req: PayloadRequest,
   planned: PlannedMessage,
+  options?: DeliverOptions,
 ) => Promise<Result<{ messageId: number; created: boolean; status: MessageStatus }, PlanError>>
 
 /**

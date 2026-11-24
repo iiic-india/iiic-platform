@@ -240,9 +240,6 @@ export interface Config {
       'V1-review-consent-request': TaskV1ReviewConsentRequest;
       'V2-withdrawal-confirmation': TaskV2WithdrawalConfirmation;
       'P1-team-map-ack': TaskP1TeamMapAck;
-      'P2-call-booked': TaskP2CallBooked;
-      'P3-P4-lead-ages': TaskP3P4LeadAges;
-      'P5-proposal-sent': TaskP5ProposalSent;
       'P6-proposal-follow-up': TaskP6ProposalFollowUp;
       'P7-partnership-ack': TaskP7PartnershipAck;
       'O4-data-request': TaskO4DataRequest;
@@ -2544,6 +2541,7 @@ export interface Message {
     | 'messages'
     | 'suppressions'
     | 'users'
+    | 'enquiries'
     | 'leads'
     | 'proposals'
     | 'certificates'
@@ -2938,9 +2936,6 @@ export interface PayloadJob {
           | 'V1-review-consent-request'
           | 'V2-withdrawal-confirmation'
           | 'P1-team-map-ack'
-          | 'P2-call-booked'
-          | 'P3-P4-lead-ages'
-          | 'P5-proposal-sent'
           | 'P6-proposal-follow-up'
           | 'P7-partnership-ack'
           | 'O4-data-request'
@@ -3018,9 +3013,6 @@ export interface PayloadJob {
         | 'V1-review-consent-request'
         | 'V2-withdrawal-confirmation'
         | 'P1-team-map-ack'
-        | 'P2-call-booked'
-        | 'P3-P4-lead-ages'
-        | 'P5-proposal-sent'
         | 'P6-proposal-follow-up'
         | 'P7-partnership-ack'
         | 'O4-data-request'
@@ -5464,39 +5456,6 @@ export interface TaskV2WithdrawalConfirmation {
  * via the `definition` "TaskP1-team-map-ack".
  */
 export interface TaskP1TeamMapAck {
-  input?: unknown;
-  output: {
-    planned: number;
-    reason?: string | null;
-  };
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TaskP2-call-booked".
- */
-export interface TaskP2CallBooked {
-  input?: unknown;
-  output: {
-    planned: number;
-    reason?: string | null;
-  };
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TaskP3-P4-lead-ages".
- */
-export interface TaskP3P4LeadAges {
-  input?: unknown;
-  output: {
-    planned: number;
-    reason?: string | null;
-  };
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TaskP5-proposal-sent".
- */
-export interface TaskP5ProposalSent {
   input?: unknown;
   output: {
     planned: number;

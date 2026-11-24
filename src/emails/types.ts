@@ -49,10 +49,20 @@ export type LoadError =
  * Reads a template's data for one message at send time: the booking, the person's first name,
  * the manage link. Answers `stale` when the subject no longer matches what was planned, so a
  * reminder for a moved booking is never sent even if its cancellation was missed.
+ *
+ * `transient` holds what exists only in the call that asked for the message and is never stored
+ * (a proposal's tracked link, whose token is kept only as its hash): it reaches `load` on the
+ * first try alone, so a template that needs it answers `stale` on any later try and the message
+ * is never sent without it.
  */
 export type LoadTemplateData<Data> = (
   req: PayloadRequest,
-  message: { subject: Subject; recipient: Recipient; sendBefore?: Date | null },
+  message: {
+    subject: Subject
+    recipient: Recipient
+    sendBefore?: Date | null
+    transient?: Readonly<Record<string, string>>
+  },
 ) => Promise<Result<Data, LoadError>>
 
 /** One template's implementation, as builders B and C register it (src/emails/index.ts). */

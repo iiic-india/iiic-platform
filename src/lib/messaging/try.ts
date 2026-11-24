@@ -159,6 +159,7 @@ async function render(
   recipient: Recipient,
   facts: RecipientFacts,
   whatsapp: WhatsAppTemplateEntry | null,
+  transient: Readonly<Record<string, string>> | undefined,
 ): Promise<Rendered | RenderFailure> {
   const key = message.template as TemplateKey
   const impl = deps.implementation(key) as TemplateImplementation<unknown> | undefined
@@ -168,6 +169,7 @@ async function render(
     subject,
     recipient,
     sendBefore: dateOf(message.sendBefore),
+    ...(transient ? { transient } : {}),
   })
   if (!loaded.ok) return { skip: 'stale' }
   const site = deps.site()
@@ -317,11 +319,15 @@ async function fallBack(
   return 'skipped'
 }
 
-/** Tries one message now. Safe to call twice at once: only one claim succeeds. */
+/**
+ * Tries one message now. Safe to call twice at once: only one claim succeeds. `transient` is the
+ * caller's data for this first try only (src/emails/types.ts); the dispatcher never has it.
+ */
 export async function tryMessage(
   req: PayloadRequest,
   deps: MessagingDeps,
   id: number,
+  transient?: Readonly<Record<string, string>>,
 ): Promise<TryOutcome> {
   const now = deps.now()
   const claimed = await claim(req, id, now)
@@ -373,7 +379,15 @@ export async function tryMessage(
     if (decision.action === 'fallback') {
       return fallBack(req, deps, message, decision.channel, decision.reason, now)
     }
-    const rendered = await render(req, deps, message, recipient as Recipient, facts, whatsapp)
+    const rendered = await render(
+      req,
+      deps,
+      message,
+      recipient as Recipient,
+      facts,
+      whatsapp,
+      transient,
+    )
     if ('skip' in rendered) {
       await move(req, id, ['sending'], 'skipped', { skipReason: rendered.skip }, now)
       return 'skipped'

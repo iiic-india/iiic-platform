@@ -93,7 +93,9 @@ export const SUBJECT_COLLECTIONS = [
   'messages',
   'suppressions',
   'users',
-  // M4 (docs/04): the pipeline.
+  // M4 (docs/04; docs/17): the pipeline. A request's acknowledgement is about the enquiry, so
+  // each request is answered once even when it joins an open lead (P1, P7).
+  'enquiries',
   'leads',
   'proposals',
   // M5 (docs/04): certificates and privacy.

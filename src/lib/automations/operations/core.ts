@@ -5,6 +5,7 @@ import type { PayloadRequest } from 'payload'
 import type {
   CancelQueued,
   Deliver,
+  DeliverOptions,
   PlanError,
   PlannedMessage,
   VerifyLink,
@@ -59,14 +60,18 @@ export function hasMessagingCore(): boolean {
 
 export type Planned = { messageId: number; created: boolean; status: MessageStatus }
 
-/** Plans one message through the core: one `messages` row per key, sent when due (fires once). */
+/**
+ * Plans one message through the core: one `messages` row per key, sent when due (fires once).
+ * `options.transient` reaches the first try only, and is never stored (src/emails/types.ts).
+ */
 export async function plan(
   req: PayloadRequest,
   planned: PlannedMessage,
+  options?: DeliverOptions,
 ): Promise<Result<Planned, PlanError | CoreMissing>> {
   const core = await current()
   if (!core) return err({ code: 'core-missing' })
-  return core.deliver(req, planned)
+  return core.deliver(req, planned, options)
 }
 
 /** Cancels queued messages about a subject; nothing to cancel without the core. */

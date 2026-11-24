@@ -1,5 +1,6 @@
 import type { PayloadRequest, Where } from 'payload'
 
+import { heatOf, staleWhere, untouchedWhere } from '@/lib/pipeline/core/heat'
 import { istDay } from '@/lib/time/ist'
 
 import type { DeliveryCounts, DigestFacts, FunnelCounts, ReportFacts } from './sections'
@@ -8,8 +9,8 @@ import { FUNNEL, subdomainOf } from './sections'
 /**
  * What the digest (O1) and the report (O2 with O10) read, at send time (docs/19 §9): counts and
  * references from each module's own collections, read with the server's access and never
- * written anywhere but into the staff email. M4's lead ages and M5's privacy deadlines and
- * incidents join as sections when those milestones land.
+ * written anywhere but into the staff email. M4's lead ages and expired proposals are read from
+ * its leads and proposals; M5's privacy deadlines and incidents join as sections when it lands.
  */
 
 const HOUR = 3_600_000
@@ -97,7 +98,54 @@ export async function readDigestFacts(req: PayloadRequest, now: Date): Promise<D
     reviewsAwaitingConsent: await count(req, 'testimonials', {
       status: { equals: 'consentRequested' },
     }),
+    leads: await leadAges(req, now),
+    proposalsExpired: await expiredProposals(req, since),
   }
+}
+
+/**
+ * The leads that need someone (P3, P4), read as M4's board reads them (src/lib/pipeline/core/
+ * heat.ts), so the digest and the board agree: untouched ones split by level, stale ones counted.
+ */
+async function leadAges(
+  req: PayloadRequest,
+  now: Date,
+): Promise<{ amber: number; red: number; stale: number }> {
+  const { docs } = await req.payload.find({
+    collection: 'leads',
+    where: untouchedWhere(now),
+    pagination: false,
+    depth: 0,
+    select: { kind: true, stage: true, createdAt: true, touchedAt: true },
+    overrideAccess: true,
+    req,
+  })
+  let amber = 0
+  let red = 0
+  for (const lead of docs) {
+    const heat = heatOf(lead as Parameters<typeof heatOf>[0], now)
+    if (heat.state !== 'untouched') continue
+    if (heat.level === 'red') red += 1
+    else amber += 1
+  }
+  return { amber, red, stale: await count(req, 'leads', staleWhere(now)) }
+}
+
+/** Proposals that passed their last valid day since `since` (P8), by reference. */
+async function expiredProposals(req: PayloadRequest, since: string): Promise<string[]> {
+  const { docs } = await req.payload.find({
+    collection: 'proposals',
+    where: {
+      and: [{ status: { equals: 'expired' } }, { expiredAt: { greater_than_equal: since } }],
+    },
+    sort: 'expiredAt',
+    pagination: false,
+    depth: 0,
+    select: { reference: true },
+    overrideAccess: true,
+    req,
+  })
+  return docs.map((proposal) => proposal.reference).filter((ref): ref is string => Boolean(ref))
 }
 
 async function funnel(req: PayloadRequest, from: Date, to: Date): Promise<FunnelCounts> {

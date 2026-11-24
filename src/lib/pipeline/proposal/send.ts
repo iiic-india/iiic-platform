@@ -123,6 +123,10 @@ export function makeSendVersion(deps: ProposalDeps): SendVersion {
         to: recipient.email,
         reference: snapshot.reference,
         clientName: (await clientNameOf(req, lead)) ?? snapshot.clientName,
+        personId: recipient.personId,
+        proposalId: proposal.id,
+        versionId: version.id,
+        sentAt: now.toISOString(),
       })
     })
     if (!committed.ok) return committed

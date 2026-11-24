@@ -90,6 +90,8 @@ describe('the automation catalogue', () => {
       CORE_TASKS.dispatch,
       'O5-purge-missing-pages',
       'B2-poll-pending-orders',
+      // M4's proposal expiry (P8, proposed in docs/17; not an automation of docs/06).
+      'P8-expire-proposals',
     ])
     for (const [slug, schedule] of Object.entries(SCHEDULES)) {
       expect(tasks.has(slug), slug).toBe(true)

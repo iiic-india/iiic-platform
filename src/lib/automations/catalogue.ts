@@ -17,8 +17,11 @@ export type CatalogueChannel = 'email' | 'whatsapp' | 'admin' | 'calendar' | 'do
  */
 export type Basis = 'transactional' | 'promotional' | 'operator' | 'internal' | 'none'
 
-/** Who builds it: M3 (already built), or M6's builders A, B and C (docs/19 §9). */
-export type Owner = 'M3' | 'A' | 'B' | 'C'
+/**
+ * Who builds it: M3 or M4 (already built, their own tasks and listeners), or M6's builders A, B
+ * and C (docs/19 §9). An M3 or M4 automation is never subscribed again by M6's listeners.
+ */
+export type Owner = 'M3' | 'M4' | 'A' | 'B' | 'C'
 
 export type Automation = {
   id: string
@@ -188,18 +191,21 @@ export const AUTOMATIONS = [
     owner: 'M3',
     task: 'B14-refresh-busy-times',
   },
-  // ---- Pipeline (P): M4's leads and proposals ----
+  // ---- Pipeline (P): M4's leads and proposals (docs/17) ----
+  // The lead, its timeline entry and the first-reply task due in two working days are made by
+  // M4's ReceiveEnquiry in the request's own transaction (key `P1:enquiry:<id>`); M6 sends the
+  // acknowledgement on the `enquiry.received` it raises, once per request.
   {
     id: 'P1',
     title: 'Team Map request: acknowledgement, lead and task',
-    on: ['lead.created'],
-    timing: 'At once; task due in 2 working days',
+    on: ['enquiry.received'],
+    timing: 'At once; the first-reply task (M4) due in 2 working days',
     channels: ['email', 'admin'],
     basis: 'transactional',
     owner: 'C',
     task: 'P1-team-map-ack',
-    waitsOn: 'M4 (leads, lead.created)',
   },
+  // M4's own listener on M3's event (src/lib/pipeline/queue.ts, in src/lib/booking/emit.ts).
   {
     id: 'P2',
     title: 'Proposal call booked: lead moved to Contacted',
@@ -207,19 +213,19 @@ export const AUTOMATIONS = [
     timing: 'At once',
     channels: ['admin'],
     basis: 'none',
-    owner: 'C',
-    task: 'P2-call-booked',
-    waitsOn: 'M4 (leads)',
+    owner: 'M4',
+    task: 'P2-lead-from-call',
   },
+  // M4's alerts job raises `lead.untouched` and `lead.stale` once each, hourly by the cron; the
+  // board and Today read the heat from the lead itself, and O1's digest counts the leads.
   {
     id: 'P3',
     title: 'Lead untouched in New',
     timing: '24 h amber, 48 h red (hourly check)',
     channels: ['admin'],
     basis: 'none',
-    owner: 'C',
-    task: 'P3-P4-lead-ages',
-    waitsOn: 'M4 (leads, activities)',
+    owner: 'M4',
+    task: 'P3-P4-lead-alerts',
   },
   {
     id: 'P4',
@@ -227,20 +233,20 @@ export const AUTOMATIONS = [
     timing: '7 days (hourly check, with P3)',
     channels: ['admin'],
     basis: 'none',
-    owner: 'C',
-    task: 'P3-P4-lead-ages',
-    waitsOn: 'M4 (leads, activities)',
+    owner: 'M4',
+    task: 'P3-P4-lead-alerts',
   },
+  // The send itself (M4's SendVersion) saves the version, issues the tracked link, makes the
+  // follow-up task and, once it has committed, emails the link through M6's core with the
+  // `proposal-sent` template (src/lib/automations/pipeline/proposalMailer.ts). The link's token
+  // exists only in that call, so no job sends it and nothing listens to `proposal.sent`.
   {
     id: 'P5',
     title: 'Proposal sent: version, tracked link, follow-up task',
-    on: ['proposal.sent'],
     timing: 'At once; task in 3 working days',
     channels: ['email', 'admin'],
     basis: 'transactional',
-    owner: 'C',
-    task: 'P5-proposal-sent',
-    waitsOn: 'M4 (proposals, proposal.sent)',
+    owner: 'M4',
   },
   {
     id: 'P6',
@@ -250,18 +256,16 @@ export const AUTOMATIONS = [
     basis: 'none',
     owner: 'C',
     task: 'P6-proposal-follow-up',
-    waitsOn: 'M4 (proposals)',
   },
   {
     id: 'P7',
     title: 'Partnership enquiry acknowledged',
-    on: ['lead.created'],
+    on: ['enquiry.received'],
     timing: 'At once',
     channels: ['email', 'admin'],
     basis: 'transactional',
     owner: 'C',
     task: 'P7-partnership-ack',
-    waitsOn: 'M4 (leads, lead.created)',
   },
   // ---- Newsletter (N, D-10) ----
   {

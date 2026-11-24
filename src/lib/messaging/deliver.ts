@@ -69,7 +69,7 @@ async function timing(
 }
 
 export function deliverWith(deps: MessagingDeps): Deliver {
-  return async (req, planned) => {
+  return async (req, planned, options) => {
     if (!(TEMPLATE_KEYS as readonly string[]).includes(planned.template)) {
       return err({ code: 'unknown-template' })
     }
@@ -131,7 +131,7 @@ export function deliverWith(deps: MessagingDeps): Deliver {
       sendAt.getTime() <= deps.now().getTime() &&
       !(await inCallersTransaction(req))
     ) {
-      await tryMessage(req, deps, message.id)
+      await tryMessage(req, deps, message.id, options?.transient)
       const after = await req.payload.findByID({
         collection: 'messages',
         id: message.id,
@@ -147,7 +147,8 @@ export function deliverWith(deps: MessagingDeps): Deliver {
   }
 }
 
-export const deliver: Deliver = (req, planned) => deliverWith(defaultMessagingDeps())(req, planned)
+export const deliver: Deliver = (req, planned, options) =>
+  deliverWith(defaultMessagingDeps())(req, planned, options)
 
 /** Cancels the queued messages about a subject (docs/19 §6): a reschedule, a cancellation, a payment. */
 export const cancelQueued: CancelQueued = (req, scope) =>

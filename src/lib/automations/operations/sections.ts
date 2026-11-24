@@ -29,6 +29,13 @@ export type DigestFacts = {
   failedJobs: number
   suppressed: number
   reviewsAwaitingConsent: number
+  /**
+   * The pipeline (M4; docs/06 P3, P4; docs/17 §7): leads untouched in New past 24 hours (amber)
+   * and 48 (red), and active leads quiet for seven days, as counts; never a lead's title, which
+   * names a client. Proposals past their last valid day in the last 24 hours, by reference (P8).
+   */
+  leads: { amber: number; red: number; stale: number }
+  proposalsExpired: string[]
 }
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
@@ -90,12 +97,30 @@ export function digestSections(facts: DigestFacts): Section[] {
     )
   }
 
+  const pipeline: string[] = []
+  if (facts.leads.red) {
+    pipeline.push(`${plural(facts.leads.red, 'lead', 'leads')} untouched for over 48 hours`)
+  }
+  if (facts.leads.amber) {
+    pipeline.push(`${plural(facts.leads.amber, 'lead', 'leads')} untouched for over 24 hours`)
+  }
+  if (facts.leads.stale) {
+    pipeline.push(`${plural(facts.leads.stale, 'lead', 'leads')} with no activity for 7 days`)
+  }
+  if (facts.proposalsExpired.length) {
+    pipeline.push(`Proposals past their last valid day: ${facts.proposalsExpired.join(', ')}`)
+  }
+
   return [
     {
       title: 'Today’s sessions',
       lines: sessionLines.length ? sessionLines : ['No sessions today.'],
     },
     { title: 'Time requests', lines: requestLines },
+    {
+      title: 'Leads and proposals',
+      lines: pipeline.length ? pipeline : ['No lead waiting, none stale.'],
+    },
     { title: 'Payments', lines: money.length ? money : ['Nothing waiting.'] },
     {
       title: 'Messages and jobs, last 24 hours',

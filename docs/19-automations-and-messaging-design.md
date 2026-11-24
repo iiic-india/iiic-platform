@@ -18,7 +18,7 @@ The design M6 is built to: the job runner, the messaging core, the provider webh
 
 **Vercel Cron**: `vercel.json` gains `"crons": [{ "path": "/api/cron/jobs", "schedule": "* * * * *" }]`. The Hobby plan allows only daily crons and refuses a deployment with this one, so the entry lands with the move to Pro (D-04; proposed, §10); until then an owner runs the queue by hand.
 
-**Schedules** (`src/lib/automations/schedules.ts`, applied in `src/jobs/index.ts`, UTC with seconds; India is UTC+05:30 all year): `messages-dispatch` and `B4-expire-holds` every minute; `B2-poll-pending-orders` every 5 minutes; `B14-refresh-busy-times` every 15; `B11-reconcile` 23:00 IST; `O5-purge-missing-pages` 02:00 and `O5-retention` 02:15; `O1-daily-digest` 08:30; `O2-weekly-report` Monday 09:00; `O6-backup-check` 09:30; `P3-P4-lead-ages` hourly; `P6-proposal-follow-up` 08:45. M3's tasks gain their schedules here without their files changing.
+**Schedules** (`src/lib/automations/schedules.ts`, applied in `src/jobs/index.ts`, UTC with seconds; India is UTC+05:30 all year): `messages-dispatch` and `B4-expire-holds` every minute; `B2-poll-pending-orders` every 5 minutes; `B14-refresh-busy-times` every 15; `B11-reconcile` 23:00 IST; `O5-purge-missing-pages` 02:00 and `O5-retention` 02:15; `O1-daily-digest` 08:30; `O2-weekly-report` Monday 09:00; `O6-backup-check` 09:30; M4's `P3-P4-lead-alerts` hourly and `P8-expire-proposals` 00:10; `P6-proposal-follow-up` 08:45. M3's and M4's tasks gain their schedules here without their files changing.
 
 **Concurrency**: `jobs.enableConcurrencyControl` is on. `messages-dispatch` takes the exclusive key `messages-dispatch`, so overlapping cron calls never run two dispatchers; each listener task takes its event key. Payload claims a job before running it.
 
@@ -77,12 +77,12 @@ The catalogue is code (`src/lib/automations/catalogue.ts`); listeners, schedules
 | B12 | `booking.requested` | at once; flagged on Today at 24 h | E, W, A | T | `B12-time-request-ack` · B | — |
 | B13 | `payment.linkSent`; `booking.cancelled` | at once; one reminder 24 h before the session while unpaid | E, W | Op | `B13-payment-link` · B | — |
 | B14 | schedule, calendar notices | every 15 min | — | — | M3 `B14-refresh-busy-times` | — |
-| P1 | `lead.created` (team map) | at once; task in 2 working days | E, A | T | `P1-team-map-ack` · C | M4 |
-| P2 | `booking.confirmed` (a call) | at once | A | — | `P2-call-booked` · C | M4 |
-| P3, P4 | schedule | hourly: 24 h amber, 48 h red; 7 days stale | A | — | `P3-P4-lead-ages` · C | M4 |
-| P5 | `proposal.sent` | at once; task in 3 working days | E, A | T | `P5-proposal-sent` · C | M4 |
-| P6 | schedule | daily: 5 working days unanswered | A | — | `P6-proposal-follow-up` · C | M4 |
-| P7 | `lead.created` (partnership) | at once | E, A | T | `P7-partnership-ack` · C | M4 |
+| P1 | `enquiry.received` (team map) | at once; M4 makes the lead and the first-reply task (2 working days) | E, A | T | `P1-team-map-ack` · C | — |
+| P2 | `booking.confirmed` (a call) | at once | A | — | M4 `P2-lead-from-call` | — |
+| P3, P4 | schedule | hourly: 24 h amber, 48 h red; 7 days stale; counted in O1 | A | — | M4 `P3-P4-lead-alerts` | — |
+| P5 | M4's send, after it commits | at once; task in 3 working days (M4) | E, A | T | the send, through the core (`proposalMailer.ts`) · C | — |
+| P6 | schedule | daily: 5 working days unopened | A | — | `P6-proposal-follow-up` · C | the drafted words |
+| P7 | `enquiry.received` (partnership) | at once | E, A | T | `P7-partnership-ack` · C | — |
 | N1 | `newsletter.signedUp` | at once | E | T | `N1-confirm-signup` · C | — |
 | N2 | `newsletter.confirmed` | at once | E | P | `N2-welcome` · C | — |
 | N3 | `consent.withdrawn`, `message.suppressed` | at once | — | — | `N3-unsubscribe` · C | — |
@@ -177,7 +177,7 @@ The foundation is frozen for the builders: the collections' fields, `src/access/
 - **B · Templates and the B-series**: `src/emails/booking/` (every booking template, email and WhatsApp params, the `load` functions, the hosted PNGs in `public/email/`), `src/lib/automations/booking/` (planners and re-planning), `src/jobs/bookingMessages.ts`; the WhatsApp template texts for submission (`docs/content/whatsapp-templates.md`, for Meta).
 - **C · The rest and the newsletter**: `src/emails/other/`, `src/lib/automations/operations/` (digest sections, report, O5 retention, O6, O9), `src/lib/automations/reviews/` (V1, V2), `src/lib/automations/pipeline/` (P1 to P7 against `04`, live with M4), `src/lib/automations/privacy/` (O4, O7, O8, live with M5), `src/lib/newsletter/`, `src/app/api/newsletter/`, `src/app/(platform)/newsletter/`, `src/app/(platform)/w/[token]/`, hooks in `Subscribers.ts` and `NewsletterIssues.ts`, `src/jobs/operations.ts`, `src/jobs/newsletter.ts`; C5 (live with M5).
 
-Waits on other milestones: P1 to P7 on M4's `leads`, `proposals` and their events; O4, O7, O8 and C5 on M5's data requests, incidents and certificates; B8 and B9 on attendance marking and the feedback page. Each is built and tested on its event now and goes live when the emitter lands.
+Waits on other milestones: O4, O7, O8 and C5 on M5's data requests, incidents and certificates; B8 and B9 on attendance marking and the feedback page. Each is built and tested on its event now and goes live when the emitter lands.
 
 ## 13. At the join (on M3)
 
@@ -189,3 +189,14 @@ Joined on `m6/join` from `m3/join`, in the order A, B, C. What the join wired, b
 - **M3's second half.** The invoice job raises `invoice.issued` once Zoho Books has issued the tax invoice (`src/lib/invoicing/wiring.ts`), which queues B3; the credit note raises nothing, since B7's refund notice tells the client on `refund.processed`. `refund.awaitingApproval` has no listener (Today and O1 read the refunds waiting). `payment.linkSent` queues B13, whose message carries `payments.linkUrl`; the office's note after sending a link says IIIC's message carries it when email is set up, and asks the office to send it otherwise.
 - **The manage link.** A booking the office confirmed or moved has no manage token, so its confirmation (B2) or its move (B7) issues one when it is sent (`src/emails/booking/manageLink.ts`): derived from a key under `PAYLOAD_SECRET` and the booking's id, in the shape of M3's tokens, its SHA-256 stored in `manageTokenHash` as for every token, so a retry or the email after WhatsApp gives the same link. The email's one button is then the kit's "Manage your booking"; the session's link stays in the details. A booking whose token was handed to the client's browser keeps it, and its email says how to reach IIIC instead.
 - People's suppressions join and `whatsappLastInboundAt` read as the office's alone, like every field of a person but the name and contacts (D-89).
+
+## 14. At the join (on M4)
+
+M4 (docs/17) merged into this branch's base; what the join wired:
+
+- **Events.** `AutomationEvent` takes M4's `PipelineEvent` whole, keyed by M4's own `pipelineEventKey`, so a listener sees the key M4 queued it with. M4's emitter (`src/lib/pipeline/core/emit.ts`) reads its listeners from the catalogue: `enquiry.received` queues `P1-team-map-ack` and `P7-partnership-ack`, each answering only its own kind and nothing about a request marked as spam; the acknowledgement is about the enquiry, so a second request that joins an open lead is answered too. M4 subscribes nothing of its own to its events; nothing else of M4's has an M6 listener.
+- **M4's own tasks.** P2 (`P2-lead-from-call`, on M3's `booking.confirmed`), P3 and P4 (`P3-P4-lead-alerts`) are M4's, owner `M4` in the catalogue and never subscribed again; M4's ReceiveEnquiry makes the lead and the first-reply task (key `P1:enquiry:<id>`) in the request's own transaction. The schedules table runs the alerts hourly and `P8-expire-proposals` at 00:10 IST.
+- **The proposal email.** M4's send emails the link after it commits; its mailer is now M6's (`src/lib/automations/pipeline/proposalMailer.ts`): the core plans one `messages` row per send (`P5:proposals:<id>:v<version>-<sent at>:email`) with the template `proposal-sent` (M4's words, the link as the one button, no amount), and hands the link to the first try as `transient` data that reaches the template's `load` and nothing else (no row, job or log holds it). A message that does not go at once is cancelled, not left queued, and the office is shown the link once (M4's rule). The core's checks apply as for every message: the P5 switch, the suppression list, the channel's set-up, no price, no placeholder in production.
+- **P6.** Each morning, a proposal still `sent` five working days after its current version went gets one task of the kind `reviewFollowUpDraft` for the office (key `P6:version:<id>`); the drafted words are an input, carried as a placeholder in the task's note.
+- **The digest.** O1 gains "Leads and proposals": untouched leads by level and stale leads, as counts read the way the board reads them (`heatOf`, `staleWhere`), and proposals that passed their last valid day in the last 24 hours by reference (P8's notice). No lead's title, which names a client.
+- `messages.subjectCollection` gains `enquiries` (the join's migration covers it).

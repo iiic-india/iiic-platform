@@ -1,14 +1,18 @@
 import type { DomainEvent } from '@/lib/booking/events'
+import { PIPELINE_EVENT_NAMES, pipelineEventKey } from '@/lib/pipeline/core/emit'
+import type { PipelineEvent, PipelineEventName } from '@/lib/pipeline/events'
 
 /**
- * Every event an automation listens to (docs/19 §2): M3's domain events (src/lib/booking/events.ts)
- * and the ones M6, M4 and M5 raise. Like M3's, an event carries ids only, never a name, a contact
- * detail, a note, an amount or anything said in counselling (CLAUDE.md #3), so a job's input and
- * its logs hold nothing personal. Events of M4 and M5 are named here so their automations are
- * wired before those milestones arrive; until something emits them, nothing runs.
+ * Every event an automation listens to (docs/19 §2): M3's domain events (src/lib/booking/events.ts),
+ * M4's pipeline events (src/lib/pipeline/events.ts, docs/17 §8), and the ones M6 and M5 raise.
+ * Like M3's, an event carries ids and codes only, never a name, a contact detail, a note, an
+ * amount or anything said in counselling (CLAUDE.md #3), so a job's input and its logs hold
+ * nothing personal. Events of M5 are named here so their automations are wired before that
+ * milestone arrives; until something emits them, nothing runs.
  */
 export type AutomationEvent =
   | DomainEvent
+  | PipelineEvent
   // M3's documents module, at the join: the invoice or receipt Zoho Books issued (B3's email).
   | { name: 'invoice.issued'; invoiceId: number; bookingId: number }
   // M6 · messaging core (builder A).
@@ -21,9 +25,6 @@ export type AutomationEvent =
   | { name: 'newsletter.signedUp'; subscriberId: number } // N1
   | { name: 'newsletter.confirmed'; subscriberId: number } // N2
   | { name: 'newsletter.issueScheduled'; issueId: number } // N4
-  // M4 · the pipeline (docs/04 leads, proposals).
-  | { name: 'lead.created'; leadId: number; source: 'teamMap' | 'partnership' | 'call' } // P1, P2, P7
-  | { name: 'proposal.sent'; proposalId: number } // P5, P6
   // M5 · certificates and privacy.
   | { name: 'certificate.issued'; certificateId: number } // C5
   | { name: 'dataRequest.received'; dataRequestId: number } // O4, O7
@@ -31,8 +32,21 @@ export type AutomationEvent =
 
 export type AutomationEventName = AutomationEvent['name']
 
-/** The id field each event is about: its idempotency key is `<event>:<id>`. */
-const SUBJECT_FIELD: { readonly [Name in AutomationEventName]: string } = {
+/**
+ * M4's events are keyed by M4's own rule (`pipelineEventKey`): a repeatable event is told apart by
+ * what makes it different (the stage change's activity, the untouched level, the quiet spell, the
+ * version sent), so the key M6's listeners see is the key M4 queued them with.
+ */
+const PIPELINE_EVENTS: ReadonlySet<string> = new Set(PIPELINE_EVENT_NAMES)
+
+function isPipelineEvent(event: AutomationEvent): event is PipelineEvent {
+  return PIPELINE_EVENTS.has(event.name)
+}
+
+/** The id field every other event is about: its idempotency key is `<event>:<id>`. */
+const SUBJECT_FIELD: {
+  readonly [Name in Exclude<AutomationEventName, PipelineEventName>]: string
+} = {
   'booking.held': 'bookingId',
   'booking.holdExpired': 'bookingId',
   'booking.requested': 'bookingId',
@@ -58,18 +72,20 @@ const SUBJECT_FIELD: { readonly [Name in AutomationEventName]: string } = {
   'newsletter.signedUp': 'subscriberId',
   'newsletter.confirmed': 'subscriberId',
   'newsletter.issueScheduled': 'issueId',
-  'lead.created': 'leadId',
-  'proposal.sent': 'proposalId',
   'certificate.issued': 'certificateId',
   'dataRequest.received': 'dataRequestId',
   'incident.opened': 'incidentId',
 }
 
-/** The idempotency key of an event's jobs, `<event>:<id>`, the same rule as M3's `eventKey`. */
+/** The idempotency key of an event's jobs: M3's rule `<event>:<id>`, and M4's for its events. */
 export function automationEventKey(event: AutomationEvent): string {
-  const field = SUBJECT_FIELD[event.name]
+  if (isPipelineEvent(event)) return pipelineEventKey(event)
+  const field = SUBJECT_FIELD[event.name as keyof typeof SUBJECT_FIELD]
   const id = (event as unknown as Record<string, unknown>)[field]
   return `${event.name}:${String(id)}`
 }
 
-export const AUTOMATION_EVENT_NAMES = Object.keys(SUBJECT_FIELD) as AutomationEventName[]
+export const AUTOMATION_EVENT_NAMES = [
+  ...(Object.keys(SUBJECT_FIELD) as AutomationEventName[]),
+  ...PIPELINE_EVENT_NAMES,
+]

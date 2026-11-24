@@ -23,8 +23,11 @@ export const SCHEDULES: Readonly<Record<string, Schedule>> = {
   'O1-daily-digest': { cron: '0 0 3 * * *', ist: 'daily 08:30' },
   'O2-weekly-report': { cron: '0 30 3 * * 1', ist: 'Monday 09:00' },
   'O6-backup-check': { cron: '0 0 4 * * *', ist: 'daily 09:30' },
-  // M4's pipeline checks (P3, P4 hourly; P6 each morning).
-  'P3-P4-lead-ages': { cron: '0 5 * * * *', ist: 'hourly at :35' },
+  // M4's pipeline jobs (docs/17 §7, §5): the untouched and stale alerts hourly (P3, P4), and the
+  // proposals past their last valid day just after midnight in India, so a day the office gave
+  // is whole before the proposal expires (P8, proposed). P6's follow-up check each morning.
+  'P3-P4-lead-alerts': { cron: '0 5 * * * *', ist: 'hourly at :35' },
+  'P8-expire-proposals': { cron: '0 40 18 * * *', ist: 'daily 00:10' },
   'P6-proposal-follow-up': { cron: '0 15 3 * * *', ist: 'daily 08:45' },
 }
 

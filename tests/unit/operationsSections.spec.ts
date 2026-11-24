@@ -23,13 +23,20 @@ const QUIET: DigestFacts = {
   failedJobs: 0,
   suppressed: 0,
   reviewsAwaitingConsent: 0,
+  leads: { amber: 0, red: 0, stale: 0 },
+  proposalsExpired: [],
 }
+
+/** A section's lines by its title. */
+const linesOf = (sections: ReturnType<typeof digestSections>, title: string) =>
+  sections.find((section) => section.title === title)?.lines
 
 describe('the daily digest (O1)', () => {
   it('reads as quiet on a quiet morning: every section, each with its nothing line', () => {
     expect(digestSections(QUIET)).toEqual([
       { title: 'Today’s sessions', lines: ['No sessions today.'] },
       { title: 'Time requests', lines: ['No time requests waiting.'] },
+      { title: 'Leads and proposals', lines: ['No lead waiting, none stale.'] },
       { title: 'Payments', lines: ['Nothing waiting.'] },
       { title: 'Messages and jobs, last 24 hours', lines: ['Nothing failed.'] },
       { title: 'Reviews', lines: ['No reviews awaiting consent.'] },
@@ -72,11 +79,28 @@ describe('the daily digest (O1)', () => {
       failedJobs: 2,
       suppressed: 1,
     })
-    expect(sections[1]?.lines).toEqual(['2 requests waiting', 'Waiting over a day: FAKE-R1'])
-    expect(sections[3]?.lines).toEqual([
+    expect(linesOf(sections, 'Time requests')).toEqual([
+      '2 requests waiting',
+      'Waiting over a day: FAKE-R1',
+    ])
+    expect(linesOf(sections, 'Messages and jobs, last 24 hours')).toEqual([
       '1 message failed',
       '2 jobs failed',
       '1 address stopped (bounce, spam or stop)',
+    ])
+  })
+
+  it('counts the leads that need someone and names expired proposals by reference only (M4)', () => {
+    const sections = digestSections({
+      ...QUIET,
+      leads: { amber: 2, red: 1, stale: 3 },
+      proposalsExpired: ['IIIC-P-99901', 'IIIC-P-99902'],
+    })
+    expect(linesOf(sections, 'Leads and proposals')).toEqual([
+      '1 lead untouched for over 48 hours',
+      '2 leads untouched for over 24 hours',
+      '3 leads with no activity for 7 days',
+      'Proposals past their last valid day: IIIC-P-99901, IIIC-P-99902',
     ])
   })
 })

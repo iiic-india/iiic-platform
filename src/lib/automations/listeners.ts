@@ -8,13 +8,14 @@ import type { AutomationEventName } from './events'
 export type AutomationListeners = { readonly [Name in AutomationEventName]?: readonly string[] }
 
 /**
- * Every M6 subscription. An automation whose task is M3's (B4, B11, B14) has no event here; M3's
- * own listeners (the calendar write, the documents) stay in src/lib/booking/emit.ts.
+ * Every M6 subscription. An automation whose task is M3's (B4, B11, B14) or M4's (P2, P3, P4) has
+ * no event here; their own listeners stay where they are (src/lib/booking/emit.ts, with M4's P2
+ * from src/lib/pipeline/queue.ts), so no task is queued twice for one event.
  */
 export function listenersFrom(automations: readonly Automation[]): AutomationListeners {
   const listeners: { [Name in AutomationEventName]?: string[] } = {}
   for (const entry of automations) {
-    if (entry.owner === 'M3' || !entry.task) continue
+    if (entry.owner === 'M3' || entry.owner === 'M4' || !entry.task) continue
     for (const name of entry.on ?? []) {
       const tasks = (listeners[name] ??= [])
       if (!tasks.includes(entry.task)) tasks.push(entry.task)
