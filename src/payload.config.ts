@@ -53,6 +53,7 @@ import { Users } from './collections/Users'
 import { pipelineEndpoints } from './components/admin/pipeline/moveEndpoint'
 import { Settings } from './globals/Settings'
 import { jobs } from './jobs'
+import { adminViewEndpoints } from './lib/adminViews/endpoints'
 import { TOTP_OPTIONS } from './lib/auth/totp'
 import { env } from './lib/env'
 import { reportServerError, reportTestError } from './lib/monitoring/sentry'
@@ -116,7 +117,11 @@ export default buildConfig({
     avatar: 'default',
     components: {
       // Recovery codes for staff two-factor (src/lib/auth/recoveryEndpoints.ts).
-      beforeDashboard: ['/components/admin/RecoveryCodes#RecoveryCodes'],
+      beforeDashboard: [
+        '/components/admin/RecoveryCodes#RecoveryCodes',
+        // M5 C: the way to Today, until Today replaces the dashboard (docs/18 §8).
+        '/components/admin/views/ViewsNavLinks#TodayLink',
+      ],
       // Content → Placeholders: what the pages still wait for (D-56).
       afterNavLinks: [
         '/components/admin/PlaceholdersNavLink#PlaceholdersNavLink',
@@ -129,6 +134,9 @@ export default buildConfig({
         // M5 B: certificates (D-39; docs/18 §4).
         '/components/admin/certificates/CertificatesNavLink#CertificatesNavLink',
         // M5 B end.
+        // M5 C: Today, Calendar, Search, Proof, Reports, Settings (docs/18 §6).
+        '/components/admin/views/ViewsNavLinks#ViewsNavLinks',
+        // M5 C end.
       ],
       // IIIC's own two-factor views replace payload-totp's: same keys and paths, which the
       // plugin spreads after its own, so these win. One labelled code field each; the verify
@@ -170,6 +178,44 @@ export default buildConfig({
           exact: true,
         },
         // M5 B end.
+        // M5 C: the views (docs/18 §6). Each checks the user, the code and the role itself, and
+        // its loader asks again before it reads anything (CLAUDE.md #6).
+        today: {
+          Component: '/components/admin/views/TodayView#TodayView',
+          path: '/today',
+          exact: true,
+        },
+        calendar: {
+          Component: '/components/admin/views/CalendarView#CalendarView',
+          path: '/calendar',
+          exact: true,
+        },
+        reports: {
+          Component: '/components/admin/views/ReportsView#ReportsView',
+          path: '/reports',
+          exact: true,
+        },
+        search: {
+          Component: '/components/admin/views/SearchView#SearchView',
+          path: '/search',
+          exact: true,
+        },
+        person: {
+          Component: '/components/admin/views/PersonView#PersonView',
+          path: '/people/:id',
+          exact: true,
+        },
+        proof: {
+          Component: '/components/admin/views/ProofView#ProofView',
+          path: '/proof',
+          exact: true,
+        },
+        adminSettings: {
+          Component: '/components/admin/views/SettingsView#SettingsView',
+          path: '/settings',
+          exact: true,
+        },
+        // M5 C end.
       },
     },
   },
@@ -267,6 +313,8 @@ export default buildConfig({
   endpoints: [
     { path: '/report-test-error', method: 'post', handler: reportTestError },
     ...pipelineEndpoints,
+    // M5 C: the audit log's CSV, for an owner with the code (src/lib/adminViews/endpoints.ts).
+    ...adminViewEndpoints,
   ],
   plugins: [
     // Media in Cloudflare R2's public bucket (docs/07) once R2 is configured; on the local disk
