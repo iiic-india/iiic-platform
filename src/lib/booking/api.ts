@@ -49,7 +49,10 @@ import { hashManageToken, isManageToken, manageLinkOpen, newManageToken } from '
  */
 
 export type ApiError =
-  BookingError | { code: 'invalid-input'; fields: string[] } | { code: 'forbidden' }
+  | BookingError
+  | { code: 'invalid-input'; fields: string[] }
+  | { code: 'forbidden' }
+  | { code: 'price-changed' }
 
 /** What the flow and the manage page may show of a booking: never its price or its person. */
 export type BookingSummary = {
@@ -278,6 +281,12 @@ export type FlowContext = {
   consents?: number[]
   /** The payments module's price source. */
   price: PriceSource
+  /**
+   * The total the visitor was shown for the option, null when none was (docs/08 §5: the total
+   * shown at step 1 never grows). While prices are published, a different total in force
+   * refuses the booking with `price-changed`, before anything is held.
+   */
+  shownTotalPaise?: number | null
   now?: Date
 }
 
@@ -380,6 +389,15 @@ export async function bookSlot(
   )
   if (!price.ok) return price
   const flags = await readFlags(req.payload)
+  // A free option shows no total, as the flow's review draws none for it.
+  const inForce = price.value && price.value.totalPaise > 0 ? price.value.totalPaise : null
+  if (
+    flags.pricesPublic &&
+    context.shownTotalPaise !== undefined &&
+    inForce !== (context.shownTotalPaise || null)
+  ) {
+    return err({ code: 'price-changed' })
+  }
   const pay = flags.payAtBooking && (price.value?.totalPaise ?? 0) > 0
 
   return inTransaction(

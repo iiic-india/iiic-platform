@@ -2,7 +2,7 @@ import { sql } from '@payloadcms/db-postgres'
 import { createLocalReq, getPayload, type Payload } from 'payload'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { requestClientRefund } from '@/lib/bookingFlow/clientRefund'
+import { refundableOnChain, requestClientRefund } from '@/lib/bookingFlow/clientRefund'
 import { bookInfoSession } from '@/lib/bookingFlow/info'
 import type { Booking, Person, PlatformSettings, Service } from '@/payload-types'
 import config from '@/payload.config'
@@ -179,11 +179,33 @@ describe('the refund a client’s cancellation asks for', () => {
       depth: 0,
     })
     expect(refund.amountPaise).toBe(50_000)
+    // The caller learns it asked for less than the rule gave, and refuses the cancellation.
+    expect(capped.requestedPaise).toBe(50_000)
     const tiny = await paidBooking()
     expect(
       (await requestClientRefund(await fresh(), { booking: tiny.booking, amountPaise: 99 }))
         .refundIds,
     ).toEqual([])
+  })
+
+  it('counts an open refund against what the payment can still give back', async () => {
+    await setThreshold(null)
+    const { booking, paymentId } = await paidBooking()
+    await payload.create({
+      collection: 'refunds',
+      data: {
+        payment: paymentId,
+        booking: booking.id,
+        status: 'awaitingApproval',
+        amountPaise: 20_000,
+        reason: 'other',
+        idempotencyKey: `fake-open-refund-${booking.id}`,
+      },
+    })
+    expect(await refundableOnChain(await fresh(), booking)).toBe(30_000)
+    const asked = await requestClientRefund(await fresh(), { booking, amountPaise: 50_000 })
+    // Less than the ₹500 the rule gave: the client's cancellation refuses rather than promise it.
+    expect(asked.requestedPaise).toBe(30_000)
   })
 })
 

@@ -64,6 +64,18 @@ describe('the beacon', () => {
       expect(beaconSources(path).scriptOrigins, path).toEqual([])
     }
     expect(countsPath('/administration')).toBe(true)
+    // A booking's token or reference in the address never reaches the beacon (docs/16 §6).
+    for (const path of [
+      '/b/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      '/book/pay/IIIC-S-00001',
+      '/book/confirmed/IIIC-S-00001',
+    ]) {
+      requestFor(path)
+      expect(await draw(), path).toBe('')
+      expect(beaconSources(path).connectOrigins, path).toEqual([])
+    }
+    expect(countsPath('/book/session')).toBe(true)
+    expect(countsPath('/blog')).toBe(true)
     requestFor('/', null)
     expect(await draw()).toBe('')
   })

@@ -51,6 +51,8 @@ export type GatewayRefund = {
   amountPaise: Paise
   status: 'pending' | 'processed' | 'failed'
 }
+/** A refund as the gateway lists it for a payment, with the receipt it was sent with. */
+export type GatewayRefundFound = GatewayRefund & { receipt: string | null }
 
 export interface PaymentGateway {
   readonly name: 'razorpay' | 'fake'
@@ -65,6 +67,8 @@ export interface PaymentGateway {
   cancelPaymentLink(linkId: string): Promise<Result<void, GatewayError>>
   /** Always to the original payment method (docs/08 §4). */
   refund(refund: CreateRefund): Promise<Result<GatewayRefund, GatewayError>>
+  /** The refunds made on a payment: the poll settles a send whose answer never came (docs/16 §5). */
+  fetchRefunds(paymentId: string): Promise<Result<GatewayRefundFound[], GatewayError>>
   /** Payments captured in a window, for the daily reconciliation (B11). */
   listPayments(window: { from: Date; to: Date }): Promise<Result<GatewayPayment[], GatewayError>>
   /** The webhook's signature over the raw body, before anything is parsed (docs/08 §9). */

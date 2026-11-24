@@ -6,6 +6,7 @@ import type { PayloadRequest } from 'payload'
 import { err, ok, type Result } from '@/lib/result'
 import type { Booking } from '@/payload-types'
 
+import { CAPTURE_CONFIRMATION } from './bookingHooks'
 import { emit } from './emit'
 import { inTransaction, keepOk, lockBooking } from './guard'
 import { placeBooking, type PlaceInput } from './holds'
@@ -80,7 +81,14 @@ export const confirmBooking = (
         return refuse
       }
 
-      const confirmed = await updateBooking(req, booking.id, data)
+      // A hold's confirmation says it comes from a capture, for the collection's check of staff
+      // edits when an owner runs the poll as a job (src/lib/booking/bookingHooks.ts).
+      const confirmed = await updateBooking(
+        req,
+        booking.id,
+        data,
+        booking.status === 'requested' ? undefined : { [CAPTURE_CONFIRMATION]: true },
+      )
       if (!confirmed.ok) return confirmed
       await emit(req, { name: 'booking.confirmed', bookingId: booking.id, cause: input.cause })
       return confirmed

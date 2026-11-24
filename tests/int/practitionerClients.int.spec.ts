@@ -218,6 +218,86 @@ describe('a practitioner and their own clients (the owner, 22 November 2026)', (
     expect(unchanged.city).toBe('Fake City')
   })
 
+  it('cannot point their own booking at another person to read them, or change what it is', async () => {
+    const own = await payload.find({
+      collection: 'bookings',
+      where: { and: [{ reference: { like: REF } }, { practitioner: { equals: profile.mine.id } }] },
+      depth: 0,
+    })
+    const booking = own.docs[0] as Booking
+    await payload.update({
+      collection: 'bookings',
+      id: booking.id,
+      data: {
+        person: client.nobodys.id,
+        bookedBy: client.theirs.id,
+        practitioner: profile.theirs.id,
+        paymentStatus: 'paid',
+        manageTokenHash: 'fake-hash-set-by-a-practitioner',
+      } as Partial<Booking>,
+      user: verified(staff.practitionerA),
+      overrideAccess: false,
+    })
+    const kept = await payload.findByID({
+      collection: 'bookings',
+      id: booking.id,
+      depth: 0,
+      showHiddenFields: true,
+    })
+    expect(kept.person).toBe(client.mine.id)
+    expect(kept.bookedBy ?? null).toBeNull()
+    expect(kept.practitioner).toBe(profile.mine.id)
+    expect(kept.paymentStatus).toBe('notRequired')
+    expect(kept.manageTokenHash ?? null).toBeNull()
+    await expect(
+      payload.findByID({
+        collection: 'people',
+        id: client.nobodys.id,
+        user: verified(staff.practitionerA),
+        overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+    // The one change of theirs: marking the session attended or a no-show.
+    await expect(
+      payload.update({
+        collection: 'bookings',
+        id: booking.id,
+        data: { status: 'cancelledByIiic' },
+        user: verified(staff.practitionerA),
+        overrideAccess: false,
+      }),
+    ).rejects.toThrow()
+    const marked = await payload.update({
+      collection: 'bookings',
+      id: booking.id,
+      data: { status: 'noShow' },
+      user: verified(staff.practitionerA),
+      overrideAccess: false,
+      depth: 0,
+    })
+    expect(marked.status).toBe('noShow')
+  })
+
+  it('leaves the payment state to the payments module, even for the office', async () => {
+    const theirs = await payload.find({
+      collection: 'bookings',
+      where: {
+        and: [{ reference: { like: REF } }, { practitioner: { equals: profile.theirs.id } }],
+      },
+      depth: 0,
+    })
+    const booking = theirs.docs[0] as Booking
+    await payload.update({
+      collection: 'bookings',
+      id: booking.id,
+      data: { paymentStatus: 'paid' },
+      user: verified(staff.operator),
+      overrideAccess: false,
+    })
+    const kept = await payload.findByID({ collection: 'bookings', id: booking.id, depth: 0 })
+    expect(kept.paymentStatus).toBe('notRequired')
+  })
+
   it('leaves the office reading every person and every field', async () => {
     const { docs } = await payload.find({
       collection: 'people',

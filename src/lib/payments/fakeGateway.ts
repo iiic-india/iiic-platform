@@ -11,6 +11,7 @@ import type {
   GatewayPayment,
   GatewayPaymentLink,
   GatewayRefund,
+  GatewayRefundFound,
   PaymentGateway,
 } from './gateway'
 
@@ -43,7 +44,7 @@ export class FakeGateway implements PaymentGateway {
   readonly orders = new Map<string, GatewayOrder>()
   readonly payments = new Map<string, GatewayPayment>()
   readonly links = new Map<string, GatewayPaymentLink & { amountPaise: number }>()
-  readonly refunds = new Map<string, GatewayRefund>()
+  readonly refunds = new Map<string, GatewayRefundFound>()
   private readonly orderByReceipt = new Map<string, string>()
   /** Makes every call fail as the gateway would while it is down, until set back. */
   down = false
@@ -109,8 +110,14 @@ export class FakeGateway implements PaymentGateway {
       amountPaise: refund.amountPaise,
       status: 'processed',
     }
-    this.refunds.set(created.refundId, created)
+    this.refunds.set(created.refundId, { ...created, receipt: refund.receipt })
     return ok(created)
+  }
+
+  async fetchRefunds(paymentId: string): Promise<Result<GatewayRefundFound[], GatewayError>> {
+    const failure = this.check()
+    if (failure) return err(failure)
+    return ok([...this.refunds.values()].filter((refund) => refund.paymentId === paymentId))
   }
 
   async listPayments(window: {

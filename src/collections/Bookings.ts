@@ -5,7 +5,12 @@ import { hasRole } from '@/access/roles'
 import { AGE_BANDS } from '@/collections/People'
 import { istDayField } from '@/fields/istDay'
 import { basisPointsField, paiseField, wholeNumber } from '@/fields/numbers'
-import { assignReference, fillEnd, keepMoves } from '@/lib/booking/bookingHooks'
+import {
+  assignReference,
+  fillEnd,
+  keepMoves,
+  validatePaymentStatus,
+} from '@/lib/booking/bookingHooks'
 import {
   BOOKING_FOR,
   BOOKING_FORMATS,
@@ -34,6 +39,9 @@ const serverOnly = {
   create: allowField(FIELD_POLICY.serverOnly.write),
   update: allowField(FIELD_POLICY.serverOnly.write),
 }
+
+// Every field but the state: the office changes it; a practitioner changes none of it (D-89).
+const officeEdits = { update: allowField(FIELD_POLICY.bookingEdits.write) }
 
 const instant = (name: string, label: string, extra: Partial<Field> = {}): Field =>
   ({
@@ -128,9 +136,11 @@ export const Bookings: CollectionConfig = {
           required: true,
           index: true,
           options: [...BOOKING_TYPES],
+          access: officeEdits,
           admin: { width: '33%' },
         },
         {
+          // A practitioner may set it too, to mark attendance only (keepMoves).
           name: 'status',
           type: 'select',
           required: true,
@@ -139,12 +149,16 @@ export const Bookings: CollectionConfig = {
           admin: { width: '33%' },
         },
         {
+          // Moved by the payments module only (docs/16 §3): the office books as unpaid or needing
+          // no payment, and nobody types a later state.
           name: 'paymentStatus',
           type: 'select',
           label: 'Payment',
           required: true,
           defaultValue: 'notRequired',
           options: [...BOOKING_PAYMENT_STATUSES],
+          access: { update: allowField(FIELD_POLICY.bookingMoney.write) },
+          validate: validatePaymentStatus,
           admin: { width: '33%' },
         },
       ],
@@ -152,7 +166,13 @@ export const Bookings: CollectionConfig = {
     {
       type: 'row',
       fields: [
-        { name: 'service', type: 'relationship', relationTo: 'services', required: true },
+        {
+          name: 'service',
+          type: 'relationship',
+          relationTo: 'services',
+          required: true,
+          access: officeEdits,
+        },
         {
           // The id of the service's option chosen (Payload's id of the options row), with its
           // label and length copied in, so a later change to the service never changes a booking.
@@ -160,15 +180,23 @@ export const Bookings: CollectionConfig = {
           type: 'text',
           label: 'Option',
           maxLength: 64,
+          access: officeEdits,
           admin: { readOnly: true },
         },
-        { name: 'optionLabel', type: 'text', label: 'Option as booked', maxLength: 100 },
+        {
+          name: 'optionLabel',
+          type: 'text',
+          label: 'Option as booked',
+          maxLength: 100,
+          access: officeEdits,
+        },
         {
           name: 'durationMinutes',
           type: 'number',
           label: 'Length (minutes)',
           min: 1,
           validate: wholeNumber('the length'),
+          access: officeEdits,
         },
       ],
     },
@@ -180,6 +208,7 @@ export const Bookings: CollectionConfig = {
           type: 'relationship',
           relationTo: 'practitioners',
           index: true,
+          access: officeEdits,
           admin: { description: 'Whose time it takes. Empty for a fixed-time session.' },
         },
         {
@@ -187,6 +216,7 @@ export const Bookings: CollectionConfig = {
           type: 'relationship',
           relationTo: 'events',
           index: true,
+          access: officeEdits,
           admin: { description: 'The fixed-time session booked, for an info session.' },
         },
       ],
@@ -200,12 +230,14 @@ export const Bookings: CollectionConfig = {
           relationTo: 'people',
           required: true,
           index: true,
+          access: officeEdits,
           admin: { description: 'The client.' },
         },
         {
           name: 'bookedBy',
           type: 'relationship',
           relationTo: 'people',
+          access: officeEdits,
           admin: { description: 'The parent or guardian who booked, when not the client.' },
         },
       ],
@@ -213,16 +245,28 @@ export const Bookings: CollectionConfig = {
     {
       type: 'row',
       fields: [
-        { name: 'whoFor', type: 'select', label: 'Who it is for', options: [...BOOKING_FOR] },
-        { name: 'ageBand', type: 'select', label: 'Age band', options: [...AGE_BANDS] },
-        { name: 'format', type: 'select', options: [...BOOKING_FORMATS] },
+        {
+          name: 'whoFor',
+          type: 'select',
+          label: 'Who it is for',
+          options: [...BOOKING_FOR],
+          access: officeEdits,
+        },
+        {
+          name: 'ageBand',
+          type: 'select',
+          label: 'Age band',
+          options: [...AGE_BANDS],
+          access: officeEdits,
+        },
+        { name: 'format', type: 'select', options: [...BOOKING_FORMATS], access: officeEdits },
       ],
     },
     {
       type: 'row',
       fields: [
-        instant('startsAt', 'Starts', { index: true }),
-        instant('endsAt', 'Ends'),
+        instant('startsAt', 'Starts', { index: true, access: officeEdits }),
+        instant('endsAt', 'Ends', { access: officeEdits }),
         instant('holdExpiresAt', 'Hold ends', {
           access: { create: serverOnly.create, update: serverOnly.update },
           admin: {
@@ -238,6 +282,7 @@ export const Bookings: CollectionConfig = {
       name: 'timeRequest',
       type: 'group',
       label: 'Time request',
+      access: officeEdits,
       admin: { condition: (data) => data?.status === 'requested' || Boolean(data?.timeRequest) },
       fields: [
         {
@@ -295,9 +340,11 @@ export const Bookings: CollectionConfig = {
       type: 'row',
       fields: [
         {
+          // The chain of reschedules the payments module walks: the server's to write.
           name: 'rescheduledFrom',
           type: 'relationship',
           relationTo: 'bookings',
+          access: { create: serverOnly.create, update: serverOnly.update },
           admin: { readOnly: true, description: 'The booking this one replaced.' },
         },
         instant('confirmedAt', 'Confirmed', {
@@ -309,6 +356,7 @@ export const Bookings: CollectionConfig = {
     {
       name: 'cancellation',
       type: 'group',
+      access: officeEdits,
       admin: {
         condition: (data) =>
           data?.status === 'cancelledByClient' || data?.status === 'cancelledByIiic',
@@ -320,6 +368,7 @@ export const Bookings: CollectionConfig = {
       // leads arrive (M4) and take them over.
       name: 'company',
       type: 'group',
+      access: officeEdits,
       admin: { condition: (data) => data?.type === 'call' },
       fields: [
         {
@@ -339,16 +388,18 @@ export const Bookings: CollectionConfig = {
       type: 'relationship',
       relationTo: 'consents',
       hasMany: true,
+      access: officeEdits,
       admin: { readOnly: true },
     },
     {
       type: 'row',
       fields: [
-        { name: 'source', type: 'text', maxLength: 100 },
+        { name: 'source', type: 'text', maxLength: 100, access: officeEdits },
         {
           name: 'utm',
           type: 'group',
           label: 'Campaign (UTM)',
+          access: officeEdits,
           fields: [
             {
               type: 'row',
@@ -364,11 +415,12 @@ export const Bookings: CollectionConfig = {
     },
     {
       // The hash of the manage link's token (F4, `/b/[token]`): the token itself is sent once
-      // and never stored. Hidden from every read.
+      // and never stored. Hidden from every read, and written by the server only.
       name: 'manageTokenHash',
       type: 'text',
       unique: true,
       hidden: true,
+      access: { create: serverOnly.create, update: serverOnly.update },
     },
     {
       // One checkout, one booking: a double submit finds the booking it already made.
@@ -376,6 +428,7 @@ export const Bookings: CollectionConfig = {
       type: 'text',
       unique: true,
       hidden: true,
+      access: { create: serverOnly.create, update: serverOnly.update },
     },
   ],
 }

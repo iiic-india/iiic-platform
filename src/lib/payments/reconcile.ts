@@ -21,7 +21,8 @@ import { claimGatewayEvent, freshRequest, inTransaction } from './store'
  * money that does not match is the office's to look at.
  *
  * Findings: a capture the platform has no payment for (`unknown-capture`); one the platform has
- * not recorded as captured (`missed-capture`); an amount that differs (`amount-mismatch`); a
+ * not recorded as captured (`missed-capture`); a second capture on an order whose first the
+ * platform recorded, so the client paid twice (`second-capture`); an amount that differs (`amount-mismatch`); a
  * captured payment whose booking is not marked paid (`booking-not-paid`); a payment the gateway
  * shows as refunded that the platform does not (`refund-outside-platform`, a refund made in the
  * dashboard). A partial refund made in the dashboard is not visible in the gateway's list of
@@ -31,6 +32,7 @@ import { claimGatewayEvent, freshRequest, inTransaction } from './store'
 export type Finding =
   | 'unknown-capture'
   | 'missed-capture'
+  | 'second-capture'
   | 'amount-mismatch'
   | 'booking-not-paid'
   | 'refund-outside-platform'
@@ -48,12 +50,15 @@ export function istDayWindow(day: string): { from: Date; to: Date } {
 /** What, if anything, is wrong between the gateway's payment and the platform's. */
 export function findingFor(
   found: GatewayPayment,
-  ours: Pick<Payment, 'status' | 'amountPaise'> | null,
+  ours:
+    (Pick<Payment, 'status' | 'amountPaise'> & Partial<Pick<Payment, 'gatewayPaymentId'>>) | null,
   bookingPaymentStatus: string | null,
 ): Finding | null {
   if (found.status !== 'captured' && found.status !== 'refunded') return null
   if (!ours) return 'unknown-capture'
   if (!CAPTURED_STATES.includes(ours.status)) return 'missed-capture'
+  // Found through its order: the platform holds that order's first capture, not this one.
+  if (ours.gatewayPaymentId && ours.gatewayPaymentId !== found.paymentId) return 'second-capture'
   if (ours.amountPaise !== found.amountPaise) return 'amount-mismatch'
   if (found.status === 'refunded' && ours.status !== 'refunded') return 'refund-outside-platform'
   if (bookingPaymentStatus !== null && !PAID_STATES.includes(bookingPaymentStatus)) {
