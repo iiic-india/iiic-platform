@@ -182,9 +182,9 @@ async function joinTheJournal(
 /**
  * `GiveConsent`: one of the two marketing consents, on the account's own record, under the
  * notice in force, which must be the one the page showed. Refused as `closed-here` on a preview
- * and for an account whose row has gone since its session was read, and wherever My IIIC does
- * not offer it (no notice in force, a record under 18, no verified detail for it, WhatsApp not
- * set up), since the contract names no other code for that.
+ * and for an account whose row has gone since its session was read; as `not-offered` wherever
+ * My IIIC does not offer it (no notice in force, a record under 18, no verified detail for it,
+ * WhatsApp not set up; D-135).
  */
 export const giveConsent: GiveConsent = async (req, account, input, now) => {
   if (!actsHere(env().VERCEL_ENV)) return err({ code: 'closed-here' })
@@ -193,7 +193,7 @@ export const giveConsent: GiveConsent = async (req, account, input, now) => {
   if (!parsed.success) return err({ code: 'notice-changed' })
   const { purpose, noticeVersionId } = parsed.data
   const notice = await currentNotice(req.payload, purpose, LANGUAGE, now)
-  if (!notice) return err({ code: 'closed-here' })
+  if (!notice) return err({ code: 'not-offered' })
   if (notice.id !== noticeVersionId) return err({ code: 'notice-changed' })
 
   const ids = await ownPersonIds(req, account)
@@ -207,7 +207,7 @@ export const giveConsent: GiveConsent = async (req, account, input, now) => {
     const facts = await offerFacts(req, account, ids, {
       [purpose]: { id: notice.id, text: notice.text },
     })
-    if (!mayOffer(purpose, facts)) return err({ code: 'closed-here' as const })
+    if (!mayOffer(purpose, facts)) return err({ code: 'not-offered' as const })
     // The consent first (CLAUDE.md #4). The ledger takes the purpose and the language from the
     // notice (completeEntry in src/collections/Consents.ts).
     const grant = {

@@ -374,7 +374,7 @@ describe('giving a marketing consent from My IIIC (D-119)', () => {
           { purpose: 'marketingEmail', noticeVersionId: notices.marketingEmail.id, consent: true },
           new Date(),
         ),
-      ).toEqual({ ok: false, error: { code: 'closed-here' } })
+      ).toEqual({ ok: false, error: { code: 'not-offered' } })
       expect(await consentFor(payload, records.own.id, 'marketingEmail')).toBe('withdrawn')
     } finally {
       await payload.update({

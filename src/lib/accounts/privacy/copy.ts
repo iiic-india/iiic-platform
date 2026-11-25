@@ -255,6 +255,7 @@ export const ERROR_COPY = {
     'The words for this consent changed while the page was open. Read them again below, then tick the box.',
   unticked: 'Tick the box to agree, then send it.',
   'closed-here': `That cannot be done from here just now. Write to ${OFFICE_EMAIL} instead.`,
+  'not-offered': 'My IIIC does not offer this just now, so nothing was recorded.',
   failed: 'That did not go through. Try again in a few minutes.',
   'sign-in-again': CLOSE_COPY.recent,
 } as const satisfies Record<ErrorCode, string>

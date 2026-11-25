@@ -38,6 +38,7 @@ export const ERROR_CODES = [
   'notice-changed',
   'unticked',
   'closed-here',
+  'not-offered',
   'failed',
   'sign-in-again',
 ] as const

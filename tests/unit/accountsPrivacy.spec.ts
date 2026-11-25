@@ -527,19 +527,41 @@ describe('GiveConsent', () => {
       ok: false,
       error: { code: 'already-given' },
     })
-    // No verified email: the Journal is offered after one is added.
+    // No verified email: the Journal is offered after one is added (D-135: not offered).
     const noEmail = second({ verified: { email: null, mobile: '+919000000000' } })
     expect(await giveConsent(req(), noEmail, journal, NOW)).toEqual({
       ok: false,
-      error: { code: 'closed-here' },
+      error: { code: 'not-offered' },
     })
     // Nothing is offered to a record under 18.
     db.person(22, { account: 2, ageBand: 'under18' })
     expect(await giveConsent(req(), second(), journal, NOW)).toEqual({
       ok: false,
-      error: { code: 'closed-here' },
+      error: { code: 'not-offered' },
+    })
+    // No notice in force for the purpose: nothing to agree to, so it is not offered either.
+    state.notices = { marketingEmail: null, marketingWhatsapp: 702 }
+    expect(await giveConsent(req(), first(), journal, NOW)).toEqual({
+      ok: false,
+      error: { code: 'not-offered' },
     })
     expect(db.collections.consents?.filter((entry) => entry.person === 21)).toHaveLength(0)
+  })
+
+  it('says plainly that a consent is not offered, and never that the page is closed', async () => {
+    vi.mocked(seams.requireAccount).mockImplementation(async () => first())
+    state.notices = { marketingEmail: null, marketingWhatsapp: 702 }
+    const form = new FormData()
+    form.set('purpose', 'marketingEmail')
+    form.set('consent', 'yes')
+    form.set('noticeVersionId', '701')
+    const to =
+      '/account/privacy?error=not-offered&in=messages&purpose=marketingEmail#outcome-messages'
+    await expect(actions.giveConsentAction(form)).rejects.toMatchObject({ to })
+    const params = Object.fromEntries(new URL(to, 'https://fake.example.invalid').searchParams)
+    expect(copy.outcomeText(outcome.readOutcome(params)!)).toBe(
+      'My IIIC does not offer this just now, so nothing was recorded.',
+    )
   })
 
   it('gives nothing on a preview', async () => {

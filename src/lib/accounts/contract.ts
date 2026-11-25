@@ -493,13 +493,21 @@ export const giveConsentInput = z.strictObject({
 })
 export type GiveConsentInput = z.infer<typeof giveConsentInput>
 
+/**
+ * A marketing consent from My IIIC (D-119). `closed-here`: a preview, or an account gone since its
+ * session was read; `not-offered`: My IIIC does not offer this one to this account now (no notice
+ * in force, a record under 18, no verified detail for its channel, WhatsApp not set up; D-135).
+ */
 export type GiveConsent = (
   req: PayloadRequest,
   account: AccountSession,
   input: GiveConsentInput,
   now: Date,
 ) => Promise<
-  Result<{ consentId: number }, { code: 'closed-here' | 'notice-changed' | 'already-given' }>
+  Result<
+    { consentId: number },
+    { code: 'closed-here' | 'not-offered' | 'notice-changed' | 'already-given' }
+  >
 >
 
 export type WithdrawConsent = (
