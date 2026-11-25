@@ -3,7 +3,7 @@ import { hkdfSync } from 'node:crypto'
 import { EncryptJWT, jwtDecrypt } from 'jose'
 import { z } from 'zod'
 
-import { SIGN_IN_CHANNELS, SIGN_IN_COOKIE } from '../contract'
+import { ADD_DETAIL_COOKIE, SIGN_IN_CHANNELS, SIGN_IN_COOKIE } from '../contract'
 
 /**
  * The sign-in cookie (docs/20 §10; docs/12 §10): one sign-in carried from the address step to the
@@ -12,8 +12,8 @@ import { SIGN_IN_CHANNELS, SIGN_IN_COOKIE } from '../contract'
  * change it. It holds the channel, the address, the `sign-in-requests` row, when the code went
  * and, once a right code has proven an address with no account, when it was proven and whether
  * the device is to be kept. Never the code. HttpOnly, Secure over HTTPS, SameSite=Lax, path
- * /login (a second detail's: `attemptPath`), fifteen minutes; cleared on sign-in and by "Use a
- * different address".
+ * /login, fifteen minutes; cleared on sign-in and by "Use a different address". A second detail's
+ * attempt travels the same way in a cookie of its own, on /account (`attemptCookie`; D-129).
  */
 
 export const Attempt = z.strictObject({
@@ -41,13 +41,21 @@ function cookieKey(secret: string): Uint8Array {
   return new Uint8Array(hkdfSync('sha256', secret, '', COOKIE_INFO, 32))
 }
 
+/**
+ * The cookie each purpose's attempt travels in (docs/12 §10; D-129): a sign-in's on /login, a
+ * second detail's under a name of its own on /account. Each reader names the one it reads, so an
+ * attempt of one purpose never answers for the other.
+ */
+export const attemptCookie = (purpose: Attempt['purpose']) =>
+  purpose === 'addDetail' ? ADD_DETAIL_COOKIE : SIGN_IN_COOKIE
+
 /** The sealed value, good for fifteen minutes from `now`. */
 export async function sealAttempt(secret: string, attempt: Attempt, now: Date): Promise<string> {
   const issued = Math.floor(now.getTime() / 1000)
   return new EncryptJWT({ attempt })
     .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
     .setIssuedAt(issued)
-    .setExpirationTime(issued + SIGN_IN_COOKIE.maxAgeSeconds)
+    .setExpirationTime(issued + attemptCookie(attempt.purpose).maxAgeSeconds)
     .encrypt(cookieKey(secret))
 }
 
@@ -88,21 +96,16 @@ export type CookieJar = {
   delete: (name: string, options: { path: string; secure: boolean }) => void
 }
 
+/** The attempt of this purpose, from its own cookie; null when that cookie holds no such attempt. */
 export async function readAttempt(
   jar: CookieJar,
   secret: string,
   now: Date,
+  purpose: Attempt['purpose'],
 ): Promise<Attempt | null> {
-  return openAttempt(secret, jar.get(SIGN_IN_COOKIE.name), now)
+  const attempt = await openAttempt(secret, jar.get(attemptCookie(purpose).name), now)
+  return attempt?.purpose === purpose ? attempt : null
 }
-
-/**
- * Where the attempt's cookie is sent: /login for a sign-in (SIGN_IN_COOKIE.path); the whole site
- * for a second detail added from My IIIC (docs/20 §4.6), whose code is entered on the privacy
- * page under /account, and only by a person already signed in (D-128).
- */
-export const attemptPath = (purpose: Attempt['purpose']): string =>
-  purpose === 'addDetail' ? '/' : SIGN_IN_COOKIE.path
 
 export async function writeAttempt(
   jar: CookieJar,
@@ -111,21 +114,19 @@ export async function writeAttempt(
   now: Date,
   secure: boolean,
 ): Promise<void> {
-  jar.set(SIGN_IN_COOKIE.name, await sealAttempt(secret, attempt, now), {
+  const cookie = attemptCookie(attempt.purpose)
+  jar.set(cookie.name, await sealAttempt(secret, attempt, now), {
     httpOnly: true,
     secure,
     sameSite: 'lax',
-    path: attemptPath(attempt.purpose),
-    maxAge: SIGN_IN_COOKIE.maxAgeSeconds,
+    path: cookie.path,
+    maxAge: cookie.maxAgeSeconds,
   })
 }
 
-export function clearAttempt(
-  jar: CookieJar,
-  secure: boolean,
-  purpose: Attempt['purpose'] = 'signIn',
-): void {
-  jar.delete(SIGN_IN_COOKIE.name, { path: attemptPath(purpose), secure })
+export function clearAttempt(jar: CookieJar, secure: boolean, purpose: Attempt['purpose']): void {
+  const cookie = attemptCookie(purpose)
+  jar.delete(cookie.name, { path: cookie.path, secure })
 }
 
 /** `next` is kept only when it is a path under /account (docs/20 §3.5). */

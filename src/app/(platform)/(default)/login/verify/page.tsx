@@ -25,8 +25,8 @@ export const dynamic = 'force-dynamic'
 const step = cache(async (): Promise<{ attempt: Attempt | null }> => {
   const payload = await getPayload({ config })
   if (!(await readFlags(payload)).accountsEnabled) notFound()
-  const attempt = await currentAttempt(await createLocalReq({}, payload), new Date())
-  return { attempt: attempt?.purpose === 'signIn' ? attempt : null }
+  // A sign-in's attempt only: a second detail's travels in a cookie of its own (D-129).
+  return { attempt: await currentAttempt(await createLocalReq({}, payload), new Date()) }
 })
 
 export async function generateMetadata(): Promise<Metadata> {

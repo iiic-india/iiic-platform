@@ -135,13 +135,14 @@ The decision log. Claude Code reads this before building and records any new dec
 | D-126 | WhatsApp sign-in codes are built and tested with the email ones but stay off until IIIC's WhatsApp number and provider are set up (I-03, I-40) and Meta approves the authentication template (I-66); one account then holds both an email and a mobile, the second added from My IIIC with a code. SMS stays out (D-08). | Recommended (applies D-08) | R2 |
 | D-127 | Customers are never Payload users (`20` §1, §8): every My IIIC page, action and route checks the account's session first, and every read or write of a person's records is a server function in `src/lib/accounts` scoped to the account's own records, answering a record of anyone else exactly as one that does not exist; a test fails on an unscoped query there. Reason: CLAUDE.md #6, and Payload's access rules are written for staff roles. | Recommended | R2 |
 | D-128 | One way to add a second contact detail (`20` §4.6; D-120, D-126): the privacy page's own steps at `/account/privacy/contact`, which only a signed-in person reaches through My IIIC's door; the separate `/login/detail` that builder A also built is removed with its actions, forms and words. Reason: nothing linked to it and `20` §4.6 never named it, and a second private page with the same steps is one more to test, to keep in the page, header and cookie inventories, and to keep in step with the first. | Decided (IIIC delegated the build decisions, 25 November 2026) | R2 |
+| D-129 | The second detail's cookie (`12` §10; `20` §4.6, §10): a second detail's attempt travels in a cookie of its own, `iiic-add-detail`, sent only to `/account`, and every reader names the cookie it reads, a sign-in's or a second detail's, so an unconfirmed detail code never reaches `/login` and cannot stand in for a sign-in. Reason: under one name on two paths the browser sent both cookies to `/login/*` and Next.js kept the wider one, so a person who asked for a detail code and signed in again within fifteen minutes was told to start again; with one flow left (D-128), every request that writes or reads it is a post to `/account/privacy/contact`. | Decided (IIIC delegated the build decisions, 25 November 2026) | R2 |
 
 ## How to record a decision
 
 Add a decision as the next row of the table above, never inside the block below, then raise the template's number by one:
 
 ```
-| D-129 | <the decision, in one sentence> | Decided (Yash/Aum, <date>) | <milestone> |
+| D-130 | <the decision, in one sentence> | Decided (Yash/Aum, <date>) | <milestone> |
 ```
 
 If a decision changes a document, update that document in the same commit and note the decision ID in the commit message.

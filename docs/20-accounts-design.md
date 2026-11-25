@@ -256,10 +256,11 @@ No automation is event-driven: A1 is planned by the sign-in action, A2 by `Close
 **Additions to the cookie inventory** (`12` §10, "What sets a cookie"), to be inserted by builder A with the code, word for word:
 
 - the sign-in cookie (`iiic-sign-in`, HttpOnly, SameSite=Lax, Secure over HTTPS, path `/login`, fifteen minutes), set when a code is asked for at `/login`, holding the attempt sealed under a key of its own (the channel, the address, when the code went, whether the address was proven; never the code), so that the code step and the account step know whose code they are checking; cleared on sign-in and by "Use a different address" (`src/lib/accounts/signIn/cookie.ts`; strictly necessary, Release 2);
+- the second detail's cookie (`iiic-add-detail`, HttpOnly, SameSite=Lax, Secure over HTTPS, path `/account`, fifteen minutes), set only when a signed-in person asks for a code to add an email or a mobile on `/account/privacy/contact` (§4.6), holding that attempt sealed the same way, so that the code step knows whose code it is checking; it never reaches `/login`; cleared when the code is confirmed (`src/lib/accounts/signIn/cookie.ts`; strictly necessary, Release 2; D-129);
 - Better Auth's session cookie (`iiic-account.session_token`, `__Secure-` before it over HTTPS; HttpOnly, SameSite=Lax, Secure, path `/`), set only at sign-in, holding the signed session token, for thirty days on a device the person kept and otherwise for the browser session; removed at sign-out (strictly necessary, Release 2);
 - Better Auth's "not kept" cookie (`iiic-account.dont_remember`, the same prefix and attributes, for the browser session), set only at a sign-in where "Keep me signed in" was not ticked, so the session is not kept past the browser's closing (strictly necessary, Release 2).
 
-And in the same paragraph, "Better Auth's session cookie (R2, only after sign-in)" is replaced by the three items above. The cookie test (`tests/e2e/cookies.e2e.spec.ts`) adds `/login`, `/login/verify` without a cookie, and `/account` signed out to its "no cookie" pages, and a test of its own lists exactly these cookies through a sign-in and none after sign-out.
+And in the same paragraph, "Better Auth's session cookie (R2, only after sign-in)" is replaced by the four items above. The cookie test (`tests/e2e/cookies.e2e.spec.ts`) adds `/login`, `/login/verify` without a cookie, and `/account` signed out to its "no cookie" pages, and a test of its own lists exactly these cookies through a sign-in and none after sign-out.
 
 **Headers** (`12` §1, §5):
 

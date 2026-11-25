@@ -1,11 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
-import { SIGN_IN, SIGN_IN_COOKIE } from '@/lib/accounts/contract'
+import { ADD_DETAIL_COOKIE, SIGN_IN, SIGN_IN_COOKIE } from '@/lib/accounts/contract'
 import {
-  attemptPath,
+  attemptCookie,
   clearAttempt,
   openAttempt,
+  readAttempt,
   safeNext,
   sealAttempt,
   writeAttempt,
@@ -151,9 +152,10 @@ describe('the sign-in cookie', () => {
     expect(await openAttempt(SECRET, sealed, NOW)).toBeNull()
   })
 
-  it('goes to /login for a sign-in, and to the whole site for a signed-in person’s second detail', async () => {
-    expect(attemptPath('signIn')).toBe(SIGN_IN_COOKIE.path)
-    expect(attemptPath('addDetail')).toBe('/')
+  it('has a cookie of its own for each purpose: a sign-in’s on /login, a second detail’s on /account (D-129)', async () => {
+    expect(attemptCookie('signIn')).toBe(SIGN_IN_COOKIE)
+    expect(attemptCookie('addDetail')).toBe(ADD_DETAIL_COOKIE)
+    expect(ADD_DETAIL_COOKIE.name).not.toBe(SIGN_IN_COOKIE.name)
     const written: { name: string; path: string; maxAge?: number; httpOnly?: boolean }[] = []
     const jar: CookieJar = {
       get: () => undefined,
@@ -167,14 +169,39 @@ describe('the sign-in cookie', () => {
     await writeAttempt(jar, SECRET, { ...attempt, purpose: 'addDetail', accountId: 3 }, NOW, true)
     clearAttempt(jar, true, 'addDetail')
     await writeAttempt(jar, SECRET, attempt, NOW, true)
-    clearAttempt(jar, true)
+    clearAttempt(jar, true, 'signIn')
     expect(written.map(({ name, path }) => `${name} ${path}`)).toEqual([
-      'iiic-sign-in /',
-      'iiic-sign-in /',
+      'iiic-add-detail /account',
+      'iiic-add-detail /account',
       'iiic-sign-in /login',
       'iiic-sign-in /login',
     ])
-    expect(written[0]).toMatchObject({ httpOnly: true, maxAge: SIGN_IN_COOKIE.maxAgeSeconds })
+    expect(written[0]).toMatchObject({ httpOnly: true, maxAge: ADD_DETAIL_COOKIE.maxAgeSeconds })
+    expect(written[2]).toMatchObject({ httpOnly: true, maxAge: SIGN_IN_COOKIE.maxAgeSeconds })
+  })
+
+  it('is read by purpose: a detail code asked for and not confirmed never stands in for a sign-in', async () => {
+    // A browser holding both: a second detail's attempt from /account/privacy/contact, and a
+    // sign-in begun at /login within its fifteen minutes.
+    const values = new Map<string, string>()
+    const jar: CookieJar = {
+      get: (name) => values.get(name),
+      set: (name, value) => {
+        values.set(name, value)
+      },
+      delete: (name) => {
+        values.delete(name)
+      },
+    }
+    const detail: Attempt = { ...attempt, purpose: 'addDetail', accountId: 3, requestId: 42 }
+    await writeAttempt(jar, SECRET, detail, NOW, true)
+    expect(await readAttempt(jar, SECRET, NOW, 'signIn')).toBeNull()
+    await writeAttempt(jar, SECRET, attempt, NOW, true)
+    expect(await readAttempt(jar, SECRET, NOW, 'signIn')).toEqual(attempt)
+    expect(await readAttempt(jar, SECRET, NOW, 'addDetail')).toEqual(detail)
+    // An attempt of one purpose put in the other's cookie is not read as that purpose.
+    values.set(SIGN_IN_COOKIE.name, values.get(ADD_DETAIL_COOKIE.name) as string)
+    expect(await readAttempt(jar, SECRET, NOW, 'signIn')).toBeNull()
   })
 
   it('keeps `next` only when it is a path under /account', () => {

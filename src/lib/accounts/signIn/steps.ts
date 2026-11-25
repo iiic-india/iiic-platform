@@ -109,7 +109,7 @@ export const resendCodeWith =
   ): Promise<Result<CodeRequestOutcome, CodeRequestError | { code: 'no-request' }>> => {
     const deps = await openFor(req, wiring)
     if (!deps) return err({ code: 'closed-here' })
-    const attempt = await readAttempt(deps.jar, secretOf(deps), now)
+    const attempt = await readAttempt(deps.jar, secretOf(deps), now, 'signIn')
     if (!attempt || attempt.provenAt) return err({ code: 'no-request' })
     if (attempt.channel === 'whatsapp' && !(await whatsappCodesOpen(req, deps.env, now))) {
       return err({ code: 'whatsapp-closed', emailInstead: true })
@@ -118,10 +118,9 @@ export const resendCodeWith =
       req,
       deps,
       {
-        purpose: attempt.purpose,
+        purpose: 'signIn',
         channel: attempt.channel,
         value: attempt.address,
-        ...(attempt.accountId ? { accountId: attempt.accountId } : {}),
         ...(attempt.next ? { next: attempt.next } : {}),
       },
       now,
@@ -135,7 +134,7 @@ export const currentAttemptWith =
   (wiring: SignInWiring) =>
   async (req: PayloadRequest, now: Date): Promise<Attempt | null> => {
     const deps = await openFor(req, wiring)
-    return deps ? readAttempt(deps.jar, secretOf(deps), now) : null
+    return deps ? readAttempt(deps.jar, secretOf(deps), now, 'signIn') : null
   }
 
 export const currentAttempt = currentAttemptWith(NEXT_WIRING)
@@ -144,8 +143,7 @@ export const currentAttempt = currentAttemptWith(NEXT_WIRING)
 export const startAgainWith = (wiring: SignInWiring) => async (req: PayloadRequest) => {
   const deps = await openFor(req, wiring)
   if (!deps) return
-  const attempt = await readAttempt(deps.jar, secretOf(deps), new Date())
-  clearAttempt(deps.jar, secureCookies(deps), attempt?.purpose ?? 'signIn')
+  clearAttempt(deps.jar, secureCookies(deps), 'signIn')
 }
 
 export const startAgain = startAgainWith(NEXT_WIRING)
@@ -230,8 +228,8 @@ export const verifyCodeWith =
   async (req, input, now) => {
     const deps = await openFor(req, wiring)
     if (!deps) return err({ code: 'closed-here' })
-    const attempt = await readAttempt(deps.jar, secretOf(deps), now)
-    if (!attempt || attempt.purpose !== 'signIn') return err({ code: 'no-request' })
+    const attempt = await readAttempt(deps.jar, secretOf(deps), now, 'signIn')
+    if (!attempt) return err({ code: 'no-request' })
     const target = { purpose: 'signIn' as const, channel: attempt.channel, value: attempt.address }
     // Proven already (the page was sent twice): the account step is next.
     if (attempt.provenAt) {
@@ -257,7 +255,7 @@ export const verifyCodeWith =
         },
         now,
       )
-      clearAttempt(deps.jar, secureCookies(deps))
+      clearAttempt(deps.jar, secureCookies(deps), 'signIn')
       return ok({ state: 'signed-in', accountId, attached })
     }
     // No account: the address is proven for fifteen minutes, for the account step.
@@ -291,8 +289,8 @@ export const createAccountWith =
   async (req, input, now) => {
     const deps = await openFor(req, wiring)
     if (!deps) return err({ code: 'closed-here' })
-    const attempt = await readAttempt(deps.jar, secretOf(deps), now)
-    if (!attempt || attempt.purpose !== 'signIn' || !attempt.provenAt) {
+    const attempt = await readAttempt(deps.jar, secretOf(deps), now, 'signIn')
+    if (!attempt || !attempt.provenAt) {
       return err({ code: 'no-request' })
     }
     if (now.getTime() - attempt.provenAt > SIGN_IN_COOKIE.maxAgeSeconds * 1000) {
@@ -330,7 +328,7 @@ export const createAccountWith =
       { accountId, ...target, trusted: parsed.data.trustDevice },
       now,
     )
-    clearAttempt(deps.jar, secureCookies(deps))
+    clearAttempt(deps.jar, secureCookies(deps), 'signIn')
     return ok({ accountId, attached })
   }
 

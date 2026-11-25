@@ -138,8 +138,8 @@ export const confirmDetailWith =
   async (req, account, input, now) => {
     const deps = await openFor(req, wiring)
     if (!deps) return err({ code: 'closed-here' })
-    const attempt = await readAttempt(deps.jar, secretOf(deps), now)
-    if (!attempt || attempt.purpose !== 'addDetail' || attempt.accountId !== account.accountId) {
+    const attempt = await readAttempt(deps.jar, secretOf(deps), now, 'addDetail')
+    if (!attempt || attempt.accountId !== account.accountId) {
       return err({ code: 'no-request' })
     }
     const target = {

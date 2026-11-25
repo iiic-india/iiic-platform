@@ -79,6 +79,19 @@ export const SIGN_IN_COOKIE = {
 } as const
 
 /**
+ * A second detail's attempt (docs/20 §4.6), the same sealed value as the sign-in cookie's, under
+ * a name of its own and sent only to /account, where a signed-in person asks for the code and
+ * enters it (`/account/privacy/contact`): it never reaches /login, so an unconfirmed detail code
+ * cannot stand in for a sign-in's (D-129). HttpOnly, Secure over HTTPS, SameSite=Lax, fifteen
+ * minutes; cleared when the code is confirmed.
+ */
+export const ADD_DETAIL_COOKIE = {
+  name: 'iiic-add-detail',
+  path: '/account',
+  maxAgeSeconds: 15 * 60,
+} as const
+
+/**
  * Better Auth's cookies take this prefix (`advanced.cookiePrefix`): `iiic-account.session_token`
  * and, for a device the person did not keep, `iiic-account.dont_remember`; over HTTPS each name
  * starts with `__Secure-` (`advanced.useSecureCookies`).
