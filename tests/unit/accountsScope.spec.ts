@@ -326,17 +326,24 @@ function overridingConstants(source: string): string[] {
 }
 
 /**
- * The lines of a source that read past the access rules with no `// scope: …` line in the
- * fourteen above them: a literal `overrideAccess: true`, or a spread of one of `constants`.
+ * The lines of a source that read past the access rules (a literal `overrideAccess: true`, or a
+ * spread of one of `constants`) with no `// scope: …` line of their own: the nearest one in the
+ * fourteen lines above, with no other such line between them. One scope line covers the first
+ * query after it only; the next needs its own (D-132, the join's ruling I.3).
  */
 function unscopedLines(source: string, constants: readonly string[]): number[] {
   const spread = constants.length ? new RegExp(`\\.\\.\\.(${constants.join('|')})\\b`) : null
   const lines = source.split('\n')
+  const readsPastAccess = (line: string) =>
+    !/^\s*(\*|\/\/)/.test(line) && (/overrideAccess:\s*true/.test(line) || !!spread?.test(line))
   return lines.flatMap((line, index) => {
-    if (/^\s*(\*|\/\/)/.test(line)) return []
-    if (!/overrideAccess:\s*true/.test(line) && !spread?.test(line)) return []
-    const before = lines.slice(Math.max(0, index - 14), index).join('\n')
-    return /\/\/ scope: \S/.test(before) ? [] : [index + 1]
+    if (!readsPastAccess(line)) return []
+    for (let above = index - 1; above >= Math.max(0, index - 14); above -= 1) {
+      const earlier = lines[above] ?? ''
+      if (/\/\/ scope: \S/.test(earlier)) return []
+      if (readsPastAccess(earlier)) return [index + 1]
+    }
+    return [index + 1]
   })
 }
 
@@ -380,6 +387,28 @@ describe('every query in src/lib/accounts', () => {
     expect(unscopedLines(source, constants)).toEqual([19, 53])
     // Without the constant's name the spread passes unseen, as it did before D-132.
     expect(unscopedLines(source, [])).toEqual([53])
+  })
+
+  it('lets one scope line cover only the first query after it (ruling I.3)', () => {
+    const source = [
+      '// scope: the account’s own row, by the session’s id',
+      'await req.payload.findByID({ collection: "accounts", id, overrideAccess: true, req })',
+      'const record = await req.payload.findByID({',
+      '  collection: "people",',
+      '  id: personId,',
+      '  overrideAccess: true,',
+      '  req,',
+      '})',
+      '// scope: the records of the ids ownPersonIds returned',
+      'await req.payload.find({',
+      '  collection: "people",',
+      '  where: { id: { in: ids } },',
+      '  overrideAccess: true,',
+      '})',
+    ].join('\n')
+    // The second query sits two lines under the first's scope line, inside the old fourteen-line
+    // window, and is refused now; the third has its own line and passes.
+    expect(unscopedLines(source, [])).toEqual([6])
   })
 
   it('reads bookings, certificates and invoices in slice B only through the scoped readers', () => {
