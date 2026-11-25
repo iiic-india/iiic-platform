@@ -11,6 +11,7 @@ import { z } from 'zod'
 
 import { hasRole } from '@/access/roles'
 import { viewRefusal } from '@/access/views'
+import { closeAccountsOfPerson } from '@/lib/accounts/lifecycle'
 import { erasePersonFromPipeline } from '@/lib/pipeline/core/hooks'
 import { BY_THE_LEDGER } from '@/lib/proof/ledger'
 import { err, ok, type Result } from '@/lib/result'
@@ -37,6 +38,8 @@ import { exportFolderOf, privateStore, type PrivateStore } from './store'
  * with no name, contact details, workplace or profile. Deleted outright: their session notes,
  * feedback, reviews, enquiries (docs/17 §9), newsletter subscription and the access exports made
  * for them in the private store; their leads and the proposals sent to them keep no link to them.
+ * Their My IIIC account closes, with its sign-in details and sessions, or the record leaves the
+ * account it was attached to (Release 2; docs/20 §7.6).
  * Each consent still in force is withdrawn by a new ledger entry; the entries stay.
  * Kept, with the reason the owner reads: bookings (with what the person typed on them cleared),
  * payments, refunds and invoices (an invoice to an individual loses its name and address; one to a
@@ -64,6 +67,8 @@ export const PLAN_LINES = {
   pipelineLinks: 'Their name on leads and on proposals sent to them (the leads stay)',
   subscriber: 'Their newsletter subscription',
   exports: 'Access requests’ exports in the private store',
+  account:
+    'Their My IIIC account, with its sign-in details and sessions, or its link to this record',
   record: 'The person’s record, emptied',
   bookings: 'Bookings',
   payments: 'Payments',
@@ -171,7 +176,7 @@ async function survey(req: PayloadRequest, personId: number) {
     collection: 'people',
     id: personId,
     depth: 0,
-    select: { email: true, mobile: true },
+    select: { email: true, mobile: true, account: true },
     disableErrors: true,
     overrideAccess: true,
     req,
@@ -220,6 +225,10 @@ async function survey(req: PayloadRequest, personId: number) {
       (await count('leads', person)) +
       (await count('proposal-versions', { 'sending.sentTo': { equals: personId } })),
     subscribers: await count('subscribers', rules.subscriber),
+    // The My IIIC account whose own record this is, or the one it is attached to (docs/20 §7.6).
+    accounts: await count('accounts', {
+      or: [person, ...(idOf(record?.account) ? [{ id: { equals: idOf(record?.account) } }] : [])],
+    }),
     suppressions: await count('suppressions', rules.suppressions),
     bookingIds,
     ownBookings,
@@ -258,6 +267,7 @@ export function planOf(found: ErasureSurvey, forOwner: boolean): ErasurePlan {
       { entity: PLAN_LINES.pipelineLinks, count: found.pipelineLinks },
       { entity: PLAN_LINES.subscriber, count: found.subscribers },
       { entity: PLAN_LINES.exports, count: found.exports },
+      { entity: PLAN_LINES.account, count: found.accounts },
     ],
     keeps: [
       { entity: PLAN_LINES.record, count: 1, why: KEEP_REASONS.record },
@@ -352,6 +362,9 @@ export const confirmErasureWith =
       await withdrawOnDeletion(req, personId)
       // Enquiries, and the links on leads and sent proposals (docs/17 §9).
       const pipeline = await erasePersonFromPipeline(req, personId)
+      // Their My IIIC account closes, or the record leaves the account it was attached to
+      // (Release 2; docs/20 §7.6, §12 H7).
+      const accounts = await closeAccountsOfPerson(req, personId)
       const subscribers = await req.payload.delete({
         collection: 'subscribers',
         where: found.rules.subscriber,
@@ -418,6 +431,7 @@ export const confirmErasureWith =
           organisation: null,
           jobTitle: null,
           whatsappLastInboundAt: null,
+          account: null,
         },
         depth: 0,
         overrideAccess: true,
@@ -468,7 +482,8 @@ export const confirmErasureWith =
         feedback.docs.length +
         reviews.docs.length +
         pipeline.enquiries +
-        subscribers.docs.length
+        subscribers.docs.length +
+        accounts.closed
       )
     })
     return ok({ deleted })

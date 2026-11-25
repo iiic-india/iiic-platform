@@ -9,6 +9,12 @@ regexes = [
   '''ci-only-[A-Za-z0-9-]+''',
   '''test-only-[A-Za-z0-9-]+''',
   '''local-only-dummy-[A-Za-z0-9-]+''',
+  # Made-up Better Auth secrets from Release 2's account slices (r2a): the integration and unit
+  # tests' stand-ins before they took the test-only- form, and the SQL print script's stand-in
+  # (src/scripts/print-customer-auth-sql.ts). They stay in the history, so they are named here.
+  '''int-only-[A-Za-z0-9-]+''',
+  '''unit-only-[A-Za-z0-9-]+''',
+  '''print-only-[A-Za-z0-9-]+''',
   '''JBSWY3DPEHPK3PXP''',
   # The alphabet and the digits: a made-up token one test used (commit ed9e7cd) before it took the
   # test-only- form. It stays in the history, so it is named here.

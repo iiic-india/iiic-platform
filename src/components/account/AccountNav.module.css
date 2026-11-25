@@ -1,0 +1,49 @@
+/* My IIIC's section bar (docs/20 §5): the section links in one wrapping row on the rule, with the
+   page shown underlined in the heading's ink, as the kit's line tabs draw their selected tab
+   (src/brand/css/03-components.css, .iiic-tabs-line), and "Sign out" at the end. Semantic roles
+   only (CLAUDE.md, non-negotiable 2); every target is at least 24 px tall (docs/12 §9). */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 24px;
+  border-bottom: 1px solid var(--iiic-rule);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.links a {
+  display: inline-block;
+  margin-bottom: -1px;
+  padding: 12px 12px 9px;
+  border-bottom: 3px solid transparent;
+  color: var(--iiic-text-muted);
+  font-weight: var(--iiic-weight-semibold);
+  text-decoration: none;
+}
+
+.links a:hover {
+  color: var(--iiic-text);
+}
+
+.links a[aria-current='page'] {
+  border-bottom-color: var(--iiic-heading);
+  color: var(--iiic-heading);
+}
+
+.links a:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--iiic-focus);
+}
+
+.signOut {
+  margin: 0 0 8px;
+}

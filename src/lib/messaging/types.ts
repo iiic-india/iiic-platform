@@ -102,6 +102,10 @@ export const SUBJECT_COLLECTIONS = [
   'certificates',
   'data-requests',
   'incidents',
+  // Release 2 (docs/20 §4.3, §9): a sign-in code is about its `sign-in-requests` row, which
+  // names nobody; an account's own notices (A2, A3) are about the account.
+  'sign-in-requests',
+  'accounts',
 ] as const
 export type SubjectCollection = (typeof SUBJECT_COLLECTIONS)[number]
 export type Subject = { collection: SubjectCollection; id: number }
@@ -109,12 +113,23 @@ export type Subject = { collection: SubjectCollection; id: number }
 /**
  * Who receives it: a person (clients), a newsletter subscriber who may not be a person yet, or
  * a staff account (internal messages). The address is read when the message is sent, never
- * copied into the log.
+ * copied into the log. A sign-in code (A1, Release 2; docs/20 §4.3) goes to an address that may
+ * belong to no record yet: `signIn` names its `sign-in-requests` row, and the address comes only
+ * from the first try's `transient`, so a later try has none and sends nothing.
  */
 export type Recipient =
   | { kind: 'person'; id: number }
   | { kind: 'subscriber'; id: number }
   | { kind: 'staff'; id: number }
+  | { kind: 'signIn'; id: number }
+
+/** The recipient kinds, for the log's `recipientKind` (src/collections/Messages.ts). */
+export const RECIPIENT_KINDS = [
+  { label: 'A person', value: 'person' },
+  { label: 'A newsletter subscriber', value: 'subscriber' },
+  { label: 'Staff', value: 'staff' },
+  { label: 'A sign-in code’s address (never stored)', value: 'signIn' },
+] as const satisfies readonly { label: string; value: Recipient['kind'] }[]
 
 /** Suppression reasons (src/collections/Suppressions.ts; docs/13 §6, §7). */
 export const SUPPRESSION_REASONS = [

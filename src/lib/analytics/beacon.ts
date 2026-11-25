@@ -36,12 +36,14 @@ export function beaconToken(
  * pages (`/institute/verify`, the QR code's `/institute/verify/<token>`, and `/verify` as the
  * institute host serves them, docs/18 §4), and the messages' own links: the one-tap withdrawal
  * (`/w/<token>`) and the newsletter's confirmation and unsubscribe pages
- * (`/newsletter/confirm/<token>`, `/newsletter/unsubscribe/<token>`, docs/19 §8). The beacon
- * reports the path, and an address that is a key, or a page that shows a person's name, must
- * never reach a third party.
+ * (`/newsletter/confirm/<token>`, `/newsletter/unsubscribe/<token>`, docs/19 §8), and since
+ * Release 2 the sign-in pages and My IIIC (`/login`, `/account` and everything under them;
+ * docs/20 §8, §10): nothing is recorded about a signed-in person, and a booking's reference is in
+ * My IIIC's addresses. The beacon reports the path, and an address that is a key, or a page that
+ * shows a person's name, must never reach a third party.
  */
 const UNCOUNTED =
-  /^\/(?:admin(?:\/|$)|b\/|book\/(?:pay|confirmed)\/|p(?:\/|$)|w(?:\/|$)|newsletter\/(?:confirm|unsubscribe)(?:\/|$)|(?:institute\/)?verify(?:\/|$))/i
+  /^\/(?:admin(?:\/|$)|b\/|book\/(?:pay|confirmed)\/|p(?:\/|$)|w(?:\/|$)|newsletter\/(?:confirm|unsubscribe)(?:\/|$)|(?:institute\/)?verify(?:\/|$)|login(?:\/|$)|account(?:\/|$))/i
 
 /** Whether a path is one of the public pages the beacon may count. */
 export function countsPath(pathname: string): boolean {

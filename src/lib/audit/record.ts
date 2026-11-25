@@ -1,5 +1,7 @@
 import type { PayloadRequest } from 'payload'
 
+import { contextActor } from './actor'
+
 export type AuditEntry = {
   /** create, update or delete, or a named action such as `reset-two-factor`. */
   action: string
@@ -18,16 +20,18 @@ export function clientIp(req: PayloadRequest): string | undefined {
 
 /**
  * Writes one audit entry in the request's transaction, so it stands or falls with the change it
- * records. The actor is whoever made the request, unless the caller names one (a write Payload
- * makes without the request, src/plugins/auditLog.ts); none for the system.
+ * records. The actor is whoever made the request: its Payload user (staff), else the My IIIC
+ * account the request acts for (`account:<id>`, from `req.context.auditActor`; D-133); unless the
+ * caller names one (a write Payload makes without the request, src/plugins/auditLog.ts). None for
+ * the system, and none when the caller passes null.
  */
 export async function recordAudit(
   req: PayloadRequest,
   entry: AuditEntry,
-  actor: { id?: number | string; email?: string | null } | null | undefined = req.user as {
+  actor: { id?: number | string; email?: string | null } | null | undefined = (req.user as {
     id?: number | string
     email?: string
-  } | null,
+  } | null) ?? contextActor(req),
 ): Promise<void> {
   await req.payload.create({
     collection: 'audit-log',

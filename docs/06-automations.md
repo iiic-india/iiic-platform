@@ -106,6 +106,8 @@ Channels: E = email · W = WhatsApp · A = admin (Today, digest) · C = calendar
 | X1 | Consultancy engagement won | Week 2 | Bridge email (managers' cohort; 1:1 founder sessions), only with consent | E |
 | X2 | Counselling client opted in and has had three sessions | After the third | Bridge in the follow-up email: free course info session | E |
 | A1 | Account sign-in requested | At once | One-time code: WhatsApp authentication template or email (SMS only if D-08 chooses it) | W, E |
+| A2 | Account closed by the person | At once | Confirmation: what was closed, what IIIC keeps and why, how to ask for erasure (`20` §7.6) | E |
+| A3 | A second contact detail added to an account | At once | Notice to the email the account held before, naming the kind of detail added (`20` §4.6) | E |
 
 ## Message templates needed for launch
 

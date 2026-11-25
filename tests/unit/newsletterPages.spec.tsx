@@ -167,6 +167,23 @@ describe('the withdraw page, /w/[token]', () => {
     expect(page).toContain('value="testimonialPublication"')
   })
 
+  it('sends the account consent to My IIIC, where closing the account ends it (D-113)', async () => {
+    vi.mocked(verifySignedLink).mockResolvedValue({ ok: true, value: { subjectId: 9 } })
+    vi.mocked(consentsInForce).mockResolvedValue([
+      {
+        purpose: 'account',
+        label: 'Keeping a My IIIC account',
+        grantedAt: '2026-11-01T05:00:00.000Z',
+      },
+    ])
+    const page = await html(
+      WithdrawPage({ params: Promise.resolve({ token: LINK }), searchParams: search() }),
+    )
+    expect(page).toContain('href="/account/privacy"')
+    expect(page).toContain(WITHDRAW_COPY.inMyIiic)
+    expect(page).not.toContain('value="account"')
+  })
+
   it('shows nothing of the person for a link that does not work', async () => {
     vi.mocked(verifySignedLink).mockResolvedValue({ ok: false, error: { code: 'expired' } })
     const page = await html(

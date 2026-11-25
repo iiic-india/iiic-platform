@@ -140,6 +140,21 @@ const schema = z.object({
   // the forms rely on their honeypot, timing and rate limits alone.
   TURNSTILE_SITE_KEY: optional(z.string().min(1)),
   TURNSTILE_SECRET_KEY: optional(z.string().min(1)),
+  // Customer sign-in (Release 2; docs/20-accounts-design.md §3, §11): Better Auth's secret, which
+  // signs its session cookie and keys the sign-in cookie and the identifier hashes. Per
+  // environment; unset, the app builds and runs and sign-in is closed. Rotating it signs every
+  // customer out (they sign in again with a code); the runbook says so.
+  BETTER_AUTH_SECRET: optional(
+    z.string().min(32, 'BETTER_AUTH_SECRET must be at least 32 characters'),
+  ),
+  // Better Auth sends usage reports when this is truthy, whatever its options say: refused below.
+  BETTER_AUTH_TELEMETRY: optional(z.string()),
+  // A fixed sign-in code for the end-to-end suite, which cannot read a message the fake senders
+  // keep in the server's memory: six digits, locally and in CI only, refused on any Vercel
+  // deployment (as MESSAGING_TRANSPORT=fake is).
+  ACCOUNTS_TEST_CODE: optional(
+    z.string().regex(/^\d{6}$/, 'ACCOUNTS_TEST_CODE must be six digits'),
+  ),
   PLATFORM_HOSTS: z.string().default('localhost:3000'),
   INSTITUTE_HOSTS: z.string().default(''),
   // Set by Vercel on every deployment (hostnames, without the scheme).
@@ -231,6 +246,16 @@ export function parseEnv(source: Record<string, string | undefined>): ServerEnv 
   if (data.MESSAGING_TRANSPORT === 'fake' && data.VERCEL_ENV) {
     throw new Error(
       'Invalid environment:\n- MESSAGING_TRANSPORT: the fake senders run only locally and in CI, never on a Vercel deployment',
+    )
+  }
+  if (data.ACCOUNTS_TEST_CODE && data.VERCEL_ENV) {
+    throw new Error(
+      'Invalid environment:\n- ACCOUNTS_TEST_CODE: the fixed sign-in code runs only locally and in CI, never on a Vercel deployment',
+    )
+  }
+  if (data.BETTER_AUTH_TELEMETRY && !['0', 'false'].includes(data.BETTER_AUTH_TELEMETRY.trim())) {
+    throw new Error(
+      'Invalid environment:\n- BETTER_AUTH_TELEMETRY: leave it unset; the platform sends Better Auth no usage reports (docs/20 §3)',
     )
   }
   if (data.NOTES_ENCRYPTION_KEY_PREVIOUS && !data.NOTES_ENCRYPTION_KEY) {

@@ -72,11 +72,37 @@ async function person(req: PayloadRequest, id: number, channel: Channel): Promis
   }
 }
 
+/**
+ * A sign-in code's address (A1; docs/20 §4.3): only what the first try was handed, never a stored
+ * one. An email in small letters, a mobile in E.164; anything else, or nothing (a retry, the
+ * dispatcher), is no address, so the message is skipped as `no-address` and nothing goes twice.
+ * Pure: it reads no record.
+ */
+export function signInFacts(
+  channel: Channel,
+  transient: Readonly<Record<string, string>> | undefined,
+): RecipientFacts {
+  const raw = text(transient?.address)
+  const address =
+    raw === null
+      ? null
+      : channel === 'email'
+        ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)
+          ? raw.toLowerCase()
+          : null
+        : /^\+[1-9]\d{7,14}$/.test(raw)
+          ? raw
+          : null
+  return { ...NO_RECIPIENT, address }
+}
+
 export async function recipientFacts(
   req: PayloadRequest,
   recipient: Recipient,
   channel: Channel,
+  transient?: Readonly<Record<string, string>>,
 ): Promise<RecipientFacts> {
+  if (recipient.kind === 'signIn') return signInFacts(channel, transient)
   if (recipient.kind === 'person') return person(req, recipient.id, channel)
   if (recipient.kind === 'subscriber') {
     const found = await req.payload.findByID({

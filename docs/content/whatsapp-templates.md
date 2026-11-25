@@ -89,3 +89,14 @@ B13, sent when staff send a payment link (D-24): the person's own amount. Variab
 Questions about the payment? Reply to this message or call +91 96240 46464.
 {{6}}
 ```
+
+## account-sign-in-code · authentication category
+
+A1 (Release 2; `docs/20` §4.3, §9; D-123, D-126): a sign-in code, or a code that proves a second detail added in My IIIC. Unlike the eight above, this is Meta's **Authentication** category, not Utility: Meta writes its words (the code, a line not to share it, and an optional line that it expires), and IIIC writes none, so there is no draft here to approve (I-66). Submit it through AiSensy with:
+
+- category **Authentication**, language **English (en)**;
+- the code delivery as a **copy-code button**;
+- the security recommendation ("For your security, do not share this code.") on;
+- the expiry line on, at **10 minutes**, the life of a code (`SIGN_IN.codeTtlSeconds`, D-08).
+
+Variables: the code, the one variable `accountSignInCode.whatsapp.params` sends (`src/emails/accounts/messages.tsx`); AiSensy passes the same value to the copy-code button. No name, no link, no offer, nothing about a booking or a session. Once Meta approves it, its provider name and status are entered in Admin → Messages → Templates under the key `account-sign-in-code`; until then, and until the WhatsApp number is settled (I-03, I-40), `/login` offers email codes only (D-126). Quiet hours hold for codes too until IIIC decides otherwise (D-123), and 1.7.27's phone plugin keeps a WhatsApp code in plain text for its ten minutes, which is checked again before WhatsApp codes open (D-117).

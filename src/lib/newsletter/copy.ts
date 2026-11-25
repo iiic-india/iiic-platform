@@ -53,6 +53,8 @@ export const WITHDRAW_COPY = {
   lead: 'Each consent below is in force. Withdraw any of them here; it takes effect at once.',
   givenOn: 'Given on',
   button: 'Withdraw',
+  // The account consent ends when the account closes, in My IIIC (D-113; docs/20 §7.6).
+  inMyIiic: 'Close your account in My IIIC',
   none: 'No consent of yours is in force.',
   done: 'Withdrawn. We have recorded it.',
   invalid: 'This link does not work. Open the link in a more recent email from us.',

@@ -1,0 +1,35 @@
+/* My IIIC's own few rules beside the kit's classes (docs/20, Interface: plain, built on what
+   exists). Semantic roles only (CLAUDE.md, non-negotiable 2). */
+
+/* A table that scrolls inside its region on a narrow screen takes focus, so a keyboard can
+   scroll it too (WCAG 2.1.1), with the kit's focus ring (as src/components/blocks does). */
+.tableRegion:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--iiic-focus);
+}
+
+/* A My IIIC page in the site's frame: the kit's page width and gutters, and room above and below
+   (the page shell's own padding, src/brand/templates/web/page-shell.html). */
+.page {
+  padding-top: 32px;
+  padding-bottom: 80px;
+}
+
+/* The section bar above the page. */
+.bar {
+  padding-top: 24px;
+}
+
+/* The space between the parts of a page: a ticket, a table, a form. */
+.stack {
+  display: grid;
+  gap: 24px;
+}
+
+/* A table cell's links, one under the other on a phone. */
+.cellLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}

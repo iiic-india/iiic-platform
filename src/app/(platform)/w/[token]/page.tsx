@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { createLocalReq, getPayload } from 'payload'
 
 import { FocusOnArrival } from '@/app/(platform)/newsletter/FocusOnArrival'
@@ -8,6 +9,7 @@ import { verifySignedLink } from '@/lib/automations/operations/core'
 import { NEWSLETTER_COPY_STATUS, WITHDRAW_COPY } from '@/lib/newsletter/copy'
 import { SignedLinkToken } from '@/lib/newsletter/rules'
 import { consentsInForce } from '@/lib/newsletter/withdrawals'
+import { ENDED_IN_MY_IIIC } from '@/lib/privacy/purposes'
 import { formatIstDate } from '@/lib/time/ist'
 import config from '@payload-config'
 
@@ -91,16 +93,23 @@ export default async function WithdrawPage({ params, searchParams }: Props) {
                     {WITHDRAW_COPY.givenOn} {formatIstDate(new Date(consent.grantedAt))}
                   </span>
                 </span>
-                <form method="post" action={`/w/${token}/withdraw`}>
-                  <input type="hidden" name="purpose" value={consent.purpose} />
-                  <button
-                    className="iiic-btn iiic-btn-outline"
-                    type="submit"
-                    aria-label={`${WITHDRAW_COPY.button}: ${consent.label}`}
-                  >
-                    {WITHDRAW_COPY.button}
-                  </button>
-                </form>
+                {ENDED_IN_MY_IIIC.includes(consent.purpose) ? (
+                  // Withdrawing the account consent is closing the account, in My IIIC (D-113).
+                  <Link className="iiic-btn iiic-btn-outline" href="/account/privacy">
+                    {WITHDRAW_COPY.inMyIiic}
+                  </Link>
+                ) : (
+                  <form method="post" action={`/w/${token}/withdraw`}>
+                    <input type="hidden" name="purpose" value={consent.purpose} />
+                    <button
+                      className="iiic-btn iiic-btn-outline"
+                      type="submit"
+                      aria-label={`${WITHDRAW_COPY.button}: ${consent.label}`}
+                    >
+                      {WITHDRAW_COPY.button}
+                    </button>
+                  </form>
+                )}
               </li>
             ))}
           </ul>

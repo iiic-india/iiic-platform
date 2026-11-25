@@ -207,6 +207,17 @@ const OWN = [
 /** Proof, which draws itself too: tests/unit/proofPage.spec.tsx. */
 const PROOF = ['(default)/proof/page.tsx']
 
+/**
+ * Sign-in to My IIIC (Release 2; docs/20 §4, §5), never indexed: /login lies under the private
+ * routes (noindex, out of the sitemap) and each page sets robots noindex in its own metadata. They
+ * draw themselves in tests/unit/accountsSignInClosed.spec.ts and end to end in
+ * tests/e2e/accountsSignIn.e2e.spec.ts.
+ */
+const SIGN_IN_PAGES = [
+  { file: '(default)/login/page.tsx', path: '/login' },
+  { file: '(default)/login/verify/page.tsx', path: '/login/verify' },
+]
+
 /** The certificate verify pages, never indexed: tests/unit/certificatesVerifyPages.spec.tsx. */
 const VERIFY = [
   '(education)/institute/verify/page.tsx',
@@ -251,6 +262,34 @@ const NEWSLETTER = [
   'w/[token]/page.tsx',
 ]
 
+/**
+ * My IIIC's records (Release 2; docs/20 §5), which are never indexed: each lies under the private
+ * route /account, which sends noindex and stays out of the sitemap (src/lib/security/headers.ts),
+ * and sets robots noindex in its own metadata; the 404 there is the site's own. They draw
+ * themselves in tests/unit/accountsScope.spec.ts and end to end in tests/e2e/myIiic.e2e.spec.ts.
+ */
+const MY_IIIC = [
+  { file: '(account)/account/page.tsx', path: '/account' },
+  { file: '(account)/account/bookings/page.tsx', path: '/account/bookings' },
+  { file: '(account)/account/bookings/[ref]/page.tsx', path: '/account/bookings/IIIC-S-00000' },
+  { file: '(account)/account/documents/page.tsx', path: '/account/documents' },
+  { file: '(account)/account/invoices/page.tsx', path: '/account/invoices' },
+  { file: '(account)/account/not-found.tsx', path: '/account/no-such-page' },
+]
+
+/**
+ * My IIIC's privacy and settings (Release 2; docs/20 §5, §7), which are never indexed: each lies
+ * under the private route /account, which sends noindex and stays out of the sitemap
+ * (src/lib/security/headers.ts), and sets robots noindex in its own metadata. They draw themselves
+ * in tests/unit/accountsPrivacy.spec.ts and end to end in tests/e2e/myIiicPrivacy.e2e.spec.ts.
+ */
+const MY_IIIC_PRIVACY = [
+  { file: '(account)/account/privacy/page.tsx', path: '/account/privacy' },
+  { file: '(account)/account/privacy/close/page.tsx', path: '/account/privacy/close' },
+  { file: '(account)/account/privacy/closed/page.tsx', path: '/account/privacy/closed' },
+  { file: '(account)/account/privacy/contact/page.tsx', path: '/account/privacy/contact' },
+]
+
 beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_SITE_URL', ORIGIN)
   request.path = ''
@@ -265,6 +304,10 @@ afterEach(() => {
 })
 
 describe('the pages under src/app/(platform)', () => {
+  it.each(SIGN_IN_PAGES)('keeps sign-in’s $path out of search', ({ path }) => {
+    expect(isNoindexPath(path), path).toBe(true)
+  })
+
   it('are all tested here, so that a new page is held to the same rules', () => {
     const found = readdirSync(APP, { recursive: true, encoding: 'utf8' })
       .map((file) => file.replaceAll('\\', '/'))
@@ -272,6 +315,7 @@ describe('the pages under src/app/(platform)', () => {
     expect(found.sort()).toEqual(
       [
         ...OWN,
+        ...SIGN_IN_PAGES,
         ...PROOF,
         ...VERIFY,
         ...PROPOSAL_LINK,
@@ -281,6 +325,8 @@ describe('the pages under src/app/(platform)', () => {
         ...SECTIONS,
         ...NOT_FOUND,
         ...BOOKING,
+        ...MY_IIIC,
+        ...MY_IIIC_PRIVACY,
       ]
         .map((entry) => (typeof entry === 'string' ? entry : entry.file))
         .sort(),
@@ -288,6 +334,14 @@ describe('the pages under src/app/(platform)', () => {
   })
 
   it.each(BOOKING)('keeps the booking page $path out of search', ({ path }) => {
+    expect(isNoindexPath(path), path).toBe(true)
+  })
+
+  it.each(MY_IIIC)('keeps My IIIC’s $path out of search', ({ path }) => {
+    expect(isNoindexPath(path), path).toBe(true)
+  })
+
+  it.each(MY_IIIC_PRIVACY)('keeps My IIIC’s privacy page $path out of search', ({ path }) => {
     expect(isNoindexPath(path), path).toBe(true)
   })
 })

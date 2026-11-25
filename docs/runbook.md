@@ -29,6 +29,19 @@ A deploy by hand, when GitHub is down: `vercel deploy --prod` from a clean check
 
 A schema change comes with its migration, generated with `pnpm migrate:create <name>` and committed; migrations are never edited by hand and never pushed with `push` (CLAUDE.md, `12` §6).
 
+A branch that carries a migration keeps its own Vercel preview off until CI has run its migrations on an empty database (D-140): `vercel.json` names the branch under `git.deploymentEnabled` with `false`, because a preview build runs `pnpm migrate` against production's database (previews and production share it, above). GitHub CI runs the migrations and every test on a database of its own; the entry is removed in the last commit before the merge, so production is migrated once, after that proof and the review.
+
+`pnpm migrate:fresh` drops only the `public` schema, so it is never run on a database that has run `r2a_customer_auth`: the next `create table "customer_auth"."users"` would fail. A local database that needs a fresh start is dropped and made again whole.
+
+## The app's own database role
+
+D-43 has the app connect as a role of its own, `iiic_app`, with migrations still running as `postgres`. Nothing in the repository creates that role; until it exists the app connects as the role `DATABASE_URL` names. Whoever creates it in Supabase grants it, besides what D-43 lists for the audit log:
+
+- USAGE on the schema `customer_auth`, and SELECT, INSERT, UPDATE and DELETE on its tables (Better Auth's users, sessions, identities and verifications). The `r2a_customer_auth` migration grants these itself only when the role already exists as it runs.
+- SELECT, INSERT, UPDATE and DELETE on public's `accounts` and `sign_in_requests` (R2).
+
+A grant on all tables in a schema covers only the tables that exist when it runs, so a table Better Auth or a later migration adds needs its own grant. Without these, customer sign-in breaks the moment `DATABASE_URL` switches to the new role. Check afterwards that the schema is closed to everyone else: `select nspacl from pg_namespace where nspname = 'customer_auth'` names the owner and `iiic_app` only.
+
 ## Roll back
 
 The fastest way back is Vercel's instant rollback: it points the domain at an earlier deployment without building anything.
@@ -47,7 +60,7 @@ A restore is tested at least once a quarter, and in the 30 days before every rel
 **Restoring production (only after deciding that the data now is worse than the backup):**
 
 1. Tell the office first, then stop writes by pausing the project in Vercel (the project's settings), so neither the site nor the admin answers while the data is replaced.
-2. Take a dump of the database as it is now, whatever its state, so nothing is lost by the restore: `pg_dump --format=custom --no-owner --file=iiic-before-restore.dump "$DATABASE_URL_DIRECT"` (the direct connection string, not the pooler's; Supabase → Project → Connect). Keep the file in the private bucket, never on a laptop longer than the restore takes.
+2. Take a dump of the database as it is now, whatever its state, so nothing is lost by the restore: `pg_dump --format=custom --no-owner --file=iiic-before-restore.dump "$DATABASE_URL_DIRECT"` (the session pooler's string on port 5432, the one migrations use; not the transaction pooler's on 6543, which `DATABASE_URL` holds, and not Supabase's direct connection, which is IPv6 only; Supabase → Project → Connect). Keep the file in the private bucket, never on a laptop longer than the restore takes.
 3. Supabase → the project → Database → Backups → choose the day → **Restore**. Supabase restores into the same project; the project is unavailable while it runs.
 4. Or, from a dump: `pg_restore --clean --if-exists --no-owner --dbname="$DATABASE_URL_DIRECT" iiic-<day>.dump`.
 5. Run `pnpm migrate:status` against the restored database (with its `DATABASE_URL`) and, if the backup predates a migration, redeploy production so the deploy runs the missing ones.
@@ -70,6 +83,7 @@ Rotate on a schedule (yearly), when someone who could read it leaves, and at onc
 | `GOOGLE_SERVICE_ACCOUNT_KEY` | Google Cloud console → IAM → Service accounts → the calendar account → Keys → Add key (JSON) | Paste the JSON into Vercel, redeploy, check a practitioner's busy times, then delete the old key |
 | `GOOGLE_CALENDAR_WEBHOOK_TOKEN` | `openssl rand -base64 48` | Existing watch channels carry the old token until B14 renews them; rotate it just before the renewal, or expect notifications refused until then (the 15-minute sweep covers the gap) |
 | `ZOHO_REFRESH_TOKEN`, `ZOHO_CLIENT_SECRET` | Zoho API Console (India data centre) → the platform's client | Invoices wait in `pending` while they are wrong; B3 issues them once the new values are in |
+| `BETTER_AUTH_SECRET` | `openssl rand -base64 48` | Customer sign-in (Release 2; `20` §3.4). It signs Better Auth's session cookie and keys the sign-in cookie and the hashes in `sign-in-requests`, and there is no previous value to fall back on: rotating it signs every customer out of My IIIC, and a sign-in begun before it must start again. Each signs in again with a code; nothing they hold is lost. The rate limits start counting afresh. Set it per environment; previews never act whatever they hold (D-122). Unset, sign-in is closed and `/login` says so |
 | `TURNSTILE_SECRET_KEY` | Cloudflare → Turnstile → the widget → Rotate secret key | Both Turnstile keys are set together or not at all (`src/lib/env.ts`) |
 | `OWNER_SETUP_TOKEN` | — | Delete it once the first owner exists (D-41); it is never rotated, only removed |
 | Sentry DSN | Vercel's Sentry integration sets it | Rotate the client key in Sentry → Project Settings → Client Keys only if it was published somewhere it should not be |
@@ -90,6 +104,22 @@ Session notes are sealed at rest under `NOTES_ENCRYPTION_KEY` (D-11; `18` §3). 
 5. If the count of notes no key could open is above 0, stop and keep both keys: those notes were sealed under a key this deployment does not hold. Find the key they were sealed under before deleting anything.
 
 Without `NOTES_ENCRYPTION_KEY` the app still builds and runs: the notes panel says notes are not available and nothing is stored unsealed.
+
+## Opening My IIIC accounts
+
+Customer sign-in and My IIIC (Release 2; `20`) are built and stay closed while the flag "My IIIC accounts" (`accountsEnabled`, Settings → Platform settings → Feature flags) is off: `/login` and `/account` are then the 404 everywhere, and the header shows no "Log in" (D-122). An owner switches it on only when every line below is true, in this order (D-139; `20` §14 holds the same list):
+
+1. **A copy and an erasure asked from My IIIC reach every record of the account** (D-138). Today such a request names the account's own record only, while My IIIC shows the person all their records. Not built yet.
+2. **`BETTER_AUTH_SECRET` is set in Production** (Rotate a secret, above). Unset, `/login` says sign-in is not open yet.
+3. **The account notice is in force** for the purpose `account`, in Content → Consent texts (I-65). Without it the account step shows its placeholder and every new account is refused.
+4. **The privacy notice's cookie section** lists the account cookies exactly as `12` §10 does.
+5. **An owner can end an account's sessions and detach a record from the admin** (D-125). Today these are endpoints only (`POST /api/accounts/:id/end-sessions`, `POST /api/accounts/:id/detach`), which check the owner, the two-factor code and the deployment first; no admin screen calls them. Not built yet.
+6. **"Continue with Google" is built and its OAuth client is set in Vercel** (D-137, I-68). Not built yet.
+7. **Passkeys are built** (D-137). Not built yet.
+8. **The header is checked by hand with "Log in" showing**, at 320, 900 and 1600 px, with axe (D-136): on a local copy of the site with the flag switched on in its admin (an owner's save refreshes the header), never on production. No end-to-end test can draw it.
+9. **Vercel's firewall limits `/login/*`** (D-109; `12` §5).
+10. **The lawyer has answered on accounts** (I-67): the consent's wording, adults only, the shared address, and whether a code entered within ten minutes verifies a request about one's data.
+11. **Then an owner switches the flag on.** Switching it off again closes sign-in and My IIIC at once; nothing is deleted.
 
 ## Responding to a breach
 

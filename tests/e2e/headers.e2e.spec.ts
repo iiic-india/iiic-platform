@@ -65,8 +65,8 @@ const ROUTE_GROUPS: RouteGroup[] = [
 ]
 
 // Routes that are never indexed, launched or not (D-67): where Find your path posts its
-// answer, the Map's personal result, the sign-in pages and a certificate's page. None of them
-// is built yet but the first, and the header is sent all the same.
+// answer, the Map's personal result, the sign-in pages (Release 2; docs/20 §5) and a
+// certificate's pages. The Map's result is not built yet, and the header is sent all the same.
 const NEVER_INDEXED = [
   '/map/go',
   '/map/result/fake-id',
@@ -235,4 +235,46 @@ test('public pages run under the policy without a violation', async ({ page }) =
     await page.waitForLoadState('networkidle')
   }
   expect(violations).toEqual([])
+})
+
+// My IIIC (docs/20 §5, §10; D-67): every page and file under /account is never indexed and never
+// cached, whoever asks: signed out (the way to sign in, or the closed page), with accounts
+// switched off (the 404) or signed in (tests/e2e/myIiic.e2e.spec.ts and myIiicPrivacy.e2e.spec.ts
+// check the pages themselves). The beacon is left off them, so the policy names no analytics
+// origin there.
+const MY_IIIC_PATHS = [
+  '/account',
+  '/account/bookings',
+  '/account/bookings/IIIC-S-00000',
+  '/account/bookings/IIIC-S-00000/invite.ics',
+  '/account/documents',
+  '/account/documents/certificates/1/pdf',
+  '/account/invoices',
+  '/account/invoices/1/pdf',
+  // Privacy and settings (slice C; docs/20 §7.5, §7.6): the page, closing, the page a closed
+  // account lands on, and adding a contact detail.
+  '/account/privacy',
+  '/account/privacy/close',
+  '/account/privacy/closed',
+  '/account/privacy/contact',
+]
+
+test.describe('My IIIC’s headers', () => {
+  test.skip(
+    ({ isMobile }) => isMobile,
+    'These checks only make requests: the desktop project runs them',
+  )
+
+  test('are noindex and private, no-store on every page and file, signed in or not', async ({
+    request,
+  }) => {
+    for (const path of MY_IIIC_PATHS) {
+      const response = await request.get(path, { maxRedirects: 0 })
+      const headers = response.headers()
+      expect(headers['x-robots-tag'], path).toMatch(/noindex/)
+      expect(headers['cache-control'], path).toMatch(/private/)
+      expect(headers['cache-control'], path).toMatch(/no-store/)
+      expect(headers['content-security-policy'] ?? '', path).not.toContain('cloudflareinsights')
+    }
+  })
 })

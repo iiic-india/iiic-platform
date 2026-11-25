@@ -9,7 +9,7 @@ import { clientKey, formEvidence, readFields, seeOther } from '@/lib/newsletter/
 import { WindowLimit } from '@/lib/newsletter/limit'
 import { SignedLinkToken } from '@/lib/newsletter/rules'
 import { withdrawPurpose } from '@/lib/newsletter/withdrawals'
-import { CONSENT_PURPOSES, type ConsentPurpose } from '@/lib/privacy/purposes'
+import { CONSENT_PURPOSES, ENDED_IN_MY_IIIC, type ConsentPurpose } from '@/lib/privacy/purposes'
 import config from '@payload-config'
 
 export const dynamic = 'force-dynamic'
@@ -42,6 +42,8 @@ export async function POST(request: Request, context: Context) {
 
   const purpose = Purpose.safeParse((await readFields(request))?.purpose)
   if (!purpose.success) return back('failed')
+  // The account consent ends by closing the account, in My IIIC (D-113; docs/20 §7.6).
+  if (ENDED_IN_MY_IIIC.includes(purpose.data)) return seeOther(request, '/account/privacy')
   try {
     const link = await verifySignedLink('withdraw', shape.data)
     if (!link.ok) return back('failed')

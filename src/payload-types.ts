@@ -113,6 +113,8 @@ export interface Config {
     suppressions: Suppression;
     subscribers: Subscriber;
     'newsletter-issues': NewsletterIssue;
+    accounts: Account;
+    'sign-in-requests': SignInRequest;
     'search-index': SearchIndex;
     redirects: Redirect;
     'totp-attempts': TotpAttempt;
@@ -143,6 +145,9 @@ export interface Config {
     };
     proposals: {
       versions: 'proposal-versions';
+    };
+    accounts: {
+      records: 'people';
     };
   };
   collectionsSelect: {
@@ -192,6 +197,8 @@ export interface Config {
     suppressions: SuppressionsSelect<false> | SuppressionsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'newsletter-issues': NewsletterIssuesSelect<false> | NewsletterIssuesSelect<true>;
+    accounts: AccountsSelect<false> | AccountsSelect<true>;
+    'sign-in-requests': SignInRequestsSelect<false> | SignInRequestsSelect<true>;
     'search-index': SearchIndexSelect<false> | SearchIndexSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
@@ -1195,6 +1202,10 @@ export interface Person {
   mobileVerifiedAt_tz?: 'Asia/Kolkata' | null;
   emailVerifiedAt?: string | null;
   emailVerifiedAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * The My IIIC account that shows this record to the person.
+   */
+  account?: (number | null) | Account;
   preferredChannel?: ('email' | 'whatsapp') | null;
   language: 'en-IN' | 'gu-IN' | 'hi-IN';
   /**
@@ -1248,6 +1259,33 @@ export interface Person {
   };
   whatsappLastInboundAt?: string | null;
   whatsappLastInboundAt_tz?: 'Asia/Kolkata' | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Accounts people made to sign in to My IIIC. Their sign-in details and sessions are kept by the sign-in service, not here.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accounts".
+ */
+export interface Account {
+  id: number;
+  /**
+   * The sign-in service’s id for this account.
+   */
+  authUserId?: string | null;
+  person: number | Person;
+  lastSignInAt?: string | null;
+  lastSignInAt_tz?: 'Asia/Kolkata' | null;
+  lastSignInChannel?: ('email' | 'whatsapp') | null;
+  /**
+   * The records of this person that My IIIC shows: their own and earlier ones.
+   */
+  records?: {
+    docs?: (number | Person)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -1581,7 +1619,8 @@ export interface Consent {
     | 'mapSharing'
     | 'testimonialPublication'
     | 'relatedProgrammes'
-    | 'enquiryReplies';
+    | 'enquiryReplies'
+    | 'account';
   /**
    * Taken from the notice.
    */
@@ -1650,7 +1689,8 @@ export interface ConsentVersion {
     | 'mapSharing'
     | 'testimonialPublication'
     | 'relatedProgrammes'
-    | 'enquiryReplies';
+    | 'enquiryReplies'
+    | 'account';
   language: 'en-IN' | 'gu-IN' | 'hi-IN';
   /**
    * Numbered by the platform.
@@ -2667,7 +2707,10 @@ export interface Message {
     | 'O10'
     | 'V1'
     | 'V2'
-    | 'C5';
+    | 'C5'
+    | 'A1'
+    | 'A2'
+    | 'A3';
   template:
     | 'booking-confirmed'
     | 'booking-receipt'
@@ -2701,7 +2744,10 @@ export interface Message {
     | 'weekly-report'
     | 'incident-alert'
     | 'backup-alert'
-    | 'failure-alert';
+    | 'failure-alert'
+    | 'account-sign-in-code'
+    | 'account-closed'
+    | 'account-detail-added';
   variant?: string | null;
   channel: 'email' | 'whatsapp';
   fallback?: ('email' | 'whatsapp') | null;
@@ -2742,7 +2788,7 @@ export interface Message {
    * A code from the provider, never its message.
    */
   lastError?: string | null;
-  recipientKind: 'person' | 'subscriber' | 'staff';
+  recipientKind: 'person' | 'subscriber' | 'staff' | 'signIn';
   person?: (number | null) | Person;
   subscriber?: (number | null) | Subscriber;
   staff?: (number | null) | User;
@@ -2764,7 +2810,9 @@ export interface Message {
     | 'proposals'
     | 'certificates'
     | 'data-requests'
-    | 'incidents';
+    | 'incidents'
+    | 'sign-in-requests'
+    | 'accounts';
   subjectId: number;
   /**
    * About a counselling session: no offer, ever (docs/06).
@@ -2860,7 +2908,10 @@ export interface MessageTemplate {
     | 'weekly-report'
     | 'incident-alert'
     | 'backup-alert'
-    | 'failure-alert';
+    | 'failure-alert'
+    | 'account-sign-in-code'
+    | 'account-closed'
+    | 'account-detail-added';
   channel: 'email' | 'whatsapp';
   language: 'en-IN' | 'gu-IN' | 'hi-IN';
   /**
@@ -2934,7 +2985,10 @@ export interface Automation {
     | 'O10'
     | 'V1'
     | 'V2'
-    | 'C5';
+    | 'C5'
+    | 'A1'
+    | 'A2'
+    | 'A3';
   /**
    * Untick to pause it. Nothing it would send goes out while paused.
    */
@@ -2993,9 +3047,24 @@ export interface NewsletterIssue {
   scheduledFor_tz?: 'Asia/Kolkata' | null;
   sentAt?: string | null;
   sentAt_tz?: 'Asia/Kolkata' | null;
+  /**
+   * Subscribers this issue has reached so far, from the Messages log.
+   */
   recipientCount?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sign-in-requests".
+ */
+export interface SignInRequest {
+  id: number;
+  purpose: 'signIn' | 'addDetail';
+  channel: 'email' | 'whatsapp';
+  identifierHash: string;
+  networkHash: string;
+  requestedAt: string;
 }
 /**
  * What /search finds: an entry for each published page, offered service, published article and published question, kept up to date as they are published, changed and unpublished. "Reindex" builds a kind again from what is published.
@@ -3428,6 +3497,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'newsletter-issues';
         value: number | NewsletterIssue;
+      } | null)
+    | ({
+        relationTo: 'accounts';
+        value: number | Account;
       } | null)
     | ({
         relationTo: 'search-index';
@@ -4010,6 +4083,7 @@ export interface PeopleSelect<T extends boolean = true> {
   mobileVerifiedAt_tz?: T;
   emailVerifiedAt?: T;
   emailVerifiedAt_tz?: T;
+  account?: T;
   preferredChannel?: T;
   language?: T;
   ageBand?: T;
@@ -5074,6 +5148,31 @@ export interface NewsletterIssuesSelect<T extends boolean = true> {
   recipientCount?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accounts_select".
+ */
+export interface AccountsSelect<T extends boolean = true> {
+  authUserId?: T;
+  person?: T;
+  lastSignInAt?: T;
+  lastSignInAt_tz?: T;
+  lastSignInChannel?: T;
+  records?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sign-in-requests_select".
+ */
+export interface SignInRequestsSelect<T extends boolean = true> {
+  purpose?: T;
+  channel?: T;
+  identifierHash?: T;
+  networkHash?: T;
+  requestedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

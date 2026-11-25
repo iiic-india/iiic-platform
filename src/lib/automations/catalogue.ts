@@ -1,7 +1,8 @@
 import type { AutomationEventName } from './events'
 
 /**
- * Every Release 1 automation of docs/06, as data (docs/19 §5): what starts it, when, on which
+ * Every Release 1 automation of docs/06, and Release 2's account messages (A1 to A3, docs/20 §9),
+ * as data (docs/19 §5): what starts it, when, on which
  * channels, why it may reach the person, the task that runs it and who builds it. The listeners
  * (src/lib/automations/listeners.ts), the schedules (schedules.ts), the automations collection's
  * rows and the tests all read this one table, so an automation is added or moved here and nowhere
@@ -18,10 +19,12 @@ export type CatalogueChannel = 'email' | 'whatsapp' | 'admin' | 'calendar' | 'do
 export type Basis = 'transactional' | 'promotional' | 'operator' | 'internal' | 'none'
 
 /**
- * Who builds it: M3 or M4 (already built, their own tasks and listeners), or M6's builders A, B
- * and C (docs/19 §9). An M3 or M4 automation is never subscribed again by M6's listeners.
+ * Who builds it: M3 or M4 (already built, their own tasks and listeners), M6's builders A, B
+ * and C (docs/19 §9), or Release 2's accounts (`R2a`, docs/20 §13), whose messages are planned
+ * by their own actions and have no task. An M3 or M4 automation is never subscribed again by
+ * M6's listeners.
  */
-export type Owner = 'M3' | 'M4' | 'A' | 'B' | 'C'
+export type Owner = 'M3' | 'M4' | 'A' | 'B' | 'C' | 'R2a'
 
 export type Automation = {
   id: string
@@ -436,6 +439,33 @@ export const AUTOMATIONS = [
     basis: 'transactional',
     owner: 'C',
     task: 'C5-certificate-email',
+  },
+  // ---- Accounts (A, Release 2; docs/06 A1 to A3; docs/20 §9) ----
+  // None is started by an event: the sign-in action, closing an account and adding a contact
+  // detail each plan their one message through the core's `deliver`, keyed by its subject.
+  {
+    id: 'A1',
+    title: 'Sign-in code',
+    timing: 'At once; useless after ten minutes',
+    channels: ['email', 'whatsapp'],
+    basis: 'transactional',
+    owner: 'R2a',
+  },
+  {
+    id: 'A2',
+    title: 'Account closed',
+    timing: 'At once',
+    channels: ['email'],
+    basis: 'transactional',
+    owner: 'R2a',
+  },
+  {
+    id: 'A3',
+    title: 'Contact detail added to an account',
+    timing: 'At once',
+    channels: ['email'],
+    basis: 'transactional',
+    owner: 'R2a',
   },
 ] as const satisfies readonly Automation[]
 

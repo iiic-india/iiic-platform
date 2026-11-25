@@ -7,6 +7,7 @@ import {
   REQUEST_CHANNELS,
   REQUEST_OUTCOMES,
   REQUEST_STATUSES,
+  REQUEST_SUMMARY_MAX,
   REQUEST_TYPES,
   VERIFICATION_METHODS,
 } from '@/lib/privacy/requests'
@@ -85,7 +86,7 @@ export const DataRequests: CollectionConfig = {
       type: 'textarea',
       label: 'What the person asks',
       required: true,
-      maxLength: 2000,
+      maxLength: REQUEST_SUMMARY_MAX,
       admin: {
         description:
           'In the person’s words where possible. Nothing said in a counselling session belongs here.',

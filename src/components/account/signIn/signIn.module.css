@@ -1,0 +1,59 @@
+/* Sign-in's plain pages (docs/20 §4.1; the interface pass is parked). The kit's classes do the
+   work; these add spacing and the measure only, with no colour of their own (CLAUDE.md,
+   non-negotiable 2). */
+
+.page {
+  padding-top: 48px;
+  padding-bottom: 80px;
+  max-width: 560px;
+}
+
+.page h1 {
+  margin: 0 0 16px;
+}
+
+.page h1:focus {
+  outline: none;
+}
+
+.lead {
+  margin: 0 0 28px;
+}
+
+.form {
+  margin-top: 8px;
+}
+
+.form > * + * {
+  margin-top: 20px;
+}
+
+/* The error summary sits above the form, as in the kit's example. */
+.form + .form,
+.secondary {
+  margin-top: 32px;
+}
+
+.secondary > * + * {
+  margin-top: 12px;
+}
+
+.check > * + * {
+  margin-top: 6px;
+}
+
+/* The notice keeps the line breaks it was written with. */
+.notice,
+.check span {
+  white-space: pre-line;
+}
+
+.divider {
+  margin: 40px 0 0;
+  padding-top: 32px;
+  border-top: 1px solid var(--iiic-rule);
+}
+
+.small {
+  margin-top: 28px;
+}
