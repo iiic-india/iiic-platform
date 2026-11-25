@@ -1,6 +1,6 @@
 import { sql } from '@payloadcms/db-postgres'
-import { createLocalReq, type Payload } from 'payload'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { createLocalReq, type Payload, type Where } from 'payload'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 // Sign-in against the real database and Better Auth on Payload's pool (docs/20 §4, §7.6, §11):
 // the same answer whatever the address holds, the limits, Turnstile, the tries, a new code ending
@@ -15,6 +15,26 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
+// The request App Router code reads (src/lib/accounts/session.ts): each case below sets the
+// headers its browser sends. Outside a request, `cookies()` answers as Next does there, which
+// Better Auth's cookie plugin takes as "nothing to write" (better-auth/next-js); a redirect is
+// thrown as an error that names where it goes.
+const incoming = vi.hoisted(() => ({ headers: new Headers() }))
+vi.mock('next/headers', () => ({
+  headers: async () => incoming.headers,
+  cookies: async () => {
+    throw new Error('`cookies` was called outside a request scope.')
+  },
+}))
+vi.mock('next/navigation', () => ({
+  redirect: (to: string) => {
+    throw new Error(`redirect to ${to}`)
+  },
+  notFound: () => {
+    throw new Error('not found')
+  },
+}))
+
 // Better Auth's secret for this file, before anything reads the environment; no fixed test code,
 // so each code is read from the fake email it went in.
 const SECRET = 'int-only-better-auth-secret-00000000000000000'
@@ -25,9 +45,18 @@ const { getPayload } = await import('payload')
 const { default: config } = await import('@/payload.config')
 const { implementationOf } = await import('@/emails')
 const { customerAuthFor } = await import('@/lib/accounts/auth/instance')
-const { SIGN_IN, SESSION_COOKIE_PREFIX } = await import('@/lib/accounts/contract')
+const {
+  ADD_DETAIL_COOKIE,
+  SIGN_IN,
+  SIGN_IN_COOKIE,
+  SIGN_IN_REQUEST_KEEP_HOURS,
+  SESSION_COOKIE_PREFIX,
+} = await import('@/lib/accounts/contract')
+const details = await import('@/lib/accounts/details')
 const { closeAccount, createAccountRecords, endAccountSessions } =
   await import('@/lib/accounts/lifecycle')
+const { purgeSignIns } = await import('@/lib/accounts/purge')
+const session = await import('@/lib/accounts/session')
 const { identifierHash } = await import('@/lib/accounts/signIn/identifier')
 const { openAttempt } = await import('@/lib/accounts/signIn/cookie')
 const steps = await import('@/lib/accounts/signIn/steps')
@@ -38,6 +67,7 @@ const { FakeEmailSender, FakeWhatsAppSender } = await import('@/lib/messaging/fa
 const { consentFor, currentNotice } = await import('@/lib/privacy/consents')
 const { NEWSLETTER_PERSON_NAME } = await import('@/lib/newsletter/subscriptions')
 
+type AccountSession = import('@/lib/accounts/contract').AccountSession
 type CookieJar = import('@/lib/accounts/signIn/cookie').CookieJar
 type SignInWiring = import('@/lib/accounts/signIn/steps').SignInWiring
 type TurnstileCheck = import('@/lib/enquiryForms/turnstile').TurnstileCheck
@@ -53,6 +83,9 @@ let auth: NonNullable<ReturnType<typeof customerAuthFor>>
 let flagsBefore: Record<string, unknown> = {}
 let jobsBefore = 0
 const used: string[] = []
+/** The fake mobiles and Better Auth users a case made outside the code step, for the clean-up. */
+const mobiles: string[] = []
+const authUsers: string[] = []
 const email = new FakeEmailSender()
 const whatsapp = new FakeWhatsAppSender()
 
@@ -122,6 +155,7 @@ function browser(turnstile: TurnstileCheck | null = null) {
     jar,
     ip,
     headers,
+    wiring,
     request: async (to: string, now = new Date(), extra: { turnstileToken?: string } = {}) =>
       steps.requestCodeWith(wiring)(
         await req(),
@@ -198,6 +232,10 @@ async function removeTestData() {
     const user = await context.internalAdapter.findUserByEmail(to)
     if (user) await context.internalAdapter.deleteUser(user.user.id)
   }
+  for (const id of authUsers) {
+    if (await context.internalAdapter.findUserById(id)) await context.internalAdapter.deleteUser(id)
+  }
+  const ours: Where = { or: [{ email: { in: used } }, { mobile: { in: mobiles } }] }
   const hashes = used.map((to) => identifierHash(SECRET, 'email', to))
   const { docs: requests } = await payload.find({
     collection: 'sign-in-requests',
@@ -220,7 +258,7 @@ async function removeTestData() {
   }
   const { docs: people } = await payload.find({
     collection: 'people',
-    where: { email: { in: used } },
+    where: ours,
     pagination: false,
     depth: 0,
   })
@@ -259,7 +297,7 @@ async function removeTestData() {
     },
   })
   await payload.delete({ collection: 'suppressions', where: { address: { in: used } } })
-  await payload.delete({ collection: 'people', where: { email: { in: used } } })
+  await payload.delete({ collection: 'people', where: ours })
   // Whatever this file's writes queued (a withdrawal's V2 and N3, a suppression's O9).
   await payload.db.drizzle.execute(sql`DELETE FROM "payload_jobs" WHERE "id" > ${jobsBefore}`)
 }
@@ -740,6 +778,308 @@ describe('sessions (docs/20 §4.7; D-115, D-125)', () => {
     const ended = await endAccountSessions(await staff(['owner'], 'totp'), accountId)
     expect(ended).toEqual({ ok: true, value: { ended: 1 } })
     expect(await (await auth.$context).internalAdapter.listSessions(userId)).toHaveLength(0)
+  })
+})
+
+describe('the session in App Router code (docs/20 §3.5, §4.7, §11)', () => {
+  const BROWSER = 'Mozilla/5.0 (Fake test browser) Chrome/131.0 Safari/537.36'
+
+  /** This browser's own session for the user: the cookie its requests now carry. */
+  async function thisBrowser(userId: string) {
+    const { headers: started, response } = await auth.api.startSession({
+      body: { userId, trusted: true },
+      returnHeaders: true,
+    })
+    const cookie = started
+      .getSetCookie()
+      .map((line) => line.split(';')[0])
+      .join('; ')
+    incoming.headers = new Headers({
+      cookie,
+      'user-agent': BROWSER,
+      'x-forwarded-for': '203.0.113.240',
+    })
+    return { cookie, sessionId: response.sessionId }
+  }
+
+  async function userOf(accountId: number) {
+    const account = await payload.findByID({ collection: 'accounts', id: accountId, depth: 0 })
+    const personId = typeof account.person === 'object' ? account.person.id : account.person
+    return { userId: account.authUserId as string, personId }
+  }
+
+  afterEach(() => {
+    incoming.headers = new Headers()
+  })
+
+  it('reads the account a request’s cookie belongs to, and sends a request without one to sign in', async () => {
+    const { to, accountId } = await newAccount('app-session')
+    const { userId, personId } = await userOf(accountId)
+    const { sessionId } = await thisBrowser(userId)
+    expect(await session.getAccountSession()).toMatchObject({
+      accountId,
+      personId,
+      authUserId: userId,
+      sessionId,
+      trustedDevice: true,
+      verified: { email: to, mobile: null },
+    })
+    expect(
+      await session.requireAccount({ next: '/account/privacy', recentMinutes: 10 }),
+    ).toMatchObject({ accountId, sessionId })
+    // No cookie: no session, and the door sends the person to sign in, keeping where they were.
+    incoming.headers = new Headers({ 'user-agent': BROWSER })
+    expect(await session.getAccountSession()).toBeNull()
+    await expect(session.requireAccount({ next: '/account/privacy' })).rejects.toThrow(
+      'redirect to /login?next=%2Faccount%2Fprivacy',
+    )
+  })
+
+  it('lists every device of the account, marks this one, and "Sign out everywhere" leaves only it, audited', async () => {
+    const { accountId } = await newAccount('everywhere')
+    const { userId } = await userOf(accountId)
+    // The account step's session, and one more device, besides this browser's.
+    await auth.api.startSession({ body: { userId, trusted: false } })
+    const { sessionId } = await thisBrowser(userId)
+    const me = await session.getAccountSession()
+    if (!me) throw new Error('no session read')
+    const devices = await session.listDevices(me)
+    expect(devices).toHaveLength(3)
+    expect(devices.filter((device) => device.current).map((device) => device.id)).toEqual([
+      sessionId,
+    ])
+    const times = devices.map((device) => device.signedInAt.getTime())
+    expect(times).toEqual([...times].sort((a, b) => b - a))
+
+    const req = await createLocalReq(
+      {
+        req: {
+          headers: new Headers({ 'user-agent': BROWSER, 'x-forwarded-for': '203.0.113.240' }),
+        },
+        context: { auditActor: { id: `account:${accountId}` } },
+      },
+      payload,
+    )
+    expect(await session.signOutEverywhere(req, me)).toBe(2)
+    const context = await auth.$context
+    expect((await context.internalAdapter.listSessions(userId)).map((row) => row.id)).toEqual([
+      sessionId,
+    ])
+    // This browser stays signed in.
+    expect(await session.getAccountSession()).toMatchObject({ accountId, sessionId })
+    const { docs: entries } = await payload.find({
+      collection: 'audit-log',
+      where: {
+        and: [
+          { action: { equals: 'sign-out-everywhere' } },
+          { entityId: { equals: String(accountId) } },
+        ],
+      },
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toMatchObject({ actorId: `account:${accountId}`, changed: 'sessions:2' })
+  })
+
+  it('signs this browser out and leaves the person’s other devices signed in', async () => {
+    const { accountId } = await newAccount('sign-out')
+    const { userId } = await userOf(accountId)
+    const context = await auth.$context
+    const [elsewhere] = await context.internalAdapter.listSessions(userId)
+    expect(elsewhere).toBeDefined()
+    const { cookie } = await thisBrowser(userId)
+    await session.signOut()
+    expect((await context.internalAdapter.listSessions(userId)).map((row) => row.id)).toEqual([
+      elsewhere?.id,
+    ])
+    expect(await auth.api.getSession({ headers: new Headers({ cookie }) })).toBeNull()
+    expect(await session.getAccountSession()).toBeNull()
+  })
+})
+
+describe('a second detail (docs/20 §4.6; D-120, D-128, D-129)', () => {
+  it('proves an email for a WhatsApp account with a real code, gives it to Better Auth’s user and attaches the records holding it', async () => {
+    const to = address('second-detail')
+    const mobile = `+9199${Date.now().toString().slice(-8)}`
+    mobiles.push(mobile)
+    // A WhatsApp account, as the account step leaves it once its code proved the mobile.
+    const { accountId, personId } = await createAccountRecords(await createLocalReq({}, payload), {
+      channel: 'whatsapp',
+      value: mobile,
+      fullName: `Fake ${TAG} second detail`,
+      noticeVersionId: await noticeId(),
+      evidence: { ip: null, userAgent: null },
+      now: new Date(),
+    })
+    const made = await auth.api.createCustomer({ body: { channel: 'whatsapp', value: mobile } })
+    authUsers.push(made.userId)
+    await payload.update({
+      collection: 'accounts',
+      id: accountId,
+      data: { authUserId: made.userId },
+      overrideAccess: true,
+    })
+    // An earlier booking's record that holds the email, not yet proven anywhere.
+    const earlier = await payload.create({
+      collection: 'people',
+      data: { fullName: `Fake ${TAG} second detail earlier`, email: to } as never,
+      overrideAccess: true,
+    })
+    const account: AccountSession = {
+      accountId,
+      personId,
+      authUserId: made.userId,
+      sessionId: `fake-session-${RUN}`,
+      signedInAt: new Date(),
+      expiresAt: new Date(Date.now() + 86_400_000),
+      trustedDevice: false,
+      verified: { email: null, mobile },
+    }
+    const person = browser()
+    // As accountRequest builds it on the privacy page's contact step.
+    const req = () =>
+      createLocalReq({ context: { auditActor: { id: `account:${accountId}` } } }, payload)
+
+    expect(
+      await details.requestDetailCodeWith(person.wiring)(
+        await req(),
+        account,
+        { channel: 'email', identifier: to },
+        new Date(),
+      ),
+    ).toMatchObject({ ok: true })
+    // The attempt has its own cookie, never the sign-in's (D-129).
+    expect(person.jar.get(ADD_DETAIL_COOKIE.name)).toBeTruthy()
+    expect(person.jar.get(SIGN_IN_COOKIE.name)).toBeUndefined()
+    const code = lastCode(to)
+    const wrong = code === '000000' ? '111111' : '000000'
+    expect(
+      await details.confirmDetailWith(person.wiring)(
+        await req(),
+        account,
+        { code: wrong },
+        new Date(),
+      ),
+    ).toEqual({ ok: false, error: { code: 'wrong-code', triesLeft: SIGN_IN.attemptsPerCode - 1 } })
+    expect(
+      await details.confirmDetailWith(person.wiring)(await req(), account, { code }, new Date()),
+    ).toEqual({ ok: true, value: { attached: 1 } })
+    expect(person.jar.get(ADD_DETAIL_COOKIE.name)).toBeUndefined()
+
+    // Proven on the own record, given to Better Auth's user, and the earlier record attached.
+    const own = await payload.findByID({ collection: 'people', id: personId, depth: 0 })
+    expect(own).toMatchObject({ email: to, mobile })
+    expect(own.emailVerifiedAt).toBeTruthy()
+    expect(own.mobileVerifiedAt).toBeTruthy()
+    const user = await (await auth.$context).internalAdapter.findUserById(made.userId)
+    expect(user).toMatchObject({ email: to, emailVerified: true })
+    const attached = await payload.findByID({ collection: 'people', id: earlier.id, depth: 0 })
+    expect(attached.account).toBe(accountId)
+    const { docs: entries } = await payload.find({
+      collection: 'audit-log',
+      where: {
+        and: [
+          { action: { equals: 'add-contact-detail' } },
+          { entityId: { equals: String(accountId) } },
+        ],
+      },
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toMatchObject({ actorId: `account:${accountId}`, changed: 'email' })
+    // The same code cannot prove it twice.
+    expect(
+      await details.confirmDetailWith(person.wiring)(await req(), account, { code }, new Date()),
+    ).toEqual({ ok: false, error: { code: 'no-request' } })
+  })
+})
+
+describe('the nightly purge (docs/20 §4.8; D-116; O5, H9)', () => {
+  it('removes sign-in rows older than the hours kept and Better Auth’s ended sessions and codes, and keeps the rest', async () => {
+    const now = new Date()
+    const hours = (count: number) => new Date(now.getTime() - count * 3_600_000).toISOString()
+    const to = address('purge')
+    const row = (requestedAt: string) =>
+      payload.create({
+        collection: 'sign-in-requests',
+        data: {
+          purpose: 'signIn',
+          channel: 'email',
+          identifierHash: identifierHash(SECRET, 'email', to),
+          networkHash: identifierHash(SECRET, 'email', `network.${to}`),
+          requestedAt,
+        },
+        overrideAccess: true,
+      })
+    const old = await row(hours(SIGN_IN_REQUEST_KEEP_HOURS + 1))
+    const kept = await row(hours(SIGN_IN_REQUEST_KEEP_HOURS - 1))
+
+    const { accountId } = await newAccount('purge-sessions')
+    const userId = (await payload.findByID({ collection: 'accounts', id: accountId, depth: 0 }))
+      .authUserId as string
+    const context = await auth.$context
+    // Better Auth sets a session's end itself unless told to take the one given (overrideAll).
+    const ended = await context.internalAdapter.createSession(
+      userId,
+      false,
+      { expiresAt: new Date(now.getTime() - 60_000) },
+      true,
+    )
+    const live = await context.internalAdapter.createSession(userId, false)
+    const endedCode = await context.internalAdapter.createVerificationValue({
+      identifier: `${TAG}.purge-ended.${RUN}`,
+      value: 'fake-ended-code',
+      expiresAt: new Date(now.getTime() - 60_000),
+    })
+    const liveCode = await context.internalAdapter.createVerificationValue({
+      identifier: `${TAG}.purge-live.${RUN}`,
+      value: 'fake-live-code',
+      expiresAt: new Date(now.getTime() + 10 * 60_000),
+    })
+    const present = async (model: 'session' | 'verification', id: string) =>
+      (await context.adapter.findOne({ model, where: [{ field: 'id', value: id }] })) !== null
+
+    try {
+      const result = await purgeSignIns(await createLocalReq({}, payload), now)
+      expect(result.requests).toBeGreaterThanOrEqual(1)
+      expect(result.sessions).toBeGreaterThanOrEqual(1)
+      expect(result.codes).toBeGreaterThanOrEqual(1)
+      const left = await payload.find({
+        collection: 'sign-in-requests',
+        where: { id: { in: [old.id, kept.id] } },
+        depth: 0,
+      })
+      expect(left.docs.map((doc) => doc.id)).toEqual([kept.id])
+      expect(await present('session', ended.id)).toBe(false)
+      expect(await present('session', live.id)).toBe(true)
+      expect(await present('verification', endedCode.id)).toBe(false)
+      expect(await present('verification', liveCode.id)).toBe(true)
+      // One entry for the run, with the counts, no actor and no one's details.
+      const { docs: entries } = await payload.find({
+        collection: 'audit-log',
+        where: {
+          and: [
+            { action: { equals: 'purge-expired' } },
+            { at: { greater_than_equal: now.toISOString() } },
+          ],
+        },
+        depth: 0,
+        overrideAccess: true,
+      })
+      expect(entries.length).toBeGreaterThanOrEqual(1)
+      for (const entry of entries) {
+        expect(entry.actorId ?? null).toBeNull()
+        expect(entry.actorEmail ?? null).toBeNull()
+        expect(entry.changed).toMatch(/^requests:\d+, sessions:\d+, codes:\d+$/)
+      }
+    } finally {
+      await context.adapter.delete({
+        model: 'verification',
+        where: [{ field: 'id', value: liveCode.id }],
+      })
+    }
   })
 })
 
