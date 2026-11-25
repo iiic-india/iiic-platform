@@ -6,6 +6,7 @@ import { viewRefusal } from '@/access/views'
 import { recordAudit } from '@/lib/audit/record'
 import { env } from '@/lib/env'
 import { deliver } from '@/lib/messaging/deliver'
+import { NEWSLETTER_PERSON_NAME } from '@/lib/newsletter/subscriptions'
 import { withdrawPurpose } from '@/lib/newsletter/withdrawals'
 import { inTransaction } from '@/lib/payments/store'
 import { idOf } from '@/lib/privacy/consentLedger'
@@ -64,7 +65,18 @@ export async function under18Holds(
   return totalDocs > 0
 }
 
-/** The newest adult record holding the detail that no account holds: the name it offers. */
+/**
+ * Whether a record carries a name the person gave: the newsletter's placeholder for a record it
+ * made from an address alone ("Newsletter subscriber") is no name (CR-05; D-131).
+ */
+export const givenName = (fullName: string | null | undefined): boolean =>
+  typeof fullName === 'string' && fullName.trim() !== '' && fullName !== NEWSLETTER_PERSON_NAME
+
+/**
+ * The newest adult record holding the detail that no account holds and that carries a name the
+ * person gave: the name the account step offers, and the record the name typed is matched
+ * against. A record named by the newsletter's placeholder is never offered (D-131).
+ */
 export async function newestRecord(
   req: PayloadRequest,
   channel: SignInChannel,
@@ -73,7 +85,14 @@ export async function newestRecord(
   const { field } = DETAIL_FIELDS[channel]
   const { docs } = await req.payload.find({
     collection: 'people',
-    where: { and: [{ [field]: { equals: value } }, { account: { exists: false } }, NOT_UNDER_18] },
+    where: {
+      and: [
+        { [field]: { equals: value } },
+        { account: { exists: false } },
+        NOT_UNDER_18,
+        { fullName: { not_equals: NEWSLETTER_PERSON_NAME } },
+      ],
+    },
     sort: '-createdAt',
     limit: 1,
     select: { fullName: true },
@@ -85,12 +104,15 @@ export async function newestRecord(
 }
 
 /**
- * The record that becomes the account's own (docs/20 §3.6, §4.5): one that already holds the
- * detail proven (the own record of an account closed earlier, whose markers stay), else the
- * newest earlier record holding it when its name is the one the person gave, else none and a new
- * record is made. A record is never renamed: when the person gives another name, theirs is a new
- * record and the earlier ones are attached to it, for the office to merge if they are one person
- * (docs/05, People).
+ * The record that becomes the account's own (docs/20 §3.6, §4.5; D-131): one that already holds
+ * the detail proven (the own record of an account closed earlier, whose markers stay, or a record
+ * the newsletter made when the person confirmed the Journal), since only one record may hold a
+ * detail proven (`oneVerifiedPerson`); else the newest earlier record holding it when its name is
+ * the one the person gave; else none and a new record is made. A record with a name the person
+ * gave is never renamed: when they give another, theirs is a new record and the earlier ones are
+ * attached to it, for the office to merge if they are one person (docs/05, People). The
+ * newsletter's placeholder is no name, so an adopted record that carries it takes the name typed
+ * (`createAccountRecords`).
  */
 async function ownRecordFor(
   req: PayloadRequest,
@@ -185,10 +207,10 @@ export async function createAccountRecords(
     const record = (await req.payload.findByID({
       collection: 'people',
       id: personId,
-      select: { ageBand: true },
+      select: { ageBand: true, fullName: true },
       req,
       ...SERVER,
-    })) as Pick<Person, 'ageBand'>
+    })) as Pick<Person, 'ageBand' | 'fullName'>
     await req.payload.update({
       collection: 'people',
       id: personId,
@@ -199,6 +221,9 @@ export async function createAccountRecords(
           : { mobileVerifiedAt: at, mobileVerifiedAt_tz: IST }),
         // The person said they are 18 or older (D-114); a band the office set stays.
         ...(record.ageBand ? {} : { ageBand: 'adult' as const }),
+        // An adopted record named only by the newsletter's placeholder takes the name the
+        // person typed; a name a person gave is never changed (D-131).
+        ...(givenName(record.fullName) ? {} : { fullName: input.fullName }),
       },
       req,
       ...SERVER,

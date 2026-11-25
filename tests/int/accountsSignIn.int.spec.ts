@@ -33,6 +33,7 @@ const { fakeTurnstile } = await import('@/lib/enquiryForms/turnstile')
 const { deliverWith } = await import('@/lib/messaging/deliver')
 const { FakeEmailSender, FakeWhatsAppSender } = await import('@/lib/messaging/fakes')
 const { currentNotice } = await import('@/lib/privacy/consents')
+const { NEWSLETTER_PERSON_NAME } = await import('@/lib/newsletter/subscriptions')
 
 type CookieJar = import('@/lib/accounts/signIn/cookie').CookieJar
 type SignInWiring = import('@/lib/accounts/signIn/steps').SignInWiring
@@ -510,6 +511,40 @@ describe('a new account (docs/20 §4.5; D-113, D-114)', () => {
       },
     })
     expect(audited).toBe(1)
+  })
+
+  it('takes a record the newsletter made as its own, never offers its placeholder, and names it as typed (D-131)', async () => {
+    const to = address('journal')
+    // As confirming the Journal makes it for an address no record holds.
+    const journal = await payload.create({
+      collection: 'people',
+      data: {
+        fullName: NEWSLETTER_PERSON_NAME,
+        email: to,
+        emailVerifiedAt: new Date(Date.now() - 86_400_000).toISOString(),
+        language: 'en-IN',
+        source: 'newsletter',
+      } as never,
+      overrideAccess: true,
+    })
+    const person = browser()
+    await person.request(to)
+    expect(await person.verify(lastCode(to))).toEqual({
+      ok: true,
+      value: { state: 'needs-account', suggestedName: null },
+    })
+    const typed = `Fake ${TAG} journal reader`
+    const made = await person.create({ fullName: typed, noticeVersionId: await noticeId() })
+    expect(made).toMatchObject({ ok: true })
+    const account = await accountOf(to)
+    expect(account?.person).toBe(journal.id)
+    const record = await payload.findByID({ collection: 'people', id: journal.id, depth: 0 })
+    expect(record.fullName).toBe(typed)
+    const { totalDocs } = await payload.count({
+      collection: 'people',
+      where: { email: { equals: to } },
+    })
+    expect(totalDocs).toBe(1)
   })
 
   it('refuses an address an earlier record says belongs to someone under 18', async () => {
