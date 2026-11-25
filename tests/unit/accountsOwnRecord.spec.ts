@@ -28,6 +28,7 @@ const { sealAttempt } = await import('@/lib/accounts/signIn/cookie')
 const { ADD_DETAIL_COOKIE, SIGN_IN_COOKIE } = await import('@/lib/accounts/contract')
 const { confirmDetailWith } = await import('@/lib/accounts/details')
 const { NEWSLETTER_PERSON_NAME } = await import('@/lib/newsletter/subscriptions')
+const { contextActor } = await import('@/lib/audit/actor')
 
 type Doc = Record<string, unknown> & { id: number }
 type Where = Record<string, unknown>
@@ -65,6 +66,17 @@ class FakePayload {
   saved: Record<string, Doc[]> | null = null
   commits = 0
   rollbacks = 0
+  /**
+   * Each write to a record, with the actor the audit plugin would name for it: the request has no
+   * Payload user, so the account on its context, if any (src/plugins/auditLog.ts; D-133).
+   */
+  writes: { op: string; collection: string; actor: unknown }[] = []
+
+  wrote(op: string, collection: string, req: unknown) {
+    if (collection === 'audit-log') return
+    const actor = req ? contextActor(req as Parameters<typeof contextActor>[0]) : undefined
+    this.writes.push({ op, collection, actor })
+  }
 
   seed(collection: string, data: Record<string, unknown>): Doc {
     const doc: Doc = { ...data, id: this.next++, createdAt: this.tick++ }
@@ -123,13 +135,33 @@ class FakePayload {
       if (!doc) throw new Error('not found')
       return { ...doc }
     },
-    create: async ({ collection, data }: { collection: string; data: Record<string, unknown> }) => {
+    create: async ({
+      collection,
+      data,
+      req,
+    }: {
+      collection: string
+      data: Record<string, unknown>
+      req?: unknown
+    }) => {
       if (this.failOn === collection) throw new Error(`the stand-in refused a ${collection} row`)
+      this.wrote('create', collection, req)
       return { ...this.seed(collection, data) }
     },
-    update: async ({ collection, id, data }: { collection: string; id: number; data: Doc }) => {
+    update: async ({
+      collection,
+      id,
+      data,
+      req,
+    }: {
+      collection: string
+      id: number
+      data: Doc
+      req?: unknown
+    }) => {
       const doc = this.of(collection).find((row) => row.id === id)
       if (!doc) throw new Error('not found')
+      this.wrote('update', collection, req)
       Object.assign(doc, data)
       return { ...doc }
     },
@@ -240,6 +272,23 @@ describe('the audit log’s actor in the account step (D-133)', () => {
     })
     expect(req.context.auditActor).toEqual({ id: `account:${accountId}` })
     expect(db.of('audit-log').at(-1)).toMatchObject({ actorId: `account:${accountId}` })
+  })
+
+  it('is none for the person, consent and account rows written before the account has an id', async () => {
+    // The order rulings E and I.1 of the join require: the person (when none is adopted), the
+    // consent that names them, then the account. The log is append-only, so the rows written
+    // before the account exists keep no actor; D-133 and docs/20 §8 say so.
+    const { accountId } = await records()
+    const account = { id: `account:${accountId}` }
+    expect(db.writes).toEqual([
+      { op: 'create', collection: 'people', actor: undefined },
+      { op: 'create', collection: 'consents', actor: undefined },
+      { op: 'create', collection: 'accounts', actor: undefined },
+      { op: 'update', collection: 'people', actor: account },
+    ])
+    expect(db.of('audit-log')).toEqual([
+      expect.objectContaining({ action: 'create-account', actorId: account.id }),
+    ])
   })
 })
 

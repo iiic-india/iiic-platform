@@ -99,7 +99,10 @@ const detachHandler = ownerAct(async (req, accountId) => {
  * sign-in (after the account consent, D-113), updates the last sign-in, and deletes it when the
  * person closes the account or an owner confirms an erasure (D-125). Every write is in the audit
  * log (src/plugins/auditLog.ts): one the person makes with the account as its actor
- * (`account:<id>`, from the request's context, D-133), one an owner makes with the owner.
+ * (`account:<id>`, from the request's context, D-133), one an owner makes with the owner. In the
+ * account step, a new person row, the account consent and this row are written before the account
+ * has an id (D-113), so they carry no actor; the `create-account` entry that follows in the same
+ * transaction names it.
  */
 export const Accounts: CollectionConfig = {
   slug: 'accounts',
