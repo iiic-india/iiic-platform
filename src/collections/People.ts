@@ -7,6 +7,7 @@ import {
 
 import { allow, allowField, FIELD_POLICY, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { attachNewRecord } from '@/lib/accounts/attach'
 import { phoneField } from '@/lib/phone'
 import { eraseFromPipeline } from '@/lib/pipeline/core/hooks'
 import { withdrawOnDeletion } from '@/lib/privacy/consents'
@@ -121,6 +122,8 @@ export const People: CollectionConfig = {
   },
   hooks: {
     beforeChange: [oneVerifiedPerson],
+    // A record made later with a detail an account has proven joins it (docs/20 §6; D-120).
+    afterChange: [attachNewRecord],
     // First the consents, whose withdrawal takes the person's reviews down; then the reviews
     // themselves, which go with the person (docs/04); then their enquiries, and their leads'
     // link to them (docs/17 §9).

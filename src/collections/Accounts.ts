@@ -1,12 +1,86 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, PayloadHandler, PayloadRequest } from 'payload'
+import { z } from 'zod'
 
 import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
+import { viewRefusal } from '@/access/views'
 import { SIGN_IN_CHANNELS } from '@/lib/accounts/contract'
 import { IST_FIELD } from '@/lib/time/ist'
 
 /** Written by the server only (src/lib/accounts), never through the API or the admin. */
 const serverWritten = { create: () => false, update: () => false }
+
+// ---- The owner's acts on an account (docs/20 §4.7, §6; D-120, D-125) ----
+
+const json = (body: Record<string, unknown>, status = 200) =>
+  Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
+
+const Id = z.coerce.number().int().positive()
+
+/** What the admin is told when an act is refused or finds nothing. Never a person's details. */
+const ANSWERS = {
+  'sign-in': { status: 401, message: 'Sign in to the admin first.' },
+  'enter-code': { status: 403, message: 'Enter your two-factor code first.' },
+  'not-allowed': { status: 403, message: 'Only an owner can do this.' },
+  refused: { status: 403, message: 'Only an owner can do this, and not on a preview.' },
+  'not-found': { status: 404, message: 'There is no such account or record.' },
+  'own-record': {
+    status: 409,
+    message: 'This is the account’s own record. Closing the account detaches it.',
+  },
+} as const
+
+const answer = (code: keyof typeof ANSWERS) =>
+  json({ code, message: ANSWERS[code].message }, ANSWERS[code].status)
+
+/**
+ * One endpoint: the staff session, the two-factor code and the owner role first (CLAUDE.md #6;
+ * `VIEW_POLICY.accountActions`), before anything is read; then the account's id. The account
+ * functions are loaded only when a request arrives, so the Payload CLI, which loads the
+ * collections, never loads their `server-only` modules. Answers are never cached.
+ */
+const ownerAct =
+  (run: (req: PayloadRequest, accountId: number) => Promise<Response>): PayloadHandler =>
+  async (req) => {
+    const refusal = viewRefusal(req.user, 'accountActions')
+    if (refusal) return answer(refusal.code)
+    const id = Id.safeParse(req.routeParams?.id)
+    if (!id.success) return answer('not-found')
+    return run(req, id.data)
+  }
+
+/** POST /api/accounts/:id/end-sessions: every session of the account ends (D-125). */
+const endSessionsHandler = ownerAct(async (req, accountId) => {
+  const { endAccountSessions } = await import('@/lib/accounts/lifecycle')
+  const result = await endAccountSessions(req, accountId)
+  return result.ok
+    ? json({ ended: result.value.ended, message: `Sessions ended: ${result.value.ended}.` })
+    : answer(result.error.code)
+})
+
+/** POST /api/accounts/:id/detach { personId }: a record the person says is not theirs (D-120). */
+const detachHandler = ownerAct(async (req, accountId) => {
+  const body = (await req.json?.().catch(() => null)) as { personId?: unknown } | null
+  const personId = Id.safeParse(body?.personId)
+  if (!personId.success) return answer('not-found')
+  // The record must be one this account holds.
+  const record = await req.payload.findByID({
+    collection: 'people',
+    id: personId.data,
+    depth: 0,
+    disableErrors: true,
+    select: { account: true },
+    overrideAccess: true,
+    req,
+  })
+  const holder = record?.account
+  if ((typeof holder === 'object' ? holder?.id : holder) !== accountId) return answer('not-found')
+  const { detachRecord } = await import('@/lib/accounts/lifecycle')
+  const result = await detachRecord(req, personId.data)
+  return result.ok
+    ? json({ detached: true, message: 'The record is detached from the account.' })
+    : answer(result.error.code)
+})
 
 /**
  * A person's My IIIC account (docs/04 `accounts`, S2; docs/20-accounts-design.md §3): the link
@@ -36,6 +110,11 @@ export const Accounts: CollectionConfig = {
     update: allow(POLICY.accounts.update),
     delete: allow(POLICY.accounts.delete),
   },
+  // An owner, with the two-factor code, ends an account's sessions or detaches a record from it.
+  endpoints: [
+    { path: '/:id/end-sessions', method: 'post', handler: endSessionsHandler },
+    { path: '/:id/detach', method: 'post', handler: detachHandler },
+  ],
   defaultSort: '-createdAt',
   disableBulkEdit: true,
   fields: [

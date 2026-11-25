@@ -207,6 +207,18 @@ const OWN = [
 /** Proof, which draws itself too: tests/unit/proofPage.spec.tsx. */
 const PROOF = ['(default)/proof/page.tsx']
 
+/**
+ * Sign-in to My IIIC (Release 2; docs/20 §4, §5), never indexed: /login lies under the private
+ * routes (noindex, out of the sitemap) and each page sets robots noindex in its own metadata. They
+ * draw themselves in tests/unit/accountsSignInClosed.spec.ts and end to end in
+ * tests/e2e/accountsSignIn.e2e.spec.ts.
+ */
+const SIGN_IN_PAGES = [
+  { file: '(default)/login/page.tsx', path: '/login' },
+  { file: '(default)/login/verify/page.tsx', path: '/login/verify' },
+  { file: '(default)/login/detail/page.tsx', path: '/login/detail' },
+]
+
 /** The certificate verify pages, never indexed: tests/unit/certificatesVerifyPages.spec.tsx. */
 const VERIFY = [
   '(education)/institute/verify/page.tsx',
@@ -265,6 +277,10 @@ afterEach(() => {
 })
 
 describe('the pages under src/app/(platform)', () => {
+  it.each(SIGN_IN_PAGES)('keeps sign-in’s $path out of search', ({ path }) => {
+    expect(isNoindexPath(path), path).toBe(true)
+  })
+
   it('are all tested here, so that a new page is held to the same rules', () => {
     const found = readdirSync(APP, { recursive: true, encoding: 'utf8' })
       .map((file) => file.replaceAll('\\', '/'))
@@ -272,6 +288,7 @@ describe('the pages under src/app/(platform)', () => {
     expect(found.sort()).toEqual(
       [
         ...OWN,
+        ...SIGN_IN_PAGES,
         ...PROOF,
         ...VERIFY,
         ...PROPOSAL_LINK,
