@@ -99,6 +99,7 @@ An account has one **own record**: the `people` record that holds its verified e
 - **Without JavaScript** every step works: the forms post to server actions with progressive enhancement and the server answers with a redirect or the page with its errors (`12` §4). Turnstile is the exception, as on the enquiry forms (D-92): where its keys are set, a browser without JavaScript is told it needs JavaScript for the check, or to write to the office.
 - **Accessible authentication** (`12` §9; WCAG 2.2): no puzzle, the code can be pasted and autofilled, nothing times out on the page itself (the code's ten minutes are stated, not counted down), the step is named in the title (`Enter your code · My IIIC`), targets are the kit's.
 - `/login` while already signed in: `303` to `/account`. The sign-in cookie (§10) carries the attempt between the steps; the address never appears in an address bar or a log.
+- **Where a sign-in lands.** A person whose account exists goes back to the page that sent them to sign in (`next`, kept only when it is a path under `/account`, §3.5), else to `/account`. A new account always lands on `/account`, whatever `next` the address step carried: the overview is where a first visit starts, and nothing is lost, since every My IIIC page is one link from it. Accepted at the join (25 November 2026); a later change is small (the attempt already holds `next`).
 
 ### 4.2 The code
 
