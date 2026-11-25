@@ -277,6 +277,19 @@ const MY_IIIC = [
   { file: '(account)/account/not-found.tsx', path: '/account/no-such-page' },
 ]
 
+/**
+ * My IIIC's privacy and settings (Release 2; docs/20 §5, §7), which are never indexed: each lies
+ * under the private route /account, which sends noindex and stays out of the sitemap
+ * (src/lib/security/headers.ts), and sets robots noindex in its own metadata. They draw themselves
+ * in tests/unit/accountsPrivacy.spec.ts and end to end in tests/e2e/myIiicPrivacy.e2e.spec.ts.
+ */
+const MY_IIIC_PRIVACY = [
+  { file: '(account)/account/privacy/page.tsx', path: '/account/privacy' },
+  { file: '(account)/account/privacy/close/page.tsx', path: '/account/privacy/close' },
+  { file: '(account)/account/privacy/closed/page.tsx', path: '/account/privacy/closed' },
+  { file: '(account)/account/privacy/contact/page.tsx', path: '/account/privacy/contact' },
+]
+
 beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_SITE_URL', ORIGIN)
   request.path = ''
@@ -313,6 +326,7 @@ describe('the pages under src/app/(platform)', () => {
         ...NOT_FOUND,
         ...BOOKING,
         ...MY_IIIC,
+        ...MY_IIIC_PRIVACY,
       ]
         .map((entry) => (typeof entry === 'string' ? entry : entry.file))
         .sort(),
@@ -324,6 +338,10 @@ describe('the pages under src/app/(platform)', () => {
   })
 
   it.each(MY_IIIC)('keeps My IIIC’s $path out of search', ({ path }) => {
+    expect(isNoindexPath(path), path).toBe(true)
+  })
+
+  it.each(MY_IIIC_PRIVACY)('keeps My IIIC’s privacy page $path out of search', ({ path }) => {
     expect(isNoindexPath(path), path).toBe(true)
   })
 })
