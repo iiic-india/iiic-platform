@@ -2,7 +2,16 @@
 import { describe, expect, it } from 'vitest'
 
 import { SIGN_IN, SIGN_IN_COOKIE } from '@/lib/accounts/contract'
-import { openAttempt, safeNext, sealAttempt, type Attempt } from '@/lib/accounts/signIn/cookie'
+import {
+  attemptPath,
+  clearAttempt,
+  openAttempt,
+  safeNext,
+  sealAttempt,
+  writeAttempt,
+  type Attempt,
+  type CookieJar,
+} from '@/lib/accounts/signIn/cookie'
 import { ACCOUNT_COPY, DETAIL_COPY, LOGIN_COPY, VERIFY_COPY } from '@/lib/accounts/signIn/copy'
 import { deviceName } from '@/lib/accounts/signIn/device'
 import { deploymentGate } from '@/lib/accounts/signIn/gate'
@@ -140,6 +149,32 @@ describe('the sign-in cookie', () => {
     const withCode = { ...attempt, code: '123456' } as unknown as Attempt
     const sealed = await sealAttempt(SECRET, withCode, NOW)
     expect(await openAttempt(SECRET, sealed, NOW)).toBeNull()
+  })
+
+  it('goes to /login for a sign-in, and to the whole site for a signed-in person’s second detail', async () => {
+    expect(attemptPath('signIn')).toBe(SIGN_IN_COOKIE.path)
+    expect(attemptPath('addDetail')).toBe('/')
+    const written: { name: string; path: string; maxAge?: number; httpOnly?: boolean }[] = []
+    const jar: CookieJar = {
+      get: () => undefined,
+      set: (name, _value, options) => {
+        written.push({ name, ...options })
+      },
+      delete: (name, options) => {
+        written.push({ name, path: options.path })
+      },
+    }
+    await writeAttempt(jar, SECRET, { ...attempt, purpose: 'addDetail', accountId: 3 }, NOW, true)
+    clearAttempt(jar, true, 'addDetail')
+    await writeAttempt(jar, SECRET, attempt, NOW, true)
+    clearAttempt(jar, true)
+    expect(written.map(({ name, path }) => `${name} ${path}`)).toEqual([
+      'iiic-sign-in /',
+      'iiic-sign-in /',
+      'iiic-sign-in /login',
+      'iiic-sign-in /login',
+    ])
+    expect(written[0]).toMatchObject({ httpOnly: true, maxAge: SIGN_IN_COOKIE.maxAgeSeconds })
   })
 
   it('keeps `next` only when it is a path under /account', () => {

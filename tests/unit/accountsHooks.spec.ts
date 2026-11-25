@@ -99,10 +99,11 @@ describe('H9 · the nightly O5', () => {
 })
 
 describe('H5 · the account templates’ map', () => {
-  it('is joined into the registry’s map, empty until the accounts’ builder A fills it', () => {
+  it('is joined into the registry’s map, filled by the accounts’ builder A', () => {
     for (const key of ['account-sign-in-code', 'account-closed', 'account-detail-added'] as const) {
-      // A stub: the core answers `template-missing` and sends nothing until A lands.
-      expect(IMPLEMENTATIONS[key]).toBeUndefined()
+      // The stub is replaced (src/emails/accounts/); tests/unit/accountsMessages.spec.ts holds
+      // each template to its rules.
+      expect(IMPLEMENTATIONS[key]?.email).toBeDefined()
     }
   })
 })

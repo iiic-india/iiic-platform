@@ -1,11 +1,12 @@
 import 'server-only'
 
-import type { PayloadRequest } from 'payload'
+import { createLocalReq, getPayload, type PayloadRequest } from 'payload'
 
 import { recordAudit } from '@/lib/audit/record'
 import { env } from '@/lib/env'
 import { err, ok } from '@/lib/result'
 import { IST } from '@/lib/time/ist'
+import config from '@payload-config'
 
 import { accountActor, accountVerifying, attachEarlierRecords, DETAIL_FIELDS } from './attach'
 import {
@@ -18,6 +19,7 @@ import {
 } from './contract'
 import { clearAttempt, readAttempt } from './signIn/cookie'
 import { nextSignInDeps, secretOf, secureCookies, signInOpen } from './signIn/deps'
+import { deploymentGate } from './signIn/gate'
 import { normaliseIdentifier } from './signIn/identifier'
 import { checkCode, issueCode, triesLeft, whatsappCodesOpen } from './signIn/issue'
 import { openFor, type SignInWiring } from './signIn/steps'
@@ -26,9 +28,9 @@ import { openFor, type SignInWiring } from './signIn/steps'
  * A second detail (docs/20 §4.6; D-120): from My IIIC the person adds the detail they did not
  * sign in with, an email to a WhatsApp account or a mobile to an email account once WhatsApp
  * codes are open. The same code machinery runs, with purpose `addDetail` in `sign-in-requests`
- * and the same limits. The code step is `/login/detail`: the sign-in cookie travels to /login/*
- * only (docs/20 §10), so the page that asks for the detail (builder C's privacy page) sets it
- * through `requestDetailCode` and sends the person there.
+ * and the same limits. The code may be entered on the privacy page (builder C's) or on
+ * `/login/detail`, which takes the address itself too: a second detail's sign-in cookie is sent
+ * to the whole site, and only a signed-in person can ask for one (`attemptPath`; docs/12 §10).
  *
  * A right code marks the detail proven on the account's own record, gives it to Better Auth's
  * user, attaches the records holding it (§6), writes `add-contact-detail`, and sends A3 to the
@@ -77,12 +79,14 @@ export const requestDetailCode = requestDetailCodeWith(NEXT_WIRING)
  * (D-103, D-123). False on a preview, without reading anything.
  */
 export async function whatsappCodesOpenHere(
-  req: PayloadRequest,
+  req?: PayloadRequest,
   now: Date = new Date(),
 ): Promise<boolean> {
   const settings = env()
-  if (!(await signInOpen(req, settings))) return false
-  return whatsappCodesOpen(req, settings, now)
+  if (deploymentGate(settings) !== 'open') return false
+  const request = req ?? (await createLocalReq({}, await getPayload({ config })))
+  if (!(await signInOpen(request, settings))) return false
+  return whatsappCodesOpen(request, settings, now)
 }
 
 /** Marks the detail proven on the account's own record. */
@@ -150,7 +154,7 @@ export const confirmDetailWith =
     if (!code.success) return triesLeft(deps, target)
     const checked = await checkCode(deps, target, code.data)
     if (!checked.ok) return checked
-    clearAttempt(deps.jar, secureCookies(deps))
+    clearAttempt(deps.jar, secureCookies(deps), 'addDetail')
 
     const holder = await accountVerifying(req, target.channel, target.value)
     if (

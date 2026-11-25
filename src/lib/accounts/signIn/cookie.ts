@@ -12,7 +12,8 @@ import { SIGN_IN_CHANNELS, SIGN_IN_COOKIE } from '../contract'
  * change it. It holds the channel, the address, the `sign-in-requests` row, when the code went
  * and, once a right code has proven an address with no account, when it was proven and whether
  * the device is to be kept. Never the code. HttpOnly, Secure over HTTPS, SameSite=Lax, path
- * /login, fifteen minutes; cleared on sign-in and by "Use a different address".
+ * /login (a second detail's: `attemptPath`), fifteen minutes; cleared on sign-in and by "Use a
+ * different address".
  */
 
 export const Attempt = z.strictObject({
@@ -95,6 +96,15 @@ export async function readAttempt(
   return openAttempt(secret, jar.get(SIGN_IN_COOKIE.name), now)
 }
 
+/**
+ * Where the attempt's cookie is sent: /login for a sign-in (SIGN_IN_COOKIE.path); the whole site
+ * for a second detail added from My IIIC (docs/20 §4.6), whose code is entered on the privacy
+ * page under /account or on /login/detail, and only by a person already signed in. Next.js keeps
+ * one cookie per name in a response, so one path serves both pages.
+ */
+export const attemptPath = (purpose: Attempt['purpose']): string =>
+  purpose === 'addDetail' ? '/' : SIGN_IN_COOKIE.path
+
 export async function writeAttempt(
   jar: CookieJar,
   secret: string,
@@ -106,13 +116,17 @@ export async function writeAttempt(
     httpOnly: true,
     secure,
     sameSite: 'lax',
-    path: SIGN_IN_COOKIE.path,
+    path: attemptPath(attempt.purpose),
     maxAge: SIGN_IN_COOKIE.maxAgeSeconds,
   })
 }
 
-export function clearAttempt(jar: CookieJar, secure: boolean): void {
-  jar.delete(SIGN_IN_COOKIE.name, { path: SIGN_IN_COOKIE.path, secure })
+export function clearAttempt(
+  jar: CookieJar,
+  secure: boolean,
+  purpose: Attempt['purpose'] = 'signIn',
+): void {
+  jar.delete(SIGN_IN_COOKIE.name, { path: attemptPath(purpose), secure })
 }
 
 /** `next` is kept only when it is a path under /account (docs/20 §3.5). */

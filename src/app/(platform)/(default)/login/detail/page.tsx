@@ -37,10 +37,10 @@ export const metadata: Metadata = {
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> }
 
 /**
- * `/login/detail` (docs/20 §4.6): a second detail's code step, for a signed-in person. The
- * sign-in cookie travels to /login/* only (docs/20 §10), so the privacy page in My IIIC asks for
- * the code (`requestDetailCode`) and sends the person here; this page also takes the address
- * itself (`?channel=email` or `whatsapp`, the missing one by default). Works without JavaScript.
+ * `/login/detail` (docs/20 §4.6): a second detail's address and code steps, for a signed-in
+ * person, beside the privacy page's own (builder C's): `?channel=email` or `whatsapp`, the
+ * missing one by default. A code already asked for (the sign-in cookie of purpose `addDetail`)
+ * shows the code step. Works without JavaScript.
  */
 export default async function DetailPage({ searchParams }: Props) {
   const payload = await getPayload({ config })

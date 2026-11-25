@@ -143,7 +143,9 @@ export const currentAttempt = currentAttemptWith(NEXT_WIRING)
 /** "Use a different address" and the account step's "No, thanks": nothing is kept. */
 export const startAgainWith = (wiring: SignInWiring) => async (req: PayloadRequest) => {
   const deps = await openFor(req, wiring)
-  if (deps) clearAttempt(deps.jar, secureCookies(deps))
+  if (!deps) return
+  const attempt = await readAttempt(deps.jar, secretOf(deps), new Date())
+  clearAttempt(deps.jar, secureCookies(deps), attempt?.purpose ?? 'signIn')
 }
 
 export const startAgain = startAgainWith(NEXT_WIRING)
