@@ -28,6 +28,7 @@ import * as migration_20261123_083835_m3_flows from './20261123_083835_m3_flows'
 import * as migration_20261123_162918_m4_pipeline from './20261123_162918_m4_pipeline';
 import * as migration_20261124_073139_m5_admin from './20261124_073139_m5_admin';
 import * as migration_20261124_100324_m6_messaging from './20261124_100324_m6_messaging';
+import * as migration_20261125_161605_r2a_accounts from './20261125_161605_r2a_accounts';
 
 export const migrations = [
   {
@@ -178,6 +179,11 @@ export const migrations = [
   {
     up: migration_20261124_100324_m6_messaging.up,
     down: migration_20261124_100324_m6_messaging.down,
-    name: '20261124_100324_m6_messaging'
+    name: '20261124_100324_m6_messaging',
+  },
+  {
+    up: migration_20261125_161605_r2a_accounts.up,
+    down: migration_20261125_161605_r2a_accounts.down,
+    name: '20261125_161605_r2a_accounts'
   },
 ];
