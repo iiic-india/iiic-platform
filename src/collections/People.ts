@@ -75,7 +75,7 @@ export const oneVerifiedPerson: CollectionBeforeChangeHook = async ({ data, orig
 /** What the admin is told when a write would break a My IIIC account (docs/20 §6; D-134). */
 export const PEOPLE_MESSAGES = {
   ownRecord:
-    'This is the own record of a My IIIC account, so it cannot be deleted while the account is open. The person can close the account in My IIIC, and an erasure of this record closes it too.',
+    'This record is the person’s own in their My IIIC account, so it cannot be deleted while the account is open. The person can close the account in My IIIC, and an erasure of this record closes it too.',
   provenDetail: (name: string) =>
     `The person proved this ${name}, so it cannot be changed here. Leave it as it is.`,
 } as const
