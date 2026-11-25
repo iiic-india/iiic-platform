@@ -10,7 +10,7 @@ import { closeAccountAction } from '@/lib/accounts/privacy/actions'
 import { ACCOUNT_NOTICE_TODO, CLOSE_COPY, PRIVACY_COPY_STATUS } from '@/lib/accounts/privacy/copy'
 import { CLOSE_PATH, PRIVACY_PATH, readOutcome } from '@/lib/accounts/privacy/outcome'
 import { signedInRecently } from '@/lib/accounts/privacy/rules'
-import { requireAccount } from '@/lib/accounts/privacy/seams'
+import { openMyIiic } from '@/lib/accounts/privacy/seams'
 import { currentNotice } from '@/lib/privacy/consents'
 import config from '@payload-config'
 
@@ -34,7 +34,7 @@ const PRIVACY_NOTICE_HREF = '/privacy'
  * `CloseAccount`, through the action.
  */
 export default async function ClosePage({ searchParams }: Props) {
-  const account = await requireAccount({ next: CLOSE_PATH })
+  const account = await openMyIiic(CLOSE_PATH)
   const outcome = readOutcome(await searchParams)
   const payload = await getPayload({ config })
   const notice = await currentNotice(payload, 'account', 'en-IN')

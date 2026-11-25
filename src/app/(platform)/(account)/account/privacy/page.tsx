@@ -25,7 +25,7 @@ import {
 import { PRIVACY_PATH, readOutcome } from '@/lib/accounts/privacy/outcome'
 import { listOwnRequests } from '@/lib/accounts/privacy/requests'
 import { signedInRecently } from '@/lib/accounts/privacy/rules'
-import { listDevices, requireAccount, whatsAppCodesOpen } from '@/lib/accounts/privacy/seams'
+import { listDevices, openMyIiic, whatsAppCodesOpen } from '@/lib/accounts/privacy/seams'
 import config from '@payload-config'
 
 export const dynamic = 'force-dynamic'
@@ -50,12 +50,13 @@ const SECTION_LINKS = [
  * `/account/privacy` (docs/20 §7.5; builder C): what the person has agreed to, with a withdrawal
  * beside each consent in force; the marketing messages My IIIC may offer, each under its notice;
  * requests about their data, and the list of them; their contact details; their devices; and the
- * way to close the account. The session first (CLAUDE.md #6), then only the account's own
- * records, through its own functions. No offer, recommendation or counselling detail appears
- * here (CLAUDE.md #3; D-124), and nothing about the visit is recorded (docs/20 §8).
+ * way to close the account. B's door first: the 404 while `accountsEnabled` is off, then the
+ * session (CLAUDE.md #6; D-122); then only the account's own records, through its own
+ * functions. No offer, recommendation or counselling detail appears here (CLAUDE.md #3; D-124),
+ * and nothing about the visit is recorded (docs/20 §8).
  */
 export default async function PrivacyPage({ searchParams }: Props) {
-  const account = await requireAccount({ next: PRIVACY_PATH })
+  const account = await openMyIiic(PRIVACY_PATH)
   const outcome = readOutcome(await searchParams)
   const payload = await getPayload({ config })
   const req = await createLocalReq({}, payload)

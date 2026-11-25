@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 import styles from '@/components/account/privacy/privacy.module.css'
 import { CandidateMark } from '@/components/blocks/PageBlocks'
 import { CLOSED_COPY, PRIVACY_COPY_STATUS } from '@/lib/accounts/privacy/copy'
 import { PRIVACY_PATH } from '@/lib/accounts/privacy/outcome'
-import { getAccountSession } from '@/lib/accounts/privacy/seams'
+import { accountsOn, getAccountSession } from '@/lib/accounts/privacy/seams'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,11 +17,13 @@ export const metadata: Metadata = {
 
 /**
  * `/account/privacy/closed`: where closing the account leads (docs/20 §7.6). By then the person
- * has no session, so the page reads nothing about anyone: fixed words only. It still reads the
- * session first, and a person who is signed in is sent back to the privacy page, so it never
- * tells a signed-in person their account is closed.
+ * has no session, so the page reads nothing about anyone: fixed words only. Like every page under
+ * /account it is the 404 while `accountsEnabled` is off (D-122), read fresh from the settings;
+ * then it reads the session, and a person who is signed in is sent back to the privacy page, so
+ * it never tells a signed-in person their account is closed.
  */
 export default async function ClosedPage() {
+  if (!(await accountsOn())) notFound()
   if (await getAccountSession()) redirect(PRIVACY_PATH)
   return (
     <div className={`iiic-page-narrow ${styles.page}`}>

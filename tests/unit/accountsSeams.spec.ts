@@ -39,6 +39,8 @@ describe('the privacy page’s seams', () => {
       requestDetailCode: details.requestDetailCode,
       confirmDetail: details.confirmDetail,
       whatsAppCodesOpen: details.whatsappCodesOpenHere,
+      accountsOn: scope.accountsOn,
+      openMyIiic: scope.openMyIiic,
       ownPersonIds: scope.ownPersonIds,
     }
     expect(Object.keys(seams).sort()).toEqual(Object.keys(expected).sort())

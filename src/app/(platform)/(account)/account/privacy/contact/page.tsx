@@ -7,7 +7,7 @@ import { CandidateMark } from '@/components/blocks/PageBlocks'
 import type { SignInChannel } from '@/lib/accounts/contract'
 import { DETAIL_COPY, PRIVACY_COPY_STATUS } from '@/lib/accounts/privacy/copy'
 import { CONTACT_PATH, PRIVACY_PATH } from '@/lib/accounts/privacy/outcome'
-import { requireAccount, whatsAppCodesOpen } from '@/lib/accounts/privacy/seams'
+import { openMyIiic, whatsAppCodesOpen } from '@/lib/accounts/privacy/seams'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
  * leads back to the privacy page.
  */
 export default async function ContactDetailPage({ searchParams }: Props) {
-  const account = await requireAccount({ next: PRIVACY_PATH })
+  const account = await openMyIiic(PRIVACY_PATH)
   const channel = channelIn((await searchParams).channel)
   const held = channel === 'email' ? account.verified.email : account.verified.mobile
   if (held || (channel === 'whatsapp' && !(await whatsAppCodesOpen()))) {

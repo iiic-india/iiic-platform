@@ -67,6 +67,8 @@ vi.mock('payload', () => ({
 // this stand-in does not have. `ownPersonIds` answers as B's does over the stand-in's `people`:
 // the account's own record and every record attached to it, sorted.
 vi.mock('@/lib/accounts/privacy/seams', () => ({
+  accountsOn: vi.fn(async () => true),
+  openMyIiic: vi.fn(),
   getAccountSession: vi.fn(async () => null),
   requireAccount: vi.fn(),
   signOut: vi.fn(async () => {}),

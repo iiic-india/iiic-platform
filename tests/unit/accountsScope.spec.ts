@@ -26,6 +26,11 @@ vi.mock('@/lib/accounts/scope', async (importOriginal) => ({
   openMyIiic: vi.fn(),
   accountRequest: vi.fn(),
 }))
+// The privacy pages' own session read, given by the test that needs a signed-in person.
+vi.mock('@/lib/accounts/privacy/seams', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/accounts/privacy/seams')>()),
+  getAccountSession: vi.fn(async () => null),
+}))
 vi.mock('@/lib/monitoring/sentry', () => ({ reportError: vi.fn() }))
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }))
 // The site's cached flags, which only the header's "Log in" reads.
@@ -337,8 +342,10 @@ describe('every query in src/lib/accounts', () => {
   })
 
   it('comes after the flag and the session on every page, route and action', () => {
+    // Every page but the one closing leads to, which no session can open (see "the door" below).
+    const closed = path.join('privacy', 'closed', 'page.tsx')
     for (const file of filesUnder(APP_DIR).filter(
-      (file) => /(page|route)\.tsx?$/.test(file) && !file.includes(`${path.sep}privacy`),
+      (file) => /(page|route)\.tsx?$/.test(file) && !file.endsWith(closed),
     )) {
       // The page's own function, or the route's GET: what runs first on a request.
       const whole = readFileSync(file, 'utf8')
@@ -784,6 +791,21 @@ describe('the door', () => {
       'private, no-store',
     )
     expect(getFlags).not.toHaveBeenCalled()
+  })
+
+  it('stands before the page closing leads to: the 404 while switched off, signed out only', async () => {
+    const { default: ClosedPage } =
+      await import('@/app/(platform)/(account)/account/privacy/closed/page')
+    const { CLOSED_COPY } = await import('@/lib/accounts/privacy/copy')
+    const seams = await import('@/lib/accounts/privacy/seams')
+    storedFlags.accountsEnabled = false
+    vi.mocked(getFlags).mockResolvedValue({ accountsEnabled: true } as never)
+    await expect(ClosedPage()).rejects.toThrow(/NEXT_HTTP_ERROR_FALLBACK;404/)
+    expect(seams.getAccountSession).not.toHaveBeenCalled()
+    storedFlags.accountsEnabled = true
+    expect(renderToStaticMarkup(await ClosedPage())).toContain(CLOSED_COPY.heading)
+    vi.mocked(seams.getAccountSession).mockResolvedValueOnce(FIRST)
+    await expect(ClosedPage()).rejects.toThrow(/NEXT_REDIRECT/)
   })
 
   it('and the frame never read the site’s cached flags', () => {
