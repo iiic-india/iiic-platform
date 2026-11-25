@@ -11,12 +11,11 @@ import {
   type ListOwnConsents,
   type WithdrawConsent,
 } from '@/lib/accounts/contract'
-import { clientIp } from '@/lib/audit/record'
 import { emitAutomationEvent } from '@/lib/automations/emit'
 import { env } from '@/lib/env'
 import { channelsFor } from '@/lib/messaging/channelsFor'
 import { actsHere } from '@/lib/messaging/deployment'
-import { type WithdrawalEvidence, withdrawPurpose } from '@/lib/newsletter/withdrawals'
+import { evidenceOf, withdrawPurpose } from '@/lib/newsletter/withdrawals'
 import { inTransaction } from '@/lib/payments/store'
 import { currentNotice } from '@/lib/privacy/consents'
 import { err, ok } from '@/lib/result'
@@ -49,17 +48,6 @@ const LANGUAGE = 'en-IN'
 
 /** The evidence's form, and the subscriber's source, for what is done here. */
 export const MY_IIIC_FORM = 'My IIIC'
-
-/** Where a consent or a withdrawal from this page came from: the form, the address, the browser. */
-export function evidenceOf(req: PayloadRequest): WithdrawalEvidence {
-  const ip = clientIp(req)
-  const userAgent = req.headers?.get('user-agent')
-  return {
-    form: MY_IIIC_FORM,
-    ...(ip ? { ip: ip.slice(0, 500) } : {}),
-    ...(userAgent ? { userAgent: userAgent.slice(0, 500) } : {}),
-  }
-}
 
 /** Every ledger entry about the account's records: consents and withdrawals. */
 async function ledgerOf(req: PayloadRequest, ids: number[]): Promise<OwnLedgerEntry[]> {
@@ -223,7 +211,7 @@ export const giveConsent: GiveConsent = async (req, account, input, now) => {
       noticeVersion: notice.id,
       channel: 'web',
       grantedAt: now.toISOString(),
-      evidence: evidenceOf(req),
+      evidence: evidenceOf(req, MY_IIIC_FORM),
     }
     const consent = await req.payload.create({
       collection: 'consents',
@@ -261,7 +249,7 @@ export const withdrawConsent: WithdrawConsent = async (req, account, input, now)
     return err({ code: 'none-in-force' })
   }
   const ids = await ownPersonIds(req, account)
-  const evidence = evidenceOf(req)
+  const evidence = evidenceOf(req, MY_IIIC_FORM)
   const withdrawn = await inTransaction(req, async () => {
     let count = 0
     for (const personId of ids) {

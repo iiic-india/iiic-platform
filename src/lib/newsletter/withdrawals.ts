@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { PayloadRequest, RequiredDataFromCollectionSlug } from 'payload'
 
+import { clientIp } from '@/lib/audit/record'
 import { inTransaction } from '@/lib/payments/store'
 import { activeGrants, consentState, type LedgerEntry } from '@/lib/privacy/consentLedger'
 import { CONSENT_PURPOSES, purposeLabel, type ConsentPurpose } from '@/lib/privacy/purposes'
@@ -51,6 +52,21 @@ export async function consentsInForce(
 
 /** Where a withdrawal came from, kept with it (docs/08 §3). */
 export type WithdrawalEvidence = { form: string; ip?: string; userAgent?: string }
+
+/**
+ * Where a consent or a withdrawal made on a request came from: the form, and the network address
+ * and the browser the request carried, each cut to what the ledger keeps. My IIIC's privacy page
+ * and closing an account both record theirs this way (docs/20 §7.5, §7.6).
+ */
+export function evidenceOf(req: PayloadRequest, form: string): WithdrawalEvidence {
+  const ip = clientIp(req)
+  const userAgent = req.headers?.get('user-agent')
+  return {
+    form,
+    ...(ip ? { ip: ip.slice(0, 500) } : {}),
+    ...(userAgent ? { userAgent: userAgent.slice(0, 500) } : {}),
+  }
+}
 
 /**
  * Withdraws every consent of one purpose a person has in force (one entry each); returns how

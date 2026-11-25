@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // for Payload whose transactions roll back: which earlier record becomes the account's own, the
 // newsletter's placeholder name counting as no name, and consent before storage (CLAUDE.md #4),
 // the consent, the person and the account standing or falling together, with Better Auth's user
-// made only after they commit. Obviously fake people and addresses only.
+// made only after they commit; and closing, whose withdrawal of the account consent carries the
+// evidence of the person's own request. Obviously fake people and addresses only.
 
 vi.mock('server-only', () => ({}))
 vi.mock('@payload-config', () => ({ default: {} }))
@@ -13,8 +14,14 @@ vi.mock('@/lib/privacy/consents', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/privacy/consents')>()),
   currentNotice: vi.fn(async () => ({ id: NOTICE, text: 'Fake account notice for tests.' })),
 }))
+// No Better Auth here: closing removes no user, and A2 is planned by a stand-in.
+vi.mock('@/lib/accounts/auth/instance', () => ({ customerAuthFor: () => null }))
+vi.mock('@/lib/messaging/deliver', () => ({
+  deliver: vi.fn(async () => ({ ok: true, value: {} })),
+}))
 
-const { createAccountRecords, newestRecord } = await import('@/lib/accounts/lifecycle')
+const { closeAccount, createAccountRecords, newestRecord } =
+  await import('@/lib/accounts/lifecycle')
 const { createAccountWith } = await import('@/lib/accounts/signIn/steps')
 const { sealAttempt } = await import('@/lib/accounts/signIn/cookie')
 const { SIGN_IN_COOKIE } = await import('@/lib/accounts/contract')
@@ -123,6 +130,12 @@ class FakePayload {
       if (!doc) throw new Error('not found')
       Object.assign(doc, data)
       return { ...doc }
+    },
+    delete: async ({ collection, id }: { collection: string; id: number }) => {
+      const rows = this.of(collection)
+      const at = rows.findIndex((row) => row.id === id)
+      if (at < 0) throw new Error('not found')
+      return rows.splice(at, 1)[0]
     },
   }
 
@@ -322,5 +335,44 @@ describe('consent before storage in the account step (CLAUDE.md #4; D-113)', () 
     expect(db.of('accounts')[0]).toMatchObject({ authUserId: 'fake-user-1' })
     // The sign-in that follows writes in the account's name (D-133).
     expect(signingIn.context.auditActor).toEqual({ id: `account:${db.of('accounts')[0]?.id}` })
+  })
+})
+
+describe('closing an account (docs/20 §7.6; D-113)', () => {
+  it('withdraws the account consent with the evidence of the person’s own request', async () => {
+    const own = db.seed('people', {
+      fullName: TYPED,
+      email: EMAIL,
+      emailVerifiedAt: '2099-01-02T10:00:00.000Z',
+    })
+    const account = db.seed('accounts', { person: own.id, authUserId: null })
+    own.account = account.id
+    db.seed('consents', {
+      person: own.id,
+      purpose: 'account',
+      grantedAt: '2099-01-02T10:00:00.000Z',
+      channel: 'web',
+    })
+    // The request accountRequest builds: the address and the browser, the account as the actor.
+    const req = {
+      payload: db.payload,
+      headers: new Headers({ 'x-forwarded-for': '203.0.113.30', 'user-agent': 'Fake browser' }),
+      context: { auditActor: { id: `account:${account.id}` } },
+    } as never
+    expect(await closeAccount(req, { accountId: account.id, reason: 'person' })).toEqual({
+      ok: true,
+      value: { closed: true },
+    })
+    const withdrawal = db.of('consents').find((row) => row.withdraws != null)
+    expect(withdrawal).toMatchObject({
+      channel: 'web',
+      evidence: { form: 'My IIIC', ip: '203.0.113.30', userAgent: 'Fake browser' },
+    })
+    expect(db.of('accounts')).toEqual([])
+    expect(db.of('people')[0]).toMatchObject({ account: null, emailVerifiedAt: expect.any(String) })
+    expect(db.of('audit-log').at(-1)).toMatchObject({
+      action: 'close-account',
+      actorId: `account:${account.id}`,
+    })
   })
 })

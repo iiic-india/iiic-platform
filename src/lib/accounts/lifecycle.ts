@@ -8,7 +8,7 @@ import { recordAudit } from '@/lib/audit/record'
 import { env } from '@/lib/env'
 import { deliver } from '@/lib/messaging/deliver'
 import { NEWSLETTER_PERSON_NAME } from '@/lib/newsletter/subscriptions'
-import { withdrawPurpose } from '@/lib/newsletter/withdrawals'
+import { evidenceOf, withdrawPurpose } from '@/lib/newsletter/withdrawals'
 import { inTransaction } from '@/lib/payments/store'
 import { idOf } from '@/lib/privacy/consentLedger'
 import { err, ok } from '@/lib/result'
@@ -324,17 +324,15 @@ async function close(
       })
     }
     // Withdrawing the account consent is closing the account (D-113). An erasure has withdrawn
-    // every consent already, in its own transaction; an owner who closes an account at the
-    // person's request records that request's withdrawal in the ledger with its evidence.
+    // every consent already, in its own transaction. When the person closes it, the withdrawal
+    // carries the same evidence as every other from the privacy page: the form, and the address
+    // and the browser of the person's own request (`accountRequest`). A `staff` close withdraws
+    // nothing today: nothing calls it, and the ledger takes no channel `web` from staff; it is
+    // decided when something first does (docs/20 §7.6).
     if (reason === 'person') {
       await withdrawPurpose(
         req,
-        {
-          personId,
-          purpose: 'account',
-          channel: 'web',
-          evidence: { form: 'My IIIC' },
-        },
+        { personId, purpose: 'account', channel: 'web', evidence: evidenceOf(req, 'My IIIC') },
         now,
       )
     }
