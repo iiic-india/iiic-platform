@@ -31,6 +31,11 @@ test('a page in every route group, Find your path, the 404, the feed, a visitor�
     '/login',
     '/login/verify',
     '/account',
+    // The privacy page, and the page a closed account lands on, which answers signed out too
+    // (slice C; docs/20 §7.5, §7.6). The second detail's cookie is set only when a signed-in
+    // person asks for a code there (docs/12 §10; D-129).
+    '/account/privacy',
+    '/account/privacy/closed',
   ]) {
     await page.goto(path)
     await page.waitForLoadState('networkidle')
