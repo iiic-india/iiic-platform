@@ -11,3 +11,14 @@
     display: inline-block;
   }
 }
+
+/* "Log in" (Release 2) adds a link to the row while accounts are open. Where the row has no room
+   left for it, it wraps under the others rather than widen the page: no horizontal scroll from
+   320 px to 1600 px (CLAUDE.md, Definition of done). On a phone the kit's menu holds it. */
+@media (min-width: 851px) {
+  .nav {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 4px;
+  }
+}
