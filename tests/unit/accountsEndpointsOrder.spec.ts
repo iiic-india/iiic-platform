@@ -8,6 +8,12 @@ const lifecycle = vi.hoisted(() => ({
   detachRecord: vi.fn(),
 }))
 vi.mock('@/lib/accounts/lifecycle', () => lifecycle)
+// The deployment the request reaches. The real gate (src/lib/accounts/signIn/gate.ts) reads it.
+const deployment = vi.hoisted(() => ({ VERCEL_ENV: undefined as string | undefined }))
+vi.mock('@/lib/env', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/env')>()
+  return { ...real, env: () => ({ ...real.env(), VERCEL_ENV: deployment.VERCEL_ENV }) }
+})
 
 const { Accounts } = await import('@/collections/Accounts')
 
@@ -70,6 +76,7 @@ const read = async (response: Response) => ({
 beforeEach(() => {
   lifecycle.endAccountSessions.mockReset()
   lifecycle.detachRecord.mockReset()
+  deployment.VERCEL_ENV = undefined
 })
 
 describe('the owner’s acts on an account', () => {
@@ -114,6 +121,56 @@ describe('the owner’s acts on an account', () => {
     }
     expect(lifecycle.endAccountSessions).not.toHaveBeenCalled()
     expect(lifecycle.detachRecord).not.toHaveBeenCalled()
+  })
+
+  it('refuse a verified owner on a preview before reading anything (D-122; ruling I.2)', async () => {
+    for (const vercelEnv of ['preview', 'development']) {
+      deployment.VERCEL_ENV = vercelEnv
+      for (const [name, handler] of [
+        ['end-sessions', END_SESSIONS],
+        ['detach', DETACH],
+      ] as const) {
+        const { req, json, findByID, touched } = request(OWNER)
+        findByID.mockResolvedValue({ id: 42, account: 41 })
+        const answer = await read(await handler(req))
+        const label = `${name} on ${vercelEnv}`
+        expect(answer.status, label).toBe(403)
+        expect(answer.body, label).toEqual({
+          code: 'refused',
+          message: 'Only an owner can do this, and not on a preview.',
+        })
+        expect(answer.cache, label).toBe('no-store')
+        expect(json, label).not.toHaveBeenCalled()
+        expect(touched(), label).toBe(false)
+      }
+    }
+    expect(lifecycle.endAccountSessions).not.toHaveBeenCalled()
+    expect(lifecycle.detachRecord).not.toHaveBeenCalled()
+  })
+
+  it('check the person and the role before the preview: a visitor on a preview is asked to sign in', async () => {
+    deployment.VERCEL_ENV = 'preview'
+    for (const [user, status, code] of [
+      [null, 401, 'sign-in'],
+      [staff(['owner'], { _strategy: 'local-jwt' }), 403, 'enter-code'],
+      [staff(['operator']), 403, 'not-allowed'],
+    ] as const) {
+      for (const handler of [END_SESSIONS, DETACH]) {
+        const { req, touched } = request(user)
+        const answer = await read(await handler(req))
+        expect(answer.status, JSON.stringify(user)).toBe(status)
+        expect(answer.body.code, JSON.stringify(user)).toBe(code)
+        expect(touched()).toBe(false)
+      }
+    }
+  })
+
+  it('act on production as before', async () => {
+    deployment.VERCEL_ENV = 'production'
+    lifecycle.endAccountSessions.mockResolvedValue({ ok: true, value: { ended: 1 } })
+    const answer = await read(await END_SESSIONS(request(OWNER).req))
+    expect(answer.status).toBe(200)
+    expect(lifecycle.endAccountSessions).toHaveBeenCalledOnce()
   })
 })
 
@@ -186,8 +243,9 @@ describe('detaching a record from an account', () => {
       const { req, findByID } = request(OWNER)
       findByID.mockResolvedValue({ id: 42, account })
       const answer = await read(await DETACH(req))
-      // One read before detachRecord, which itself refuses a preview (D-122;
-      // tests/unit/accountsSignInClosed.spec.ts): the record's id and its account link, no more.
+      // One read before detachRecord, after ownerAct has refused a preview (D-122; ruling I.2;
+      // detachRecord refuses it again, tests/unit/accountsSignInClosed.spec.ts): the record's id
+      // and its account link, no more.
       expect(findByID).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ collection: 'people', id: 42, select: { account: true }, req }),
       )

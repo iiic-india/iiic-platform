@@ -5,6 +5,8 @@ import { allow, POLICY } from '@/access/policy'
 import { hasRole } from '@/access/roles'
 import { viewRefusal } from '@/access/views'
 import { SIGN_IN_CHANNELS } from '@/lib/accounts/contract'
+import { deploymentGate } from '@/lib/accounts/signIn/gate'
+import { env } from '@/lib/env'
 import { IST_FIELD } from '@/lib/time/ist'
 
 /** Written by the server only (src/lib/accounts), never through the API or the admin. */
@@ -35,15 +37,19 @@ const answer = (code: keyof typeof ANSWERS) =>
 
 /**
  * One endpoint: the staff session, the two-factor code and the owner role first (CLAUDE.md #6;
- * `VIEW_POLICY.accountActions`), before anything is read; then the account's id. The account
- * functions are loaded only when a request arrives, so the Payload CLI, which loads the
- * collections, never loads their `server-only` modules. Answers are never cached.
+ * `VIEW_POLICY.accountActions`), before anything is read; then a preview is refused, because it
+ * shares production's database (D-122; the join's ruling I.2), so neither act reads or writes
+ * anything there; then the account's id. `endAccountSessions` and `detachRecord` refuse a preview
+ * again, as a second guard. The account functions are loaded only when a request arrives, so the
+ * Payload CLI, which loads the collections, never loads their `server-only` modules. Answers are
+ * never cached.
  */
 const ownerAct =
   (run: (req: PayloadRequest, accountId: number) => Promise<Response>): PayloadHandler =>
   async (req) => {
     const refusal = viewRefusal(req.user, 'accountActions')
     if (refusal) return answer(refusal.code)
+    if (deploymentGate(env()) === 'preview') return answer('refused')
     const id = Id.safeParse(req.routeParams?.id)
     if (!id.success) return answer('not-found')
     return run(req, id.data)
@@ -70,7 +76,7 @@ const detachHandler = ownerAct(async (req, accountId) => {
     depth: 0,
     disableErrors: true,
     select: { account: true },
-    // scope: the record the owner names, after the owner, the code and the role (ownerAct); its account link only
+    // scope: the record the owner names, after the owner, the code, the role and the preview check (ownerAct); its account link only
     overrideAccess: true,
     req,
   })
