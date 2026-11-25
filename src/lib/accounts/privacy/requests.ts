@@ -55,6 +55,7 @@ export const createOwnRequest: CreateOwnRequest = async (req, account, input, no
           { status: { not_equals: 'closed' } },
         ],
       },
+      // scope: a count of the open requests of the account's own records (the ids from ownPersonIds)
       overrideAccess: true,
       req,
     })
@@ -74,6 +75,7 @@ export const createOwnRequest: CreateOwnRequest = async (req, account, input, no
         verifiedAt_tz: IST,
         verificationMethod: 'oneTimeCode',
       },
+      // scope: a request on the account's own record (account.personId), and no other
       overrideAccess: true,
       req,
     })
@@ -97,6 +99,7 @@ export const listOwnRequests: ListOwnRequests = async (req, account) => {
     pagination: false,
     depth: 0,
     select: { type: true, receivedAt: true, status: true, resolveBy: true },
+    // scope: the requests of the account's own records (the ids from ownPersonIds); kind, dates and state only
     overrideAccess: true,
     req,
   })

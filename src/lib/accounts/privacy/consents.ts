@@ -69,6 +69,7 @@ async function ledgerOf(req: PayloadRequest, ids: number[]): Promise<OwnLedgerEn
     pagination: false,
     depth: 0,
     select: { person: true, purpose: true, grantedAt: true, withdrawnAt: true, withdraws: true },
+    // scope: the ledger entries of the account's own records only (the ids from ownPersonIds)
     overrideAccess: true,
     req,
   })
@@ -80,6 +81,7 @@ async function anyUnder18(req: PayloadRequest, ids: number[]): Promise<boolean> 
   const { totalDocs } = await req.payload.count({
     collection: 'people',
     where: { and: [{ id: { in: ids } }, { ageBand: { equals: 'under18' } }] },
+    // scope: a count of the account's own records (the ids from ownPersonIds) that say under 18; nothing of them is read
     overrideAccess: true,
     req,
   })
@@ -150,11 +152,11 @@ async function joinTheJournal(
   const email = input.email.trim().toLowerCase()
   const { docs } = await req.payload.find({
     collection: 'subscribers',
-    // The account's own verified address, and only it.
     where: { email: { equals: email } },
     limit: 1,
     depth: 0,
     select: { status: true },
+    // scope: the newsletter entry of the account's own verified email, and only it; its status is read
     overrideAccess: true,
     req,
   })
@@ -173,12 +175,14 @@ async function joinTheJournal(
         collection: 'subscribers',
         id: existing.id,
         data: confirmed,
+        // scope: that same entry, linked to the account's own record and the consent just given
         overrideAccess: true,
         req,
       })
     : await req.payload.create({
         collection: 'subscribers',
         data: { email, ...confirmed },
+        // scope: a new entry for the account's own verified email, linked to its own record
         overrideAccess: true,
         req,
       })
@@ -224,6 +228,7 @@ export const giveConsent: GiveConsent = async (req, account, input, now) => {
     const consent = await req.payload.create({
       collection: 'consents',
       data: grant as unknown as RequiredDataFromCollectionSlug<'consents'>,
+      // scope: a consent on the account's own record (account.personId), and no other
       overrideAccess: true,
       req,
     })
