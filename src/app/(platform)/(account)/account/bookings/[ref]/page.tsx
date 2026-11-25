@@ -6,8 +6,9 @@ import { FocusOnArrival } from '@/app/(platform)/newsletter/FocusOnArrival'
 import styles from '@/components/account/account.module.css'
 import { BookingDetails } from '@/components/account/BookingDetails'
 import { CancelForm } from '@/components/account/CancelForm'
-import { BOOKING_COPY, bookingError, titleOf } from '@/components/account/copy'
+import { BOOKING_COPY, bookingError, MY_IIIC_COPY_STATUS, titleOf } from '@/components/account/copy'
 import { RescheduleForm } from '@/components/account/RescheduleForm'
+import { CandidateMark } from '@/components/blocks/PageBlocks'
 import { Scope } from '@/components/blocks/Scope'
 import { MANAGE_COPY } from '@/components/booking/copy'
 import { isCounselling, ownBookingPage, ownFreeTimes } from '@/lib/accounts/bookings'
@@ -113,6 +114,7 @@ export default async function BookingPage({ params, searchParams }: Props) {
 
   return (
     <div className={`iiic-page ${styles.page} ${styles.stack}`}>
+      <CandidateMark status={MY_IIIC_COPY_STATUS} />
       <h1 className="iiic-marked">{MANAGE_COPY.heading}</h1>
       {outcome ? (
         <>

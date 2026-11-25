@@ -935,6 +935,29 @@ describe('the documents and invoices pages', () => {
   })
 })
 
+describe('candidate copy (I-41)', () => {
+  it('is marked on each of My IIIC’s pages, as on the sign-in pages and the privacy page', async () => {
+    const pages = [
+      ['@/app/(platform)/(account)/account/page', {}],
+      ['@/app/(platform)/(account)/account/bookings/page', {}],
+      [
+        '@/app/(platform)/(account)/account/bookings/[ref]/page',
+        { params: Promise.resolve({ ref: 'IIIC-S-90001' }), searchParams: Promise.resolve({}) },
+      ],
+      ['@/app/(platform)/(account)/account/documents/page', {}],
+      ['@/app/(platform)/(account)/account/invoices/page', {}],
+    ] as const
+    for (const [module, props] of pages) {
+      const { default: Page } = (await import(module)) as {
+        default: (props: never) => Promise<ReactElement>
+      }
+      const html = await draw(Page, props, world())
+      expect(html, module).toContain('data-candidate="I-41"')
+      expect(html, module).toContain('Candidate copy, awaiting IIIC’s approval (I-41)')
+    }
+  })
+})
+
 describe('signing out (docs/20 §4.7)', () => {
   it('is the frame’s one "Sign out": it ends this session, then goes home', async () => {
     const { signOutAction } = await import('@/app/(platform)/(account)/account/actions')

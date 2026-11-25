@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 
 import styles from '@/components/account/account.module.css'
 import { BookingTable } from '@/components/account/BookingTable'
-import { BOOKINGS_COPY, titleOf } from '@/components/account/copy'
+import { BOOKINGS_COPY, MY_IIIC_COPY_STATUS, titleOf } from '@/components/account/copy'
+import { CandidateMark } from '@/components/blocks/PageBlocks'
 import { Scope } from '@/components/blocks/Scope'
 import { isCounselling, listOwnBookings } from '@/lib/accounts/bookings'
 import { accountRequest, openMyIiic } from '@/lib/accounts/scope'
@@ -29,6 +30,7 @@ export default async function BookingsPage() {
 
   return (
     <div className={`iiic-page ${styles.page} ${styles.stack}`}>
+      <CandidateMark status={MY_IIIC_COPY_STATUS} />
       <h1 className="iiic-marked">{BOOKINGS_COPY.heading}</h1>
       <section aria-labelledby="upcoming">
         <h2 id="upcoming">{BOOKINGS_COPY.upcoming}</h2>

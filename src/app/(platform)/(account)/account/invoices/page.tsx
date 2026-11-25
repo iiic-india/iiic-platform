@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 
 import styles from '@/components/account/account.module.css'
-import { INVOICES_COPY, titleOf } from '@/components/account/copy'
+import { INVOICES_COPY, MY_IIIC_COPY_STATUS, titleOf } from '@/components/account/copy'
 import { TableRegion } from '@/components/account/TableRegion'
+import { CandidateMark } from '@/components/blocks/PageBlocks'
 import { listOwnInvoices } from '@/lib/accounts/documents'
 import { accountRequest, openMyIiic } from '@/lib/accounts/scope'
 import { formatRupees } from '@/lib/pdf/format'
@@ -29,6 +30,7 @@ export default async function InvoicesPage() {
 
   return (
     <div className={`iiic-page ${styles.page} ${styles.stack}`}>
+      <CandidateMark status={MY_IIIC_COPY_STATUS} />
       <div>
         <h1 className="iiic-marked">{INVOICES_COPY.heading}</h1>
         <p className="iiic-lede">{INVOICES_COPY.lede}</p>

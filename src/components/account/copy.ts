@@ -14,6 +14,12 @@ import { CONTACT } from '@/lib/site/contact'
 
 export const MY_IIIC = 'My IIIC'
 
+/**
+ * Candidate copy until IIIC approves it (I-41): each My IIIC page carries the same badge as the
+ * sign-in pages and the privacy page, and loses it when this says 'approved'.
+ */
+export const MY_IIIC_COPY_STATUS: 'approved' | 'candidate' = 'candidate'
+
 /** "Bookings · My IIIC": the page named in the title (docs/20 §4.1, accessible authentication). */
 export const titleOf = (page: string) => `${page} · ${MY_IIIC}`
 

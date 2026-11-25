@@ -3,7 +3,8 @@ import Link from 'next/link'
 
 import styles from '@/components/account/account.module.css'
 import { BookingDetails } from '@/components/account/BookingDetails'
-import { MY_IIIC, OVERVIEW_COPY } from '@/components/account/copy'
+import { MY_IIIC, MY_IIIC_COPY_STATUS, OVERVIEW_COPY } from '@/components/account/copy'
+import { CandidateMark } from '@/components/blocks/PageBlocks'
 import { Scope } from '@/components/blocks/Scope'
 import { isCounselling, listOwnBookings } from '@/lib/accounts/bookings'
 import { accountRequest, openMyIiic, ownFirstName } from '@/lib/accounts/scope'
@@ -32,6 +33,7 @@ export default async function OverviewPage() {
 
   return (
     <div className={`iiic-page ${styles.page} ${styles.stack}`}>
+      <CandidateMark status={MY_IIIC_COPY_STATUS} />
       <div>
         <h1 className="iiic-marked">{OVERVIEW_COPY.heading(name)}</h1>
         <p className="iiic-lede">{OVERVIEW_COPY.lede}</p>

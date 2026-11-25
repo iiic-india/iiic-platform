@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import styles from '@/components/account/account.module.css'
-import { DOCUMENTS_COPY, titleOf } from '@/components/account/copy'
+import { DOCUMENTS_COPY, MY_IIIC_COPY_STATUS, titleOf } from '@/components/account/copy'
 import { TableRegion } from '@/components/account/TableRegion'
+import { CandidateMark } from '@/components/blocks/PageBlocks'
 import { listOwnCertificates } from '@/lib/accounts/documents'
 import { accountRequest, openMyIiic } from '@/lib/accounts/scope'
 import { formatIstDate } from '@/lib/time/ist'
@@ -30,6 +31,7 @@ export default async function DocumentsPage() {
 
   return (
     <div className={`iiic-page ${styles.page} ${styles.stack}`}>
+      <CandidateMark status={MY_IIIC_COPY_STATUS} />
       <div>
         <h1 className="iiic-marked">{DOCUMENTS_COPY.heading}</h1>
         <p className="iiic-lede">{DOCUMENTS_COPY.lede}</p>
