@@ -35,7 +35,7 @@ import { limitVerdict, LOOK_BACK, MOST_ROWS, type RequestTimes } from './limits'
 /** What `sign-in-requests` stores for a request whose network address the server cannot see. */
 export const NO_NETWORK = 'none'
 
-// scope: sign-in-requests by the keyed hash of what was typed, or a count across the site; they hold no one's details
+// scope: none of its own; each spread of SERVER below carries its own scope line (D-132)
 const SERVER = { overrideAccess: true, depth: 0 } as const
 
 /** When the codes for an address, from a network address and from anyone went lately. */
@@ -60,6 +60,7 @@ export async function readRequestTimes(
       limit,
       select: { requestedAt: true },
       req,
+      // scope: sign-in requests by the keyed hash of what was typed or of the network address; they hold no one's details, and only their times are read
       ...SERVER,
     })
     return docs.map((doc) => new Date(doc.requestedAt))
@@ -168,6 +169,7 @@ export async function issueCode(
       requestedAt: now.toISOString(),
     },
     req,
+    // scope: this request's own row: keyed hashes and the time, no one's details
     ...SERVER,
   })
 

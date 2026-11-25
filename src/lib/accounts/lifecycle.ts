@@ -42,7 +42,7 @@ import { deploymentGate } from './signIn/gate'
  * finished by the next sign-in.
  */
 
-// scope: every use names its record by the account or the proven detail it acts on (see each function); a customer never chooses which
+// scope: none of its own; each spread of SERVER below carries its own scope line (D-132)
 const SERVER = { overrideAccess: true, depth: 0 } as const
 
 const sameName = (a: string, b: string) =>
@@ -97,6 +97,7 @@ export async function newestRecord(
     limit: 1,
     select: { fullName: true },
     req,
+    // scope: adult records holding the detail this sign-in's code has just proven, with no account; the newest one's name only
     ...SERVER,
   })
   const found = docs[0]
@@ -133,6 +134,7 @@ async function ownRecordFor(
     limit: 1,
     select: { account: true },
     req,
+    // scope: the record holding the detail this sign-in's code has just proven, with its proven marker and no account
     ...SERVER,
   })
   if (docs[0]) return docs[0].id
@@ -175,6 +177,7 @@ export async function createAccountRecords(
             ageBand: 'adult',
           },
           req,
+          // scope: the new own record, made from the name typed and the detail just proven
           ...SERVER,
         })
       ).id
@@ -197,12 +200,14 @@ export async function createAccountRecords(
         },
       },
       req,
+      // scope: the account consent on that own record, under the notice the step showed
       ...SERVER,
     })
     const account = await req.payload.create({
       collection: 'accounts',
       data: { person: personId },
       req,
+      // scope: the account row of that own record
       ...SERVER,
     })
     const record = (await req.payload.findByID({
@@ -210,6 +215,7 @@ export async function createAccountRecords(
       id: personId,
       select: { ageBand: true, fullName: true },
       req,
+      // scope: that own record again; its age band and name only
       ...SERVER,
     })) as Pick<Person, 'ageBand' | 'fullName'>
     await req.payload.update({
@@ -227,6 +233,7 @@ export async function createAccountRecords(
         ...(givenName(record.fullName) ? {} : { fullName: input.fullName }),
       },
       req,
+      // scope: that own record, linked to its new account with the detail's proven marker
       ...SERVER,
     })
     await recordAudit(
@@ -268,6 +275,7 @@ async function ownRecordOf(req: PayloadRequest, personId: number) {
     disableErrors: true,
     select: { email: true, mobile: true, emailVerifiedAt: true, mobileVerifiedAt: true },
     req,
+    // scope: the own record of the account being closed, as its accounts row names it; its proven details only
     ...SERVER,
   })) as Pick<Person, 'email' | 'mobile' | 'emailVerifiedAt' | 'mobileVerifiedAt'> | null
 }
@@ -284,6 +292,7 @@ async function close(
     disableErrors: true,
     select: { person: true, authUserId: true },
     req,
+    // scope: the account being closed, by its own id: the signed-in session's, or the one whose own record an owner's erasure erases
     ...SERVER,
   })
   if (!account) return false
@@ -298,6 +307,7 @@ async function close(
       pagination: false,
       select: { account: true },
       req,
+      // scope: the records attached to the account being closed, and no other
       ...SERVER,
     })
     for (const record of docs) {
@@ -306,6 +316,7 @@ async function close(
         id: record.id,
         data: { account: null },
         req,
+        // scope: each of those records, its link to the closing account cleared
         ...SERVER,
       })
     }
@@ -324,6 +335,7 @@ async function close(
         now,
       )
     }
+    // scope: the closing account's own row
     await req.payload.delete({ collection: 'accounts', id: accountId, req, ...SERVER })
     await recordAudit(
       req,
@@ -365,6 +377,7 @@ export const closeAccountsOfPerson: CloseAccountsOfPerson = async (req, personId
     limit: 1,
     select: { person: true },
     req,
+    // scope: the account whose own record the owner's erasure is erasing (H7), and no other
     ...SERVER,
   })
   if (docs[0]) {
@@ -377,6 +390,7 @@ export const closeAccountsOfPerson: CloseAccountsOfPerson = async (req, personId
     disableErrors: true,
     select: { account: true },
     req,
+    // scope: the record that erasure is erasing; its account link only
     ...SERVER,
   })
   if (!record || idOf(record.account) === null) return { closed: 0, detached: 0 }
@@ -385,6 +399,7 @@ export const closeAccountsOfPerson: CloseAccountsOfPerson = async (req, personId
     id: personId,
     data: { account: null },
     req,
+    // scope: that same record, detached from the account it was attached to
     ...SERVER,
   })
   await recordAudit(req, { action: 'detach-record', entity: 'people', entityId: personId })
@@ -405,6 +420,7 @@ export const endAccountSessions: EndAccountSessions = async (req, accountId) => 
     disableErrors: true,
     select: { authUserId: true },
     req,
+    // scope: the account an owner acts on, after viewRefusal and the preview check above
     ...SERVER,
   })
   if (!account) return err({ code: 'not-found' })
@@ -436,6 +452,7 @@ export const detachRecord: DetachRecord = async (req, personId) => {
     disableErrors: true,
     select: { account: true },
     req,
+    // scope: the record an owner detaches, after viewRefusal above; its account link only
     ...SERVER,
   })
   const accountId = record ? idOf(record.account) : null
@@ -454,6 +471,7 @@ export const detachRecord: DetachRecord = async (req, personId) => {
       id: personId,
       data: { account: null },
       req,
+      // scope: that record, detached by the owner from its account, which the count above showed is not its own
       ...SERVER,
     })
     await recordAudit(req, {

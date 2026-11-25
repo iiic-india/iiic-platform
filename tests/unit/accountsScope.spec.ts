@@ -311,22 +311,74 @@ function filesUnder(dir: string): string[] {
   })
 }
 
+/**
+ * The names of the constants a source declares whose object holds `overrideAccess: true`, such as
+ * `const SERVER = { overrideAccess: true, depth: 0 }`: spreading one reads past the access rules
+ * as the literal does (D-132). A nested object before the flag hides it from this reading.
+ */
+function overridingConstants(source: string): string[] {
+  return [
+    ...source.matchAll(
+      /\bconst\s+([A-Za-z_$][\w$]*)\s*(?::[^=]*)?=\s*\{[^}]*overrideAccess:\s*true/g,
+    ),
+  ].map((match) => match[1] ?? '')
+}
+
+/**
+ * The lines of a source that read past the access rules with no `// scope: …` line in the
+ * fourteen above them: a literal `overrideAccess: true`, or a spread of one of `constants`.
+ */
+function unscopedLines(source: string, constants: readonly string[]): number[] {
+  const spread = constants.length ? new RegExp(`\\.\\.\\.(${constants.join('|')})\\b`) : null
+  const lines = source.split('\n')
+  return lines.flatMap((line, index) => {
+    if (/^\s*(\*|\/\/)/.test(line)) return []
+    if (!/overrideAccess:\s*true/.test(line) && !spread?.test(line)) return []
+    const before = lines.slice(Math.max(0, index - 14), index).join('\n')
+    return /\/\/ scope: \S/.test(before) ? [] : [index + 1]
+  })
+}
+
 describe('every query in src/lib/accounts', () => {
   it('says what keeps it to the account wherever it reads past the access rules', () => {
-    const unscoped: string[] = []
-    for (const file of filesUnder(ACCOUNTS_DIR)) {
-      const lines = readFileSync(file, 'utf8').split('\n')
-      lines.forEach((line, index) => {
-        if (!/overrideAccess:\s*true/.test(line) || /^\s*(\*|\/\/)/.test(line)) return
-        const before = lines.slice(Math.max(0, index - 14), index).join('\n')
-        if (!/\/\/ scope: \S/.test(before)) {
-          unscoped.push(`${path.relative(process.cwd(), file)}:${index + 1}`)
-        }
-      })
-    }
+    const files = filesUnder(ACCOUNTS_DIR).map((file) => ({
+      file,
+      source: readFileSync(file, 'utf8'),
+    }))
+    // A constant that holds the flag, declared anywhere in the folder, is checked wherever it is
+    // spread, and each spread needs its own line, as each literal does.
+    const constants = [...new Set(files.flatMap(({ source }) => overridingConstants(source)))]
+    const unscoped = files.flatMap(({ file, source }) =>
+      unscopedLines(source, constants).map(
+        (line) => `${path.relative(process.cwd(), file)}:${line}`,
+      ),
+    )
     // A query here without a `// scope:` line (what keeps it to the signed-in account's records)
     // is refused. Read a person's records through src/lib/accounts/scope.ts's readers instead.
     expect(unscoped).toEqual([])
+  })
+
+  it('sees a spread of a constant that holds overrideAccess as it sees the literal (D-132)', () => {
+    const filler = Array.from({ length: 15 }, (_, index) => `const filler${index} = ${index}`)
+    const source = [
+      '// scope: none of its own; each spread below carries one',
+      'const SERVER = { overrideAccess: true, depth: 0 } as const',
+      'const PLAIN = { depth: 0 } as const',
+      ...filler,
+      'await req.payload.find({ collection: "people", req, ...SERVER })',
+      'await req.payload.find({ collection: "people", req, ...PLAIN })',
+      ...filler,
+      '// scope: the account’s own row, by the session’s id',
+      'await req.payload.findByID({ collection: "accounts", id, req, ...SERVER })',
+      ...filler,
+      'await req.payload.count({ collection: "people", overrideAccess: true, req })',
+    ].join('\n')
+    const constants = overridingConstants(source)
+    expect(constants).toEqual(['SERVER'])
+    // The unscoped spread (line 19) and the unscoped literal (line 53); never the plain constant.
+    expect(unscopedLines(source, constants)).toEqual([19, 53])
+    // Without the constant's name the spread passes unseen, as it did before D-132.
+    expect(unscopedLines(source, [])).toEqual([53])
   })
 
   it('reads bookings, certificates and invoices in slice B only through the scoped readers', () => {
