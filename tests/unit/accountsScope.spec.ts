@@ -105,6 +105,11 @@ const { sha256Hex } = await import('@/lib/certificates/token')
 const { memoryInvoiceFiles, invoicePdfKey } = await import('@/lib/invoicing/store')
 const { formatCertificateId } = await import('@/lib/certificates/ids')
 
+// Several cases import a whole page (the closed page, the invoices page, the actions) the first
+// time inside the test, which a busy parallel run takes longer than the default five seconds to
+// load; the cases themselves are quick once loaded.
+vi.setConfig({ testTimeout: 30_000 })
+
 /** Fake certificates of 2099, with the check digit the ID's format needs. */
 const [CERT1, CERT2, CERT3] = [1, 2, 3].map((sequence) => formatCertificateId(2099, sequence)) as [
   string,

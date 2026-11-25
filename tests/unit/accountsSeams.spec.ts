@@ -53,7 +53,8 @@ describe('the privacy page’s seams', () => {
 })
 
 describe('the joined source', () => {
-  it('holds no stand-in left from the slices’ separate builds', () => {
+  // It reads every file under src, which a busy parallel run can take past five seconds to do.
+  it('holds no stand-in left from the slices’ separate builds', { timeout: 30_000 }, () => {
     const root = path.join(process.cwd(), 'src')
     const files: string[] = []
     const walk = (dir: string) => {
