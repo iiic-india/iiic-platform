@@ -13,7 +13,8 @@ import { codeIdentifier, placeholderEmail, triesUsed } from './codes'
  * user exists and when a session starts:
  *
  * - `startSession`: a session for a user, with Better Auth's `dontRememberMe` when the device is
- *   not kept (a day at most, ended with the browser), and its cookie (D-115);
+ *   not kept (a day at most, ended with the browser), and its cookie (D-115); a session the
+ *   browser already carried (a person signing in again) is ended once the new one starts (D-130);
  * - `createCustomer`: a user for a proven email, or for a proven mobile with a placeholder address
  *   that is never written to; made only after the account consent (docs/20 §4.5). A user that
  *   already holds the detail is returned as it is, so an account step that failed part-way
@@ -43,13 +44,24 @@ export const iiicAccounts = () =>
         async (ctx) => {
           const user = await ctx.context.internalAdapter.findUserById(ctx.body.userId)
           if (!user) throw new APIError('NOT_FOUND', { code: 'USER_NOT_FOUND' })
+          // The session this browser already carried ("Sign in again", D-121), read before the
+          // new cookie replaces it: no browser holds it once this one is set.
+          const carried = await ctx.getSignedCookie(
+            ctx.context.authCookies.sessionToken.name,
+            ctx.context.secret,
+          )
           const dontRememberMe = !ctx.body.trusted
           const session = await ctx.context.internalAdapter.createSession(user.id, dontRememberMe)
           await setSessionCookie(ctx, { session, user }, dontRememberMe)
+          // Ended once the new one has started, so the devices list shows this browser once and
+          // nothing is left alive for a cookie that was replaced (docs/20 §4.7; D-130).
+          const replaced = typeof carried === 'string' && carried !== session.token
+          if (replaced) await ctx.context.internalAdapter.deleteSession(carried)
           return ctx.json({
             sessionId: session.id,
             createdAt: session.createdAt,
             expiresAt: session.expiresAt,
+            replaced,
           })
         },
       ),

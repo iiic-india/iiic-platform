@@ -268,6 +268,50 @@ describe('IIIC’s plugin', () => {
     expect(again.headers?.getSetCookie?.() ?? []).toEqual([])
   })
 
+  it('ends the session the browser carried once a new one starts: signing in again leaves one (D-130)', async () => {
+    const { userId } = await auth.api.createCustomer({ body: { channel: 'email', value: EMAIL } })
+    const cookieOf = (headers: Headers) =>
+      headers
+        .getSetCookie()
+        .map((line) => line.split(';')[0])
+        .join('; ')
+    const first = await auth.api.startSession({
+      body: { userId, trusted: true },
+      returnHeaders: true,
+    })
+    expect(first.response.replaced).toBe(false)
+    const carried = cookieOf(first.headers)
+    // "Sign in again" from the same browser: its cookie travels with the request.
+    const second = await auth.api.startSession({
+      body: { userId, trusted: true },
+      headers: new Headers({ cookie: carried }),
+      returnHeaders: true,
+    })
+    expect(second.response.replaced).toBe(true)
+    expect(db.sessions?.map((row) => row.id)).toEqual([second.response.sessionId])
+    expect(await auth.api.getSession({ headers: new Headers({ cookie: carried }) })).toBeNull()
+    const now = await auth.api.getSession({
+      headers: new Headers({ cookie: cookieOf(second.headers) }),
+    })
+    expect(now?.session.id).toBe(second.response.sessionId)
+  })
+
+  it('leaves every other device’s session alone, and ends nothing for a cookie it cannot verify', async () => {
+    const { userId } = await auth.api.createCustomer({ body: { channel: 'email', value: EMAIL } })
+    const elsewhere = await auth.api.startSession({ body: { userId, trusted: true } })
+    const token = String(db.sessions?.find((row) => row.id === elsewhere.sessionId)?.token)
+    // That device's token under a signature this server never made.
+    const forged = `__Secure-${SESSION_COOKIE_PREFIX}.session_token=${token}.${'A'.repeat(43)}=`
+    const here = await auth.api.startSession({
+      body: { userId, trusted: false },
+      headers: new Headers({ cookie: forged }),
+    })
+    expect(here.replaced).toBe(false)
+    expect(db.sessions?.map((row) => row.id).sort()).toEqual(
+      [elsewhere.sessionId, here.sessionId].sort(),
+    )
+  })
+
   it('is reachable on no HTTP route', async () => {
     for (const path of [
       '/api/auth/start-session',

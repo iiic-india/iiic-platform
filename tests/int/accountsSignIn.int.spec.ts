@@ -6,8 +6,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 // the same answer whatever the address holds, the limits, Turnstile, the tries, a new code ending
 // the old, a used code, the code in no row, job, log line or cookie; the account step's consent
 // first, in one transaction, refused without the consent, for an address of a minor, or under a
-// changed notice, and finished by the next code when it stopped part-way; sessions; the owner's
-// end-sessions; closing. Needs the r2a_accounts and r2a_customer_auth migrations. Obviously fake
+// changed notice, and finished by the next code when it stopped part-way; sessions, and signing
+// in again ending the session the browser carried; the owner's end-sessions; closing. Needs the r2a_accounts and r2a_customer_auth migrations. Obviously fake
 // addresses, names and network addresses (TEST-NET-3), removed at the end; no staff user is made.
 
 vi.mock('server-only', () => ({}))
@@ -594,6 +594,37 @@ describe('sessions (docs/20 §4.7; D-115, D-125)', () => {
       expect(read.response?.session.expiresAt).toEqual(new Date(response.expiresAt))
       expect(read.headers?.getSetCookie?.() ?? []).toEqual([])
     }
+  })
+
+  it('end the one this browser carried when the person signs in again, and only that one (D-130)', async () => {
+    const { to, accountId, person } = await newAccount('again')
+    const userId = (await payload.findByID({ collection: 'accounts', id: accountId, depth: 0 }))
+      .authUserId as string
+    const context = await auth.$context
+    // The account step's session: another device's, as far as this test is concerned.
+    const [elsewhere] = await context.internalAdapter.listSessions(userId)
+    expect(elsewhere).toBeDefined()
+    // The session this browser holds, its cookie sent with every request it makes.
+    const { headers: started, response: carried } = await auth.api.startSession({
+      body: { userId, trusted: true },
+      returnHeaders: true,
+    })
+    const cookie = started
+      .getSetCookie()
+      .map((line) => line.split(';')[0])
+      .join('; ')
+    person.headers.set('cookie', cookie)
+    // "Sign in again" (D-121): a new code to the same address, then the code.
+    await person.request(to, new Date(Date.now() + 5 * 60_000))
+    expect(await person.verify(lastCode(to))).toMatchObject({
+      ok: true,
+      value: { state: 'signed-in', accountId },
+    })
+    const ids = (await context.internalAdapter.listSessions(userId)).map((session) => session.id)
+    expect(ids).toHaveLength(2)
+    expect(ids).toContain(elsewhere?.id)
+    expect(ids).not.toContain(carried.sessionId)
+    expect(await auth.api.getSession({ headers: new Headers({ cookie }) })).toBeNull()
   })
 
   it('end at an owner’s word, only with the owner role and the two-factor code', async () => {
