@@ -1,21 +1,15 @@
 import 'server-only'
 
 import { headers } from 'next/headers'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { createLocalReq, getPayload, type PayloadRequest, type Where } from 'payload'
 
 import { getFlags } from '@/lib/settings/read'
 import type { BookingsSelect, CertificatesSelect, InvoicesSelect } from '@/payload-types'
 import config from '@payload-config'
 
-import type {
-  AccountActor,
-  AccountSession,
-  GetAccountSession,
-  OwnPersonIds,
-  RequireAccount,
-  SignOut,
-} from './contract'
+import type { AccountActor, AccountSession, OwnPersonIds } from './contract'
+import { getAccountSession, requireAccount, signOut } from './session'
 
 /**
  * Who is asking, and what they may read (docs/20 §8; D-127). Every My IIIC page, action and route
@@ -29,25 +23,13 @@ import type {
  * tests/unit/accountsScope.spec.ts fails on one without it.
  */
 
-// ---- The session (builder A's; docs/20 §3.5) ----
+// ---- The session (docs/20 §3.5) ----
 //
-// STUB until builder A lands (docs/20 §13: "B and C build against a fake requireAccount until A
-// lands"). Nobody is signed in here, so every My IIIC page sends the person to /login and nothing
-// of anyone's is read. At the join the lead replaces this block with A's functions:
-//
-//   export { getAccountSession, requireAccount } from './session'
-//   export { signOut } from '<A's module>'
-//
-// Nothing else in slice B imports A's modules, so this block is the whole seam.
+// Slice A's own functions from ./session, imported above for the door below and passed on to
+// My IIIC's pages, layout and actions, so that every one of them shares A's request-cached
+// getAccountSession. This is the whole seam between slices A and B.
 
-export const getAccountSession: GetAccountSession = async () => null
-
-export const requireAccount: RequireAccount = async (options) => {
-  const next = options?.next?.startsWith('/account') ? options.next : null
-  redirect(next ? `/login?next=${encodeURIComponent(next)}` : '/login')
-}
-
-export const signOut: SignOut = async () => {}
+export { getAccountSession, requireAccount, signOut }
 
 // ---- The door ----
 

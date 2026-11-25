@@ -62,18 +62,35 @@ vi.mock('payload', () => ({
     context: {},
   })),
 }))
-vi.mock('@/lib/accounts/privacy/seams', async (importOriginal) => {
-  const real = await importOriginal<typeof import('@/lib/accounts/privacy/seams')>()
-  return {
-    ...real,
-    requireAccount: vi.fn(),
-    signOut: vi.fn(async () => {}),
-    signOutEverywhere: vi.fn(async () => 2),
-    closeAccount: vi.fn(async () => ({ ok: true, value: { closed: true } })),
-    requestDetailCode: vi.fn(),
-    confirmDetail: vi.fn(),
-  }
-})
+// Every seam is named here and none is loaded: the real ones are slice A's sign-in and slice B's
+// scope (src/lib/accounts/privacy/seams.ts), which need Better Auth and an `accounts` collection
+// this stand-in does not have. `ownPersonIds` answers as B's does over the stand-in's `people`:
+// the account's own record and every record attached to it, sorted.
+vi.mock('@/lib/accounts/privacy/seams', () => ({
+  getAccountSession: vi.fn(async () => null),
+  requireAccount: vi.fn(),
+  signOut: vi.fn(async () => {}),
+  listDevices: vi.fn(async () => []),
+  signOutEverywhere: vi.fn(async () => 2),
+  closeAccount: vi.fn(async () => ({ ok: true, value: { closed: true } })),
+  requestDetailCode: vi.fn(),
+  confirmDetail: vi.fn(),
+  whatsAppCodesOpen: vi.fn(async () => false),
+  ownPersonIds: vi.fn(
+    async (
+      fake: { payload: { find: (query: object) => Promise<{ docs: { id: number }[] }> } },
+      account: { accountId: number; personId: number },
+    ) => {
+      const { docs } = await fake.payload.find({
+        collection: 'people',
+        where: { account: { equals: account.accountId } },
+      })
+      return [...new Set([account.personId, ...docs.map((person) => person.id)])].sort(
+        (a, b) => a - b,
+      )
+    },
+  ),
+}))
 
 const rules = await import('@/lib/accounts/privacy/rules')
 const { listOwnConsents, giveConsent, withdrawConsent } =
