@@ -29,6 +29,7 @@ import * as migration_20261123_162918_m4_pipeline from './20261123_162918_m4_pip
 import * as migration_20261124_073139_m5_admin from './20261124_073139_m5_admin';
 import * as migration_20261124_100324_m6_messaging from './20261124_100324_m6_messaging';
 import * as migration_20261125_161605_r2a_accounts from './20261125_161605_r2a_accounts';
+import * as migration_20261125_161840_r2a_customer_auth from './20261125_161840_r2a_customer_auth';
 
 export const migrations = [
   {
@@ -184,6 +185,11 @@ export const migrations = [
   {
     up: migration_20261125_161605_r2a_accounts.up,
     down: migration_20261125_161605_r2a_accounts.down,
-    name: '20261125_161605_r2a_accounts'
+    name: '20261125_161605_r2a_accounts',
+  },
+  {
+    up: migration_20261125_161840_r2a_customer_auth.up,
+    down: migration_20261125_161840_r2a_customer_auth.down,
+    name: '20261125_161840_r2a_customer_auth'
   },
 ];
