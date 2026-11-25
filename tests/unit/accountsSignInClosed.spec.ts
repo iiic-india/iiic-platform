@@ -43,6 +43,8 @@ vi.mock('@/lib/settings/source', async (original) => ({
 
 const steps = await import('@/lib/accounts/signIn/steps')
 const details = await import('@/lib/accounts/details')
+const lifecycle = await import('@/lib/accounts/lifecycle')
+const { attachNewRecord } = await import('@/lib/accounts/attach')
 const { getAccountSession } = await import('@/lib/accounts/session')
 const { default: LoginPage } = await import('@/app/(platform)/(default)/login/page')
 
@@ -100,6 +102,28 @@ describe('on a preview', () => {
   it('offers no WhatsApp code, without reading anything', async () => {
     expect(await details.whatsappCodesOpenHere(req, NOW)).toBe(false)
     expect(readFlags).not.toHaveBeenCalled()
+  })
+
+  it('refuses an owner’s acts on an account, after the owner check and before any read (D-122)', async () => {
+    // An owner with the two-factor code: the role check passes, and the preview still refuses.
+    const owner = {
+      user: { id: 1, collection: 'users', roles: ['owner'], active: true, _strategy: 'totp' },
+      payload: untouchable<never>('the database'),
+    } as never
+    expect(await lifecycle.endAccountSessions(owner, 41)).toEqual({
+      ok: false,
+      error: { code: 'refused' },
+    })
+    expect(await lifecycle.detachRecord(owner, 42)).toEqual({
+      ok: false,
+      error: { code: 'refused' },
+    })
+  })
+
+  it('attaches no record made in a preview’s admin to an account (D-122)', async () => {
+    const doc = { id: 7, fullName: 'Fake Preview Person', email: 'someone@fake.example.invalid' }
+    const hookReq = { payload: untouchable<never>('the database') } as never
+    expect(await attachNewRecord({ doc, operation: 'create', req: hookReq } as never)).toBe(doc)
   })
 })
 

@@ -442,17 +442,20 @@ export const endAccountSessions: EndAccountSessions = async (req, accountId) => 
 
 /**
  * An owner detaches an earlier record the person says is not theirs (D-120; "Not your
- * booking?"). The account's own record cannot be detached: closing does that.
+ * booking?"). The account's own record cannot be detached: closing does that. The owner role and
+ * the two-factor code first (CLAUDE.md #6); not on a preview, which shares production's database
+ * and acts on nothing (D-122), as `endAccountSessions`.
  */
 export const detachRecord: DetachRecord = async (req, personId) => {
   if (viewRefusal(req.user, 'accountActions')) return err({ code: 'refused' })
+  if (deploymentGate(env()) === 'preview') return err({ code: 'refused' })
   const record = await req.payload.findByID({
     collection: 'people',
     id: personId,
     disableErrors: true,
     select: { account: true },
     req,
-    // scope: the record an owner detaches, after viewRefusal above; its account link only
+    // scope: the record an owner detaches, after viewRefusal and the preview check above; its account link only
     ...SERVER,
   })
   const accountId = record ? idOf(record.account) : null

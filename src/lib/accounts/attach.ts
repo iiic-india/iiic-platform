@@ -1,10 +1,12 @@
 import type { CollectionAfterChangeHook, PayloadRequest, Where } from 'payload'
 
 import { recordAudit } from '@/lib/audit/record'
+import { env } from '@/lib/env'
 import { inTransaction } from '@/lib/payments/store'
 import { idOf } from '@/lib/privacy/consentLedger'
 
 import type { AccountActor, AttachEarlierRecords, SignInChannel } from './contract'
+import { deploymentGate } from './signIn/gate'
 
 /**
  * Attaching earlier records (docs/03 F7: "A booking made without an account is attached to the
@@ -144,10 +146,13 @@ export async function accountVerifying(
  * The `people` create hook (docs/20 §6): a record made later holding a detail an account has
  * verified (a booking made as a guest by a person with an account) joins that account at once,
  * so the booking shows in My IIIC. Not for a record that says under 18. The system attaches it,
- * so the entry has no actor.
+ * so the entry has no actor. It stands down on a preview, as `endAccountSessions` does: a preview
+ * shares production's database and acts on nothing (D-122), so a person added in a preview's
+ * admin is not attached to a production account from there.
  */
 export const attachNewRecord: CollectionAfterChangeHook = async ({ doc, operation, req }) => {
   if (operation !== 'create' || idOf(doc.account) !== null || doc.ageBand === 'under18') return doc
+  if (deploymentGate(env()) === 'preview') return doc
   for (const channel of ['email', 'whatsapp'] as const) {
     const value = doc[DETAIL_FIELDS[channel].field]
     if (typeof value !== 'string' || value === '') continue
