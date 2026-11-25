@@ -8,7 +8,6 @@ import { DEFAULT_LANGUAGE } from '@/lib/site/languages'
 import config from '@payload-config'
 
 import type { CodeRequestError, SignInChannel, VerifyCodeError } from '../contract'
-import { signOut } from '../session'
 import { ACCOUNT_COPY, LOGIN_COPY, VERIFY_COPY } from './copy'
 import { FIELD_IDS, type SignInFormState } from './formState'
 import {
@@ -243,12 +242,6 @@ export async function createMyAccount(
 /** Step 3's "No, thanks": nothing is stored, and the attempt is forgotten. */
 export async function declineAccount(): Promise<void> {
   await startAgain(await request())
-  redirect('/')
-}
-
-/** "Sign out" on every My IIIC page (docs/20 §4.7). */
-export async function signOutOfMyIiic(): Promise<void> {
-  await signOut()
   redirect('/')
 }
 

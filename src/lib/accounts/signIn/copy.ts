@@ -86,7 +86,3 @@ export const ACCOUNT_COPY = {
     'The wording you agree to changed after this page opened. Read it again below and tick the box to create your account.',
   noticeMissing: `Accounts cannot be created just now. To reach IIIC, write to ${OFFICE_EMAIL}.`,
 } as const
-
-export const SIGN_OUT_COPY = {
-  button: 'Sign out',
-} as const

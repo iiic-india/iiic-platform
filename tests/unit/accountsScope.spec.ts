@@ -935,6 +935,23 @@ describe('the documents and invoices pages', () => {
   })
 })
 
+describe('signing out (docs/20 §4.7)', () => {
+  it('is the frame’s one "Sign out": it ends this session, then goes home', async () => {
+    const { signOutAction } = await import('@/app/(platform)/(account)/account/actions')
+    const thrown = await signOutAction().then(
+      () => null,
+      (error: unknown) => error as { digest?: string },
+    )
+    expect(thrown?.digest).toMatch(/^NEXT_REDIRECT;\w+;\/;/)
+    // No second button or action of its own anywhere (slice A's went at the join).
+    const src = path.join(process.cwd(), 'src')
+    const said = filesUnder(src)
+      .filter((file) => readFileSync(file, 'utf8').includes("'Sign out'"))
+      .map((file) => path.relative(process.cwd(), file).split(path.sep).join('/'))
+    expect(said).toEqual(['src/components/account/copy.ts'])
+  })
+})
+
 describe('the beacon', () => {
   it('never counts the sign-in pages or My IIIC (docs/20 §8)', () => {
     for (const path of [
