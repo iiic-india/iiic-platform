@@ -544,3 +544,44 @@ describe('the audit log for what an account does here (docs/20 §8; D-133)', () 
     }
   })
 })
+
+describe('an account whose row has gone since its session was read', () => {
+  it('writes no request and no consent for it (B’s ownPersonIds answers no records)', async () => {
+    const own = await person('gone', {
+      email: address('gone-client'),
+      emailVerifiedAt: new Date().toISOString(),
+      ageBand: 'adult',
+    })
+    const goneId = await account(own, 'gone')
+    const gone = session(goneId, own, 'gone')
+    // Closed in another tab, say: the row goes and the session read before it is still in hand.
+    await payload.update({
+      collection: 'people',
+      id: own.id,
+      data: { account: null },
+      overrideAccess: true,
+    })
+    await payload.delete({ collection: 'accounts', id: goneId, overrideAccess: true })
+    expect(await ownPersonIds(await request(), gone)).toEqual([])
+    expect(
+      await createOwnRequest(
+        await request(),
+        gone,
+        { type: 'correction', summary: `Fake: too late (${TAG}).` },
+        new Date(),
+      ),
+    ).toEqual({ ok: false, error: { code: 'closed-here' } })
+    expect(
+      await giveConsent(
+        await request(),
+        gone,
+        { purpose: 'marketingEmail', noticeVersionId: notices.marketingEmail.id, consent: true },
+        new Date(),
+      ),
+    ).toEqual({ ok: false, error: { code: 'closed-here' } })
+    const written = async (collection: 'data-requests' | 'consents') =>
+      (await payload.count({ collection, where: { person: { equals: own.id } } })).totalDocs
+    expect(await written('data-requests')).toBe(0)
+    expect(await written('consents')).toBe(0)
+  })
+})

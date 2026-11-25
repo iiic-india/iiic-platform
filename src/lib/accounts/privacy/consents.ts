@@ -182,8 +182,9 @@ async function joinTheJournal(
 /**
  * `GiveConsent`: one of the two marketing consents, on the account's own record, under the
  * notice in force, which must be the one the page showed. Refused as `closed-here` on a preview
- * and wherever My IIIC does not offer it (no notice in force, a record under 18, no verified
- * detail for it, WhatsApp not set up), since the contract names no other code for that.
+ * and for an account whose row has gone since its session was read, and wherever My IIIC does
+ * not offer it (no notice in force, a record under 18, no verified detail for it, WhatsApp not
+ * set up), since the contract names no other code for that.
  */
 export const giveConsent: GiveConsent = async (req, account, input, now) => {
   if (!actsHere(env().VERCEL_ENV)) return err({ code: 'closed-here' })
@@ -196,6 +197,9 @@ export const giveConsent: GiveConsent = async (req, account, input, now) => {
   if (notice.id !== noticeVersionId) return err({ code: 'notice-changed' })
 
   const ids = await ownPersonIds(req, account)
+  // No records: the account's row has gone since the session was read (closed in another tab,
+  // or erased), so no consent is written for it.
+  if (ids.length === 0) return err({ code: 'closed-here' })
   return inTransaction(req, async () => {
     if (standingOf(await ledgerOf(req, ids), purpose).state === 'granted') {
       return err({ code: 'already-given' as const })

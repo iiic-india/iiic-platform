@@ -32,7 +32,8 @@ import { findOwnBookings, ownPersonIds } from './seams'
 /**
  * `CreateOwnRequest`: refused on a preview; a copy or an erasure only within ten minutes of
  * signing in (D-121), checked before anything is read; one open request of each kind at a time,
- * over every record of the account.
+ * over every record of the account; and refused, writing nothing, for an account whose row has
+ * gone since its session was read.
  */
 export const createOwnRequest: CreateOwnRequest = async (req, account, input, now) => {
   if (!actsHere(env().VERCEL_ENV)) return err({ code: 'closed-here' })
@@ -45,6 +46,9 @@ export const createOwnRequest: CreateOwnRequest = async (req, account, input, no
     return err({ code: 'sign-in-again' })
   }
   const ids = await ownPersonIds(req, account)
+  // No records: the account's row has gone since the session was read (closed in another tab,
+  // or erased), so nothing is written for it.
+  if (ids.length === 0) return err({ code: 'closed-here' })
   return inTransaction(req, async () => {
     const open = await req.payload.count({
       collection: 'data-requests',

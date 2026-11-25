@@ -550,6 +550,17 @@ describe('GiveConsent', () => {
       error: { code: 'closed-here' },
     })
   })
+
+  it('writes nothing for an account whose row has gone since its session was read', async () => {
+    // B's ownPersonIds answers no records once the accounts row is gone (closed in another tab).
+    vi.mocked(seams.ownPersonIds).mockResolvedValueOnce([])
+    expect(await giveConsent(req(), first(), journal, NOW)).toEqual({
+      ok: false,
+      error: { code: 'closed-here' },
+    })
+    expect(db.collections.consents).toEqual([])
+    expect(db.collections.subscribers).toEqual([])
+  })
 })
 
 describe('CreateOwnRequest', () => {
@@ -636,6 +647,14 @@ describe('CreateOwnRequest', () => {
     expect(
       await createOwnRequest(req(), first(), { type: 'correction', summary: 'Fake.' }, NOW),
     ).toEqual({ ok: false, error: { code: 'closed-here' } })
+  })
+
+  it('writes nothing for an account whose row has gone since its session was read', async () => {
+    vi.mocked(seams.ownPersonIds).mockResolvedValueOnce([])
+    expect(
+      await createOwnRequest(req(), first(), { type: 'correction', summary: 'Fake.' }, NOW),
+    ).toEqual({ ok: false, error: { code: 'closed-here' } })
+    expect(db.collections['data-requests']).toEqual([])
   })
 })
 
