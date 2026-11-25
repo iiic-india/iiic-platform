@@ -42,7 +42,7 @@ Everything needed to build the IIIC platform with Claude Code: what the product 
 | — | `operator-guide.md` | One page for the operator: signing in, the morning in Today, each task and where it is done, what never to do, whom to tell | M7, the operator's training |
 | — | `security-review.md` | The OWASP ASVS 5.0 level 2 review of M7: what was checked, found, fixed and left, with owners; why the request-time 404 needs a script | M7, after any change to auth, access, input or logging |
 | — | `content/` | `copy-architecture.md` (every page, section by section) and `sources/` (IIIC's texts, brochures, feedback, the copy system, the old site, verbatim) | M2 |
-| — | `decisions.md` | D-A to D-C and D-01 to D-135 with status | Every milestone |
+| — | `decisions.md` | D-A to D-C and D-01 to D-136 with status | Every milestone |
 | — | `research/` | The four research reports behind `07` and `08` (messaging, architecture, compliance, payments), verbatim, with sources, October 2026; and the research behind the admin console's components (D-78) and the public site's motion kit (`11` §11), November 2026 | When a choice is questioned |
 | — | `prototype-prompt.md` | Optional: a clickable HTML prototype to test the flows with real people before M3 | Before M1 (optional) |
 
