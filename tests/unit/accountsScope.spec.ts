@@ -325,26 +325,77 @@ function overridingConstants(source: string): string[] {
   ].map((match) => match[1] ?? '')
 }
 
+/** A call of Payload's Local API, which reads and writes past the access rules by default. */
+const LOCAL_API_CALL =
+  /\bpayload\.(?:find\w*|count\w*|create|update\w*|delete|duplicate|restore\w*)\(/g
+
 /**
- * The lines of a source that read past the access rules (a literal `overrideAccess: true`, or a
- * spread of one of `constants`) with no `// scope: …` line of their own: the nearest one in the
- * fourteen lines above, with no other such line between them. One scope line covers the first
- * query after it only; the next needs its own (D-132, the join's ruling I.3).
+ * The text of a call's arguments, from just after its opening parenthesis to the one that closes
+ * it, with strings and comments left out, so a parenthesis or a word inside them counts for nothing.
+ */
+function callArguments(source: string, open: number): string {
+  let depth = 1
+  let text = ''
+  for (let at = open + 1; at < source.length; at += 1) {
+    const char = source[at] ?? ''
+    if (char === '"' || char === "'" || char === '`') {
+      for (at += 1; at < source.length && source[at] !== char; at += 1) {
+        if (source[at] === '\\') at += 1
+      }
+      text += '""'
+      continue
+    }
+    if (source.startsWith('//', at)) {
+      at = source.indexOf('\n', at)
+      if (at < 0) break
+    } else if (source.startsWith('/*', at)) {
+      at = source.indexOf('*/', at) + 1
+      if (at <= 0) break
+      continue
+    }
+    if (char === '(') depth += 1
+    if (char === ')' && --depth === 0) break
+    text += source[at] ?? ''
+  }
+  return text
+}
+
+/**
+ * The lines of a source that read past the access rules with no `// scope: …` line of their own:
+ * the nearest one in the fourteen lines above, with no other such line between them. A line reads
+ * past them when it holds a literal `overrideAccess: true` or a spread of one of `constants`, or
+ * when it opens a Local API call that names no `overrideAccess` at all: Payload 3.94's Local API
+ * defaults the flag to true (payload/dist/collections/operations/local/find.js and the rest), so
+ * leaving it out reads past the rules as the literal does. One scope line covers the first query
+ * after it only; the next needs its own (D-132, the join's ruling I.3).
  */
 function unscopedLines(source: string, constants: readonly string[]): number[] {
   const spread = constants.length ? new RegExp(`\\.\\.\\.(${constants.join('|')})\\b`) : null
   const lines = source.split('\n')
-  const readsPastAccess = (line: string) =>
-    !/^\s*(\*|\/\/)/.test(line) && (/overrideAccess:\s*true/.test(line) || !!spread?.test(line))
-  return lines.flatMap((line, index) => {
-    if (!readsPastAccess(line)) return []
-    for (let above = index - 1; above >= Math.max(0, index - 14); above -= 1) {
-      const earlier = lines[above] ?? ''
-      if (/\/\/ scope: \S/.test(earlier)) return []
-      if (readsPastAccess(earlier)) return [index + 1]
-    }
-    return [index + 1]
-  })
+  const isComment = (line: string) => /^\s*(\*|\/\/|\/\*)/.test(line)
+  const pastAccess = new Set(
+    lines.flatMap((line, index) =>
+      !isComment(line) && (/overrideAccess:\s*true/.test(line) || !!spread?.test(line))
+        ? [index]
+        : [],
+    ),
+  )
+  for (const call of source.matchAll(LOCAL_API_CALL)) {
+    const start = call.index ?? 0
+    const index = source.slice(0, start).split('\n').length - 1
+    if (isComment(lines[index] ?? '')) continue
+    const args = callArguments(source, start + call[0].length - 1)
+    if (!/\boverrideAccess\b/.test(args) && !spread?.test(args)) pastAccess.add(index)
+  }
+  return [...pastAccess]
+    .sort((a, b) => a - b)
+    .flatMap((index) => {
+      for (let above = index - 1; above >= Math.max(0, index - 14); above -= 1) {
+        if (/\/\/ scope: \S/.test(lines[above] ?? '')) return []
+        if (pastAccess.has(above)) return [index + 1]
+      }
+      return [index + 1]
+    })
 }
 
 describe('every query in src/lib/accounts', () => {
@@ -362,7 +413,8 @@ describe('every query in src/lib/accounts', () => {
       ),
     )
     // A query here without a `// scope:` line (what keeps it to the signed-in account's records)
-    // is refused. Read a person's records through src/lib/accounts/scope.ts's readers instead.
+    // is refused, and a query that leaves `overrideAccess` out is one: Payload defaults it to
+    // true. Read a person's records through src/lib/accounts/scope.ts's readers instead.
     expect(unscoped).toEqual([])
   })
 
@@ -374,7 +426,7 @@ describe('every query in src/lib/accounts', () => {
       'const PLAIN = { depth: 0 } as const',
       ...filler,
       'await req.payload.find({ collection: "people", req, ...SERVER })',
-      'await req.payload.find({ collection: "people", req, ...PLAIN })',
+      'await req.payload.find({ collection: "people", user, overrideAccess: false, ...PLAIN })',
       ...filler,
       '// scope: the account’s own row, by the session’s id',
       'await req.payload.findByID({ collection: "accounts", id, req, ...SERVER })',
@@ -385,8 +437,9 @@ describe('every query in src/lib/accounts', () => {
     expect(constants).toEqual(['SERVER'])
     // The unscoped spread (line 19) and the unscoped literal (line 53); never the plain constant.
     expect(unscopedLines(source, constants)).toEqual([19, 53])
-    // Without the constant's name the spread passes unseen, as it did before D-132.
-    expect(unscopedLines(source, [])).toEqual([53])
+    // Without the constant's name the spread is refused all the same: its call names no
+    // `overrideAccess` of its own, and Payload's default reads past the rules.
+    expect(unscopedLines(source, [])).toEqual([19, 53])
   })
 
   it('lets one scope line cover only the first query after it (ruling I.3)', () => {
@@ -409,6 +462,35 @@ describe('every query in src/lib/accounts', () => {
     // The second query sits two lines under the first's scope line, inside the old fourteen-line
     // window, and is refused now; the third has its own line and passes.
     expect(unscopedLines(source, [])).toEqual([6])
+  })
+
+  it('sees a query that leaves overrideAccess out, which Payload reads past the rules by default', () => {
+    const filler = Array.from({ length: 15 }, (_, index) => `const filler${index} = ${index}`)
+    const source = [
+      '/**',
+      ' * Once read with req.payload.find({ collection: "bookings" }) and no flag: not a query.',
+      ' */',
+      ...filler,
+      'await req.payload.find({ collection: "bookings", where: { reference: { equals: ref } }, req })',
+      ...filler,
+      'await req.payload.find({',
+      '  collection: "bookings",',
+      '  where: { person: { in: ids }, note: { equals: "a ) inside a string" } },',
+      '  overrideAccess: false,',
+      '  user,',
+      '})',
+      ...filler,
+      '// scope: the bookings of the ids ownPersonIds returned',
+      'await req.payload.count({',
+      '  collection: "bookings",',
+      '  where: { person: { in: ids } },',
+      '  req,',
+      '})',
+      'await req.payload.delete({ collection: "people", id, req })',
+    ].join('\n')
+    // The bare find (line 19) and the delete under the count's scope line (line 62) are refused;
+    // the find inside the access rules, the scoped count and the comment never are.
+    expect(unscopedLines(source, [])).toEqual([19, 62])
   })
 
   it('reads bookings, certificates and invoices in slice B only through the scoped readers', () => {
