@@ -27,6 +27,7 @@ import type { LoadError, TemplateImplementation } from '../types'
  * Copy status: candidate lines written to src/brand/VOICE.md, awaiting IIIC's approval (I-41).
  */
 
+// scope: none of its own; each use below names the one row its message is about (D-132)
 const SERVER = { overrideAccess: true, depth: 0 } as const
 
 /** The code, large and spaced, on the kit's yellow tint (a code is read and typed, not tapped). */
@@ -92,6 +93,7 @@ export const accountSignInCode: TemplateImplementation<CodeData> = {
       disableErrors: true,
       select: { purpose: true },
       req,
+      // scope: the sign-in request this A1 is about (the message's subject); its purpose only
       ...SERVER,
     })
     if (!row) return err({ code: 'stale' })
@@ -144,6 +146,7 @@ async function firstName(req: PayloadRequest, recipient: { kind: string; id: num
     disableErrors: true,
     select: { fullName: true },
     req,
+    // scope: the person the message goes to (its recipient); the name only
     ...SERVER,
   })) as Pick<Person, 'fullName'> | null
   return person ? (person.fullName.trim().split(/\s+/)[0] ?? '') : null
@@ -207,6 +210,7 @@ export const accountDetailAdded: TemplateImplementation<AddedData> = {
       disableErrors: true,
       select: { person: true },
       req,
+      // scope: the account this A3 is about (the message's subject); its own record's id only
       ...SERVER,
     })
     // Closed since: nothing to tell.
@@ -217,6 +221,7 @@ export const accountDetailAdded: TemplateImplementation<AddedData> = {
       disableErrors: true,
       select: { mobile: true, mobileVerifiedAt: true },
       req,
+      // scope: that account's own record; the mobile it has just proven, masked before it is shown
       ...SERVER,
     })) as Pick<Person, 'mobile' | 'mobileVerifiedAt'> | null
     if (!own?.mobile || !own.mobileVerifiedAt) return err({ code: 'stale' })

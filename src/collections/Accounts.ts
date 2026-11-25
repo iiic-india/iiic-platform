@@ -70,6 +70,7 @@ const detachHandler = ownerAct(async (req, accountId) => {
     depth: 0,
     disableErrors: true,
     select: { account: true },
+    // scope: the record the owner names, after the owner, the code and the role (ownerAct); its account link only
     overrideAccess: true,
     req,
   })
