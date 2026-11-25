@@ -25,6 +25,8 @@ vi.mock('@/lib/accounts/scope', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/accounts/scope')>()),
   openMyIiic: vi.fn(),
   accountRequest: vi.fn(),
+  // Slice A's sign-out, watched by the sign-out case.
+  signOut: vi.fn(async () => {}),
 }))
 // The privacy pages' own session read, given by the test that needs a signed-in person.
 vi.mock('@/lib/accounts/privacy/seams', async (importOriginal) => ({
@@ -961,10 +963,12 @@ describe('candidate copy (I-41)', () => {
 describe('signing out (docs/20 §4.7)', () => {
   it('is the frame’s one "Sign out": it ends this session, then goes home', async () => {
     const { signOutAction } = await import('@/app/(platform)/(account)/account/actions')
+    vi.mocked(scope.signOut).mockClear()
     const thrown = await signOutAction().then(
       () => null,
       (error: unknown) => error as { digest?: string },
     )
+    expect(scope.signOut).toHaveBeenCalledTimes(1)
     expect(thrown?.digest).toMatch(/^NEXT_REDIRECT;\w+;\/;/)
     // No second button or action of its own anywhere (slice A's went at the join).
     const src = path.join(process.cwd(), 'src')
