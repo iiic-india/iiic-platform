@@ -31,6 +31,17 @@ A schema change comes with its migration, generated with `pnpm migrate:create <n
 
 A branch that carries a migration keeps its own Vercel preview off until CI has run its migrations on an empty database (D-140): `vercel.json` names the branch under `git.deploymentEnabled` with `false`, because a preview build runs `pnpm migrate` against production's database (previews and production share it, above). GitHub CI runs the migrations and every test on a database of its own; the entry is removed in the last commit before the merge, so production is migrated once, after that proof and the review.
 
+`pnpm migrate:fresh` drops only the `public` schema, so it is never run on a database that has run `r2a_customer_auth`: the next `create table "customer_auth"."users"` would fail. A local database that needs a fresh start is dropped and made again whole.
+
+## The app's own database role
+
+D-43 has the app connect as a role of its own, `iiic_app`, with migrations still running as `postgres`. Nothing in the repository creates that role; until it exists the app connects as the role `DATABASE_URL` names. Whoever creates it in Supabase grants it, besides what D-43 lists for the audit log:
+
+- USAGE on the schema `customer_auth`, and SELECT, INSERT, UPDATE and DELETE on its tables (Better Auth's users, sessions, identities and verifications). The `r2a_customer_auth` migration grants these itself only when the role already exists as it runs.
+- SELECT, INSERT, UPDATE and DELETE on public's `accounts` and `sign_in_requests` (R2).
+
+A grant on all tables in a schema covers only the tables that exist when it runs, so a table Better Auth or a later migration adds needs its own grant. Without these, customer sign-in breaks the moment `DATABASE_URL` switches to the new role. Check afterwards that the schema is closed to everyone else: `select nspacl from pg_namespace where nspname = 'customer_auth'` names the owner and `iiic_app` only.
+
 ## Roll back
 
 The fastest way back is Vercel's instant rollback: it points the domain at an earlier deployment without building anything.
@@ -49,7 +60,7 @@ A restore is tested at least once a quarter, and in the 30 days before every rel
 **Restoring production (only after deciding that the data now is worse than the backup):**
 
 1. Tell the office first, then stop writes by pausing the project in Vercel (the project's settings), so neither the site nor the admin answers while the data is replaced.
-2. Take a dump of the database as it is now, whatever its state, so nothing is lost by the restore: `pg_dump --format=custom --no-owner --file=iiic-before-restore.dump "$DATABASE_URL_DIRECT"` (the direct connection string, not the pooler's; Supabase → Project → Connect). Keep the file in the private bucket, never on a laptop longer than the restore takes.
+2. Take a dump of the database as it is now, whatever its state, so nothing is lost by the restore: `pg_dump --format=custom --no-owner --file=iiic-before-restore.dump "$DATABASE_URL_DIRECT"` (the session pooler's string on port 5432, the one migrations use; not the transaction pooler's on 6543, which `DATABASE_URL` holds, and not Supabase's direct connection, which is IPv6 only; Supabase → Project → Connect). Keep the file in the private bucket, never on a laptop longer than the restore takes.
 3. Supabase → the project → Database → Backups → choose the day → **Restore**. Supabase restores into the same project; the project is unavailable while it runs.
 4. Or, from a dump: `pg_restore --clean --if-exists --no-owner --dbname="$DATABASE_URL_DIRECT" iiic-<day>.dump`.
 5. Run `pnpm migrate:status` against the restored database (with its `DATABASE_URL`) and, if the backup predates a migration, redeploy production so the deploy runs the missing ones.
