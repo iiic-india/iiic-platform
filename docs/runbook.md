@@ -29,6 +29,8 @@ A deploy by hand, when GitHub is down: `vercel deploy --prod` from a clean check
 
 A schema change comes with its migration, generated with `pnpm migrate:create <name>` and committed; migrations are never edited by hand and never pushed with `push` (CLAUDE.md, `12` §6).
 
+A branch that carries a migration keeps its own Vercel preview off until CI has run its migrations on an empty database (D-140): `vercel.json` names the branch under `git.deploymentEnabled` with `false`, because a preview build runs `pnpm migrate` against production's database (previews and production share it, above). GitHub CI runs the migrations and every test on a database of its own; the entry is removed in the last commit before the merge, so production is migrated once, after that proof and the review.
+
 ## Roll back
 
 The fastest way back is Vercel's instant rollback: it points the domain at an earlier deployment without building anything.
@@ -91,6 +93,22 @@ Session notes are sealed at rest under `NOTES_ENCRYPTION_KEY` (D-11; `18` §3). 
 5. If the count of notes no key could open is above 0, stop and keep both keys: those notes were sealed under a key this deployment does not hold. Find the key they were sealed under before deleting anything.
 
 Without `NOTES_ENCRYPTION_KEY` the app still builds and runs: the notes panel says notes are not available and nothing is stored unsealed.
+
+## Opening My IIIC accounts
+
+Customer sign-in and My IIIC (Release 2; `20`) are built and stay closed while the flag "My IIIC accounts" (`accountsEnabled`, Settings → Platform settings → Feature flags) is off: `/login` and `/account` are then the 404 everywhere, and the header shows no "Log in" (D-122). An owner switches it on only when every line below is true, in this order (D-139; `20` §14 holds the same list):
+
+1. **A copy and an erasure asked from My IIIC reach every record of the account** (D-138). Today such a request names the account's own record only, while My IIIC shows the person all their records. Not built yet.
+2. **`BETTER_AUTH_SECRET` is set in Production** (Rotate a secret, above). Unset, `/login` says sign-in is not open yet.
+3. **The account notice is in force** for the purpose `account`, in Content → Consent texts (I-65). Without it the account step shows its placeholder and every new account is refused.
+4. **The privacy notice's cookie section** lists the account cookies exactly as `12` §10 does.
+5. **An owner can end an account's sessions and detach a record from the admin** (D-125). Today these are endpoints only (`POST /api/accounts/:id/end-sessions`, `POST /api/accounts/:id/detach`), which check the owner, the two-factor code and the deployment first; no admin screen calls them. Not built yet.
+6. **"Continue with Google" is built and its OAuth client is set in Vercel** (D-137, I-68). Not built yet.
+7. **Passkeys are built** (D-137). Not built yet.
+8. **The header is checked by hand with "Log in" showing**, at 320, 900 and 1600 px, with axe (D-136): on a local copy of the site with the flag switched on in its admin (an owner's save refreshes the header), never on production. No end-to-end test can draw it.
+9. **Vercel's firewall limits `/login/*`** (D-109; `12` §5).
+10. **The lawyer has answered on accounts** (I-67): the consent's wording, adults only, the shared address, and whether a code entered within ten minutes verifies a request about one's data.
+11. **Then an owner switches the flag on.** Switching it off again closes sign-in and My IIIC at once; nothing is deleted.
 
 ## Responding to a breach
 

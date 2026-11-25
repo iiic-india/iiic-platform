@@ -34,7 +34,7 @@ The design the first piece of Release 2 is built to: sign-in by one-time code ov
 
 ### 3.2 Where its tables live
 
-Better Auth keeps four tables, in a Postgres schema of their own, **`customer_auth`** (`CUSTOMER_AUTH` in the contract): `users` (the verified email or mobile; no name, no image), `sessions` (token, expiry, user agent; no IP address, §3.4), `identities` (Better Auth's "account" table, which stays empty: no passwords, no social sign-in), and `verifications` (codes, hashed, under hashed identifiers). Not Supabase's `auth` schema, which belongs to Supabase's own sign-in service. A schema of its own keeps Payload's generated migrations from ever seeing these tables (Payload diffs its own snapshot, not the database) and keeps them out of Supabase's Data API, which exposes no new schema unless asked (`12` §5).
+Better Auth keeps four tables, in a Postgres schema of their own, **`customer_auth`** (`CUSTOMER_AUTH` in the contract): `users` (the verified email or mobile; no name, no image), `sessions` (token, expiry, user agent; no IP address, §3.4), `identities` (Better Auth's "account" table: no passwords, and empty until "Continue with Google" is built, §16), and `verifications` (codes, hashed, under hashed identifiers). Not Supabase's `auth` schema, which belongs to Supabase's own sign-in service. A schema of its own keeps Payload's generated migrations from ever seeing these tables (Payload diffs its own snapshot, not the database) and keeps them out of Supabase's Data API, which exposes no new schema unless asked (`12` §5).
 
 The link to the rest of the platform is Payload's `accounts` collection (`04` `accounts`): one row per account, holding Better Auth's user id (`authUserId`, unique) and the account's own `people` record (`person`, unique). Every earlier record the account holds points at it through `people.account` (§6). Payload owns everything a person's record, bookings and consents need; Better Auth owns only who may sign in and their sessions.
 
@@ -58,7 +58,7 @@ The repository runs Payload migrations only, and schema push is off. Better Auth
 | `database` | `{ dialect: new PostgresDialect({ pool: payload.db.pool }), type: 'postgres', schemaName: 'customer_auth' }` | Payload's own pool (`max` 3, `12` §4): no second pool per function |
 | `user`, `session`, `account`, `verification` | `modelName` `users`, `sessions`, `identities`, `verifications` | §3.2 |
 | `verification.storeIdentifier` | `'hashed'` | No address in plain text in `verifications` |
-| `emailAndPassword`, `socialProviders`, `account.accountLinking` | off | Codes only (`03` F7: no passwords) |
+| `emailAndPassword`, `socialProviders`, `account.accountLinking` | off | Codes only (`03` F7: no passwords); Google and passkeys come before accounts open (§16, D-137) |
 | `session` | `expiresIn` 30 days, `disableSessionRefresh: true`, `cookieCache.enabled: false` | D-115: thirty days from sign-in; a revoked session ends at once |
 | `advanced.cookiePrefix` | `iiic-account` | §10 |
 | `advanced.useSecureCookies` | true when the site URL is https | `__Secure-` names |
@@ -222,7 +222,7 @@ Invoices and credit notes of the account's bookings (`AccountInvoice`): Zoho's n
 
 - **What you have agreed to**: every purpose of the account's records with its state and the day it changed (`ListOwnConsents`), the same list the withdraw page shows (`/w/[token]`, docs/19 §8). Each consent in force has its own "Withdraw" button, which records a withdrawal through `withdrawPurpose` (`src/lib/newsletter/withdrawals.ts`, the withdraw page's own) for each record that holds it, channel `web`, evidence "My IIIC"; a withdrawal of the consent to publish a testimonial takes reviews down at once, as the ledger already does (V2). Withdrawing the account consent is closing the account, and leads there.
 - **Messages from IIIC**: the Journal by email (`marketingEmail`) and, once WhatsApp is open, updates on WhatsApp (`marketingWhatsapp`), each with the notice in force beside an unticked box and its own button (`GiveConsent`; D-119). Giving the Journal's consent also adds the account's verified email to the newsletter as confirmed (the address is already proven, so no second confirmation email): the consent first, then the `subscribers` entry (confirmed, linked to the consent and the person, source "My IIIC"), then `newsletter.confirmed` once, as `/api/newsletter/confirm` does, so N2 welcomes them; an account with no verified email is offered it after adding one. Purposes for features not built yet (the Map, suggested programmes) are never offered, only withdrawn if held. Nothing is offered to a record under 18. A consent posted that My IIIC does not offer now (no notice in force, a record under 18, no verified detail for its channel, WhatsApp not set up) is answered `not-offered` with a line of its own, and nothing is recorded (D-135).
-- **Ask about your data**: access (a copy), correction, erasure, nomination, a privacy grievance or a consumer complaint (`CreateOwnRequest`), with a short text of up to 2,000 characters, the one limit the contract and the `data-requests` collection share (D-135). It is recorded as a `data-requests` entry for the account's own record, channel `web`, received now, with the identity check the session's code gave (`verificationMethod` `oneTimeCode`, `verifiedAt` now); M5's rules start it as received with its clocks, M6's O4 or O7 acknowledges it, and the office moves it on. Access and erasure need a sign-in within ten minutes (D-121). One open request of each kind at a time. The page lists the account's requests with their state and the day each is due; the office answers as for every request (`05`, Privacy).
+- **Ask about your data**: access (a copy), correction, erasure, nomination, a privacy grievance or a consumer complaint (`CreateOwnRequest`), with a short text of up to 2,000 characters, the one limit the contract and the `data-requests` collection share (D-135). It is recorded as a `data-requests` entry for the account's own record, channel `web`, received now, with the identity check the session's code gave (`verificationMethod` `oneTimeCode`, `verifiedAt` now); M5's rules start it as received with its clocks, M6's O4 or O7 acknowledges it, and the office moves it on. A copy or an erasure asked here must reach every record of the account, since the page shows all of them as the person's; today the export and the erasure plan read the own record alone, so that is first on the "before accounts open" list (§14; D-138). Access and erasure need a sign-in within ten minutes (D-121). One open request of each kind at a time. The page lists the account's requests with their state and the day each is due; the office answers as for every request (`05`, Privacy).
 - **Your contact details**: the verified email and mobile, and "Add" for the missing one (§4.6). "Add a mobile number" shows only while WhatsApp codes are open (§4.3), so it is hidden during quiet hours too, as well as before the channel and its template exist; accepted at the join (25 November 2026), since it cannot show at all before WhatsApp codes open (D-126). Under the request form, "Not your booking?" on a booking's page (§7.2) opens this page with the request set to a correction and, when the booking is one of the account's own, its reference in the details; when that booking is counselling, the page offers no message and ends with the scope statement and the crisis numbers (`08` §7).
 - **Devices**: the sessions, "Sign out everywhere" (§4.7).
 - **Close your account**: what closing does and keeps, then "Close my account" and "No, thanks" at equal weight, after a sign-in within ten minutes (D-121).
@@ -366,6 +366,29 @@ The foundation is frozen for the builders: `src/lib/accounts/contract.ts`, the c
 | I-67: the lawyer on accounts: the consent's wording, adults only, the shared address, whether a session's code verifies a data request | As D-113, D-114, D-120, D-121 |
 | Not decided here: an email when a new device signs in | None sent; proposed for after launch if IIIC wants it |
 | Not decided here: whether a signed-in booking is prefilled and made under the account's own record | M3's flow unchanged; the hook attaches the new record |
+| D-130: signing in again ends the session the browser carried | Built so |
+| D-131: the own record, with the newsletter's placeholder name counting as no name | Built so |
+| D-133: every write a customer makes names the account as the audit actor | Built so |
+| D-134: the admin refuses to delete an open account's own record and to change a proven email or mobile | Built so; what the office does when a proven address must change and the person cannot prove a new one is I-69 |
+| D-136: the header's row of links wraps from 851 px when "Log in" needs the room | Built so; checked by hand before accounts open |
+| D-137: codes, "Continue with Google" and passkeys; no passwords, no Apple, no calendar access (§16) | Codes only: Google and passkeys are built before accounts open |
+| D-138: a copy or an erasure asked from My IIIC reaches every record of the account | Not built: the request names the account's own record only, so accounts stay closed until it is (D-139) |
+| I-68: Google's OAuth client for "Continue with Google" | No Google button; sign-in by code |
+| I-69: what the office does when a proven address must change and the person cannot prove a new one | The admin refuses the change (D-134); the placeholder in `05`, People |
+
+**Before accounts open** (D-139). `accountsEnabled` goes on in production only when every line is true, in this order; `runbook.md`, "Opening My IIIC accounts", holds the same list with where to check each:
+
+1. A copy and an erasure asked from My IIIC reach every record of the account, not only its own record (D-138).
+2. `BETTER_AUTH_SECRET` is set in Production.
+3. The account notice is in force (I-65); without it every new account is refused.
+4. The privacy notice's cookie section lists the account cookies (`12` §10).
+5. An owner can end an account's sessions and detach a record from the admin, not only through the two endpoints (D-125; §4.7, §6).
+6. "Continue with Google" is built and its client is set (D-137, I-68).
+7. Passkeys are built (D-137).
+8. The header has been checked by hand with "Log in" showing, at 320, 900 and 1600 px, axe included (D-136).
+9. Vercel's firewall limits `/login` (D-109).
+10. The lawyer has answered on accounts (I-67).
+11. Then an owner switches the flag on.
 
 ## 15. Schema changes the migration carries
 
@@ -378,3 +401,13 @@ The foundation is frozen for the builders: `src/lib/accounts/contract.ts`, the c
 - from the hooks (§12): `enum_consents_purpose` and `enum_consent_versions_purpose` gain `account` (H1); `enum_messages_recipient_kind` gains `signIn` and `enum_messages_subject_collection` gains `sign-in-requests` and `accounts` (H2, H3); the template and automation enums of `messages`, `message_templates` and `automations` gain A1 to A3's keys (H4, H6).
 
 `r2a_customer_auth`, hand-written after it (§3.3), carries the `customer_auth` schema, Better Auth's four tables as its own SQL prints them, and the grants.
+
+## 16. Sign-in methods to come (D-137)
+
+Decided on 25 November 2026, when the owner asked whether clients can sign in with Google or Apple and have their appointments synced to their calendars, and asked for the best long-term design. Nothing of it is built in this piece; its two build items are on the "before accounts open" list (§14).
+
+- **Ways in.** A one-time code by email, or by WhatsApp once its provider is set up (D-126); "Continue with Google"; or a passkey (the device's fingerprint, face or screen lock) once the person has added one in My IIIC. No passwords, and no "Sign in with Apple": it needs a paid developer account and a secret renewed every six months, and its relay addresses do not match the email a guest booked with. People on Apple devices are served by passkeys and codes.
+- **Google** is asked only for the person's email address and whether Google has verified it. A verified address counts as the proven email (§3.6, §6), so the same account and the same earlier bookings are found whichever way the person signs in; an address Google has not verified is refused. The link to Google would live in Better Auth's `identities` table (§3.2), empty until then. The OAuth client is IIIC's to set up (I-68); until it is set, the Google button is not shown and sign-in is by code.
+- **Passkeys** are offered only after a sign-in by code or Google, and a code always remains the way back in.
+- **Calendars.** IIIC never asks for access to a client's calendar. Every booking sends a standard invite that Google, Apple and Outlook add, move and cancel as one event (D-22), and My IIIC offers the same file (`/account/bookings/[ref]/invite.ics`, §5). Nothing is built that needs a calendar permission, and there is no second "add to calendar" link that would leave a stale copy when a session moves.
+- **When.** Google sign-in and passkeys are built after the three slices are joined and before `accountsEnabled` goes on, so that the account notice (I-65), the privacy notice's cookie section and the lawyer's answers (I-67) cover every way of signing in at once.
