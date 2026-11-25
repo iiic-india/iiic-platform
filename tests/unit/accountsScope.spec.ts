@@ -28,7 +28,15 @@ vi.mock('@/lib/accounts/scope', async (importOriginal) => ({
 }))
 vi.mock('@/lib/monitoring/sentry', () => ({ reportError: vi.fn() }))
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }))
+// The site's cached flags, which only the header's "Log in" reads.
 vi.mock('@/lib/settings/read', () => ({ getFlags: vi.fn() }))
+// The settings as the door reads them, fresh at each request (readFlags over getPayload's
+// findGlobal); everything else of Payload stays real.
+const { storedFlags } = vi.hoisted(() => ({ storedFlags: { accountsEnabled: false } }))
+vi.mock('payload', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('payload')>()),
+  getPayload: vi.fn(async () => ({ findGlobal: async () => ({ flags: { ...storedFlags } }) })),
+}))
 vi.mock('@/lib/env', () => ({
   env: () => ({ siteUrl: 'https://fake.example.invalid', VERCEL_ENV: undefined }),
 }))
@@ -745,18 +753,24 @@ describe('the door', () => {
 
   it('is the 404 while accounts are switched off, before any session is read', async () => {
     const actual = await door()
-    vi.mocked(getFlags).mockResolvedValue({ accountsEnabled: false } as never)
+    storedFlags.accountsEnabled = false
+    // The site's cache still says on: the door reads the settings themselves, not the cache.
+    vi.mocked(getFlags).mockResolvedValue({ accountsEnabled: true } as never)
     await expect(actual.openMyIiic('/account')).rejects.toThrow(/NEXT_HTTP_ERROR_FALLBACK;404/)
     const answer = await actual.openMyIiicRoute('/account/documents')
     expect(answer instanceof Response && answer.status).toBe(404)
     expect(answer instanceof Response && answer.headers.get('cache-control')).toBe(
       'private, no-store',
     )
+    expect(await actual.accountsOn()).toBe(false)
+    expect(getFlags).not.toHaveBeenCalled()
   })
 
   it('sends a person with no session to sign in, with the page to come back to', async () => {
     const actual = await door()
-    vi.mocked(getFlags).mockResolvedValue({ accountsEnabled: true } as never)
+    storedFlags.accountsEnabled = true
+    // The site's cache still says off, as it would after a switch it never heard of.
+    vi.mocked(getFlags).mockResolvedValue({ accountsEnabled: false } as never)
     await expect(actual.openMyIiic('/account/bookings')).rejects.toThrow(/NEXT_REDIRECT/)
     await expect(actual.requireAccount({ next: 'https://elsewhere.invalid' })).rejects.toThrow(
       /NEXT_REDIRECT/,
@@ -769,6 +783,16 @@ describe('the door', () => {
     expect(answer instanceof Response && answer.headers.get('cache-control')).toBe(
       'private, no-store',
     )
+    expect(getFlags).not.toHaveBeenCalled()
+  })
+
+  it('and the frame never read the site’s cached flags', () => {
+    for (const file of [...filesUnder(ACCOUNTS_DIR), ...filesUnder(APP_DIR)]) {
+      expect(readFileSync(file, 'utf8'), file).not.toMatch(/getFlags|@\/lib\/settings\/read/)
+    }
+    // The frame draws "Sign out" from the session alone, which is null while the flag is off.
+    const layout = readFileSync(path.join(APP_DIR, 'layout.tsx'), 'utf8')
+    expect(layout).toMatch(/await getAccountSession\(\)/)
   })
 })
 

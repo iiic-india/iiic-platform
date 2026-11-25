@@ -4,7 +4,7 @@ import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { createLocalReq, getPayload, type PayloadRequest, type Where } from 'payload'
 
-import { getFlags } from '@/lib/settings/read'
+import { readFlags } from '@/lib/settings/source'
 import type { BookingsSelect, CertificatesSelect, InvoicesSelect } from '@/payload-types'
 import config from '@payload-config'
 
@@ -34,12 +34,22 @@ export { getAccountSession, requireAccount, signOut }
 // ---- The door ----
 
 /**
+ * Whether `accountsEnabled` is on, read from the settings at this request, as A's sign-in and
+ * session read it (src/lib/accounts/session.ts). Never the site's cached flags
+ * (src/lib/settings/read.ts): a change that did not reach that cache would leave My IIIC the 404
+ * after a good sign-in, or open after it was switched off.
+ */
+export async function accountsOn(): Promise<boolean> {
+  return (await readFlags(await getPayload({ config }))).accountsEnabled
+}
+
+/**
  * The first lines of every My IIIC page and route: the 404 while `accountsEnabled` is off
  * (docs/20 §4.9; D-122), then the session or the way to sign in (CLAUDE.md #6). Nothing is read
  * before both.
  */
 export async function openMyIiic(next: string): Promise<AccountSession> {
-  if (!(await getFlags()).accountsEnabled) notFound()
+  if (!(await accountsOn())) notFound()
   return requireAccount({ next })
 }
 
@@ -57,7 +67,7 @@ export const PRIVATE_FILE_HEADERS = {
  * page to come back to) for nobody signed in, else the session.
  */
 export async function openMyIiicRoute(next: string): Promise<AccountSession | Response> {
-  if (!(await getFlags()).accountsEnabled) {
+  if (!(await accountsOn())) {
     return new Response('Not found', { status: 404, headers: PRIVATE_FILE_HEADERS })
   }
   const account = await getAccountSession()

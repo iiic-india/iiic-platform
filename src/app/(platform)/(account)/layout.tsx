@@ -6,7 +6,6 @@ import navStyles from '@/components/account/AccountNav.module.css'
 import { NAV_COPY } from '@/components/account/copy'
 import { SiteFrame } from '@/components/site/SiteFrame'
 import { getAccountSession } from '@/lib/accounts/scope'
-import { getFlags } from '@/lib/settings/read'
 
 import { signOutAction } from './account/actions'
 
@@ -14,12 +13,13 @@ import { signOutAction } from './account/actions'
  * My IIIC's frame (docs/20 §5): the site's frame in the default register, and for a signed-in
  * person the section links (Overview · Bookings · Documents · Invoices · Privacy) and "Sign out"
  * (docs/20 §4.7). No experience device (docs/11), no bridge, no analytics beacon (docs/20 §8).
- * While `accountsEnabled` is off, or for nobody signed in, the bar is not drawn: each page checks
- * the flag and the session itself before it reads anything (src/lib/accounts/scope.ts), and
+ * While `accountsEnabled` is off, or for nobody signed in, the bar is not drawn: the session is
+ * null then, since it reads the flag fresh itself (src/lib/accounts/session.ts), and each page
+ * checks the flag and the session before it reads anything (src/lib/accounts/scope.ts), and
  * answers with the 404 or the way to sign in.
  */
 export default async function AccountLayout({ children }: { children: ReactNode }) {
-  const session = (await getFlags()).accountsEnabled ? await getAccountSession() : null
+  const session = await getAccountSession()
   return (
     <SiteFrame>
       {session ? (
