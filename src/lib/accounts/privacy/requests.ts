@@ -1,6 +1,9 @@
 import 'server-only'
 
+import type { PayloadRequest } from 'payload'
+
 import {
+  type AccountSession,
   type CreateOwnRequest,
   type ListOwnRequests,
   type OwnRequestRow,
@@ -14,7 +17,7 @@ import { err, ok } from '@/lib/result'
 import { IST } from '@/lib/time/ist'
 
 import { NEEDS_RECENT_SIGN_IN, signedInRecently, SUMMARY_MAX } from './rules'
-import { ownPersonIds } from './seams'
+import { findOwnBookings, ownPersonIds } from './seams'
 
 /**
  * Requests about one's data from My IIIC (docs/20 §7.5; docs/03 F11; docs/18 §5). A request is a
@@ -104,4 +107,52 @@ export const listOwnRequests: ListOwnRequests = async (req, account) => {
     status: doc.status,
     resolveBy: doc.resolveBy ? new Date(doc.resolveBy) : null,
   }))
+}
+
+/** What a correction request may show of the booking it names, and nothing more. */
+export type NamedBooking = { reference: string; counselling: boolean }
+
+const idOf = (value: unknown): number | null =>
+  typeof value === 'number'
+    ? value
+    : value && typeof value === 'object' && typeof (value as { id?: unknown }).id === 'number'
+      ? (value as { id: number }).id
+      : null
+
+/**
+ * The booking a correction request names ("Not your booking?", docs/20 §7.2): its reference, and
+ * whether it is counselling, so that the page draws the scope statement and the crisis numbers and
+ * offers nothing beside it (CLAUDE.md #3, #9). Read through B's scope, so only one of the
+ * account's own bookings is found; any other reference is null, as one that does not exist
+ * (D-127). Nothing else of the booking is read.
+ */
+export async function namedBooking(
+  req: PayloadRequest,
+  account: AccountSession,
+  reference: string,
+): Promise<NamedBooking | null> {
+  const ids = await ownPersonIds(req, account)
+  const [row] = await findOwnBookings(req, ids, {
+    select: { reference: true, type: true, service: true },
+    where: { reference: { equals: reference } },
+    limit: 1,
+  })
+  if (!row) return null
+  // As My IIIC's own booking pages decide it (src/lib/accounts/bookings.ts, registerOf): a
+  // session is counselling whatever its service says, and so is any booking of a counselling
+  // service.
+  if (row.type === 'session') return { reference: row.reference, counselling: true }
+  const serviceId = idOf(row.service)
+  if (serviceId === null) return { reference: row.reference, counselling: false }
+  const { docs } = await req.payload.find({
+    collection: 'services',
+    where: { id: { equals: serviceId } },
+    select: { register: true },
+    limit: 1,
+    depth: 0,
+    // scope: the service of the account's own booking just found, by the id it names; its register only.
+    overrideAccess: true,
+    req,
+  })
+  return { reference: row.reference, counselling: docs[0]?.register === 'counselling' }
 }

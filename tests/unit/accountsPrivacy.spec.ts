@@ -78,6 +78,22 @@ vi.mock('@/lib/accounts/privacy/seams', () => ({
   requestDetailCode: vi.fn(),
   confirmDetail: vi.fn(),
   whatsAppCodesOpen: vi.fn(async () => false),
+  // As B's does: the bookings whose client is one of the records given, and none without records.
+  findOwnBookings: vi.fn(
+    async (
+      fake: { payload: { find: (query: object) => Promise<{ docs: { id: number }[] }> } },
+      personIds: readonly number[],
+      query: { where?: object; limit?: number },
+    ) => {
+      if (!personIds.length) return []
+      const ownedBy = { person: { in: [...personIds] } }
+      const { docs } = await fake.payload.find({
+        collection: 'bookings',
+        where: query.where ? { and: [ownedBy, query.where] } : ownedBy,
+      })
+      return query.limit ? docs.slice(0, query.limit) : docs
+    },
+  ),
   ownPersonIds: vi.fn(
     async (
       fake: { payload: { find: (query: object) => Promise<{ docs: { id: number }[] }> } },
@@ -97,7 +113,8 @@ vi.mock('@/lib/accounts/privacy/seams', () => ({
 const rules = await import('@/lib/accounts/privacy/rules')
 const { listOwnConsents, giveConsent, withdrawConsent } =
   await import('@/lib/accounts/privacy/consents')
-const { createOwnRequest, listOwnRequests } = await import('@/lib/accounts/privacy/requests')
+const { createOwnRequest, listOwnRequests, namedBooking } =
+  await import('@/lib/accounts/privacy/requests')
 const outcome = await import('@/lib/accounts/privacy/outcome')
 const copy = await import('@/lib/accounts/privacy/copy')
 const actions = await import('@/lib/accounts/privacy/actions')
@@ -133,6 +150,8 @@ class FakeDb {
     consents: [],
     'data-requests': [],
     subscribers: [],
+    bookings: [],
+    services: [],
   }
   next = 1000
   /** Set to make any read or write fail the test: the function should not have reached it. */
@@ -621,6 +640,98 @@ describe('ListOwnRequests', () => {
     )
     expect((await listOwnRequests(req(), first())).map((row) => row.id)).toEqual([1])
     expect((await listOwnRequests(req(), second())).map((row) => row.id)).toEqual([2])
+  })
+})
+
+describe('a correction asked from "Not your booking?" (docs/20 §7.2; CLAUDE.md #3)', () => {
+  beforeEach(() => {
+    db.collections.services = [
+      { id: 501, register: 'counselling' },
+      { id: 502, register: 'consultancy' },
+    ]
+    db.collections.bookings = [
+      // A session on the attached record: counselling whatever its service says.
+      { id: 901, reference: 'IIIC-S-90901', person: 12, type: 'session', service: 502 },
+      { id: 902, reference: 'IIIC-C-90902', person: 11, type: 'call', service: 502 },
+      { id: 903, reference: 'IIIC-C-90903', person: 11, type: 'call', service: 501 },
+      // The second account's.
+      { id: 904, reference: 'IIIC-S-90904', person: 21, type: 'session', service: 501 },
+    ]
+  })
+
+  it('reads the kind and a reference-shaped booking from the address, and nothing else', () => {
+    expect(outcome.readAskedRequest({ request: 'correction', booking: 'IIIC-S-90901' })).toEqual({
+      type: 'correction',
+      booking: 'IIIC-S-90901',
+    })
+    expect(
+      outcome.readAskedRequest({ request: 'correction', booking: 'client@example.com' }),
+    ).toEqual({ type: 'correction', booking: null })
+    expect(outcome.readAskedRequest({ request: 'withdrawal', booking: 'IIIC-S-90901' })).toBeNull()
+    expect(outcome.readAskedRequest({ booking: 'IIIC-S-90901' })).toBeNull()
+  })
+
+  it('names a booking only when it is one of the account’s own, and says whether it is counselling', async () => {
+    expect(await namedBooking(req(), first(), 'IIIC-S-90901')).toEqual({
+      reference: 'IIIC-S-90901',
+      counselling: true,
+    })
+    expect(await namedBooking(req(), first(), 'IIIC-C-90902')).toEqual({
+      reference: 'IIIC-C-90902',
+      counselling: false,
+    })
+    expect(await namedBooking(req(), first(), 'IIIC-C-90903')).toEqual({
+      reference: 'IIIC-C-90903',
+      counselling: true,
+    })
+    // Another account's booking, and one that does not exist, are the same: nothing.
+    expect(await namedBooking(req(), first(), 'IIIC-S-90904')).toBeNull()
+    expect(await namedBooking(req(), first(), 'IIIC-S-99999')).toBeNull()
+  })
+
+  it('starts the form as that correction, naming the booking, all of it the person’s to change', async () => {
+    const { renderToStaticMarkup } = await import('react-dom/server')
+    const { createElement } = await import('react')
+    const { OwnRequestForm } = await import('@/components/account/privacy/OwnRequestForm')
+    const html = renderToStaticMarkup(
+      createElement(OwnRequestForm, {
+        types: [
+          { value: 'access', label: 'A copy of your data' },
+          { value: 'correction', label: 'A correction to your data' },
+        ],
+        maxLength: 2000,
+        permalink: '/account/privacy#requests',
+        seed: { type: 'correction', summary: copy.REQUEST_COPY.aboutBooking('IIIC-S-90901') },
+      }),
+    )
+    expect(html).toMatch(/<option value="correction" selected="">/)
+    expect(html).toContain('Booking IIIC-S-90901 shows in My IIIC, but it is not mine.')
+    const plain = renderToStaticMarkup(
+      createElement(OwnRequestForm, { types: [], maxLength: 2000, permalink: '/account/privacy' }),
+    )
+    expect(plain).not.toContain('IIIC-S-')
+  })
+
+  it('offers nothing beside a counselling booking, and still says what the person gets', async () => {
+    const { renderToStaticMarkup } = await import('react-dom/server')
+    const { createElement } = await import('react')
+    const { MessagesSection } = await import('@/components/account/privacy/PrivacySections')
+    db.grant(11, 'marketingWhatsapp', ago(800))
+    const rows = await listOwnConsents(req(), first())
+    const draw = (offers: boolean) =>
+      renderToStaticMarkup(
+        createElement(MessagesSection, {
+          rows,
+          account: first({ verified: { email: null, mobile: '+919000000000' } }),
+          outcome: null,
+          offers,
+        }),
+      )
+    expect(draw(true)).toContain(copy.MESSAGES_COPY.offers.marketingEmail.button)
+    const withheld = draw(false)
+    expect(withheld).not.toContain('<form')
+    expect(withheld).not.toContain(copy.MESSAGES_COPY.needsEmail)
+    expect(withheld).toContain(copy.MESSAGES_COPY.offers.marketingWhatsapp.held)
   })
 })
 

@@ -855,6 +855,10 @@ describe('a counselling booking in My IIIC', () => {
     expect(html).toContain(CRISIS_HEADING)
     expect(html).toContain('IIIC-S-90001')
     expect(hrefs(html).filter((href) => !MAY_LINK.test(href ?? ''))).toEqual([])
+    // "Not your booking?" opens the privacy page's request form as a correction naming it.
+    expect(hrefs(html)).toContain(
+      '/account/privacy?request=correction&amp;booking=IIIC-S-90001#requests',
+    )
     expect(html).not.toContain('₹')
   })
 

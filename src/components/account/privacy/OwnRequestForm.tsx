@@ -5,7 +5,7 @@ import { useActionState } from 'react'
 import { ErrorSummary, type SummaryItem } from '@/components/forms/ErrorSummary'
 import { createRequestAction } from '@/lib/accounts/privacy/actions'
 import { REQUEST_COPY } from '@/lib/accounts/privacy/copy'
-import { INITIAL_REQUEST_STATE } from '@/lib/accounts/privacy/state'
+import { INITIAL_REQUEST_STATE, type RequestFormState } from '@/lib/accounts/privacy/state'
 
 import { SignInAgain } from './SignInAgain'
 
@@ -20,20 +20,23 @@ const SUMMARY_ID = 'own-request-summary'
  * to the page, which says it was sent. The browser checks nothing (`noValidate`).
  *
  * The kinds, the limit and the page's address come from the server, so the browser loads none
- * of the contract's schemas.
+ * of the contract's schemas. `seed` is what the form starts with when the page was opened for a
+ * request ("Not your booking?": a correction naming the booking); the person can change all of it.
  */
 export function OwnRequestForm({
   types,
   maxLength,
   permalink,
+  seed,
 }: {
   types: readonly { value: string; label: string }[]
   maxLength: number
   permalink: string
+  seed?: RequestFormState['values'] | null
 }) {
   const [state, formAction, pending] = useActionState(
     createRequestAction,
-    INITIAL_REQUEST_STATE,
+    seed ? { ...INITIAL_REQUEST_STATE, values: seed } : INITIAL_REQUEST_STATE,
     permalink,
   )
   const items: SummaryItem[] = [

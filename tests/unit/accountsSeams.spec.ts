@@ -40,6 +40,7 @@ describe('the privacy page’s seams', () => {
       confirmDetail: details.confirmDetail,
       whatsAppCodesOpen: details.whatsappCodesOpenHere,
       accountsOn: scope.accountsOn,
+      findOwnBookings: scope.findOwnBookings,
       openMyIiic: scope.openMyIiic,
       ownPersonIds: scope.ownPersonIds,
     }

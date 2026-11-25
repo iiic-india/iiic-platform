@@ -106,6 +106,8 @@ export const REQUEST_COPY = {
   summary: 'Details',
   summaryHelp:
     'What you would like done. The office reads it and replies to you. Up to 2,000 characters.',
+  /** The details a correction starts with, from "Not your booking?" (docs/20 §7.2); editable. */
+  aboutBooking: (reference: string) => `Booking ${reference} shows in My IIIC, but it is not mine.`,
   button: 'Send the request',
   recent:
     'A copy or an erasure of your data needs a sign-in within the last 10 minutes. Sign in again first, then send the request.',

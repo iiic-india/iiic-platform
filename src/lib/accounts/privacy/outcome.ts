@@ -1,4 +1,9 @@
-import { GIVABLE_PURPOSES, type GivablePurpose } from '@/lib/accounts/contract'
+import {
+  GIVABLE_PURPOSES,
+  type GivablePurpose,
+  OWN_REQUEST_TYPES,
+  type OwnRequestType,
+} from '@/lib/accounts/contract'
 import { CONSENT_PURPOSES, type ConsentPurpose } from '@/lib/privacy/purposes'
 
 /**
@@ -94,3 +99,22 @@ export function readOutcome(params: Record<string, string | string[] | undefined
 
 export const isGivablePurpose = (value: unknown): value is GivablePurpose =>
   member(GIVABLE_PURPOSES, value)
+
+/** A booking's reference as the bookings collection holds it (IIIC-S-24117; twenty at most). */
+const REFERENCE = /^[A-Za-z0-9-]{1,20}$/
+
+/**
+ * The request the page was asked to open with: "Not your booking?" on a booking's page sends
+ * `?request=correction&booking=<reference>#requests` (docs/20 §7.2). The kind, when it is one a
+ * person may ask for here, and the reference, when it has a reference's shape. Whether that
+ * booking is the account's is the server's to check before anything of it is shown
+ * (src/lib/accounts/privacy/requests.ts `namedBooking`).
+ */
+export function readAskedRequest(
+  params: Record<string, string | string[] | undefined>,
+): { type: OwnRequestType; booking: string | null } | null {
+  const type = one(params.request)
+  if (!member(OWN_REQUEST_TYPES, type)) return null
+  const booking = one(params.booking)
+  return { type, booking: booking && REFERENCE.test(booking) ? booking : null }
+}

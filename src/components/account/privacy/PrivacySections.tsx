@@ -33,6 +33,7 @@ import {
   PRIVACY_PATH,
 } from '@/lib/accounts/privacy/outcome'
 import { endedByClosing, isGivable, SUMMARY_MAX } from '@/lib/accounts/privacy/rules'
+import type { RequestFormState } from '@/lib/accounts/privacy/state'
 import { formatIstDate, formatIstTime } from '@/lib/time/ist'
 
 import { OutcomeNote } from './OutcomeNote'
@@ -174,21 +175,28 @@ function GiveForm({
   )
 }
 
+/**
+ * The marketing messages My IIIC may offer. `offers` is false while the page names a counselling
+ * booking (a correction from "Not your booking?"): nothing is offered beside one (CLAUDE.md #3),
+ * and what the person already gets is still said.
+ */
 export function MessagesSection({
   rows,
   account,
   outcome,
+  offers = true,
 }: {
   rows: readonly OwnConsentRow[]
   account: Pick<AccountSession, 'verified'>
   outcome: Outcome | null
+  offers?: boolean
 }) {
   const parts = GIVABLE_PURPOSES.flatMap((purpose) => {
     const row = rows.find((each) => each.purpose === purpose)
     if (row?.state === 'granted') {
       return [<p key={purpose}>{MESSAGES_COPY.offers[purpose].held}</p>]
     }
-    if (row?.canGive && row.noticeVersionId && row.noticeText && isGivable(row.purpose)) {
+    if (offers && row?.canGive && row.noticeVersionId && row.noticeText && isGivable(row.purpose)) {
       const error =
         outcome?.section === 'messages' &&
         outcome.code === 'unticked' &&
@@ -197,7 +205,7 @@ export function MessagesSection({
     }
     return []
   })
-  const needsEmail = !account.verified.email
+  const needsEmail = offers && !account.verified.email
   return (
     <section id="messages" aria-labelledby="messages-heading" className={styles.section}>
       <Heading id="messages">{MESSAGES_COPY.heading}</Heading>
@@ -213,10 +221,13 @@ export function RequestsSection({
   requests,
   recent,
   outcome,
+  seed,
 }: {
   requests: readonly OwnRequestRow[]
   recent: boolean
   outcome: Outcome | null
+  /** What the request form starts with, when the page was opened for one. */
+  seed?: RequestFormState['values'] | null
 }) {
   return (
     <section id="requests" aria-labelledby="requests-heading" className={styles.section}>
@@ -233,6 +244,7 @@ export function RequestsSection({
         types={OWN_REQUEST_TYPES.map((value) => ({ value, label: REQUEST_TYPE_LABELS[value] }))}
         maxLength={SUMMARY_MAX}
         permalink={`${PRIVACY_PATH}#requests`}
+        seed={seed ?? null}
       />
       <h3>{REQUEST_COPY.listHeading}</h3>
       {requests.length === 0 ? (

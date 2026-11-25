@@ -187,7 +187,7 @@ export default async function BookingPage({ params, searchParams }: Props) {
         <p>
           <Link
             className="iiic-link"
-            href={`/account/privacy?request=correction&booking=${encodeURIComponent(booking.reference)}`}
+            href={`/account/privacy?request=correction&booking=${encodeURIComponent(booking.reference)}#requests`}
             prefetch={false}
           >
             {BOOKING_COPY.notYoursLink}

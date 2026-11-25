@@ -2,7 +2,7 @@ import 'server-only'
 
 /**
  * What the privacy page calls in the other slices (docs/20 §13): builder A's sign-in, sessions and
- * the account's life, and builder B's door and `ownPersonIds`. Slice C calls them only through
+ * the account's life, and builder B's door and its scoped readers. Slice C calls them only through
  * this file, and its tests mock this one module, so it stays as a list of re-exports, with no
  * wrappers: C's pages, B's layout and `src/lib/accounts/scope.ts` then share A's one
  * request-cached `getAccountSession`.
@@ -17,7 +17,7 @@ export {
   requestDetailCode,
   whatsappCodesOpenHere as whatsAppCodesOpen,
 } from '../details'
-export { accountsOn, openMyIiic, ownPersonIds } from '../scope'
+export { accountsOn, findOwnBookings, openMyIiic, ownPersonIds } from '../scope'
 export {
   getAccountSession,
   listDevices,
