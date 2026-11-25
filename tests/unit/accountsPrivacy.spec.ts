@@ -67,6 +67,13 @@ vi.mock('payload', () => ({
 // this stand-in does not have. `ownPersonIds` answers as B's does over the stand-in's `people`:
 // the account's own record and every record attached to it, sorted.
 vi.mock('@/lib/accounts/privacy/seams', () => ({
+  // As B's does: no user, the three network headers the browser sent, and the account as the
+  // audit log's actor (D-133).
+  accountRequest: vi.fn(async (account: { accountId: number }) => ({
+    payload: db.payload,
+    headers: new Headers({ 'user-agent': 'Fake browser', 'x-forwarded-for': '203.0.113.9' }),
+    context: { auditActor: { id: `account:${account.accountId}` } },
+  })),
   accountsOn: vi.fn(async () => true),
   openMyIiic: vi.fn(),
   getAccountSession: vi.fn(async () => null),
@@ -881,11 +888,26 @@ describe('the server actions check the session before anything else (CLAUDE.md #
     await expect(actions.closeAccountAction()).rejects.toMatchObject({
       to: '/account/privacy/closed',
     })
-    expect(seams.closeAccount).toHaveBeenCalledWith(expect.anything(), {
-      accountId: 1,
-      reason: 'person',
-    })
+    // On the account's own request: the account as the audit log's actor, no cookie (D-133).
+    expect(seams.closeAccount).toHaveBeenCalledWith(
+      expect.objectContaining({ context: { auditActor: { id: 'account:1' } } }),
+      { accountId: 1, reason: 'person' },
+    )
     expect(seams.signOut).toHaveBeenCalledTimes(1)
+  })
+
+  it('runs every act on the account’s own request, never one built from all the browser sent (D-133)', async () => {
+    signedIn(first())
+    db.grant(11, 'marketingEmail', ago(900))
+    await expect(
+      actions.withdrawConsentAction(form({ purpose: 'marketingEmail' })),
+    ).rejects.toMatchObject({ to: expect.stringContaining('done=withdrawn') })
+    expect(seams.accountRequest).toHaveBeenCalledWith(first())
+    const source = (await import('node:fs')).readFileSync(
+      (await import('node:path')).join(process.cwd(), 'src/lib/accounts/privacy/actions.ts'),
+      'utf8',
+    )
+    expect(source).not.toMatch(/createLocalReq|from 'next\/headers'/)
   })
 
   it('signs out every other device, and says how many', async () => {

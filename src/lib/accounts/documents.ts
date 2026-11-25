@@ -13,6 +13,7 @@ import { invoiceFilesFor, isInvoicePdfKey, type InvoiceFiles } from '@/lib/invoi
 import { err, ok, type Result } from '@/lib/result'
 import { readFlags } from '@/lib/settings/source'
 
+import { accountActor } from './attach'
 import type {
   AccountCertificate,
   AccountInvoice,
@@ -20,13 +21,7 @@ import type {
   ListOwnCertificates,
   ListOwnInvoices,
 } from './contract'
-import {
-  accountActor,
-  findOwnCertificates,
-  findOwnInvoices,
-  ownPersonIds,
-  PRIVATE_FILE_HEADERS,
-} from './scope'
+import { findOwnCertificates, findOwnInvoices, ownPersonIds, PRIVATE_FILE_HEADERS } from './scope'
 
 /**
  * My IIIC's documents and invoices (docs/20 §7.3, §7.4; D-118, D-124).
@@ -166,7 +161,7 @@ function audit(
   entityId: number,
   accountId: number,
 ): Promise<void> {
-  return recordAudit(req, { action, entity, entityId }, accountActor({ accountId }))
+  return recordAudit(req, { action, entity, entityId }, accountActor(accountId))
 }
 
 /**

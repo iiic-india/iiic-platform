@@ -91,7 +91,8 @@ const detachHandler = ownerAct(async (req, accountId) => {
  * Owners read accounts; nobody writes one through the API. The server makes it at the first
  * sign-in (after the account consent, D-113), updates the last sign-in, and deletes it when the
  * person closes the account or an owner confirms an erasure (D-125). Every write is in the audit
- * log (src/plugins/auditLog.ts) with the account as its actor (`account:<id>`).
+ * log (src/plugins/auditLog.ts): one the person makes with the account as its actor
+ * (`account:<id>`, from the request's context, D-133), one an owner makes with the owner.
  */
 export const Accounts: CollectionConfig = {
   slug: 'accounts',

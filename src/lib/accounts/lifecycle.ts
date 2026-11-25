@@ -3,6 +3,7 @@ import 'server-only'
 import type { PayloadRequest } from 'payload'
 
 import { viewRefusal } from '@/access/views'
+import { setAuditActor } from '@/lib/audit/actor'
 import { recordAudit } from '@/lib/audit/record'
 import { env } from '@/lib/env'
 import { deliver } from '@/lib/messaging/deliver'
@@ -210,6 +211,8 @@ export async function createAccountRecords(
       // scope: the account row of that own record
       ...SERVER,
     })
+    // From here on the account is the actor of every write on the request (D-133).
+    setAuditActor(req, accountActor(account.id))
     const record = (await req.payload.findByID({
       collection: 'people',
       id: personId,

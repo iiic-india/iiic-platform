@@ -52,7 +52,7 @@ export async function rescheduleOwnAction(form: FormData): Promise<void> {
   const reference = text(form, 'reference')
   const startsAt = text(form, 'startsAt')
   if (!startsAt) redirect(`${pageOf(reference)}?step=reschedule&problem=choose-time`)
-  const req = await accountRequest()
+  const req = await accountRequest(account)
   const changed = await safely('reschedule', () =>
     changeOwnBooking(req, account, { kind: 'reschedule', reference, startsAt }, new Date()),
   )
@@ -66,7 +66,7 @@ export async function cancelOwnAction(form: FormData): Promise<void> {
   const account = await openMyIiic('/account/bookings')
   const reference = text(form, 'reference')
   const reason = text(form, 'reason').trim()
-  const req = await accountRequest()
+  const req = await accountRequest(account)
   const changed = await safely('cancellation', () =>
     changeOwnBooking(
       req,

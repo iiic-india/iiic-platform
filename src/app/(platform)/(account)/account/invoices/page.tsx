@@ -23,7 +23,7 @@ export const metadata: Metadata = {
  */
 export default async function InvoicesPage() {
   const account = await openMyIiic('/account/invoices')
-  const invoices = await listOwnInvoices(await accountRequest(), account)
+  const invoices = await listOwnInvoices(await accountRequest(account), account)
   const totals = invoices.some((invoice) => invoice.totalPaise !== null)
   const files = invoices.some((invoice) => invoice.downloadable)
   const byReply = invoices.some((invoice) => !invoice.downloadable)

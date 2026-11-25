@@ -3,6 +3,7 @@ import 'server-only'
 import type { PayloadRequest } from 'payload'
 
 import { clientAddress } from '@/lib/analytics/session'
+import { setAuditActor } from '@/lib/audit/actor'
 import { recordAudit } from '@/lib/audit/record'
 import { isTokenShaped } from '@/lib/enquiryForms/turnstile'
 import { env } from '@/lib/env'
@@ -154,6 +155,7 @@ export const startAgain = startAgainWith(NEXT_WIRING)
  * A session for the account (docs/20 §4.5, step 3): Better Auth's user is made first if the
  * account step stopped before it, or if closing removed it part-way; then the session, kept or
  * not as ticked, the last sign-in, `sign-in` in the audit log and the earlier records attached.
+ * From here on every write on the request names the account as its actor (D-133).
  */
 async function signInToAccount(
   req: PayloadRequest,
@@ -162,6 +164,7 @@ async function signInToAccount(
   now: Date,
 ): Promise<number> {
   const { auth } = deps
+  setAuditActor(req, accountActor(input.accountId))
   const account = await req.payload.findByID({
     collection: 'accounts',
     id: input.accountId,

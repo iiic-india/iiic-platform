@@ -8,6 +8,7 @@ import type {
   GlobalAfterChangeHook,
 } from 'payload'
 
+import { contextActor } from '@/lib/audit/actor'
 import { recordAudit } from '@/lib/audit/record'
 
 /**
@@ -193,10 +194,13 @@ const afterChange: CollectionAfterChangeHook = async ({
   for (const name of hidden) if (!changed.includes(name)) changed.push(name)
   // An update that only moved bookkeeping (a session list, a timestamp) is nobody's change.
   if (operation === 'update' && changed.length === 0 && action === 'update') return doc
-  // payload-totp's /api/setup-totp stores the secret without the request (setSecret.js:55-62);
-  // only the signed-in person can call it, for their own record.
+  // The request's Payload user (staff); else the My IIIC account a customer's request acts for
+  // (`account:<id>` on its context, D-133); else payload-totp's /api/setup-totp, which stores the
+  // secret without the request (setSecret.js:55-62): only the signed-in person can call it, for
+  // their own record.
   const actor =
     req.user ??
+    contextActor(req) ??
     (collection.auth && hidden.includes('two-factor')
       ? { id: doc.id, email: doc.email }
       : undefined)
@@ -205,7 +209,11 @@ const afterChange: CollectionAfterChangeHook = async ({
 }
 
 const afterDelete: CollectionAfterDeleteHook = async ({ collection, doc, id, req }) => {
-  await recordAudit(req, { action: 'delete', entity: collection.slug, entityId: doc?.id ?? id })
+  await recordAudit(
+    req,
+    { action: 'delete', entity: collection.slug, entityId: doc?.id ?? id },
+    req.user ?? contextActor(req),
+  )
   return doc
 }
 
@@ -269,7 +277,9 @@ const afterAuthOperation: CollectionAfterOperationHook = async (hook) => {
  * Adds an audit entry to every change of every collection except NOT_AUDITED, and of every
  * global (docs/08 §9: every write is in the audit log). Listed last among the plugins, so it sees
  * every collection, those payload-totp adds included. Code that makes a change with a name of its
- * own (an owner's reset of two-factor) sets `req.context.auditAction` before it.
+ * own (an owner's reset of two-factor) sets `req.context.auditAction` before it. A customer is
+ * never the request's user: their request carries the account on `req.context.auditActor`, and
+ * every entry written on it names `account:<id>` (src/lib/audit/actor.ts; D-133).
  *
  * An entry is written in the same transaction as the change it records. On a collection with
  * sign-in, two operations write past every change hook: a password reset by the emailed link and

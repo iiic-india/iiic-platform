@@ -20,7 +20,7 @@ export const metadata: Metadata = {
  */
 export default async function BookingsPage() {
   const account = await openMyIiic('/account/bookings')
-  const req = await accountRequest()
+  const req = await accountRequest(account)
   const now = new Date()
   const [upcoming, past] = await Promise.all([
     listOwnBookings(req, account, 'upcoming', now),

@@ -27,7 +27,7 @@ const dayOf = (day: string) =>
  */
 export default async function DocumentsPage() {
   const account = await openMyIiic('/account/documents')
-  const certificates = await listOwnCertificates(await accountRequest(), account)
+  const certificates = await listOwnCertificates(await accountRequest(account), account)
 
   return (
     <div className={`iiic-page ${styles.page} ${styles.stack}`}>

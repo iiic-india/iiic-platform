@@ -8,7 +8,8 @@ import { readFlags } from '@/lib/settings/source'
 import type { BookingsSelect, CertificatesSelect, InvoicesSelect } from '@/payload-types'
 import config from '@payload-config'
 
-import type { AccountActor, AccountSession, OwnPersonIds } from './contract'
+import { accountActor } from './attach'
+import type { AccountSession, OwnPersonIds } from './contract'
 import { getAccountSession, requireAccount, signOut } from './session'
 
 /**
@@ -81,24 +82,37 @@ export async function openMyIiicRoute(next: string): Promise<AccountSession | Re
   })
 }
 
-/** The audit log's actor for a customer's own act: the account, never an address (docs/20 §8). */
-export function accountActor(account: Pick<AccountSession, 'accountId'>): AccountActor {
-  return { id: `account:${account.accountId}` }
-}
+/**
+ * The browser's headers a customer's request keeps: the network address, which the audit log
+ * keeps beside every entry (src/lib/audit/record.ts) and a consent's evidence records, and the
+ * browser, which that evidence records too (src/lib/newsletter/withdrawals.ts `evidenceOf`).
+ * Never its cookies, nor anything else it sent.
+ */
+export const KEPT_HEADERS = ['x-forwarded-for', 'x-real-ip', 'user-agent'] as const
 
 /**
- * A request of the account's own for the scoped readers: no Payload user (customers are not
- * staff, D-127), and of the browser's headers only the network address, which the audit log
- * keeps beside a download (src/lib/audit/record.ts). The cookies stay out of it.
+ * The one request a customer's server code runs on (D-133): My IIIC's pages, routes and actions
+ * pass the signed-in account, the sign-in steps pass none until they know it. No Payload user
+ * (customers are not staff, D-127); of the browser's headers only KEPT_HEADERS; and, with an
+ * account, that account on `req.context.auditActor`, so every write made on the request, by the
+ * audit plugin or by name, carries `account:<id>` as its actor (docs/20 §8).
  */
-export async function accountRequest(): Promise<PayloadRequest> {
+export async function accountRequest(
+  account?: Pick<AccountSession, 'accountId'>,
+): Promise<PayloadRequest> {
   const incoming = await headers()
   const kept = new Headers()
-  for (const name of ['x-forwarded-for', 'x-real-ip']) {
+  for (const name of KEPT_HEADERS) {
     const value = incoming.get(name)
     if (value) kept.set(name, value)
   }
-  return createLocalReq({ req: { headers: kept } }, await getPayload({ config }))
+  return createLocalReq(
+    {
+      req: { headers: kept },
+      ...(account ? { context: { auditActor: accountActor(account.accountId) } } : {}),
+    },
+    await getPayload({ config }),
+  )
 }
 
 // ---- The account's records ----

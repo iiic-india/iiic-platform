@@ -212,6 +212,22 @@ describe('the account’s own record (docs/20 §3.6, §4.5; D-131)', () => {
   })
 })
 
+describe('the audit log’s actor in the account step (D-133)', () => {
+  it('is the new account for every write made once its row exists', async () => {
+    const req = db.req() as { context: Record<string, unknown> }
+    const { accountId } = await createAccountRecords(req as never, {
+      channel: 'email',
+      value: EMAIL,
+      fullName: TYPED,
+      noticeVersionId: NOTICE,
+      evidence: { ip: null, userAgent: null },
+      now: NOW,
+    })
+    expect(req.context.auditActor).toEqual({ id: `account:${accountId}` })
+    expect(db.of('audit-log').at(-1)).toMatchObject({ actorId: `account:${accountId}` })
+  })
+})
+
 describe('consent before storage in the account step (CLAUDE.md #4; D-113)', () => {
   it('keeps no person, account or audit entry when the consent cannot be written', async () => {
     db.failOn = 'consents'
@@ -299,9 +315,12 @@ describe('consent before storage in the account step (CLAUDE.md #4; D-113)', () 
     expect(db.of('accounts')).toEqual([])
 
     db.failOn = null
-    expect(await step(db.req(), input, NOW)).toMatchObject({ ok: true })
+    const signingIn = db.req() as { context: Record<string, unknown> }
+    expect(await step(signingIn as never, input, NOW)).toMatchObject({ ok: true })
     expect(seen).toEqual([{ consents: 1, inTransaction: false }])
     expect(startSession).toHaveBeenCalledTimes(1)
     expect(db.of('accounts')[0]).toMatchObject({ authUserId: 'fake-user-1' })
+    // The sign-in that follows writes in the account's name (D-133).
+    expect(signingIn.context.auditActor).toEqual({ id: `account:${db.of('accounts')[0]?.id}` })
   })
 })

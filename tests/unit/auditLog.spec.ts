@@ -427,4 +427,61 @@ describe('recordAudit', () => {
       overrideAccess: true,
     })
   })
+
+  it('names the My IIIC account a customer’s request acts for, when it has no user (D-133)', async () => {
+    const { recordAudit: write } =
+      await vi.importActual<typeof import('@/lib/audit/record')>('@/lib/audit/record')
+    const create = vi.fn()
+    const customer = {
+      user: null,
+      context: { auditActor: { id: 'account:10' } },
+      headers: new Headers({ 'x-forwarded-for': '203.0.113.11' }),
+      payload: { create },
+    }
+    await write(customer as never, { action: 'create', entity: 'consents', entityId: 5 })
+    // A name the caller passes still wins, and null still means no one.
+    await write(customer as never, { action: 'create', entity: 'consents', entityId: 6 }, null)
+    // A staff user is never replaced by what a context says.
+    await write({ ...customer, user: OWNER } as never, { action: 'update', entity: 'people' })
+    expect(create.mock.calls.map(([args]) => args.data.actorId)).toEqual([
+      'account:10',
+      undefined,
+      String(OWNER.id),
+    ])
+    expect(create.mock.calls[0]?.[0].data).toMatchObject({ ip: '203.0.113.11' })
+    expect(create.mock.calls[0]?.[0].data.actorEmail).toBeUndefined()
+  })
+})
+
+describe('the audit plugin on a customer’s write (D-133)', () => {
+  const people = auditHooks({ slug: 'people', fields: [{ name: 'city', type: 'text' }] })
+  const PEOPLE = { slug: 'people', fields: [{ name: 'city', type: 'text' }] }
+  const customer = (auditActor: unknown) => ({ user: null, context: { auditActor } })
+
+  it('names the account the request acts for, on a change and on a deletion', async () => {
+    const req = customer({ id: 'account:10' })
+    const data = { city: 'Fake city' }
+    await people('beforeChange')({ data, operation: 'create', req })
+    await people('afterChange')({
+      collection: PEOPLE,
+      context: req.context,
+      data,
+      doc: { id: 3, city: 'Fake city' },
+      operation: 'create',
+      req,
+    })
+    await people('afterDelete')({ collection: PEOPLE, doc: { id: 3 }, id: 3, req })
+    expect(record.mock.calls).toEqual([
+      [req, { action: 'create', entity: 'people', entityId: 3, changed: [] }, { id: 'account:10' }],
+      [req, { action: 'delete', entity: 'people', entityId: 3 }, { id: 'account:10' }],
+    ])
+  })
+
+  it('names no one for a context that is not an account’s, and the staff user over any', async () => {
+    const forged = customer({ id: 'owner:1' })
+    await people('afterDelete')({ collection: PEOPLE, doc: { id: 4 }, id: 4, req: forged })
+    const staff = { ...customer({ id: 'account:10' }), user: OWNER }
+    await people('afterDelete')({ collection: PEOPLE, doc: { id: 5 }, id: 5, req: staff })
+    expect(record.mock.calls.map((call) => call[2])).toEqual([undefined, OWNER])
+  })
 })

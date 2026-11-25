@@ -63,7 +63,7 @@ export default async function BookingPage({ params, searchParams }: Props) {
     const value = query[name]
     return typeof value === 'string' ? value : null
   }
-  const req = await accountRequest()
+  const req = await accountRequest(account)
   const now = new Date()
   const page = await ownBookingPage(req, account, ref, now)
   if (!page) notFound()

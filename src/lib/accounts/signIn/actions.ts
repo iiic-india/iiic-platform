@@ -1,13 +1,12 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { createLocalReq, getPayload, type PayloadRequest } from 'payload'
 
 import { currentNotice } from '@/lib/privacy/consents'
 import { DEFAULT_LANGUAGE } from '@/lib/site/languages'
-import config from '@payload-config'
 
 import type { CodeRequestError, SignInChannel, VerifyCodeError } from '../contract'
+import { accountRequest } from '../scope'
 import { ACCOUNT_COPY, LOGIN_COPY, VERIFY_COPY } from './copy'
 import { FIELD_IDS, type SignInFormState } from './formState'
 import {
@@ -24,12 +23,10 @@ import {
  * POST the page answers with the form's next state or a redirect (303), and with it in place.
  * Customers are not staff: there is no user to check here, and what guards these is in the steps
  * (src/lib/accounts/signIn/steps.ts): the deployment, the flag, Turnstile, the limits, the
- * sign-in cookie. A fault is logged by its name only, never with what was typed.
+ * sign-in cookie. A fault is logged by its name only, never with what was typed. Each runs on My
+ * IIIC's one request (`accountRequest`, D-133): the network address and the browser, never the
+ * cookies; the steps name the account as the audit log's actor once they know it.
  */
-
-async function request(): Promise<PayloadRequest> {
-  return createLocalReq({}, await getPayload({ config }))
-}
 
 const text = (form: FormData, name: string) => {
   const value = form.get(name)
@@ -91,7 +88,7 @@ export async function sendCode(
   let state: SignInFormState | null = null
   try {
     const result = await requestCode(
-      await request(),
+      await accountRequest(),
       { channel, identifier: typed, ...(token ? { turnstileToken: token } : {}) },
       new Date(),
       { next: text(form, 'next') },
@@ -132,7 +129,7 @@ export async function checkCode(
   }
   let destination = '/login/verify'
   try {
-    const req = await request()
+    const req = await accountRequest()
     const now = new Date()
     const attempt = await currentAttempt(req, now)
     const result = await verifyCode(req, { code, trustDevice: text(form, 'trust') === 'yes' }, now)
@@ -152,7 +149,7 @@ export async function checkCode(
 /** Step 2: "Send a new code". */
 export async function sendNewCode(previous: SignInFormState): Promise<SignInFormState> {
   try {
-    const result = await resendCode(await request(), new Date())
+    const result = await resendCode(await accountRequest(), new Date())
     if (result.ok) return next(previous, { info: VERIFY_COPY.resent })
     if (result.error.code === 'too-many') {
       return next(previous, { refusal: VERIFY_COPY.tooEarly(result.error.retryAt) })
@@ -169,7 +166,7 @@ export async function sendNewCode(previous: SignInFormState): Promise<SignInForm
 
 /** "Use a different address": the attempt is forgotten. */
 export async function startWithAnotherAddress(): Promise<void> {
-  await startAgain(await request())
+  await startAgain(await accountRequest())
   redirect('/login')
 }
 
@@ -188,7 +185,7 @@ export async function createMyAccount(
   if (!adult) errors[FIELD_IDS.adult] = ACCOUNT_COPY.adultMissing
   if (Object.keys(errors).length) return next(previous, { values, errors })
   try {
-    const req = await request()
+    const req = await accountRequest()
     const now = new Date()
     const attempt = await currentAttempt(req, now)
     const result = await createAccount(
@@ -241,7 +238,7 @@ export async function createMyAccount(
 
 /** Step 3's "No, thanks": nothing is stored, and the attempt is forgotten. */
 export async function declineAccount(): Promise<void> {
-  await startAgain(await request())
+  await startAgain(await accountRequest())
   redirect('/')
 }
 

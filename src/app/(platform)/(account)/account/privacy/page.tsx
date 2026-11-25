@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { createLocalReq, getPayload } from 'payload'
 
 import styles from '@/components/account/privacy/privacy.module.css'
 import {
@@ -26,8 +25,12 @@ import {
 import { PRIVACY_PATH, readAskedRequest, readOutcome } from '@/lib/accounts/privacy/outcome'
 import { listOwnRequests, namedBooking } from '@/lib/accounts/privacy/requests'
 import { signedInRecently } from '@/lib/accounts/privacy/rules'
-import { listDevices, openMyIiic, whatsAppCodesOpen } from '@/lib/accounts/privacy/seams'
-import config from '@payload-config'
+import {
+  accountRequest,
+  listDevices,
+  openMyIiic,
+  whatsAppCodesOpen,
+} from '@/lib/accounts/privacy/seams'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,8 +69,7 @@ export default async function PrivacyPage({ searchParams }: Props) {
   const params = await searchParams
   const outcome = readOutcome(params)
   const asked = readAskedRequest(params)
-  const payload = await getPayload({ config })
-  const req = await createLocalReq({}, payload)
+  const req = await accountRequest(account)
   const now = new Date()
   const named = asked?.booking ? await namedBooking(req, account, asked.booking) : null
   const seed = asked

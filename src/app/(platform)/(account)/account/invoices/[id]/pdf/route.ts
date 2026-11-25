@@ -11,7 +11,7 @@ const send = answeringFaults(
   'Downloading an invoice from My IIIC',
   async (account: AccountSession, id: number) =>
     documentResponse(
-      await downloadOwnDocument(await accountRequest(), account, { kind: 'invoice', id }),
+      await downloadOwnDocument(await accountRequest(account), account, { kind: 'invoice', id }),
     ),
 )
 

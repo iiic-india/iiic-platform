@@ -500,3 +500,47 @@ describe('requests about one’s data (docs/03 F11; D-121)', () => {
   // and removes the Better Auth user, its sessions, the account row and the records' links.
   it.todo('closing keeps bookings, payments and invoices and removes the user, sessions and links')
 })
+
+describe('the audit log for what an account does here (docs/20 §8; D-133)', () => {
+  it('names the account as the actor of every row its request writes, with the address, and no email', async () => {
+    // As accountRequest builds it (src/lib/accounts/scope.ts): no user, the network address and
+    // the browser, and the account on the context.
+    const req = await createLocalReq(
+      {
+        req: {
+          headers: new Headers({ 'user-agent': 'Fake browser', 'x-forwarded-for': '203.0.113.6' }),
+        },
+        context: { auditActor: { id: `account:${secondAccount.accountId}` } },
+      },
+      payload,
+    )
+    const result = await createOwnRequest(
+      req,
+      secondAccount,
+      { type: 'nomination', summary: `Fake: a nominee for my account (${TAG}).` },
+      new Date(),
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    created.requests.push(result.value.requestId)
+    const { docs } = await payload.find({
+      collection: 'audit-log',
+      where: {
+        and: [
+          { entity: { equals: 'data-requests' } },
+          { entityId: { equals: String(result.value.requestId) } },
+        ],
+      },
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(docs.length).toBeGreaterThan(0)
+    for (const entry of docs) {
+      expect(entry).toMatchObject({
+        actorId: `account:${secondAccount.accountId}`,
+        ip: '203.0.113.6',
+      })
+      expect(entry.actorEmail ?? null).toBeNull()
+    }
+  })
+})

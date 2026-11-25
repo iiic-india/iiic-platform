@@ -91,6 +91,7 @@ const { closeOpenLinks, sendRefunds } = vi.hoisted(() => ({
 vi.mock('@/lib/payments/wiring', () => ({ payments: () => ({ closeOpenLinks, sendRefunds }) }))
 
 const scope = await import('@/lib/accounts/scope')
+const { accountActor } = await import('@/lib/accounts/attach')
 const bookings = await import('@/lib/accounts/bookings')
 const documents = await import('@/lib/accounts/documents')
 const { cancelBooking, rescheduleBooking } = await import('@/lib/booking/changes')
@@ -389,9 +390,12 @@ describe('every query in src/lib/accounts', () => {
   })
 
   it('is never made from My IIIC’s pages, routes or actions themselves', () => {
-    for (const file of filesUnder(APP_DIR).filter((file) => !file.includes(`${path.sep}privacy`))) {
+    // Every file but the close page, which reads the account notice in force (no one's record)
+    // to show what closing withdraws; the others build their request with accountRequest.
+    const close = path.join('privacy', 'close', 'page.tsx')
+    for (const file of filesUnder(APP_DIR).filter((file) => !file.endsWith(close))) {
       const source = readFileSync(file, 'utf8')
-      expect(source, file).not.toMatch(/overrideAccess|req\.payload\.|getPayload\(/)
+      expect(source, file).not.toMatch(/overrideAccess|req\.payload\.|getPayload\(|createLocalReq/)
     }
   })
 
@@ -406,7 +410,7 @@ describe('every query in src/lib/accounts', () => {
       const source = whole.slice(whole.search(/export (default )?async function/))
       const door = source.search(/await openMyIiic(Route)?\(/)
       expect(door, file).toBeGreaterThan(-1)
-      for (const read of [/await params/, /await searchParams/, /accountRequest\(\)/]) {
+      for (const read of [/await params/, /await searchParams/, /accountRequest\(/]) {
         const at = source.search(read)
         if (at > -1) expect(at, `${file}: ${read}`).toBeGreaterThan(door)
       }
@@ -452,7 +456,19 @@ describe('the account’s own records', () => {
   })
 
   it('name the account, never an address, as the audit log’s actor', () => {
-    expect(scope.accountActor(FIRST)).toEqual({ id: 'account:10' })
+    // One accountActor, slice A's, which every slice's audit entry uses (D-133).
+    expect(accountActor(FIRST.accountId)).toEqual({ id: 'account:10' })
+  })
+
+  it('are read on a request that names the account and every write on it carries it (D-133)', () => {
+    // Each of My IIIC's pages, routes and actions passes the signed-in account to accountRequest,
+    // so the audit plugin names it as the actor of whatever the request writes.
+    for (const file of filesUnder(APP_DIR)) {
+      const source = readFileSync(file, 'utf8')
+      for (const call of source.matchAll(/accountRequest\(([^)]*)\)/g)) {
+        expect(call[1], file).toBe('account')
+      }
+    }
   })
 })
 

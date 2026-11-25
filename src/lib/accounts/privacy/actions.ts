@@ -1,8 +1,6 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createLocalReq, getPayload, type PayloadRequest } from 'payload'
 
 import {
   detailRequestInput,
@@ -14,7 +12,6 @@ import { env } from '@/lib/env'
 import { actsHere } from '@/lib/messaging/deployment'
 import { reportError } from '@/lib/monitoring/sentry'
 import { formatIstDate, formatIstTime, istDay } from '@/lib/time/ist'
-import config from '@payload-config'
 
 import { giveConsent, withdrawConsent } from './consents'
 import { DETAIL_COPY, REQUEST_COPY } from './copy'
@@ -28,6 +25,7 @@ import {
   SUMMARY_MAX,
 } from './rules'
 import {
+  accountRequest,
   closeAccount,
   confirmDetail,
   requestDetailCode,
@@ -43,15 +41,10 @@ import type { DetailConfirmState, DetailRequestState, RequestFormState } from '.
  * records and act on no preview (D-122). One-button forms answer with a redirect back to the page
  * and the outcome's code (src/lib/accounts/privacy/outcome.ts), so they work without JavaScript;
  * the request and the second detail keep what was typed in their action state. A fault is
- * logged by its kind only, never with what the form held, and reported.
+ * logged by its kind only, never with what the form held, and reported. Every function runs on
+ * the account's own request (`accountRequest`, D-133): the network address and the browser for a
+ * consent's evidence and the audit log, the account as the audit log's actor, never the cookies.
  */
-
-async function requestFor(): Promise<PayloadRequest> {
-  const payload = await getPayload({ config })
-  // The browser's headers come along: a consent's evidence and the audit log read the address
-  // and the browser from them.
-  return createLocalReq({ req: { headers: new Headers(await headers()) } }, payload)
-}
 
 async function fault(error: unknown, task: string): Promise<void> {
   console.error(
@@ -73,7 +66,12 @@ export async function withdrawConsentAction(form: FormData): Promise<void> {
   if (endedByClosing(purpose)) redirect(CLOSE_PATH)
   let target: string
   try {
-    const result = await withdrawConsent(await requestFor(), account, { purpose }, new Date())
+    const result = await withdrawConsent(
+      await accountRequest(account),
+      account,
+      { purpose },
+      new Date(),
+    )
     target = result.ok
       ? outcomeHref({
           tone: 'done',
@@ -104,7 +102,7 @@ export async function giveConsentAction(form: FormData): Promise<void> {
   let target: string
   try {
     const result = await giveConsent(
-      await requestFor(),
+      await accountRequest(account),
       account,
       { purpose, noticeVersionId, consent: true },
       new Date(),
@@ -151,7 +149,7 @@ export async function createRequestAction(
   let result: Awaited<ReturnType<typeof createOwnRequest>>
   try {
     result = await createOwnRequest(
-      await requestFor(),
+      await accountRequest(account),
       account,
       { type, summary: words },
       new Date(),
@@ -196,7 +194,7 @@ export async function signOutEverywhereAction(): Promise<void> {
     if (!actsHere(env().VERCEL_ENV)) {
       target = outcomeHref({ tone: 'error', code: 'closed-here', section: 'devices' })
     } else {
-      const count = await signOutEverywhere(await requestFor(), account)
+      const count = await signOutEverywhere(await accountRequest(account), account)
       target = outcomeHref({ tone: 'done', code: 'signed-out', section: 'devices', count })
     }
   } catch (error) {
@@ -221,7 +219,7 @@ export async function closeAccountAction(): Promise<void> {
   }
   let target: string
   try {
-    const result = await closeAccount(await requestFor(), {
+    const result = await closeAccount(await accountRequest(account), {
       accountId: account.accountId,
       reason: 'person',
     })
@@ -273,7 +271,7 @@ export async function requestDetailAction(
   if (!parsed.success) return answer('invalid', DETAIL_COPY[channel].invalid)
   const now = new Date()
   try {
-    const result = await requestDetailCode(await requestFor(), account, parsed.data, now)
+    const result = await requestDetailCode(await accountRequest(account), account, parsed.data, now)
     if (result.ok) {
       return { status: 'sent', channel, value, masked: result.value.masked, error: null, key }
     }
@@ -301,7 +299,7 @@ export async function confirmDetailAction(
   if (!/^\d{6}$/.test(code)) return { status: 'invalid', error: DETAIL_COPY.codeInvalid, key }
   let result: Awaited<ReturnType<typeof confirmDetail>>
   try {
-    result = await confirmDetail(await requestFor(), account, { code }, new Date())
+    result = await confirmDetail(await accountRequest(account), account, { code }, new Date())
   } catch (error) {
     await fault(error, 'detail-confirm')
     return { status: 'refused', error: DETAIL_COPY.refusals.failed, key }

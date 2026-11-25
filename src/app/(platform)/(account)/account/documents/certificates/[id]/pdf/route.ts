@@ -11,7 +11,10 @@ const send = answeringFaults(
   'Downloading a certificate from My IIIC',
   async (account: AccountSession, id: number) =>
     documentResponse(
-      await downloadOwnDocument(await accountRequest(), account, { kind: 'certificate', id }),
+      await downloadOwnDocument(await accountRequest(account), account, {
+        kind: 'certificate',
+        id,
+      }),
     ),
 )
 

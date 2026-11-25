@@ -17,7 +17,7 @@ export {
   requestDetailCode,
   whatsappCodesOpenHere as whatsAppCodesOpen,
 } from '../details'
-export { accountsOn, findOwnBookings, openMyIiic, ownPersonIds } from '../scope'
+export { accountRequest, accountsOn, findOwnBookings, openMyIiic, ownPersonIds } from '../scope'
 export {
   getAccountSession,
   listDevices,

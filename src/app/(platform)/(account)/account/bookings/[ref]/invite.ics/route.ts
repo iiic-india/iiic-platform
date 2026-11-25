@@ -11,7 +11,12 @@ export const maxDuration = 15
 const send = answeringFaults(
   'Sending a My IIIC calendar invite',
   async (account: AccountSession, reference: string) => {
-    const invite = await ownBookingInvite(await accountRequest(), account, reference, env().siteUrl)
+    const invite = await ownBookingInvite(
+      await accountRequest(account),
+      account,
+      reference,
+      env().siteUrl,
+    )
     if (!invite) return new Response('Not found', { status: 404, headers: PRIVATE_FILE_HEADERS })
     return new Response(invite.ics, {
       status: 200,
