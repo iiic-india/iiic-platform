@@ -289,9 +289,13 @@ export type CloseReason = 'person' | 'erasure' | 'staff'
 
 /**
  * Closes an account: its Better Auth user, sessions and verifications go, its records are
- * detached (they stay the office's, under their own retention), the account consent is
- * withdrawn, the row is deleted, `close-account` is audited and, when the person closed it, A2
- * confirms by email. Nothing else of the person's is deleted: that is an erasure (docs/03 F11).
+ * detached (they stay the office's, under their own retention), the row is deleted,
+ * `close-account` is audited and, when the person closed it, A2 confirms by email. Nothing else
+ * of the person's is deleted: that is an erasure (docs/03 F11). The account consent: when the
+ * person closes it (`person`), its withdrawal is recorded with the evidence of their request; an
+ * erasure (`erasure`) has withdrawn every consent already; a `staff` close withdraws nothing
+ * today, since nothing calls it and the ledger takes no channel `web` from staff, and is decided
+ * when something first does (docs/20 §7.6).
  */
 export type CloseAccount = (
   req: PayloadRequest,
@@ -349,6 +353,13 @@ export type RequestDetailCode = (
   input: DetailRequestInput,
   now: Date,
 ) => Promise<Result<CodeRequestOutcome, CodeRequestError | { code: 'already-yours' }>>
+
+/**
+ * Whether a WhatsApp code may go here and now, for a page that offers one (the privacy page's
+ * "Add a mobile number", docs/20 §7.5): false on a preview without reading anything. Both
+ * arguments are optional: the request, and the time.
+ */
+export type WhatsappCodesOpen = (req?: PayloadRequest, now?: Date) => Promise<boolean>
 
 /** A right code adds the detail and attaches its records; A3 tells the detail held before. */
 export type ConfirmDetail = (

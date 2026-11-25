@@ -17,6 +17,7 @@ import {
   type ConfirmDetail,
   type RequestDetailCode,
   type SignInChannel,
+  type WhatsappCodesOpen,
 } from './contract'
 import { clearAttempt, readAttempt } from './signIn/cookie'
 import { nextSignInDeps, secretOf, secureCookies, signInOpen } from './signIn/deps'
@@ -76,10 +77,7 @@ export const requestDetailCode = requestDetailCodeWith(NEXT_WIRING)
  * Meta's authentication template approved in Messages → Templates, and outside quiet hours
  * (D-103, D-123). False on a preview, without reading anything.
  */
-export async function whatsappCodesOpenHere(
-  req?: PayloadRequest,
-  now: Date = new Date(),
-): Promise<boolean> {
+export const whatsappCodesOpenHere: WhatsappCodesOpen = async (req, now = new Date()) => {
   const settings = env()
   if (deploymentGate(settings) !== 'open') return false
   const request = req ?? (await createLocalReq({}, await getPayload({ config })))
