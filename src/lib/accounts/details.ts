@@ -28,9 +28,8 @@ import { openFor, type SignInWiring } from './signIn/steps'
  * A second detail (docs/20 §4.6; D-120): from My IIIC the person adds the detail they did not
  * sign in with, an email to a WhatsApp account or a mobile to an email account once WhatsApp
  * codes are open. The same code machinery runs, with purpose `addDetail` in `sign-in-requests`
- * and the same limits. The code may be entered on the privacy page (builder C's) or on
- * `/login/detail`, which takes the address itself too: a second detail's sign-in cookie is sent
- * to the whole site, and only a signed-in person can ask for one (`attemptPath`; docs/12 §10).
+ * and the same limits. The address and the code are entered on the privacy page,
+ * `/account/privacy/contact` (builder C's; D-128), which only a signed-in person can open.
  *
  * A right code marks the detail proven on the account's own record, gives it to Better Auth's
  * user, attaches the records holding it (§6), writes `add-contact-detail`, and sends A3 to the
@@ -38,8 +37,6 @@ import { openFor, type SignInWiring } from './signIn/steps'
  * `belongs-to-another-account` after the code (the person has proved it), with the office's
  * address; nothing moves between accounts on its own.
  */
-
-export const DETAIL_CODE_PATH = '/login/detail'
 
 const NEXT_WIRING: SignInWiring = { settings: env, deps: nextSignInDeps }
 

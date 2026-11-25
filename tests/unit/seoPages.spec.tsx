@@ -216,7 +216,6 @@ const PROOF = ['(default)/proof/page.tsx']
 const SIGN_IN_PAGES = [
   { file: '(default)/login/page.tsx', path: '/login' },
   { file: '(default)/login/verify/page.tsx', path: '/login/verify' },
-  { file: '(default)/login/detail/page.tsx', path: '/login/detail' },
 ]
 
 /** The certificate verify pages, never indexed: tests/unit/certificatesVerifyPages.spec.tsx. */

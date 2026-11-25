@@ -99,8 +99,7 @@ export async function readAttempt(
 /**
  * Where the attempt's cookie is sent: /login for a sign-in (SIGN_IN_COOKIE.path); the whole site
  * for a second detail added from My IIIC (docs/20 §4.6), whose code is entered on the privacy
- * page under /account or on /login/detail, and only by a person already signed in. Next.js keeps
- * one cookie per name in a response, so one path serves both pages.
+ * page under /account, and only by a person already signed in (D-128).
  */
 export const attemptPath = (purpose: Attempt['purpose']): string =>
   purpose === 'addDetail' ? '/' : SIGN_IN_COOKIE.path

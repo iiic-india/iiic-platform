@@ -8,9 +8,8 @@ import { DEFAULT_LANGUAGE } from '@/lib/site/languages'
 import config from '@payload-config'
 
 import type { CodeRequestError, SignInChannel, VerifyCodeError } from '../contract'
-import { confirmDetail, DETAIL_CODE_PATH, requestDetailCode } from '../details'
-import { requireAccount, signOut } from '../session'
-import { ACCOUNT_COPY, DETAIL_COPY, LOGIN_COPY, VERIFY_COPY } from './copy'
+import { signOut } from '../session'
+import { ACCOUNT_COPY, LOGIN_COPY, VERIFY_COPY } from './copy'
 import { FIELD_IDS, type SignInFormState } from './formState'
 import {
   createAccount,
@@ -53,7 +52,7 @@ function logFault(where: string, error: unknown): void {
 function codeRequestState(
   previous: SignInFormState,
   channel: SignInChannel,
-  error: CodeRequestError | { code: 'no-request' } | { code: 'already-yours' },
+  error: CodeRequestError | { code: 'no-request' },
   typed: string,
   fieldId: string,
 ): SignInFormState {
@@ -74,8 +73,6 @@ function codeRequestState(
       return next(previous, { values, refusal: LOGIN_COPY.checkFailed })
     case 'whatsapp-closed':
       return next(previous, { values, refusal: LOGIN_COPY.whatsappClosed })
-    case 'already-yours':
-      return next(previous, { values, refusal: DETAIL_COPY.alreadyYours })
     case 'closed-here':
       return next(previous, { values, refusal: LOGIN_COPY.notOpen })
     default:
@@ -255,73 +252,8 @@ export async function signOutOfMyIiic(): Promise<void> {
   redirect('/')
 }
 
-// ---- A second detail (docs/20 §4.6) ----
-
-/** The address of a second detail, from My IIIC; the code step is /login/detail. */
-export async function sendDetailCode(
-  previous: SignInFormState,
-  form: FormData,
-): Promise<SignInFormState> {
-  const account = await requireAccount({ next: '/account/privacy' })
-  const channel: SignInChannel = text(form, 'channel') === 'whatsapp' ? 'whatsapp' : 'email'
-  const typed = text(form, 'identifier')
-  try {
-    const result = await requestDetailCode(
-      await request(),
-      account,
-      { channel, identifier: typed },
-      new Date(),
-    )
-    if (!result.ok) {
-      return codeRequestState(previous, channel, result.error, typed, FIELD_IDS.detailIdentifier)
-    }
-  } catch (error) {
-    logFault('Asking for a detail code', error)
-    return next(previous, { refusal: LOGIN_COPY.failed })
-  }
-  redirect(DETAIL_CODE_PATH)
-}
-
-/** The second detail's code. */
-export async function confirmDetailCode(
-  previous: SignInFormState,
-  form: FormData,
-): Promise<SignInFormState> {
-  const account = await requireAccount({ next: '/account/privacy' })
-  const code = text(form, 'code').replace(/\s/g, '')
-  if (!/^\d{6}$/.test(code)) {
-    return next(previous, { errors: { [FIELD_IDS.detailCode]: VERIFY_COPY.malformed } })
-  }
-  try {
-    const result = await confirmDetail(await request(), account, { code }, new Date())
-    if (!result.ok) {
-      if (result.error.code === 'belongs-to-another-account') {
-        return next(previous, { refusal: DETAIL_COPY.belongsToAnother })
-      }
-      const state =
-        result.error.code === 'no-request'
-          ? null
-          : codeErrorState(previous, result.error, FIELD_IDS.detailCode)
-      if (state) return state
-      redirect(DETAIL_CODE_PATH)
-    }
-  } catch (error) {
-    if (isRedirect(error)) throw error
-    logFault('Confirming a detail', error)
-    return next(previous, { refusal: LOGIN_COPY.failed })
-  }
-  redirect('/account/privacy')
-}
-
 /** Next.js's redirect travels as a thrown error; it must reach Next.js, not the fault log. */
 function isRedirect(error: unknown): boolean {
   const digest = (error as { digest?: unknown } | null)?.digest
   return typeof digest === 'string' && digest.startsWith('NEXT_REDIRECT')
-}
-
-/** "Use a different address" on the second detail's code step. */
-export async function startAnotherDetail(): Promise<void> {
-  await requireAccount({ next: '/account/privacy' })
-  await startAgain(await request())
-  redirect(DETAIL_CODE_PATH)
 }

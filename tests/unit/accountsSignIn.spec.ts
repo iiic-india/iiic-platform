@@ -12,7 +12,7 @@ import {
   type Attempt,
   type CookieJar,
 } from '@/lib/accounts/signIn/cookie'
-import { ACCOUNT_COPY, DETAIL_COPY, LOGIN_COPY, VERIFY_COPY } from '@/lib/accounts/signIn/copy'
+import { ACCOUNT_COPY, LOGIN_COPY, VERIFY_COPY } from '@/lib/accounts/signIn/copy'
 import { deviceName } from '@/lib/accounts/signIn/device'
 import { deploymentGate } from '@/lib/accounts/signIn/gate'
 import {
@@ -227,7 +227,7 @@ describe('the devices list', () => {
 })
 
 describe('the words (VOICE.md; docs/20 §4.1)', () => {
-  const all = JSON.stringify([LOGIN_COPY, VERIFY_COPY, ACCOUNT_COPY, DETAIL_COPY])
+  const all = JSON.stringify([LOGIN_COPY, VERIFY_COPY, ACCOUNT_COPY])
   const said = [
     LOGIN_COPY.tooMany(NOW),
     VERIFY_COPY.wrongCode(3),

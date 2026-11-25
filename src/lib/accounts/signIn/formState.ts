@@ -27,6 +27,4 @@ export const FIELD_IDS = {
   fullName: 'account-name',
   consent: 'account-consent',
   adult: 'account-adult',
-  detailCode: 'detail-code',
-  detailIdentifier: 'detail-identifier',
 } as const

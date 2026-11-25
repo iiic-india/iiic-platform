@@ -87,18 +87,6 @@ export const ACCOUNT_COPY = {
   noticeMissing: `Accounts cannot be created just now. To reach IIIC, write to ${OFFICE_EMAIL}.`,
 } as const
 
-export const DETAIL_COPY = {
-  title: 'Confirm your detail · My IIIC',
-  heading: 'Enter your code',
-  submit: 'Confirm',
-  summary: 'Your detail was not confirmed',
-  lead: 'We send a six-digit code to the address you add. It shows that the address is yours.',
-  backToPrivacy: 'Back to your privacy settings',
-  belongsToAnother: `This detail is already confirmed on another My IIIC account. To sort it out, write to ${OFFICE_EMAIL}.`,
-  alreadyYours: 'This detail is already confirmed on your account.',
-  added: 'Your detail is confirmed and added to your account.',
-} as const
-
 export const SIGN_OUT_COPY = {
   button: 'Sign out',
 } as const

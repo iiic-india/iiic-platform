@@ -7,14 +7,12 @@ import { TurnstileWidget } from '@/components/forms/TurnstileWidget'
 import { Todo } from '@/components/Todo'
 import {
   checkCode,
-  confirmDetailCode,
   createMyAccount,
   declineAccount,
   sendCode,
-  sendDetailCode,
   sendNewCode,
 } from '@/lib/accounts/signIn/actions'
-import { ACCOUNT_COPY, DETAIL_COPY, LOGIN_COPY, VERIFY_COPY } from '@/lib/accounts/signIn/copy'
+import { ACCOUNT_COPY, LOGIN_COPY, VERIFY_COPY } from '@/lib/accounts/signIn/copy'
 import {
   FIELD_IDS,
   INITIAL_SIGN_IN_STATE,
@@ -391,83 +389,6 @@ export function AccountForm({
           <button className="iiic-btn iiic-btn-secondary" type="submit" formAction={declineAccount}>
             {ACCOUNT_COPY.decline}
           </button>
-        </div>
-      </form>
-    </>
-  )
-}
-
-// ---- A second detail (docs/20 §4.6) ----
-
-export function DetailAddressForm({ channel }: { channel: 'email' | 'whatsapp' }) {
-  const [state, action, pending] = useActionState(
-    sendDetailCode,
-    INITIAL_SIGN_IN_STATE,
-    '/login/detail',
-  )
-  const email = channel === 'email'
-  const id = FIELD_IDS.detailIdentifier
-  return (
-    <>
-      <Summary
-        state={state}
-        heading={{ field: LOGIN_COPY.check, refusal: LOGIN_COPY.summary }}
-        order={[id]}
-      />
-      <form
-        key={state.attempt}
-        className={styles.form}
-        action={action}
-        noValidate
-        aria-label={email ? LOGIN_COPY.emailButton : LOGIN_COPY.mobileButton}
-        onSubmit={blockWhilePending(pending)}
-      >
-        <input type="hidden" name="channel" value={channel} />
-        <Field
-          id={id}
-          name="identifier"
-          label={email ? LOGIN_COPY.emailLabel : LOGIN_COPY.mobileLabel}
-          help={email ? LOGIN_COPY.emailHelp : LOGIN_COPY.mobileHelp}
-          error={state.errors[id]}
-          defaultValue={state.values[id]}
-          type={email ? 'email' : 'tel'}
-          autoComplete={email ? 'email' : 'tel'}
-          inputMode={email ? 'email' : 'tel'}
-        />
-        <div className="iiic-row">
-          <SubmitButton pending={pending}>
-            {email ? LOGIN_COPY.emailButton : LOGIN_COPY.mobileButton}
-          </SubmitButton>
-        </div>
-      </form>
-    </>
-  )
-}
-
-export function DetailCodeForm() {
-  const [state, action, pending] = useActionState(
-    confirmDetailCode,
-    INITIAL_SIGN_IN_STATE,
-    '/login/detail',
-  )
-  return (
-    <>
-      <Summary
-        state={state}
-        heading={{ field: DETAIL_COPY.summary, refusal: DETAIL_COPY.summary }}
-        order={[FIELD_IDS.detailCode]}
-      />
-      <form
-        key={state.attempt}
-        className={styles.form}
-        action={action}
-        noValidate
-        aria-label={DETAIL_COPY.heading}
-        onSubmit={blockWhilePending(pending)}
-      >
-        <CodeField id={FIELD_IDS.detailCode} error={state.errors[FIELD_IDS.detailCode]} />
-        <div className="iiic-row">
-          <SubmitButton pending={pending}>{DETAIL_COPY.submit}</SubmitButton>
         </div>
       </form>
     </>
