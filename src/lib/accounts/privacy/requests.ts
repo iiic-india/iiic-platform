@@ -16,7 +16,7 @@ import { deadlinesFor } from '@/lib/privacy/deadlines'
 import { err, ok } from '@/lib/result'
 import { IST } from '@/lib/time/ist'
 
-import { NEEDS_RECENT_SIGN_IN, signedInRecently, SUMMARY_MAX } from './rules'
+import { NEEDS_RECENT_SIGN_IN, signedInRecently } from './rules'
 import { findOwnBookings, ownPersonIds } from './seams'
 
 /**
@@ -38,9 +38,7 @@ import { findOwnBookings, ownPersonIds } from './seams'
 export const createOwnRequest: CreateOwnRequest = async (req, account, input, now) => {
   if (!actsHere(env().VERCEL_ENV)) return err({ code: 'closed-here' })
   const parsed = ownRequestInput.safeParse(input)
-  if (!parsed.success || parsed.data.summary.length > SUMMARY_MAX) {
-    return err({ code: 'invalid-input' })
-  }
+  if (!parsed.success) return err({ code: 'invalid-input' })
   const { type, summary } = parsed.data
   if (NEEDS_RECENT_SIGN_IN.includes(type) && !signedInRecently(account, now)) {
     return err({ code: 'sign-in-again' })

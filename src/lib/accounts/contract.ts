@@ -1,6 +1,7 @@
 import type { PayloadRequest } from 'payload'
 import { z } from 'zod'
 
+import { REQUEST_SUMMARY_MAX } from '@/lib/privacy/requests'
 import type { Result } from '@/lib/result'
 
 /**
@@ -530,7 +531,7 @@ export type OwnRequestType = (typeof OWN_REQUEST_TYPES)[number]
 
 export const ownRequestInput = z.strictObject({
   type: z.enum(OWN_REQUEST_TYPES),
-  summary: z.string().trim().min(1).max(4000),
+  summary: z.string().trim().min(1).max(REQUEST_SUMMARY_MAX),
 })
 export type OwnRequestInput = z.infer<typeof ownRequestInput>
 

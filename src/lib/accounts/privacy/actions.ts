@@ -11,19 +11,14 @@ import {
 import { env } from '@/lib/env'
 import { actsHere } from '@/lib/messaging/deployment'
 import { reportError } from '@/lib/monitoring/sentry'
+import { REQUEST_SUMMARY_MAX } from '@/lib/privacy/requests'
 import { formatIstDate, formatIstTime, istDay } from '@/lib/time/ist'
 
 import { giveConsent, withdrawConsent } from './consents'
 import { DETAIL_COPY, REQUEST_COPY } from './copy'
 import { CLOSE_PATH, CLOSED_PATH, isGivablePurpose, outcomeHref, PRIVACY_PATH } from './outcome'
 import { createOwnRequest } from './requests'
-import {
-  endedByClosing,
-  isConsentPurpose,
-  isOwnRequestType,
-  signedInRecently,
-  SUMMARY_MAX,
-} from './rules'
+import { endedByClosing, isConsentPurpose, isOwnRequestType, signedInRecently } from './rules'
 import {
   accountRequest,
   closeAccount,
@@ -133,7 +128,7 @@ export async function createRequestAction(
   if (!isOwnRequestType(type)) errors.type = REQUEST_COPY.errors.type
   const words = summary.trim()
   if (!words) errors.summary = REQUEST_COPY.errors.summary
-  else if (words.length > SUMMARY_MAX) errors.summary = REQUEST_COPY.errors.summaryLong
+  else if (words.length > REQUEST_SUMMARY_MAX) errors.summary = REQUEST_COPY.errors.summaryLong
   const refused = (refusal: keyof typeof REQUEST_COPY.refusals): RequestFormState => ({
     status: 'refused',
     errors: {},

@@ -32,8 +32,9 @@ import {
   type Outcome,
   PRIVACY_PATH,
 } from '@/lib/accounts/privacy/outcome'
-import { endedByClosing, isGivable, SUMMARY_MAX } from '@/lib/accounts/privacy/rules'
+import { endedByClosing, isGivable } from '@/lib/accounts/privacy/rules'
 import type { RequestFormState } from '@/lib/accounts/privacy/state'
+import { REQUEST_SUMMARY_MAX } from '@/lib/privacy/requests'
 import { formatIstDate, formatIstTime } from '@/lib/time/ist'
 
 import { OutcomeNote } from './OutcomeNote'
@@ -242,7 +243,7 @@ export function RequestsSection({
       )}
       <OwnRequestForm
         types={OWN_REQUEST_TYPES.map((value) => ({ value, label: REQUEST_TYPE_LABELS[value] }))}
-        maxLength={SUMMARY_MAX}
+        maxLength={REQUEST_SUMMARY_MAX}
         permalink={`${PRIVACY_PATH}#requests`}
         seed={seed ?? null}
       />

@@ -145,9 +145,3 @@ export const isOwnRequestType = (value: unknown): value is OwnRequestType =>
 
 /** Whether a request is still open: anything but closed (docs/18 §5). */
 export const isOpen = (status: unknown): boolean => status !== 'closed'
-
-/**
- * The most a request's words may hold: `data-requests.summary` keeps 2,000 characters, fewer
- * than the contract's input allows (`ownRequestInput`, 4,000), so the server checks this too.
- */
-export const SUMMARY_MAX = 2000

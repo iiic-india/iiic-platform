@@ -5,7 +5,7 @@ import type { AccountSession } from '@/lib/accounts/contract'
 import { decideSend } from '@/lib/messaging/policy'
 import { consentState, type LedgerEntry } from '@/lib/privacy/consentLedger'
 import { deadlinesFor } from '@/lib/privacy/deadlines'
-import type { RequestType } from '@/lib/privacy/requests'
+import { REQUEST_SUMMARY_MAX, type RequestType } from '@/lib/privacy/requests'
 import { isNoindexPath } from '@/lib/seo/paths'
 
 // My IIIC's privacy page (docs/20 §7.5; slice C): the ledger read over every record of the
@@ -657,7 +657,7 @@ describe('CreateOwnRequest', () => {
   })
 
   it('refuses words the request cannot keep, and acts on no preview', async () => {
-    const long = 'x'.repeat(rules.SUMMARY_MAX + 1)
+    const long = 'x'.repeat(REQUEST_SUMMARY_MAX + 1)
     expect(
       await createOwnRequest(req(), first(), { type: 'correction', summary: long }, NOW),
     ).toEqual({ ok: false, error: { code: 'invalid-input' } })
@@ -669,6 +669,32 @@ describe('CreateOwnRequest', () => {
     expect(
       await createOwnRequest(req(), first(), { type: 'correction', summary: 'Fake.' }, NOW),
     ).toEqual({ ok: false, error: { code: 'closed-here' } })
+  })
+
+  it('keeps the one limit the collection keeps, for a person and for staff alike (D-135)', async () => {
+    const { ownRequestInput } = await import('@/lib/accounts/contract')
+    const { recordRequestInput } = await import('@/lib/privacy/requests')
+    const { DataRequests } = await import('@/collections/DataRequests')
+    const summary = DataRequests.fields.find(
+      (field) => 'name' in field && field.name === 'summary',
+    ) as { maxLength?: number }
+    expect(REQUEST_SUMMARY_MAX).toBe(2000)
+    expect(summary.maxLength).toBe(REQUEST_SUMMARY_MAX)
+    const words = (length: number) => 'x'.repeat(length)
+    expect(ownRequestInput.safeParse({ type: 'correction', summary: words(2000) }).success).toBe(
+      true,
+    )
+    expect(ownRequestInput.safeParse({ type: 'correction', summary: words(2001) }).success).toBe(
+      false,
+    )
+    const staff = {
+      personId: 1,
+      type: 'correction',
+      channel: 'email',
+      receivedAt: NOW.toISOString(),
+    }
+    expect(recordRequestInput.safeParse({ ...staff, summary: words(2000) }).success).toBe(true)
+    expect(recordRequestInput.safeParse({ ...staff, summary: words(2001) }).success).toBe(false)
   })
 
   it('writes nothing for an account whose row has gone since its session was read', async () => {

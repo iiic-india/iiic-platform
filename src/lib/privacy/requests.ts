@@ -28,6 +28,13 @@ export const REQUEST_TYPES = [
 
 export type RequestType = (typeof REQUEST_TYPES)[number]['value']
 
+/**
+ * The most a request's words may hold, once (D-135): the data-requests collection's summary,
+ * what staff record, and what a person sends from My IIIC (`ownRequestInput` in
+ * src/lib/accounts/contract.ts).
+ */
+export const REQUEST_SUMMARY_MAX = 2000
+
 export const REQUEST_STATUSES = [
   { value: 'received', label: 'Received' },
   { value: 'acknowledged', label: 'Acknowledged' },
@@ -101,7 +108,7 @@ export const recordRequestInput = z.object({
   type: z.enum(values<RequestType>(REQUEST_TYPES)),
   channel: z.enum(values<RequestChannel>(REQUEST_CHANNELS)),
   receivedAt: z.iso.datetime({ offset: true }),
-  summary: z.string().trim().min(1).max(2000),
+  summary: z.string().trim().min(1).max(REQUEST_SUMMARY_MAX),
 })
 export type RecordRequestInput = z.infer<typeof recordRequestInput>
 
