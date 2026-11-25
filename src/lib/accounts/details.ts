@@ -4,6 +4,7 @@ import { createLocalReq, getPayload, type PayloadRequest } from 'payload'
 
 import { recordAudit } from '@/lib/audit/record'
 import { env } from '@/lib/env'
+import { inTransaction } from '@/lib/payments/store'
 import { err, ok } from '@/lib/result'
 import { IST } from '@/lib/time/ist'
 import config from '@payload-config'
@@ -31,9 +32,9 @@ import { openFor, type SignInWiring } from './signIn/steps'
  * and the same limits. The address and the code are entered on the privacy page,
  * `/account/privacy/contact` (builder C's; D-128), which only a signed-in person can open.
  *
- * A right code marks the detail proven on the account's own record, gives it to Better Auth's
- * user, attaches the records holding it (§6), writes `add-contact-detail`, and sends A3 to the
- * email held before. A detail already proven on another account answers
+ * A right code gives the detail to Better Auth's user, then marks it proven on the account's own
+ * record with `add-contact-detail` in one transaction, attaches the records holding it (§6), and
+ * sends A3 to the email held before. A detail already proven on another account answers
  * `belongs-to-another-account` after the code (the person has proved it), with the office's
  * address; nothing moves between accounts on its own.
  */
@@ -162,20 +163,25 @@ export const confirmDetailWith =
       return err({ code: 'belongs-to-another-account' })
     }
     const heldBefore = account.verified.email
-    await markProven(req, account.personId, target.channel, target.value, now)
+    // Better Auth's user first: when it cannot take the detail (a user left by an account closed
+    // part-way may hold it), nothing is marked and the person may try again. Then the proven
+    // marker and its audit entry, which stand or fall together.
     await deps.auth.api.addDetail({
       body: { userId: account.authUserId, channel: target.channel, value: target.value },
     })
-    await recordAudit(
-      req,
-      {
-        action: 'add-contact-detail',
-        entity: 'accounts',
-        entityId: account.accountId,
-        changed: [target.channel],
-      },
-      accountActor(account.accountId),
-    )
+    await inTransaction(req, async () => {
+      await markProven(req, account.personId, target.channel, target.value, now)
+      await recordAudit(
+        req,
+        {
+          action: 'add-contact-detail',
+          entity: 'accounts',
+          entityId: account.accountId,
+          changed: [target.channel],
+        },
+        accountActor(account.accountId),
+      )
+    })
     const { attached } = await attachEarlierRecords(req, {
       accountId: account.accountId,
       channel: target.channel,

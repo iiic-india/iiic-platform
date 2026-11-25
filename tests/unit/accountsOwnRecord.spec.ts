@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // for Payload whose transactions roll back: which earlier record becomes the account's own, the
 // newsletter's placeholder name counting as no name, and consent before storage (CLAUDE.md #4),
 // the consent, the person and the account standing or falling together, with Better Auth's user
-// made only after they commit; and closing, whose withdrawal of the account consent carries the
-// evidence of the person's own request. Obviously fake people and addresses only.
+// made only after they commit; a second detail, given to Better Auth's user before it is marked
+// proven; and closing, whose withdrawal of the account consent carries the evidence of the
+// person's own request. Obviously fake people and addresses only.
 
 vi.mock('server-only', () => ({}))
 vi.mock('@payload-config', () => ({ default: {} }))
@@ -24,7 +25,8 @@ const { closeAccount, createAccountRecords, newestRecord } =
   await import('@/lib/accounts/lifecycle')
 const { createAccountWith } = await import('@/lib/accounts/signIn/steps')
 const { sealAttempt } = await import('@/lib/accounts/signIn/cookie')
-const { SIGN_IN_COOKIE } = await import('@/lib/accounts/contract')
+const { ADD_DETAIL_COOKIE, SIGN_IN_COOKIE } = await import('@/lib/accounts/contract')
+const { confirmDetailWith } = await import('@/lib/accounts/details')
 const { NEWSLETTER_PERSON_NAME } = await import('@/lib/newsletter/subscriptions')
 
 type Doc = Record<string, unknown> & { id: number }
@@ -374,5 +376,103 @@ describe('closing an account (docs/20 §7.6; D-113)', () => {
       action: 'close-account',
       actorId: `account:${account.id}`,
     })
+  })
+})
+
+describe('a second detail (docs/20 §4.6)', () => {
+  const MOBILE = '+919000000001'
+  const ADDED = 'someone.added@fake.example.invalid'
+
+  /** A WhatsApp account adding an email, its code checked by a stand-in for Better Auth. */
+  async function confirming(addDetail: (input: unknown) => Promise<unknown>) {
+    const own = db.seed('people', {
+      fullName: TYPED,
+      mobile: MOBILE,
+      mobileVerifiedAt: '2099-01-02T10:00:00.000Z',
+    })
+    const account = db.seed('accounts', { person: own.id, authUserId: 'fake-user-9' })
+    own.account = account.id
+    const cookies = new Map<string, string>()
+    cookies.set(
+      ADD_DETAIL_COOKIE.name,
+      await sealAttempt(
+        SECRET,
+        {
+          v: 1,
+          purpose: 'addDetail',
+          channel: 'email',
+          address: ADDED,
+          requestId: 5,
+          sentAt: NOW.getTime() - 60_000,
+          accountId: account.id,
+        },
+        NOW,
+      ),
+    )
+    const settings = {
+      VERCEL_ENV: undefined,
+      BETTER_AUTH_SECRET: SECRET,
+      siteUrl: 'http://localhost:3000',
+      MESSAGING_TRANSPORT: 'fake' as const,
+      RESEND_API_KEY: undefined,
+      WHATSAPP_API_KEY: undefined,
+    }
+    const confirm = confirmDetailWith({
+      settings: () => settings,
+      deps: async () =>
+        ({
+          env: settings,
+          auth: {
+            api: {
+              checkVerificationOTP: vi.fn(async () => ({ success: true })),
+              forgetCode: vi.fn(async () => ({ ok: true })),
+              addDetail,
+            },
+          },
+          headers: new Headers(),
+          jar: {
+            get: (name: string) => cookies.get(name),
+            set: (name: string, value: string) => void cookies.set(name, value),
+            delete: (name: string) => void cookies.delete(name),
+          },
+          turnstile: null,
+          deliver: vi.fn(),
+        }) as never,
+    })
+    const session = {
+      accountId: account.id,
+      personId: own.id,
+      authUserId: 'fake-user-9',
+      sessionId: 'fake-session-9',
+      signedInAt: NOW,
+      expiresAt: new Date(NOW.getTime() + 86_400_000),
+      trustedDevice: false,
+      verified: { email: null, mobile: MOBILE },
+    }
+    return { own, account, run: () => confirm(db.req(), session, { code: '123456' }, NOW) }
+  }
+
+  it('reaches Better Auth’s user before the record is marked proven, then audits the mark with it', async () => {
+    const markerSeen: unknown[] = []
+    const { own, account, run } = await confirming(async () => {
+      markerSeen.push(own.emailVerifiedAt ?? null)
+      return { ok: true }
+    })
+    expect(await run()).toEqual({ ok: true, value: { attached: 0 } })
+    expect(markerSeen).toEqual([null])
+    expect(own).toMatchObject({ email: ADDED, emailVerifiedAt: NOW.toISOString() })
+    expect(db.of('audit-log').find((row) => row.action === 'add-contact-detail')).toMatchObject({
+      actorId: `account:${account.id}`,
+    })
+  })
+
+  it('marks nothing when Better Auth’s user cannot take the detail', async () => {
+    const { own, run } = await confirming(async () => {
+      throw new Error('the stand-in refused: another user holds this email')
+    })
+    await expect(run()).rejects.toThrow(/another user holds/)
+    expect(own.email).toBeUndefined()
+    expect(own.emailVerifiedAt).toBeUndefined()
+    expect(db.of('audit-log').filter((row) => row.action === 'add-contact-detail')).toEqual([])
   })
 })
