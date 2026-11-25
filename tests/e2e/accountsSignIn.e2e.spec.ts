@@ -4,6 +4,17 @@ import { getPayload, type Payload } from 'payload'
 
 import { ACCOUNT_COPY, LOGIN_COPY, VERIFY_COPY } from '../../src/lib/accounts/signIn/copy'
 import config from '../../src/payload.config'
+import {
+  askForCode,
+  FAKE_ACCOUNT_NOTICE,
+  openMyIiicForTests,
+  ownNetwork,
+  restoreMyIiic,
+  signIn,
+  SKIP_ACCOUNT_SPECS,
+  SKIP_REASON,
+  TEST_CODE,
+} from '../helpers/accountSignIn'
 import { assertLocalDatabase } from '../helpers/localDatabase'
 
 // Signing in to My IIIC by email code (docs/20 §4, §10, §11), against the running site, on
@@ -11,17 +22,16 @@ import { assertLocalDatabase } from '../helpers/localDatabase'
 // "No, thanks" beside it, the error summary taking focus, JavaScript off, no horizontal scroll at
 // 320 px, axe, the headers, and exactly the cookies of docs/12 §10 through a sign-in and none
 // after signing out. The server under test needs BETTER_AUTH_SECRET and ACCOUNTS_TEST_CODE (the
-// fixed code, locally and in CI only); without them these are skipped. The flag and a fake
-// account notice are set through the local API and put back afterwards. Each test uses a fresh,
-// obviously fake address; they run once the r2a migrations exist, which the lead generates when
-// the slices join.
+// fixed code, locally and in CI only): without them these skip locally and fail in CI. The flag
+// and the shared fake account notice come from tests/helpers/accountSignIn.ts, which puts the
+// flag back afterwards; each test has a fresh, obviously fake address and a network address of
+// its own. They need slice B's My IIIC (its "Sign out"), so they run on the joined branch only.
 
-const CODE = process.env.ACCOUNTS_TEST_CODE
-const FAKE_NOTICE = 'Fake account notice for an end-to-end test: keep my My IIIC account.'
+const CODE = TEST_CODE
 const RUN = Date.now().toString(36)
 
 let payload: Payload
-let flagsBefore: Record<string, unknown> | null = null
+let accountsWereOn: boolean | null = null
 const used: string[] = []
 
 async function cms(): Promise<Payload> {
@@ -44,48 +54,18 @@ const serious = async (page: Page) =>
 const cookieNames = async (page: Page) =>
   (await page.context().cookies()).map((cookie) => cookie.name).sort()
 
-/** Step 1 and step 2 by the keyboard alone: focus the field, type, press Enter. */
+/** Step 1 by the keyboard alone (focus the field, type, press Enter), then step 2 in focus. */
 async function codeStep(page: Page, address: string) {
-  await page.goto('/login')
-  const form = page.getByRole('form', { name: LOGIN_COPY.emailButton })
-  await form.getByLabel(LOGIN_COPY.emailLabel).focus()
-  await page.keyboard.type(address)
-  await page.keyboard.press('Enter')
-  await expect(page).toHaveURL(/\/login\/verify$/)
+  await askForCode(page, address, { keyboard: true })
   await expect(page.getByRole('heading', { level: 1, name: VERIFY_COPY.heading })).toBeFocused()
 }
 
 test.describe('signing in to My IIIC', () => {
-  test.skip(!CODE, 'Needs BETTER_AUTH_SECRET and ACCOUNTS_TEST_CODE for the server under test.')
+  test.skip(SKIP_ACCOUNT_SPECS, SKIP_REASON)
+  test.use({ extraHTTPHeaders: ownNetwork })
 
   test.beforeAll(async () => {
-    const db = await cms()
-    const settings = await db.findGlobal({ slug: 'settings', depth: 0, overrideAccess: true })
-    flagsBefore = { ...(settings.flags ?? {}) }
-    await db.updateGlobal({
-      slug: 'settings',
-      data: { flags: { ...(settings.flags ?? {}), accountsEnabled: true } },
-      overrideAccess: true,
-    })
-    const { docs } = await db.find({
-      collection: 'consent-versions',
-      where: { and: [{ purpose: { equals: 'account' } }, { text: { equals: FAKE_NOTICE } }] },
-      limit: 1,
-      overrideAccess: true,
-    })
-    if (!docs[0]) {
-      await db.create({
-        collection: 'consent-versions',
-        data: {
-          purpose: 'account',
-          language: 'en-IN',
-          text: FAKE_NOTICE,
-          effectiveFrom: new Date(Date.now() - 86_400_000).toISOString(),
-          effectiveFrom_tz: 'Asia/Kolkata',
-        } as never,
-        overrideAccess: true,
-      })
-    }
+    accountsWereOn = await openMyIiicForTests()
   })
 
   test.afterAll(async () => {
@@ -108,13 +88,7 @@ test.describe('signing in to My IIIC', () => {
       })
     }
     await db.delete({ collection: 'people', where: { email: { in: used } }, overrideAccess: true })
-    if (flagsBefore) {
-      await db.updateGlobal({
-        slug: 'settings',
-        data: { flags: flagsBefore as never },
-        overrideAccess: true,
-      })
-    }
+    await restoreMyIiic(accountsWereOn)
   })
 
   test('sends a code and makes an account by the keyboard alone, with the boxes unticked', async ({
@@ -140,7 +114,7 @@ test.describe('signing in to My IIIC', () => {
 
     const codeForm = page.getByRole('form', { name: VERIFY_COPY.heading })
     await codeForm.getByLabel(VERIFY_COPY.codeLabel).focus()
-    await page.keyboard.type(CODE as string)
+    await page.keyboard.type(CODE)
     await expect(codeForm.getByRole('checkbox', { name: VERIFY_COPY.trust })).not.toBeChecked()
     await page.keyboard.press('Enter')
 
@@ -148,7 +122,7 @@ test.describe('signing in to My IIIC', () => {
     await expect(page.getByRole('heading', { level: 1, name: ACCOUNT_COPY.heading })).toBeFocused()
     await expect(page).toHaveTitle(ACCOUNT_COPY.title)
     const form = page.getByRole('form', { name: ACCOUNT_COPY.heading })
-    const consent = form.getByRole('checkbox', { name: FAKE_NOTICE })
+    const consent = form.getByRole('checkbox', { name: FAKE_ACCOUNT_NOTICE })
     const adult = form.getByRole('checkbox', { name: ACCOUNT_COPY.adult })
     await expect(consent).not.toBeChecked()
     await expect(adult).not.toBeChecked()
@@ -203,17 +177,8 @@ test.describe('signing in to My IIIC', () => {
     page,
   }, testInfo) => {
     const address = fakeAddress(testInfo.project.name, 'kept')
-    await codeStep(page, address)
-    await page.getByLabel(VERIFY_COPY.codeLabel).fill(CODE as string)
     // Ticked at the code step: the account step's session keeps the device.
-    await page.getByRole('checkbox', { name: VERIFY_COPY.trust }).check()
-    await page.getByRole('button', { name: VERIFY_COPY.submit, exact: true }).click()
-    const form = page.getByRole('form', { name: ACCOUNT_COPY.heading })
-    await form.getByLabel(ACCOUNT_COPY.nameLabel).fill('Example Client')
-    await form.getByRole('checkbox', { name: FAKE_NOTICE }).check()
-    await form.getByRole('checkbox', { name: ACCOUNT_COPY.adult }).check()
-    await form.getByRole('button', { name: ACCOUNT_COPY.create, exact: true }).click()
-    await expect(page).toHaveURL(/\/account$/)
+    expect(await signIn(page, address, { keep: true })).toBe('account-step')
     const cookies = await page.context().cookies()
     expect(cookies.map((cookie) => cookie.name)).toEqual(['iiic-account.session_token'])
     const days = ((cookies[0]?.expires ?? 0) * 1000 - Date.now()) / 86_400_000
@@ -239,7 +204,7 @@ test.describe('signing in to My IIIC', () => {
   test('declines the account with "No, thanks", storing nothing', async ({ page }, testInfo) => {
     const address = fakeAddress(testInfo.project.name, 'declined')
     await codeStep(page, address)
-    await page.getByLabel(VERIFY_COPY.codeLabel).fill(CODE as string)
+    await page.getByLabel(VERIFY_COPY.codeLabel).fill(CODE)
     await page.getByRole('button', { name: VERIFY_COPY.submit, exact: true }).click()
     await page.getByRole('button', { name: ACCOUNT_COPY.decline, exact: true }).click()
     await expect(page).toHaveURL(/\/$/)
@@ -291,11 +256,11 @@ test.describe('signing in to My IIIC', () => {
       await page.getByRole('button', { name: VERIFY_COPY.submit, exact: true }).click()
       await expect(page.locator('.iiic-error-summary')).toContainText(VERIFY_COPY.malformed)
 
-      await page.getByLabel(VERIFY_COPY.codeLabel).fill(CODE as string)
+      await page.getByLabel(VERIFY_COPY.codeLabel).fill(CODE)
       await page.getByRole('button', { name: VERIFY_COPY.submit, exact: true }).click()
       const form = page.getByRole('form', { name: ACCOUNT_COPY.heading })
       await form.getByLabel(ACCOUNT_COPY.nameLabel).fill('Example Client')
-      await form.getByRole('checkbox', { name: FAKE_NOTICE }).check()
+      await form.getByRole('checkbox', { name: FAKE_ACCOUNT_NOTICE }).check()
       await form.getByRole('checkbox', { name: ACCOUNT_COPY.adult }).check()
       await form.getByRole('button', { name: ACCOUNT_COPY.create, exact: true }).click()
       await expect(page).toHaveURL(/\/account$/)

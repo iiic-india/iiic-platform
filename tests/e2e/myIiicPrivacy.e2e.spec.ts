@@ -15,6 +15,14 @@ import {
 } from '../../src/lib/accounts/privacy/copy'
 import type { ConsentVersion } from '../../src/payload-types'
 import config from '../../src/payload.config'
+import {
+  openMyIiicForTests,
+  ownNetwork,
+  restoreMyIiic,
+  signIn,
+  SKIP_ACCOUNT_SPECS,
+  SKIP_REASON,
+} from '../helpers/accountSignIn'
 import { assertLocalDatabase } from '../helpers/localDatabase'
 
 // My IIIC's privacy page (docs/20 §7.5, §11; slice C) against the running site, on desktop and
@@ -22,18 +30,18 @@ import { assertLocalDatabase } from '../helpers/localDatabase'
 // sees what they agreed to, gives the Journal under its notice and withdraws it, asks for a copy
 // of their data, and reaches the closing page with "Close my account" and "No, thanks" at equal
 // weight; keyboard only, axe-clean, without JavaScript, with no horizontal scroll at 320 px, and
-// sent private and noindex. Sign-in is builder A's: these run once A has joined (its steps are
-// read here by the labels docs/20 §4.1 gives them). Fake notices are put in force for the account
-// and for the Journal; every person, account and request is obviously fake and removed after.
+// sent private and noindex. Sign-in is builder A's, through the shared helper
+// (tests/helpers/accountSignIn.ts), with its shared fake account notice and a network address of
+// its own for each test; without ACCOUNTS_TEST_CODE and Better Auth's secret the file skips
+// locally and fails in CI. A fake notice is put in force for the Journal; every person, account
+// and request is obviously fake and removed after.
 
-const TEST_CODE = process.env.ACCOUNTS_TEST_CODE ?? ''
 const PAGE = '/account/privacy'
-const ACCOUNT_NOTICE = 'Fake account notice for an end-to-end test: IIIC may keep this account.'
 const JOURNAL_NOTICE = 'Fake consent text for an end-to-end test: send me the monthly Journal.'
 const PREFIX = 'e2e-privacy-'
 
 let payload: Payload
-let restoreAccounts: boolean | null = null
+let accountsWereOn: boolean | null = null
 
 async function cms(): Promise<Payload> {
   assertLocalDatabase()
@@ -43,25 +51,6 @@ async function cms(): Promise<Payload> {
 
 const fakeEmail = (what: string, project: string) =>
   `${PREFIX}${what}-${project}-${Date.now().toString(36)}@example.invalid`.toLowerCase()
-
-/** Signs a new address in with the fixed code and makes its account (docs/20 §4.1). */
-async function signIn(page: Page, email: string) {
-  await page.goto('/login')
-  const main = page.getByRole('main')
-  await main.getByLabel('Email address').fill(email)
-  await main.getByRole('button', { name: 'Send me a code' }).click()
-  await expect(page).toHaveURL(/\/login\/verify/)
-  await main.getByLabel('Six-digit code').fill(TEST_CODE)
-  await main.getByRole('button', { name: 'Sign in', exact: true }).click()
-  // A new address: the account step, every box unticked until the person ticks it.
-  await main.getByLabel('Full name').fill('Example Client')
-  const notice = main.getByRole('checkbox', { name: ACCOUNT_NOTICE })
-  await expect(notice).not.toBeChecked()
-  await notice.check()
-  await main.getByRole('checkbox', { name: 'I am 18 or older' }).check()
-  await main.getByRole('button', { name: 'Create my account' }).click()
-  await expect(page).toHaveURL(/\/account$/)
-}
 
 async function personOf(email: string): Promise<number> {
   const db = await cms()
@@ -83,31 +72,25 @@ async function noHorizontalScroll(page: Page) {
 }
 
 test.describe('My IIIC · privacy and settings', () => {
-  test.skip(
-    !TEST_CODE,
-    'Needs ACCOUNTS_TEST_CODE: sign-in uses the fixed code (CI, after A joins).',
-  )
+  test.skip(SKIP_ACCOUNT_SPECS, SKIP_REASON)
+  test.use({ extraHTTPHeaders: ownNetwork })
 
   test.beforeAll(async () => {
+    // My IIIC on, and the shared fake account notice in force (the helper writes it only when
+    // another is in force).
+    accountsWereOn = await openMyIiicForTests()
+    // The Journal's fake notice. Notices in force are kept for good, as every test that writes
+    // one keeps them.
     const db = await cms()
-    const settings = await db.findGlobal({ slug: 'settings', depth: 0 })
-    restoreAccounts = settings.flags?.accountsEnabled === true
-    await db.updateGlobal({ slug: 'settings', data: { flags: { accountsEnabled: true } } })
-    // Notices in force are kept for good, as every test that writes one keeps them.
-    for (const [purpose, text] of [
-      ['account', ACCOUNT_NOTICE],
-      ['marketingEmail', JOURNAL_NOTICE],
-    ] as const) {
-      await db.create({
-        collection: 'consent-versions',
-        data: {
-          purpose,
-          language: 'en-IN',
-          text,
-          effectiveFrom: new Date(Date.now() - 60_000).toISOString(),
-        } as ConsentVersion,
-      })
-    }
+    await db.create({
+      collection: 'consent-versions',
+      data: {
+        purpose: 'marketingEmail',
+        language: 'en-IN',
+        text: JOURNAL_NOTICE,
+        effectiveFrom: new Date(Date.now() - 60_000).toISOString(),
+      } as ConsentVersion,
+    })
   })
 
   test.afterAll(async ({}, testInfo) => {
@@ -158,12 +141,7 @@ test.describe('My IIIC · privacy and settings', () => {
     } catch {
       // No customer_auth schema yet: nothing of Better Auth's was written.
     }
-    if (restoreAccounts !== null) {
-      await db.updateGlobal({
-        slug: 'settings',
-        data: { flags: { accountsEnabled: restoreAccounts } },
-      })
-    }
+    await restoreMyIiic(accountsWereOn)
   })
 
   test('is private, axe-clean and shows what the person agreed to', async ({ page }, testInfo) => {

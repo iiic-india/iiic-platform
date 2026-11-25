@@ -1,9 +1,21 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Browser, type Page } from '@playwright/test'
-import { getPayload, type Payload } from 'payload'
+import {
+  expect,
+  test,
+  type Browser,
+  type BrowserContext,
+  type BrowserContextOptions,
+  type Page,
+} from '@playwright/test'
 
-import config from '../../src/payload.config'
-import { assertLocalDatabase } from '../helpers/localDatabase'
+import {
+  openMyIiicForTests,
+  ownNetwork,
+  restoreMyIiic,
+  signIn,
+  SKIP_ACCOUNT_SPECS,
+  SKIP_REASON,
+} from '../helpers/accountSignIn'
 import {
   bookingByReference,
   FAKE,
@@ -18,56 +30,21 @@ import {
 // JavaScript off as well as on; a second account cannot open the first's booking; every page is
 // axe-clean, never scrolls sideways at 320 px, and is sent `private, no-store` and noindex.
 //
-// Sign-in is builder A's (docs/20 §4.1): these steps follow its words, and the code is CI's fixed
-// test code (ACCOUNTS_TEST_CODE, refused on every Vercel deployment). Until A's pages and that
-// code are in this build, the file is skipped. Every name, address and rule is fake.
+// Sign-in is builder A's (docs/20 §4.1), through the shared helper (tests/helpers/accountSignIn.ts):
+// its words, CI's fixed test code (ACCOUNTS_TEST_CODE, refused on every Vercel deployment), the
+// shared fake account notice, and a network address of its own for each test. Without the code
+// and Better Auth's secret the file skips locally and fails in CI. Sign-in allows one code a
+// minute for an address (D-116), so the first address signs in once, in the first test, and the
+// later tests open their browsers with that session (Playwright's storage state); the sign-out
+// test, which ends it, comes last. Every name, address and rule is fake.
 
-const TEST_CODE = process.env.ACCOUNTS_TEST_CODE
-const ACCOUNT_NOTICE = 'Fake account notice for tests: keep a My IIIC account for me.'
 const HIDDEN = { flags: { pricesPublic: false, payAtBooking: false }, threshold: null }
 
-let payload: Payload
 let original: Awaited<ReturnType<typeof readSettings>>
-let originalAccounts = false
+let accountsWereOn: boolean | null = null
 
 /** A fresh, obviously fake address per run, so the sign-in limits never meet an earlier run. */
 const freshEmail = (who: string) => `myiiic.${who}.${Date.now().toString(36)}@example.invalid`
-
-async function payloadFor(): Promise<Payload> {
-  assertLocalDatabase()
-  payload ??= await getPayload({ config })
-  return payload
-}
-
-/** My IIIC switched on, and the account notice a new account is made under (D-113, I-65's fake). */
-async function openAccounts(on: boolean) {
-  const db = await payloadFor()
-  const settings = await db.findGlobal({ slug: 'settings', depth: 0, overrideAccess: true })
-  await db.updateGlobal({
-    slug: 'settings',
-    data: { flags: { ...(settings.flags ?? {}), accountsEnabled: on } },
-    overrideAccess: true,
-  })
-  if (!on) return
-  const { docs } = await db.find({
-    collection: 'consent-versions',
-    where: { and: [{ purpose: { equals: 'account' } }, { text: { equals: ACCOUNT_NOTICE } }] },
-    limit: 1,
-    overrideAccess: true,
-  })
-  if (docs[0]) return
-  await db.create({
-    collection: 'consent-versions',
-    data: {
-      purpose: 'account',
-      language: 'en-IN',
-      text: ACCOUNT_NOTICE,
-      effectiveFrom: new Date(Date.now() - 86_400_000).toISOString(),
-      effectiveFrom_tz: 'Asia/Kolkata',
-    } as never,
-    overrideAccess: true,
-  })
-}
 
 /** Serious and critical axe findings on the page as it is now. */
 async function blocking(page: Page): Promise<string[]> {
@@ -110,62 +87,51 @@ async function bookAsGuest(page: Page, email: string): Promise<string> {
   return page.url().split('/').pop() as string
 }
 
-/**
- * Signs in by email code as builder A's pages ask (docs/20 §4.1): the address, the test code,
- * and for a new address the account step with every box unticked until ticked here.
- */
-async function signIn(page: Page, email: string) {
-  await page.goto('/login')
-  const main = page.getByRole('main')
-  await main.getByLabel('Email address').fill(email)
-  await main.getByRole('button', { name: 'Send me a code' }).click()
-  await page.waitForURL(/\/login\/verify/)
-  await main.getByLabel('Six-digit code').fill(TEST_CODE as string)
-  await main.getByRole('button', { name: 'Sign in' }).click()
-  const create = main.getByRole('button', { name: 'Create my account' })
-  await expect(create.or(main.getByRole('heading', { level: 1 })).first()).toBeVisible()
-  if (await create.count()) {
-    // No box is ticked in advance (docs/20 §4.1; CLAUDE.md #9).
-    for (const box of await main.getByRole('checkbox').all()) await expect(box).not.toBeChecked()
-    // "I am 18 or older" and the consent beside the account notice; the device is not kept.
-    for (const box of await main.getByRole('checkbox').all()) {
-      const label = await box.evaluate(
-        (input) => (input as HTMLInputElement).labels?.[0]?.textContent ?? '',
-      )
-      if (!/keep me signed in/i.test(label)) await box.check()
-    }
-    await create.click()
-  }
-  await page.waitForURL(/\/account$/)
-}
+/** The first address's session, saved once it has signed in (the first test). */
+type Session = Awaited<ReturnType<BrowserContext['storageState']>>
 
-async function newPage(browser: Browser, javaScriptEnabled = true): Promise<Page> {
-  const context = await browser.newContext({ javaScriptEnabled })
+/**
+ * A page in a context of its own; with `session`, already signed in as that browser was. The
+ * test's network address reaches this context too (Playwright fills `extraHTTPHeaders` in).
+ */
+async function newPage(
+  browser: Browser,
+  javaScriptEnabled = true,
+  session?: Session,
+): Promise<Page> {
+  const options: BrowserContextOptions = { javaScriptEnabled }
+  if (session) options.storageState = session
+  const context = await browser.newContext(options)
   return context.newPage()
 }
 
 test.describe('My IIIC', () => {
   test.describe.configure({ mode: 'serial' })
-  test.skip(!TEST_CODE, 'Needs builder A’s sign-in and ACCOUNTS_TEST_CODE (docs/20 §11)')
+  test.skip(SKIP_ACCOUNT_SPECS, SKIP_REASON)
+  test.use({ extraHTTPHeaders: ownNetwork })
 
   test.beforeAll(async () => {
     original = await readSettings()
-    const db = await payloadFor()
-    const settings = await db.findGlobal({ slug: 'settings', depth: 0, overrideAccess: true })
-    originalAccounts = settings.flags?.accountsEnabled === true
     await seedBookables()
     await setSettings(HIDDEN)
-    await openAccounts(true)
+    accountsWereOn = await openMyIiicForTests()
   })
 
   test.afterAll(async () => {
     await setSettings(original)
-    await openAccounts(originalAccounts)
+    await restoreMyIiic(accountsWereOn)
   })
 
   const first = freshEmail('first')
+  let firstSession: Session | undefined
   let reference = ''
   let second = ''
+
+  /** A page signed in as the first address, without asking for another code. */
+  const asFirst = (browser: Browser, javaScriptEnabled = true) => {
+    if (!firstSession) throw new Error('the first test did not sign the first address in')
+    return newPage(browser, javaScriptEnabled, firstSession)
+  }
 
   test('a session booked as a guest appears after sign-in, with the scope statement', async ({
     browser,
@@ -173,7 +139,9 @@ test.describe('My IIIC', () => {
     const page = await newPage(browser)
     reference = await bookAsGuest(page, first)
     second = await bookAsGuest(page, first)
-    await signIn(page, first)
+    // A new address that booked as a guest: the account step, then My IIIC.
+    expect(await signIn(page, first)).toBe('account-step')
+    firstSession = await page.context().storageState()
 
     const main = page.getByRole('main')
     await expect(main.getByRole('heading', { level: 1 })).toContainText('Hello')
@@ -204,8 +172,7 @@ test.describe('My IIIC', () => {
   })
 
   test('cancels a booking within policy, with "Keep my booking" beside it', async ({ browser }) => {
-    const page = await newPage(browser)
-    await signIn(page, first)
+    const page = await asFirst(browser)
     await page.goto(`/account/bookings/${reference}`)
     const main = page.getByRole('main')
     await expect(main.getByRole('heading', { name: 'Your booking', level: 1 })).toBeVisible()
@@ -227,8 +194,7 @@ test.describe('My IIIC', () => {
   test('works without JavaScript: the booking opens and cancels from the server’s forms', async ({
     browser,
   }) => {
-    const page = await newPage(browser, false)
-    await signIn(page, first)
+    const page = await asFirst(browser, false)
     await page.goto(`/account/bookings/${second}?step=cancel`)
     const main = page.getByRole('main')
     await main.getByRole('button', { name: 'Cancel my booking' }).click()
@@ -242,7 +208,10 @@ test.describe('My IIIC', () => {
     browser,
   }) => {
     const page = await newPage(browser)
-    await signIn(page, freshEmail('second'))
+    // A second, new address: its own account step, its name filled (an empty one is refused).
+    expect(await signIn(page, freshEmail('second'), { name: 'Example Second Client' })).toBe(
+      'account-step',
+    )
     const response = await page.goto(`/account/bookings/${reference}`)
     expect(response?.status()).toBe(404)
     await expect(page.getByRole('main')).not.toContainText(reference)
@@ -254,8 +223,7 @@ test.describe('My IIIC', () => {
   test('every page is private: never cached, never indexed, and signing out ends it', async ({
     browser,
   }) => {
-    const page = await newPage(browser)
-    await signIn(page, first)
+    const page = await asFirst(browser)
     for (const path of [
       '/account',
       '/account/bookings',

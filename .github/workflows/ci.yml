@@ -107,6 +107,15 @@ jobs:
         run: pnpm exec playwright install-deps chromium
       - name: End-to-end tests (desktop and phone, with axe)
         run: pnpm test:e2e
+        # Sign-in to My IIIC for the account specs (docs/20 §11), on this step alone: Playwright
+        # starts the server here, and the integration tests set their own. Both or neither:
+        # without the secret sign-in is closed, and without the code no code can be read. The
+        # secret is made up for CI and named as such; the fixed code works for an email address
+        # only, and src/lib/env.ts refuses it on any Vercel deployment. Without them the account
+        # specs fail in CI rather than skip (tests/helpers/accountSignIn.ts).
+        env:
+          BETTER_AUTH_SECRET: ci-only-better-auth-secret-not-used-anywhere-else-0000
+          ACCOUNTS_TEST_CODE: '246810'
       - name: Lighthouse budgets (docs/12 §2)
         run: pnpm exec lhci autorun
       - uses: actions/upload-artifact@v4
