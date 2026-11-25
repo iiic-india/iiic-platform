@@ -28,9 +28,11 @@ Branch `r2a/sign-in`, cut from `r2a/foundation` (8c33dcc). Specification: `docs/
 - [x] Docs (d2912a1)
 - [x] Unit tests (b951357, 64652e3, 246ca4d)
 - [x] Integration tests (0a8cbee)
-- [ ] End-to-end tests (`accountsSignIn`, `cookies` rows)
-- [ ] For B and C: the WhatsApp-open server function; `// scope:` comments on every `overrideAccess: true`
-- [ ] Checks green
+- [x] End-to-end tests (`accountsSignIn`, `cookies` rows) (2c3b578)
+- [x] For B and C: `whatsappCodesOpenHere` in `details.ts`; `// scope:` comments on every `overrideAccess: true` (a3265a5, e0b32b1)
+- [x] A second detail's sign-in cookie on path `/`, so C's privacy page reads it (e0b32b1)
+- [x] Checks green (e0b32b1): typecheck, lint, format:check, build; unit 3228 passed, failing only `decisions.spec.ts` (D-112, gone once main is merged at the join) and `firstAccountIsOwner.spec.ts` under the full parallel run (a 10 s hook timeout; 4/4 alone)
+- [ ] Pushed (by the lead: this worktree cannot push)
 
 ## Choices the design left open (for the lead)
 
