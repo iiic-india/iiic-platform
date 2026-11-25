@@ -280,9 +280,10 @@ function fieldsOf(issues: readonly { path: readonly PropertyKey[] }[]): string[]
 }
 
 /**
- * The consent first, in one transaction with the person and the account; then Better Auth's user,
- * the session and the attachments (docs/20 §4.5). A failure after the transaction leaves an
- * account with no user, which the next right code for the address finishes.
+ * The consent, the person and the account in one transaction, none kept unless all are; then
+ * Better Auth's user, the session and the attachments (docs/20 §4.5; CLAUDE.md #4). A failure
+ * after the transaction leaves an account with no user, which the next right code for the address
+ * finishes; a failure inside it leaves nothing.
  */
 export const createAccountWith =
   (wiring: SignInWiring): CreateAccount =>

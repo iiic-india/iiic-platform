@@ -473,6 +473,34 @@ describe('a new account (docs/20 §4.5; D-113, D-114)', () => {
     expect(totalDocs).toBe(0)
   })
 
+  it('keeps no person, account or Better Auth user when the consent cannot be written (CLAUDE.md #4)', async () => {
+    const to = address('consent-fails')
+    const person = browser()
+    await person.request(to)
+    await person.verify(lastCode(to))
+    const create = payload.create.bind(payload)
+    const refuse = vi.spyOn(payload, 'create').mockImplementation((async (
+      options: Parameters<typeof payload.create>[0],
+    ) => {
+      if (options.collection === 'consents') throw new Error('the consent could not be written')
+      return create(options)
+    }) as typeof payload.create)
+    try {
+      await expect(
+        person.create({ fullName: `Fake ${TAG} consent fails`, noticeVersionId: await noticeId() }),
+      ).rejects.toThrow(/consent could not be written/)
+    } finally {
+      refuse.mockRestore()
+    }
+    const { totalDocs } = await payload.count({
+      collection: 'people',
+      where: { email: { equals: to } },
+    })
+    expect(totalDocs).toBe(0)
+    expect(await accountOf(to)).toBeNull()
+    expect(await (await auth.$context).internalAdapter.findUserByEmail(to)).toBeNull()
+  })
+
   it('records the consent under the notice in force, then the record, the account, the user and a session', async () => {
     const { to, accountId } = await newAccount('made')
     const account = await payload.findByID({ collection: 'accounts', id: accountId, depth: 0 })

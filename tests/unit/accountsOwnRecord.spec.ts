@@ -1,20 +1,30 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// The account step's records (docs/20 §3.6, §4.5; D-131), run over an in-memory stand-in for
-// Payload whose transactions roll back: which earlier record becomes the account's own, the
-// newsletter's placeholder name counting as no name. Obviously fake people and addresses only.
+// The account step's records (docs/20 §3.6, §4.5; D-113, D-131), run over an in-memory stand-in
+// for Payload whose transactions roll back: which earlier record becomes the account's own, the
+// newsletter's placeholder name counting as no name, and consent before storage (CLAUDE.md #4),
+// the consent, the person and the account standing or falling together, with Better Auth's user
+// made only after they commit. Obviously fake people and addresses only.
 
 vi.mock('server-only', () => ({}))
 vi.mock('@payload-config', () => ({ default: {} }))
+vi.mock('@/lib/privacy/consents', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/privacy/consents')>()),
+  currentNotice: vi.fn(async () => ({ id: NOTICE, text: 'Fake account notice for tests.' })),
+}))
 
 const { createAccountRecords, newestRecord } = await import('@/lib/accounts/lifecycle')
+const { createAccountWith } = await import('@/lib/accounts/signIn/steps')
+const { sealAttempt } = await import('@/lib/accounts/signIn/cookie')
+const { SIGN_IN_COOKIE } = await import('@/lib/accounts/contract')
 const { NEWSLETTER_PERSON_NAME } = await import('@/lib/newsletter/subscriptions')
 
 type Doc = Record<string, unknown> & { id: number }
 type Where = Record<string, unknown>
 
 const NOTICE = 77
+const SECRET = 'test-only-better-auth-secret-0000000000000000'
 const EMAIL = 'someone.own-record@fake.example.invalid'
 const NOW = new Date('2099-05-04T11:00:00+05:30')
 const TYPED = 'Fake Asha Example'
@@ -199,5 +209,99 @@ describe('the account’s own record (docs/20 §3.6, §4.5; D-131)', () => {
     })
     // The earlier record keeps its name; attaching it is the sign-in's (docs/20 §6).
     expect(db.of('people').find((row) => row.id === other.id)?.fullName).toBe('Fake Someone Else')
+  })
+})
+
+describe('consent before storage in the account step (CLAUDE.md #4; D-113)', () => {
+  it('keeps no person, account or audit entry when the consent cannot be written', async () => {
+    db.failOn = 'consents'
+    await expect(records()).rejects.toThrow(/consents/)
+    expect(db.rollbacks).toBe(1)
+    expect(db.commits).toBe(0)
+    expect(db.of('people')).toEqual([])
+    expect(db.of('accounts')).toEqual([])
+    expect(db.of('consents')).toEqual([])
+    expect(db.of('audit-log')).toEqual([])
+  })
+
+  it('leaves an earlier record as it was when the consent cannot be written', async () => {
+    const made = newsletterRecord()
+    const before = structuredClone(made)
+    db.failOn = 'consents'
+    await expect(records()).rejects.toThrow(/consents/)
+    expect(db.of('people')).toEqual([before])
+    expect(db.of('accounts')).toEqual([])
+  })
+
+  it('makes Better Auth’s user and the session only after the records commit, and neither when the consent fails', async () => {
+    const seen: { consents: number; inTransaction: boolean }[] = []
+    const createCustomer = vi.fn(async () => {
+      seen.push({ consents: db.of('consents').length, inTransaction: db.inTransaction })
+      return { userId: 'fake-user-1', created: true }
+    })
+    const startSession = vi.fn(async () => ({ replaced: false }))
+    const cookies = new Map<string, string>()
+    const settings = {
+      VERCEL_ENV: undefined,
+      BETTER_AUTH_SECRET: SECRET,
+      siteUrl: 'http://localhost:3000',
+      MESSAGING_TRANSPORT: 'fake' as const,
+      RESEND_API_KEY: undefined,
+      WHATSAPP_API_KEY: undefined,
+    }
+    const step = createAccountWith({
+      settings: () => settings,
+      deps: async () =>
+        ({
+          env: settings,
+          auth: { api: { createCustomer, startSession } },
+          headers: new Headers({ 'user-agent': 'Fake browser' }),
+          jar: {
+            get: (name: string) => cookies.get(name),
+            set: (name: string, value: string) => void cookies.set(name, value),
+            delete: (name: string) => void cookies.delete(name),
+          },
+          turnstile: null,
+          deliver: vi.fn(),
+        }) as never,
+    })
+    const proven = async () =>
+      cookies.set(
+        SIGN_IN_COOKIE.name,
+        await sealAttempt(
+          SECRET,
+          {
+            v: 1,
+            purpose: 'signIn',
+            channel: 'email',
+            address: EMAIL,
+            requestId: 41,
+            sentAt: NOW.getTime() - 120_000,
+            provenAt: NOW.getTime() - 60_000,
+          },
+          NOW,
+        ),
+      )
+    const input = {
+      fullName: TYPED,
+      consent: true as const,
+      adult: true as const,
+      noticeVersionId: NOTICE,
+      trustDevice: false,
+    }
+
+    await proven()
+    db.failOn = 'consents'
+    await expect(step(db.req(), input, NOW)).rejects.toThrow(/consents/)
+    expect(createCustomer).not.toHaveBeenCalled()
+    expect(startSession).not.toHaveBeenCalled()
+    expect(db.of('people')).toEqual([])
+    expect(db.of('accounts')).toEqual([])
+
+    db.failOn = null
+    expect(await step(db.req(), input, NOW)).toMatchObject({ ok: true })
+    expect(seen).toEqual([{ consents: 1, inTransaction: false }])
+    expect(startSession).toHaveBeenCalledTimes(1)
+    expect(db.of('accounts')[0]).toMatchObject({ authUserId: 'fake-user-1' })
   })
 })

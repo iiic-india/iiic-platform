@@ -142,10 +142,11 @@ async function ownRecordFor(
 
 /**
  * The account step's records, in one Payload transaction (docs/20 §4.5, step 2; CLAUDE.md #4):
- * the account consent under the notice in force, the own record (an earlier one, or a new one
- * with the name given), the `accounts` row with no Better Auth user yet, the proven marker, and
- * `create-account` in the audit log. Nothing here signs anyone in: Better Auth's user and the
- * session come after it commits.
+ * the own record (an earlier one, or a new one with the name given, written first because the
+ * consent names its person), the account consent under the notice in force, the `accounts` row
+ * with no Better Auth user yet, the proven marker, and `create-account` in the audit log. If any
+ * write fails, all roll back, so no person is kept without the consent. Nothing here signs anyone
+ * in: Better Auth's user and the session come after it commits.
  */
 export async function createAccountRecords(
   req: PayloadRequest,

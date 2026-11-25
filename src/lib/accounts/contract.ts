@@ -222,8 +222,10 @@ export type VerifyCode = (
 
 /**
  * The account step (a new account only): the name, the account consent under the notice in
- * force (an unticked box, D-113), and "I am 18 or older" (D-114). The consent is recorded first,
- * then the person, the account and the session (CLAUDE.md #4).
+ * force (an unticked box, D-113), and "I am 18 or older" (D-114). The own record (a new person
+ * row first when there is none, since a consent names its person), the consent and the account
+ * are written in one transaction, so none is kept unless all are; Better Auth's user and the
+ * session come only after it commits (CLAUDE.md #4; docs/20 §4.5).
  */
 export const createAccountInput = z.strictObject({
   fullName: z.string().trim().min(1).max(200),
