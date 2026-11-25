@@ -13,7 +13,7 @@ import { CUSTOMER_AUTH, SESSION_COOKIE_PREFIX, SIGN_IN } from '@/lib/accounts/co
 // the sessions' lifetimes and cookies, and that IIIC's endpoints are server-only. An upgrade that
 // changes any of it fails here. Obviously fake addresses only.
 
-const SECRET = 'unit-only-better-auth-secret-0000000000000000'
+const SECRET = 'test-only-better-auth-secret-0000000000000000'
 const EMAIL = 'someone@fake.example.invalid'
 const MOBILE = '+919000000000'
 

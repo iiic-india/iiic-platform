@@ -37,7 +37,7 @@ vi.mock('next/navigation', () => ({
 
 // Better Auth's secret for this file, before anything reads the environment; no fixed test code,
 // so each code is read from the fake email it went in.
-const SECRET = 'int-only-better-auth-secret-00000000000000000'
+const SECRET = 'test-only-better-auth-secret-0000000000000000'
 process.env.BETTER_AUTH_SECRET = SECRET
 delete process.env.ACCOUNTS_TEST_CODE
 

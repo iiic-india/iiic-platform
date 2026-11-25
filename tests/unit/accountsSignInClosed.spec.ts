@@ -11,7 +11,7 @@ vi.mock('@payload-config', () => ({ default: {} }))
 
 const settings = {
   VERCEL_ENV: 'preview' as 'preview' | 'production' | undefined,
-  BETTER_AUTH_SECRET: 'unit-only-better-auth-secret-0000000000000000' as string | undefined,
+  BETTER_AUTH_SECRET: 'test-only-better-auth-secret-0000000000000000' as string | undefined,
   siteUrl: 'https://fake.example.invalid',
   allowedOrigins: ['https://fake.example.invalid'],
   MESSAGING_TRANSPORT: 'live' as const,
@@ -72,7 +72,7 @@ const wiring = {
 
 beforeEach(() => {
   settings.VERCEL_ENV = 'preview'
-  settings.BETTER_AUTH_SECRET = 'unit-only-better-auth-secret-0000000000000000'
+  settings.BETTER_AUTH_SECRET = 'test-only-better-auth-secret-0000000000000000'
   flags.accountsEnabled = false
   readFlags.mockClear()
   getPayload.mockClear()

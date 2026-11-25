@@ -27,7 +27,7 @@ import { limitVerdict, type RequestTimes } from '@/lib/accounts/signIn/limits'
 // is stored, shown and counted, the sealed sign-in cookie, where sign-in may act (D-122), the
 // devices list's names, and the words. Fake addresses only.
 
-const SECRET = 'unit-only-better-auth-secret-0000000000000000'
+const SECRET = 'test-only-better-auth-secret-0000000000000000'
 const NOW = new Date('2099-03-04T11:00:00+05:30')
 const ago = (ms: number) => new Date(NOW.getTime() - ms)
 const MINUTE = 60_000

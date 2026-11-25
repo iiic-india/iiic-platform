@@ -27,7 +27,7 @@ async function rows<T>(query: ReturnType<typeof sql>): Promise<T[]> {
 describe('the customer_auth schema', () => {
   it('holds every table, column and index Better Auth 1.7.27 needs, after the migrations', async () => {
     const options = customerAuthOptions({
-      secret: 'int-only-better-auth-secret-00000000000000000',
+      secret: 'test-only-better-auth-secret-0000000000000000',
       siteUrl: 'http://localhost:3000',
       trustedOrigins: ['http://localhost:3000'],
       database: postgresDatabase(payload),

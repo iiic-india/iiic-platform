@@ -29,7 +29,7 @@ function emptyPool() {
 
 async function betterAuthSql(): Promise<string> {
   const options = customerAuthOptions({
-    secret: 'unit-only-better-auth-secret-0000000000000000',
+    secret: 'test-only-better-auth-secret-0000000000000000',
     siteUrl: 'http://localhost:3000',
     trustedOrigins: ['http://localhost:3000'],
     database: {
