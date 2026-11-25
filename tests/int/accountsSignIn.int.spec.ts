@@ -7,8 +7,11 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 // the old, a used code, the code in no row, job, log line or cookie; the account step's consent
 // first, in one transaction, refused without the consent, for an address of a minor, or under a
 // changed notice, and finished by the next code when it stopped part-way; sessions, and signing
-// in again ending the session the browser carried; the owner's end-sessions; closing. Needs the r2a_accounts and r2a_customer_auth migrations. Obviously fake
-// addresses, names and network addresses (TEST-NET-3), removed at the end; no staff user is made.
+// in again ending the session the browser carried; the owner's end-sessions; closing, which ends
+// every session, frees every record and withdraws the account consent alone, and keeps the
+// bookings, payments and invoices. Needs the r2a_accounts and r2a_customer_auth migrations.
+// Obviously fake addresses, names, network addresses (TEST-NET-3), bookings and amounts, removed
+// at the end (bar the consent texts in force and the audit entries); no staff user is made.
 
 vi.mock('server-only', () => ({}))
 
@@ -32,7 +35,7 @@ const { submitterHash } = await import('@/lib/enquiryForms/guards')
 const { fakeTurnstile } = await import('@/lib/enquiryForms/turnstile')
 const { deliverWith } = await import('@/lib/messaging/deliver')
 const { FakeEmailSender, FakeWhatsAppSender } = await import('@/lib/messaging/fakes')
-const { currentNotice } = await import('@/lib/privacy/consents')
+const { consentFor, currentNotice } = await import('@/lib/privacy/consents')
 const { NEWSLETTER_PERSON_NAME } = await import('@/lib/newsletter/subscriptions')
 
 type CookieJar = import('@/lib/accounts/signIn/cookie').CookieJar
@@ -43,6 +46,7 @@ const TAG = 'int.accounts-sign-in'
 const RUN = Date.now().toString(36)
 const SITE = 'http://localhost:3000'
 const NOTICE_TEXT = `Fake account notice for tests (${TAG}): keep my My IIIC account.`
+const SERVICE_SLUG = 'int-accounts-sign-in'
 
 let payload: Payload
 let auth: NonNullable<ReturnType<typeof customerAuthFor>>
@@ -220,6 +224,24 @@ async function removeTestData() {
     pagination: false,
     depth: 0,
   })
+  // The closing case's booking, its payment and its invoice, then what it was booked with.
+  const personIds = people.map((person) => person.id)
+  if (personIds.length) {
+    const { docs: bookings } = await payload.find({
+      collection: 'bookings',
+      where: { person: { in: personIds } },
+      pagination: false,
+      depth: 0,
+    })
+    const bookingIds = bookings.map((booking) => booking.id)
+    if (bookingIds.length) {
+      await payload.delete({ collection: 'invoices', where: { booking: { in: bookingIds } } })
+      await payload.delete({ collection: 'payments', where: { booking: { in: bookingIds } } })
+      await payload.delete({ collection: 'bookings', where: { id: { in: bookingIds } } })
+    }
+  }
+  await payload.delete({ collection: 'practitioners', where: { publicName: { like: TAG } } })
+  await payload.delete({ collection: 'services', where: { slug: { like: SERVICE_SLUG } } })
   const accountIds = [
     ...new Set(
       people
@@ -772,6 +794,194 @@ describe('closing an account (docs/20 §7.6)', () => {
     expect(told).toBe(1)
     // Its proven email was the account's own: A2 goes there, through the core's own senders.
     expect(record.email).toBe(to)
+  })
+
+  it('keeps the bookings, payments, invoices and other consents, frees every record, ends every session and is audited in the account’s name', async () => {
+    const { to, accountId } = await newAccount('closed-whole')
+    const account = await payload.findByID({ collection: 'accounts', id: accountId, depth: 0 })
+    const userId = account.authUserId as string
+    const personId = typeof account.person === 'object' ? account.person.id : account.person
+    // An earlier record of the same person, attached to the account (docs/03 F7).
+    const earlier = await payload.create({
+      collection: 'people',
+      data: { fullName: `Fake ${TAG} closed earlier`, email: to } as never,
+      overrideAccess: true,
+    })
+    await payload.update({
+      collection: 'people',
+      id: earlier.id,
+      data: { account: accountId },
+      overrideAccess: true,
+    })
+    // Another consent of the own record, under a fake text that took effect long ago, so that
+    // it is never the text in force for anyone else's test.
+    const reviews = await payload.create({
+      collection: 'consent-versions',
+      data: {
+        purpose: 'testimonialPublication',
+        language: 'en-IN',
+        text: `Fake consent text for publishing a review (${TAG}).`,
+        effectiveFrom: '2001-01-01T04:30:00.000Z',
+        effectiveFrom_tz: 'Asia/Kolkata',
+      } as never,
+      overrideAccess: true,
+    })
+    await payload.create({
+      collection: 'consents',
+      data: {
+        person: personId,
+        noticeVersion: reviews.id,
+        channel: 'web',
+        grantedAt: new Date(Date.now() - 60_000).toISOString(),
+        evidence: { form: `Fake form ${TAG}` },
+      } as never,
+      overrideAccess: true,
+    })
+    // A paid booking of the own record, its captured payment and its invoice (as M3 and M4
+    // leave them; tests/int/documents.int.spec.ts), on a fake service and practitioner.
+    const service = await payload.create({
+      collection: 'services',
+      data: {
+        name: `Fake service ${TAG}`,
+        type: 'session',
+        slug: `${SERVICE_SLUG}-${RUN}`,
+        register: 'counselling',
+        format: 'online',
+      } as never,
+    })
+    const practitioner = await payload.create({
+      collection: 'practitioners',
+      data: { publicName: `Fake ${TAG}` } as never,
+    })
+    const booking = await payload.create({
+      collection: 'bookings',
+      data: {
+        reference: `INT-ACC-${RUN}`.slice(0, 20),
+        type: 'session',
+        status: 'confirmed',
+        paymentStatus: 'paid',
+        service: service.id,
+        person: personId,
+        practitioner: practitioner.id,
+        durationMinutes: 30,
+        startsAt: '2099-09-14T04:30:00.000Z',
+        endsAt: '2099-09-14T05:00:00.000Z',
+        price: {
+          totalPaise: 118_000,
+          taxPaise: 18_000,
+          gstRateBasisPoints: 1800,
+          sacCode: '000000',
+        },
+      } as never,
+    })
+    const payment = await payload.create({
+      collection: 'payments',
+      data: {
+        booking: booking.id,
+        kind: 'checkout',
+        gateway: 'razorpay',
+        status: 'captured',
+        amountPaise: 118_000,
+        currency: 'INR',
+        receipt: `booking:${booking.id}:checkout`,
+        gatewayOrderId: `order_FAKEACC${booking.id}`,
+        gatewayPaymentId: `pay_FAKEACC${booking.id}`,
+        capturedAt: new Date().toISOString(),
+      } as never,
+    })
+    const invoice = await payload.create({
+      collection: 'invoices',
+      data: {
+        kind: 'taxInvoice',
+        status: 'issued',
+        number: `FAKE-ACC-${RUN}`,
+        booking: booking.id,
+        issuedAt: new Date().toISOString(),
+        totals: { taxablePaise: 100_000, cgstPaise: 9_000, sgstPaise: 9_000, totalPaise: 118_000 },
+        idempotencyKey: `fake-${TAG}-${RUN}`,
+      } as never,
+    })
+    // A second device: a session of its own besides the account step's.
+    const { headers: started } = await auth.api.startSession({
+      body: { userId, trusted: true },
+      returnHeaders: true,
+    })
+    const secondDevice = started
+      .getSetCookie()
+      .map((line) => line.split(';')[0])
+      .join('; ')
+    const context = await auth.$context
+    expect(await context.internalAdapter.listSessions(userId)).toHaveLength(2)
+
+    // The person closes it from My IIIC, on the request accountRequest builds for them
+    // (src/lib/accounts/scope.ts): the address, the browser, and the account as the actor.
+    const req = await createLocalReq(
+      {
+        req: {
+          headers: new Headers({
+            'x-forwarded-for': '203.0.113.250',
+            'user-agent': 'Mozilla/5.0 (Fake test browser) Chrome/131.0 Safari/537.36',
+          }),
+        },
+        context: { auditActor: { id: `account:${accountId}` } },
+      },
+      payload,
+    )
+    expect(await closeAccount(req, { accountId, reason: 'person' })).toEqual({
+      ok: true,
+      value: { closed: true },
+    })
+
+    // Every session ended, the second device's included; Better Auth's user is gone.
+    expect(await context.internalAdapter.listSessions(userId)).toHaveLength(0)
+    expect(await auth.api.getSession({ headers: new Headers({ cookie: secondDevice }) })).toBeNull()
+    expect(await context.internalAdapter.findUserById(userId)).toBeNull()
+    // Both records kept, neither linked to an account any more.
+    for (const id of [personId, earlier.id]) {
+      const record = await payload.findByID({ collection: 'people', id, depth: 0 })
+      expect(record.account ?? null, String(id)).toBeNull()
+    }
+    // The booking, its payment and its invoice are the office's records: kept as they were.
+    const keptBooking = await payload.findByID({ collection: 'bookings', id: booking.id, depth: 0 })
+    expect(keptBooking).toMatchObject({ status: 'confirmed', person: personId })
+    expect(
+      await payload.findByID({ collection: 'payments', id: payment.id, depth: 0 }),
+    ).toMatchObject({ status: 'captured', booking: booking.id })
+    expect(
+      await payload.findByID({ collection: 'invoices', id: invoice.id, depth: 0 }),
+    ).toMatchObject({ status: 'issued', booking: booking.id })
+    // Only the account consent is withdrawn, with the evidence of the person's own request.
+    expect(await consentFor(payload, personId, 'account')).toBe('withdrawn')
+    expect(await consentFor(payload, personId, 'testimonialPublication')).toBe('granted')
+    const { docs: withdrawals } = await payload.find({
+      collection: 'consents',
+      where: { and: [{ person: { equals: personId } }, { withdraws: { exists: true } }] },
+      depth: 0,
+    })
+    expect(withdrawals).toHaveLength(1)
+    expect(withdrawals[0]).toMatchObject({
+      purpose: 'account',
+      evidence: {
+        form: 'My IIIC',
+        ip: '203.0.113.250',
+        userAgent: 'Mozilla/5.0 (Fake test browser) Chrome/131.0 Safari/537.36',
+      },
+    })
+    // One close-account entry, in the account's name, from the person's address.
+    const { docs: entries } = await payload.find({
+      collection: 'audit-log',
+      where: {
+        and: [{ action: { equals: 'close-account' } }, { entityId: { equals: String(accountId) } }],
+      },
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toMatchObject({
+      actorId: `account:${accountId}`,
+      changed: 'person',
+      ip: '203.0.113.250',
+    })
   })
 
   it('answers not-found for an account that is not there', async () => {

@@ -13,8 +13,9 @@ import { removeQueuedJobs } from '../helpers/queuedJobs'
 // a marketing consent is recorded under the notice in force, a changed notice refused, the
 // Journal's subscriber confirmed once; nothing is offered to a record under 18; a request is
 // recorded for the account's own record with its clocks and acknowledged by O4 or O7; a copy or
-// an erasure needs a recent sign-in; and a second account touches none of the first's consents
-// or requests. Needs the r2a_accounts migration (people.account, accounts). The accounts are
+// an erasure needs a recent sign-in; a second account touches none of the first's consents
+// or requests; and closing, through builder A's real function, keeps the records, their other
+// consents and requests while it ends the account and its links. Needs the r2a_accounts migration (people.account, accounts). The accounts are
 // made here directly, as the hooks' test makes them: the sessions are fake, Better Auth is
 // builder A's. Obviously fake people, addresses and words, removed at the end; consent texts in
 // force are kept for good, as every test that writes one keeps them.
@@ -23,8 +24,9 @@ vi.mock('server-only', () => ({}))
 const { listOwnConsents, giveConsent, withdrawConsent } =
   await import('@/lib/accounts/privacy/consents')
 const { createOwnRequest, listOwnRequests } = await import('@/lib/accounts/privacy/requests')
-const { ownPersonIds } = await import('@/lib/accounts/privacy/seams')
-const { consentFor } = await import('@/lib/privacy/consents')
+const { closeAccount, ownPersonIds } = await import('@/lib/accounts/privacy/seams')
+const { createAccountRecords } = await import('@/lib/accounts/lifecycle')
+const { consentFor, currentNotice } = await import('@/lib/privacy/consents')
 const { runO4, runO7 } = await import('@/lib/automations/privacy/run')
 
 let payload: Payload
@@ -71,6 +73,18 @@ async function removeTestData() {
       })
     }
     await payload.delete({ collection: 'data-requests', where: { person: { in: ids } } })
+    // Closing an account plans A2, a message about the account (src/lib/accounts/lifecycle.ts).
+    if (created.accounts.length) {
+      await payload.delete({
+        collection: 'messages',
+        where: {
+          and: [
+            { subjectCollection: { equals: 'accounts' } },
+            { subjectId: { in: created.accounts } },
+          ],
+        },
+      })
+    }
     await payload.delete({ collection: 'accounts', where: { person: { in: ids } } })
     // Deleting a person deletes their reviews and marks their consents withdrawn (docs/04).
     await payload.delete({ collection: 'people', where: { id: { in: ids } } })
@@ -165,6 +179,27 @@ const request = () =>
     },
     payload,
   )
+
+/**
+ * The account notice in force, for an account made through builder A's account step; one dated a
+ * day ago when none is, as tests/int/accountsAttach.int.spec.ts makes it.
+ */
+async function accountNoticeId(): Promise<number> {
+  const found = await currentNotice(payload, 'account', 'en-IN')
+  if (found) return found.id
+  const made = await payload.create({
+    collection: 'consent-versions',
+    data: {
+      purpose: 'account',
+      language: 'en-IN',
+      text: `Fake account notice for tests (${TAG}): keep my My IIIC account.`,
+      effectiveFrom: new Date(Date.now() - 24 * 60 * MINUTE).toISOString(),
+      effectiveFrom_tz: 'Asia/Kolkata',
+    } as never,
+    overrideAccess: true,
+  })
+  return made.id
+}
 
 beforeAll(async () => {
   payload = await getPayload({ config })
@@ -494,11 +529,123 @@ describe('requests about one’s data (docs/03 F11; D-121)', () => {
     expect(await listOwnRequests(await request(), secondAccount)).toEqual([])
   })
 
-  // Closing is builder A's `CloseAccount` (docs/20 §7.6); the privacy page reaches it through
-  // src/lib/accounts/privacy/seams.ts, a stub until the join. The lead writes this case against
-  // the real function there: closing keeps bookings, payments, invoices and the other consents,
-  // and removes the Better Auth user, its sessions, the account row and the records' links.
-  it.todo('closing keeps bookings, payments and invoices and removes the user, sessions and links')
+  // Closing is builder A's `CloseAccount` (docs/20 §7.6), which the privacy page reaches through
+  // src/lib/accounts/privacy/seams.ts. This file runs without Better Auth's secret, so the user
+  // and its sessions are tests/int/accountsSignIn.int.spec.ts's, with the bookings, payments and
+  // invoices kept; here, what the privacy page's records hold before and after.
+  it('closing, through the real CloseAccount, keeps the records, their other consents and requests, and ends the account and its links', async () => {
+    const email = address('closing-client')
+    const { accountId, personId } = await createAccountRecords(await request(), {
+      channel: 'email',
+      value: email,
+      fullName: `Example Client closing ${TAG}`,
+      noticeVersionId: await accountNoticeId(),
+      evidence: { ip: null, userAgent: null },
+      now: new Date(),
+    })
+    created.accounts.push(accountId)
+    created.people.push(personId)
+    const own = (await payload.findByID({ collection: 'people', id: personId, depth: 0 })) as Person
+    const earlier = await person('closing earlier', { email })
+    await attach(earlier, accountId)
+    await consent(own, 'marketingEmail', 3)
+    await consent(earlier, 'testimonialPublication', 3)
+    const closing = session(accountId, own, 'closing')
+    const asked = await createOwnRequest(
+      await request(),
+      closing,
+      { type: 'correction', summary: `Fake: my city is spelt wrong (${TAG}).` },
+      new Date(),
+    )
+    expect(asked.ok).toBe(true)
+    if (asked.ok) created.requests.push(asked.value.requestId)
+    expect((await ownPersonIds(await request(), closing)).sort()).toEqual(
+      [own.id, earlier.id].sort(),
+    )
+
+    // As accountRequest builds it (src/lib/accounts/scope.ts) for C's close action.
+    const req = await createLocalReq(
+      {
+        req: {
+          headers: new Headers({ 'user-agent': 'Fake browser', 'x-forwarded-for': '203.0.113.7' }),
+        },
+        context: { auditActor: { id: `account:${accountId}` } },
+      },
+      payload,
+    )
+    expect(await closeAccount(req, { accountId, reason: 'person' })).toEqual({
+      ok: true,
+      value: { closed: true },
+    })
+
+    // The account row is gone, and every record it held is kept, its link cleared.
+    expect(
+      await payload.findByID({
+        collection: 'accounts',
+        id: accountId,
+        depth: 0,
+        disableErrors: true,
+      }),
+    ).toBeNull()
+    for (const record of [own, earlier]) {
+      const after = await payload.findByID({ collection: 'people', id: record.id, depth: 0 })
+      expect(after.account ?? null, after.fullName).toBeNull()
+    }
+    const ownAfter = await payload.findByID({ collection: 'people', id: own.id, depth: 0 })
+    expect(ownAfter.email).toBe(email)
+    expect(ownAfter.emailVerifiedAt).toBeTruthy()
+    // The account consent is withdrawn with the request's evidence; the other consents stay.
+    expect(await consentFor(payload, own.id, 'account')).toBe('withdrawn')
+    expect(await consentFor(payload, own.id, 'marketingEmail')).toBe('granted')
+    expect(await consentFor(payload, earlier.id, 'testimonialPublication')).toBe('granted')
+    const { docs: withdrawals } = await payload.find({
+      collection: 'consents',
+      where: {
+        and: [
+          { person: { equals: own.id } },
+          { purpose: { equals: 'account' } },
+          { withdraws: { exists: true } },
+        ],
+      },
+      depth: 0,
+    })
+    expect(withdrawals).toHaveLength(1)
+    expect(withdrawals[0]).toMatchObject({
+      channel: 'web',
+      evidence: { form: 'My IIIC', ip: '203.0.113.7', userAgent: 'Fake browser' },
+    })
+    // The request the person made is kept for the office.
+    const { totalDocs: requests } = await payload.count({
+      collection: 'data-requests',
+      where: { person: { equals: own.id } },
+    })
+    expect(requests).toBe(1)
+    // One close-account entry, in the account's name.
+    const { docs: entries } = await payload.find({
+      collection: 'audit-log',
+      where: {
+        and: [{ action: { equals: 'close-account' } }, { entityId: { equals: String(accountId) } }],
+      },
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toMatchObject({
+      actorId: `account:${accountId}`,
+      changed: 'person',
+      ip: '203.0.113.7',
+    })
+    // The session read before the close holds no records, and writes nothing more.
+    expect(await ownPersonIds(await request(), closing)).toEqual([])
+    expect(
+      await createOwnRequest(
+        await request(),
+        closing,
+        { type: 'access', summary: `Fake: after closing (${TAG}).` },
+        new Date(),
+      ),
+    ).toEqual({ ok: false, error: { code: 'closed-here' } })
+  })
 })
 
 describe('the audit log for what an account does here (docs/20 §8; D-133)', () => {
