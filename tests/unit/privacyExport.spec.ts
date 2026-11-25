@@ -54,6 +54,16 @@ describe('the export’s readable page', () => {
     expect(page).toContain('<h2>Enquiries you sent through the site (0)</h2>')
   })
 
+  it('holds the person’s My IIIC account, when it was made and last used (docs/20 §12 H8)', () => {
+    expect(EXPORT_SECTIONS.map(({ key }) => key)).toContain('account')
+    const page = renderExportPage({
+      ...empty,
+      generatedAt: '2027-03-01T04:30:00.000Z',
+      account: [{ id: 4, createdAt: '2027-01-31T18:45:00.000Z', lastSignInChannel: 'email' }],
+    })
+    expect(page).toContain('<h2>Your My IIIC account (1)</h2>')
+  })
+
   it('has no section for session notes (D-11, assumed not disclosed)', () => {
     expect(EXPORT_SECTIONS.map(({ key }) => key)).not.toContain('notes')
     expect(renderExportPage({ ...empty, generatedAt: '2027-03-01T04:30:00.000Z' })).not.toMatch(
@@ -102,6 +112,7 @@ describe('the private store’s keys', () => {
 
 const survey = {
   exports: 1,
+  accounts: 1,
   enquiries: 2,
   pipelineLinks: 3,
   subscribers: 1,
@@ -147,6 +158,16 @@ describe('the erasure plan', () => {
     expect(plan.keeps).toContainEqual(
       expect.objectContaining({ entity: PLAN_LINES.suppressions, count: 1 }),
     )
+  })
+})
+
+describe('the erasure plan for a My IIIC account (docs/20 §7.6, H7)', () => {
+  it('closes the account, or takes the record out of the account it was attached to', () => {
+    expect(planOf(survey, false).deletes).toContainEqual({ entity: PLAN_LINES.account, count: 1 })
+    expect(planOf({ ...survey, accounts: 0 }, true).deletes).toContainEqual({
+      entity: PLAN_LINES.account,
+      count: 0,
+    })
   })
 })
 

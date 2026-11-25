@@ -56,6 +56,8 @@ const LOADERS: Record<
     | 'certificatesIssue'
     | 'certificatesRevoke'
     | 'invoicePdf'
+    // Release 2's account acts are endpoints of their own, not a view's loader (docs/20 §8).
+    | 'accountActions'
   >,
   (req: PayloadRequest) => Promise<unknown>
 > = {

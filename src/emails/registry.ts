@@ -42,8 +42,8 @@ export type TemplateSpec = {
   offers: false
   price: PriceRule
   footer: FooterLink
-  /** Who writes it (docs/19 §9). */
-  builder: 'A' | 'B' | 'C'
+  /** Who writes it (docs/19 §9; `R2a`: Release 2's accounts, docs/20 §13). */
+  builder: 'A' | 'B' | 'C' | 'R2a'
 }
 
 export const TEMPLATES = [
@@ -135,6 +135,20 @@ export const TEMPLATES = [
   t('incident-alert', ['O8'], ['email'], 'platform', 'internal', { footer: 'none' }, 'C'),
   t('backup-alert', ['O6'], ['email'], 'platform', 'internal', { footer: 'none' }, 'C'),
   t('failure-alert', ['O3'], ['email'], 'platform', 'internal', { footer: 'none' }, 'A'),
+  // ---- Accounts (Release 2; docs/20 §9; written in src/emails/accounts/ by its builder A) ----
+  // The sign-in code may go to an address with no record and is about no consent, so it has no
+  // withdraw link (D-123); WhatsApp sends it through Meta's authentication template (I-66).
+  t(
+    'account-sign-in-code',
+    ['A1'],
+    ['email', 'whatsapp'],
+    'hello',
+    'transactional',
+    { footer: 'none' },
+    'R2a',
+  ),
+  t('account-closed', ['A2'], ['email'], 'hello', 'transactional', {}, 'R2a'),
+  t('account-detail-added', ['A3'], ['email'], 'hello', 'transactional', {}, 'R2a'),
 ] as const satisfies readonly TemplateSpec[]
 
 export type TemplateKey = (typeof TEMPLATES)[number]['key']
@@ -153,7 +167,9 @@ export function priceAllowed(key: TemplateKey, flags: Pick<Flags, 'pricesPublic'
 
 /**
  * WhatsApp utility templates must name the person's own booking (docs/06, Engine rules); only
- * these keys are submitted to Meta for Release 1 (docs/06's list of eight).
+ * these keys are submitted to Meta for Release 1 (docs/06's list of eight). Release 2 adds the
+ * sign-in code, in Meta's authentication category: Meta's own words and the code (docs/06,
+ * "Release 2 adds the authentication template"; I-66).
  */
 export const WHATSAPP_TEMPLATE_KEYS = [
   'booking-confirmed',
@@ -164,7 +180,13 @@ export const WHATSAPP_TEMPLATE_KEYS = [
   'feedback-request',
   'time-request-received',
   'payment-link',
+  'account-sign-in-code',
 ] as const satisfies readonly TemplateKey[]
+
+/** The WhatsApp templates in Meta's authentication category, not its utility one. */
+export const WHATSAPP_AUTHENTICATION_KEYS = [
+  'account-sign-in-code',
+] as const satisfies readonly (typeof WHATSAPP_TEMPLATE_KEYS)[number][]
 
 function t<K extends string, A extends AutomationId>(
   key: K,
@@ -173,7 +195,7 @@ function t<K extends string, A extends AutomationId>(
   sender: SenderKey,
   kind: MessageKind,
   options: { counsellingScope?: boolean; price?: PriceRule; footer?: FooterLink },
-  builder: 'A' | 'B' | 'C' = 'B',
+  builder: TemplateSpec['builder'] = 'B',
 ) {
   return {
     key,

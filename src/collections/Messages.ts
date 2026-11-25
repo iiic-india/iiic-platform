@@ -8,6 +8,7 @@ import {
   CHANNELS,
   MESSAGE_KINDS,
   MESSAGE_STATUSES,
+  RECIPIENT_KINDS,
   SENDER_KEYS,
   SKIP_REASONS,
   SUBJECT_COLLECTIONS,
@@ -165,11 +166,7 @@ export const Messages: CollectionConfig = {
               name: 'recipientKind',
               type: 'select',
               required: true,
-              options: [
-                { label: 'A person', value: 'person' },
-                { label: 'A newsletter subscriber', value: 'subscriber' },
-                { label: 'Staff', value: 'staff' },
-              ],
+              options: [...RECIPIENT_KINDS],
               admin: { readOnly: true },
             },
             {

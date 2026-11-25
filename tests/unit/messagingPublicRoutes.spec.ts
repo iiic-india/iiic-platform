@@ -132,6 +132,17 @@ describe('the withdraw link (docs/08 §3)', () => {
     }
     expect(withdrawPurpose).not.toHaveBeenCalled()
   })
+
+  it('sends the account consent to My IIIC, where closing the account ends it (D-113)', async () => {
+    const token = await signLink({ purpose: 'withdraw', subjectId: 42, expiresInDays: 1 })
+    const answer = await withdrawRoute.POST(
+      form(`${SITE}/w/${token}/withdraw`, { purpose: 'account' }),
+      { params: Promise.resolve({ token }) },
+    )
+    expect(answer.status).toBe(303)
+    expect(answer.headers.get('location')).toBe(`${SITE}/account/privacy`)
+    expect(withdrawPurpose).not.toHaveBeenCalled()
+  })
 })
 
 describe('the one-click unsubscribe (RFC 8058)', () => {

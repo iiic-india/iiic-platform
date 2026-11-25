@@ -39,6 +39,10 @@ export const VIEW_POLICY = {
   // A client's invoice or credit-note PDF from the private bucket, audited (D-88, M7): the roles
   // that read invoices (POLICY.invoices).
   invoicePdf: ['owner', 'finance'],
+  // Acting on a person's My IIIC account from the admin (Release 2; D-125): ending all its
+  // sessions, or detaching a record the person says is not theirs (D-120). Owners, as only
+  // owners read accounts (POLICY.accounts).
+  accountActions: ['owner'],
 } as const satisfies Record<string, readonly Role[]>
 
 export type AdminView = keyof typeof VIEW_POLICY

@@ -15,9 +15,20 @@ export const CONSENT_PURPOSES = [
   // flow): keeping the details sent and replying about that request, nothing more. Proposed in
   // docs/17 §10; docs/04's list has no purpose for an enquiry.
   { value: 'enquiryReplies', label: 'Replies to an enquiry' },
+  // A My IIIC account (Release 2; docs/08 §3 names the account among the flows with a notice;
+  // D-113): keeping the account, its sign-in details and its link to the person's records. Given
+  // at the account step with its own unticked box; withdrawn by closing the account.
+  { value: 'account', label: 'Keeping a My IIIC account' },
 ] as const
 
 export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number]['value']
+
+/**
+ * Purposes ended from My IIIC rather than by the withdraw link's button: withdrawing the account
+ * consent is closing the account, which also ends its sessions and its links (D-113; docs/20
+ * §7.6). The withdraw page sends the person there instead.
+ */
+export const ENDED_IN_MY_IIIC: readonly ConsentPurpose[] = ['account']
 
 export function purposeLabel(value: unknown): string {
   return CONSENT_PURPOSES.find((purpose) => purpose.value === value)?.label ?? String(value)
