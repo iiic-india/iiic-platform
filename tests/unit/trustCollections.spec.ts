@@ -16,7 +16,14 @@ import {
   nameVersion,
   numberVersion,
 } from '@/collections/ConsentVersions'
-import { oneVerifiedPerson, withdrawConsentsOnDeletion } from '@/collections/People'
+import {
+  keepAccountsOwnRecord,
+  keepProvenDetails,
+  oneVerifiedPerson,
+  People,
+  PEOPLE_MESSAGES,
+  withdrawConsentsOnDeletion,
+} from '@/collections/People'
 import { LEDGER_MESSAGES } from '@/lib/privacy/consentLedger'
 import { RECORD_DELETED } from '@/lib/privacy/consents'
 
@@ -377,5 +384,79 @@ describe('a person', () => {
         req: request,
       })
     }
+  })
+})
+
+describe('a person with a My IIIC account (D-134)', () => {
+  /** A record whose email the person proved, as the database keeps it. */
+  const PROVEN = {
+    id: 5,
+    email: 'fake.proven@example.invalid',
+    emailVerifiedAt: ago(30),
+    mobile: '+918123456789',
+    mobileVerifiedAt: null,
+  }
+  const update = async (
+    data: Record<string, unknown>,
+    originalDoc: Record<string, unknown> = PROVEN,
+  ) => run(keepProvenDetails, { data, operation: 'update', originalDoc, req: req() })
+
+  it('keeps a proven email or mobile as the person proved it, with a plain message', async () => {
+    // As staff save it: Payload has filled the marker they may not touch from the stored record.
+    expect(
+      await refusal(update({ email: 'fake.other@example.invalid', emailVerifiedAt: ago(30) })),
+    ).toEqual({ path: 'email', message: PEOPLE_MESSAGES.provenDetail('email address') })
+    // Emptied, or with the marker left out of the write: refused the same way.
+    expect(await refusal(update({ email: null }))).toMatchObject({ path: 'email' })
+    const provenMobile = { ...PROVEN, mobileVerifiedAt: ago(3) }
+    expect(await refusal(update({ mobile: '+918000000001' }, provenMobile))).toEqual({
+      path: 'mobile',
+      message: PEOPLE_MESSAGES.provenDetail('mobile number'),
+    })
+    expect(PEOPLE_MESSAGES.provenDetail('email address')).toBe(
+      'The person proved this email address, so it cannot be changed here. Leave it as it is.',
+    )
+  })
+
+  it('lets every other write through, the server’s own included', async () => {
+    const pass = async (data: Record<string, unknown>, originalDoc?: Record<string, unknown>) =>
+      expect(await update(data, originalDoc)).toBe(data)
+    // An unproven detail is the office's to change, and so is anything else on the record.
+    await pass({ mobile: '+918000000002', city: 'Fake city' })
+    await pass({ email: PROVEN.email, fullName: 'Fake Renamed' })
+    // The first proof sets a marker that was empty (src/lib/accounts/details.ts).
+    await pass(
+      { email: 'fake.new@example.invalid', emailVerifiedAt: ago(0) },
+      { ...PROVEN, email: 'fake.typo@example.invalid', emailVerifiedAt: null },
+    )
+    // The account step moves the marker and changes no detail (src/lib/accounts/lifecycle.ts).
+    await pass({ account: 3, emailVerifiedAt: ago(0) })
+    // An erasure empties the detail and its marker together (src/lib/privacy/erasure.ts).
+    await pass({ email: null, emailVerifiedAt: null, mobile: null, mobileVerifiedAt: null })
+    // A new record has nothing stored to keep.
+    const created = { email: 'fake.made@example.invalid', emailVerifiedAt: ago(0) }
+    expect(await run(keepProvenDetails, { data: created, operation: 'create', req: req() })).toBe(
+      created,
+    )
+  })
+
+  it('refuses to delete the account’s own record before anything else runs', async () => {
+    payload.count.mockResolvedValue({ totalDocs: 1 })
+    const error = await Promise.resolve(run(keepAccountsOwnRecord, { id: 5, req: req() })).catch(
+      (thrown: unknown) => thrown,
+    )
+    expect(error).toBeInstanceOf(APIError)
+    expect(error).toMatchObject({ message: PEOPLE_MESSAGES.ownRecord, status: 409 })
+    expect(payload.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collection: 'accounts',
+        where: { person: { equals: 5 } },
+        overrideAccess: true,
+      }),
+    )
+    expect(People.hooks?.beforeDelete?.[0]).toBe(keepAccountsOwnRecord)
+    // A record no account names as its own, an attached earlier one included, may go.
+    payload.count.mockResolvedValue({ totalDocs: 0 })
+    await expect(run(keepAccountsOwnRecord, { id: 6, req: req() })).resolves.toBeUndefined()
   })
 })

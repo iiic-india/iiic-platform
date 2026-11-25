@@ -8,7 +8,8 @@ import type { Person } from '@/payload-types'
 // records holding the proven detail join the account, others do not; a record of another account
 // is never moved; a record that says under 18 never joins; a record made later joins through the
 // `people` create hook; nothing in a record's consents is rewritten; one audit entry names how
-// many. And the owner's detach, and the erasure's hook (H7). Needs the r2a_accounts migration.
+// many. And the owner's detach, and the erasure's hook (H7); and the admin kept from deleting an
+// open account's own record or editing a proven detail (D-134). Needs the r2a_accounts migration.
 // Obviously fake people and addresses, removed at the end; no staff user is made.
 
 vi.mock('server-only', () => ({}))
@@ -17,7 +18,8 @@ const { default: config } = await import('@/payload.config')
 const { attachEarlierRecords } = await import('@/lib/accounts/attach')
 const { closeAccountsOfPerson, createAccountRecords, detachRecord } =
   await import('@/lib/accounts/lifecycle')
-const { currentNotice } = await import('@/lib/privacy/consents')
+const { consentFor, currentNotice } = await import('@/lib/privacy/consents')
+const { PEOPLE_MESSAGES } = await import('@/collections/People')
 
 const TAG = 'int.accounts-attach'
 const RUN = Date.now().toString(36)
@@ -250,5 +252,115 @@ describe('an erasure’s accounts (H7)', () => {
       overrideAccess: true,
     })
     expect(totalDocs).toBe(0)
+  })
+})
+
+describe('the admin and an account’s records (docs/20 §3.6; D-134)', () => {
+  it('refuses to delete an account’s own record with a plain message, and deletes it once the account is closed', async () => {
+    const email = `${TAG}.own-delete.${RUN}@fake.example.invalid`
+    const { accountId, personId } = await newAccount(email, 'own record kept')
+    const deleteAsOwner = async () =>
+      payload.delete({
+        collection: 'people',
+        id: personId,
+        overrideAccess: false,
+        req: await owner(['owner']),
+      })
+    await expect(deleteAsOwner()).rejects.toThrow(PEOPLE_MESSAGES.ownRecord)
+    // Nothing went: the record, its account and its account consent stand.
+    expect(await accountOf(personId)).toBe(accountId)
+    expect(await consentFor(payload, personId, 'account')).toBe('granted')
+    // Closed (as an erasure closes it, H7), the record is the office's like any other.
+    expect(await closeAccountsOfPerson(await owner(['owner']), personId)).toEqual({
+      closed: 1,
+      detached: 0,
+    })
+    await deleteAsOwner()
+    expect(
+      await payload.findByID({
+        collection: 'people',
+        id: personId,
+        disableErrors: true,
+        ...SERVER,
+      }),
+    ).toBeNull()
+  })
+
+  it('refuses an edit of a proven email or mobile with a plain message, and leaves the record as it was', async () => {
+    const email = `${TAG}.proven-edit.${RUN}@fake.example.invalid`
+    const { personId } = await newAccount(email, 'proven detail kept')
+    const before = (await payload.findByID({
+      collection: 'people',
+      id: personId,
+      ...SERVER,
+    })) as Person
+    expect(before.emailVerifiedAt).toBeTruthy()
+    for (const roles of [['operator'], ['owner']]) {
+      await expect(
+        payload.update({
+          collection: 'people',
+          id: personId,
+          data: { email: `${TAG}.typo.${RUN}@fake.example.invalid` },
+          overrideAccess: false,
+          req: await owner(roles),
+        }),
+      ).rejects.toThrow(/email/)
+    }
+    const after = (await payload.findByID({
+      collection: 'people',
+      id: personId,
+      ...SERVER,
+    })) as Person
+    expect(after.email).toBe(email)
+    expect(after.emailVerifiedAt).toBe(before.emailVerifiedAt)
+    // Anything else on the record stays the office's to change.
+    const renamed = await payload.update({
+      collection: 'people',
+      id: personId,
+      data: { city: 'Fake city' },
+      overrideAccess: false,
+      req: await owner(['operator']),
+    })
+    expect(renamed.city).toBe('Fake city')
+    // A detail nobody proved may still be corrected.
+    const loose = await person('unproven detail', {
+      email: `${TAG}.loose-typo.${RUN}@fake.example.invalid`,
+    })
+    const corrected = await payload.update({
+      collection: 'people',
+      id: loose.id,
+      data: { email: `${TAG}.loose.${RUN}@fake.example.invalid` },
+      overrideAccess: false,
+      req: await owner(['operator']),
+    })
+    expect(corrected.email).toBe(`${TAG}.loose.${RUN}@fake.example.invalid`)
+  })
+
+  it('still lets the server’s own writes through: the first proof, the account step and an erasure', async () => {
+    // The first proof of a detail (src/lib/accounts/details.ts, markProven): the detail and a
+    // marker that was empty, together.
+    const proving = await person('first proof', {
+      email: `${TAG}.before-proof.${RUN}@fake.example.invalid`,
+    })
+    const proven = `${TAG}.after-proof.${RUN}@fake.example.invalid`
+    const marked = (await payload.update({
+      collection: 'people',
+      id: proving.id,
+      data: { email: proven, emailVerifiedAt: new Date().toISOString() },
+      ...SERVER,
+    })) as Person
+    expect(marked).toMatchObject({ email: proven, emailVerifiedAt: expect.any(String) })
+    // The account step on a record that already holds the detail proven (the newsletter's, or a
+    // closed account's): it moves the marker and changes no detail.
+    const { personId } = await newAccount(proven, 'first proof')
+    expect(personId).toBe(proving.id)
+    // An erasure (src/lib/privacy/erasure.ts): the details and their markers emptied together.
+    const erased = (await payload.update({
+      collection: 'people',
+      id: proving.id,
+      data: { mobile: null, email: null, mobileVerifiedAt: null, emailVerifiedAt: null },
+      ...SERVER,
+    })) as Person
+    expect(erased).toMatchObject({ email: null, emailVerifiedAt: null })
   })
 })
