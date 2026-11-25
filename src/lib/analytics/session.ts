@@ -44,7 +44,9 @@ export function sessionHash({
 
 /**
  * The client's address as Vercel passes it: the first `x-forwarded-for` entry, which Vercel
- * sets itself, or `x-real-ip`. Empty when neither is there (a local server).
+ * sets itself, or `x-real-ip`. Next.js's own server fills `x-forwarded-for` with the socket's
+ * address when a request comes without one, so a local server has an address too; empty only
+ * for a request built without either header (a test's, or a server-side request that copied none).
  */
 export function clientAddress(headers: Headers): string {
   const forwarded = headers.get('x-forwarded-for')?.split(',')[0]?.trim()

@@ -27,7 +27,8 @@ export type RequestTimes = {
   /** When the codes for this address went, newest first, over the last day. */
   identifier: readonly Date[]
   /** When the codes from this network address went, newest first, over the last hour; null
-   * when the address is not known (a local server), which no rule can count by. */
+   * when the request carries no address, which no rule can count by. A local server has one:
+   * Next.js fills `x-forwarded-for` with the socket's address (`clientAddress`). */
   network: readonly Date[] | null
   /** How many codes went from anyone in the site's window. */
   site: number
